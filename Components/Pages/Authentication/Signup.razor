@@ -1,0 +1,162 @@
+@page "/signup"
+@rendermode InteractiveServer
+@using c2_eskolar.Models.ViewModels
+@using c2_eskolar.Models.Enums
+@using c2_eskolar.Services
+@inject AuthService AuthService
+@inject NavigationManager Navigation
+
+<PageTitle>Signup</PageTitle>
+
+<div class="signup-container">
+    <div class="signup-card">
+        <div class="signup-left">
+            <h2>Welcome to eSkolar!</h2>
+            <p class="role-label">Please select your role:</p>
+            <div class="role-options">
+                <label class="role-option">
+                    <input type="radio" name="role" value="@UserRole.Student" 
+                           @onchange="@(() => registerModel.UserRole = UserRole.Student)" 
+                           checked="@(registerModel.UserRole == UserRole.Student)" />
+                    <span>Student</span>
+                </label>
+                <label class="role-option">
+                    <input type="radio" name="role" value="@UserRole.Institution" 
+                           @onchange="@(() => registerModel.UserRole = UserRole.Institution)"
+                           checked="@(registerModel.UserRole == UserRole.Institution)" />
+                    <span>Institution</span>
+                </label>
+                <label class="role-option">
+                    <input type="radio" name="role" value="@UserRole.Benefactor" 
+                           @onchange="@(() => registerModel.UserRole = UserRole.Benefactor)"
+                           checked="@(registerModel.UserRole == UserRole.Benefactor)" />
+                    <span>Benefactor</span>
+                </label>
+            </div>
+        </div>
+        <div class="signup-right">
+            <h3>Create an Account</h3>
+            
+            @if (!string.IsNullOrEmpty(errorMessage))
+            {
+                <div style="color: red; margin-bottom: 10px; padding: 8px; background: #ffebee; border-radius: 4px;">
+                    @errorMessage
+                </div>
+            }
+
+            @if (!string.IsNullOrEmpty(successMessage))
+            {
+                <div style="color: green; margin-bottom: 10px; padding: 8px; background: #e8f5e8; border-radius: 4px;">
+                    @successMessage
+                </div>
+            }
+
+            <EditForm Model="@registerModel" OnValidSubmit="@HandleRegistration" FormName="SignupForm">
+                <DataAnnotationsValidator />
+                <AntiforgeryToken />
+                
+                <input class="signup-input" type="text" placeholder="First Name" 
+                       @bind="registerModel.FirstName" />
+                <ValidationMessage For="@(() => registerModel.FirstName)" />
+                
+                <input class="signup-input" type="text" placeholder="Last Name" 
+                       @bind="registerModel.LastName" />
+                <ValidationMessage For="@(() => registerModel.LastName)" />
+                
+                <input class="signup-input" type="email" placeholder="Email Address" 
+                       @bind="registerModel.Email" />
+                <ValidationMessage For="@(() => registerModel.Email)" />
+                
+                <div class="password-wrapper">
+                    <input class="signup-input"
+                           type="@(showPassword ? "text" : "password")"
+                           placeholder="Password" 
+                           @bind="registerModel.Password" />
+                    <button type="button" class="password-toggle" @onclick="TogglePassword">
+                        <img src="@(showPassword ? "/images/eye.svg" : "/images/eyeX.svg")" 
+                             alt="@(showPassword ? "Hide password" : "Show password")" />
+                    </button>
+                </div>
+                <ValidationMessage For="@(() => registerModel.Password)" />
+                
+                <label class="terms-label">
+                    <input type="checkbox" @bind="registerModel.AgreeToTerms" />
+                    <span>I agree to the Terms & Conditions</span>
+                </label>
+                
+                <button type="submit" class="btn btn-primary signup-btn" disabled="@(!registerModel.AgreeToTerms || isLoading)">
+                    @if (isLoading)
+                    {
+                        <span>Creating Account...</span>
+                    }
+                    else
+                    {
+                        <span>Sign up</span>
+                    }
+                </button>
+                
+            </EditForm>
+            
+            <div class="divider">
+                <span>or</span>
+            </div>
+            <button class="btn btn-google">Sign up with institutional email</button>
+            
+            <div style="text-align: center; margin-top: 20px;">
+                <p>Already have an account? <a href="/login" style="color: #007bff;">Sign in</a></p>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private RegisterViewModel registerModel = new();
+    private bool showPassword = false;
+    private bool isLoading = false;
+    private string errorMessage = string.Empty;
+    private string successMessage = string.Empty;
+
+    protected override void OnInitialized()
+    {
+        // Set default role to Benefactor (as in your original design)
+        registerModel.UserRole = UserRole.Benefactor;
+    }
+
+    private void TogglePassword()
+    {
+        showPassword = !showPassword;
+    }
+
+    private async Task HandleRegistration()
+    {
+        try
+        {
+            isLoading = true;
+            errorMessage = string.Empty;
+            successMessage = string.Empty;
+
+            var result = await AuthService.RegisterAsync(registerModel);
+
+            if (result.Succeeded)
+            {
+                successMessage = "Account created successfully! Redirecting to login...";
+                
+                // Redirect to login page after 2 seconds
+                await Task.Delay(2000);
+                Navigation.NavigateTo("/login");
+            }
+            else
+            {
+                errorMessage = string.Join(", ", result.Errors.Select(e => e.Description));
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"An error occurred during registration: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+}

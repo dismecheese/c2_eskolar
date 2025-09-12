@@ -1,0 +1,313 @@
+@page "/dashboard/student/scholarships-info"
+@attribute [Authorize(Roles = "Student")]
+@layout Layout.StudentDashLayout
+
+@using Microsoft.AspNetCore.Components.Forms
+@inject IJSRuntime JSRuntime
+
+<PageTitle>Scholarships</PageTitle>
+
+@code {
+    private IBrowserFile? uploadedFile;
+    private string? uploadedFileName;
+    private List<DocumentItem> documents = new List<DocumentItem>();
+
+    private bool isUploading = false;
+    private string uploadMessage = "";
+
+    public class DocumentItem
+    {
+        public string Name { get; set; } = "";
+        public string DateUploaded { get; set; } = "";
+        public string Status { get; set; } = "";
+        public string StatusClass { get; set; } = "";
+    }
+
+    private async Task OnInputFileChange(InputFileChangeEventArgs e)
+    {
+        isUploading = true;
+        uploadMessage = "";
+        StateHasChanged();
+
+        try
+        {
+            uploadedFile = e.File;
+            uploadedFileName = uploadedFile.Name;
+            
+            // Simulate upload delay
+            await Task.Delay(1500);
+            
+            // Add the new document to the list
+            var newDocument = new DocumentItem
+            {
+                Name = uploadedFile.Name,
+                DateUploaded = DateTime.Now.ToString("MM/dd/yyyy"),
+                Status = "Uploaded",
+                StatusClass = "text-info"
+            };
+            
+            documents.Add(newDocument);
+            
+            uploadMessage = $"Successfully uploaded: {uploadedFile.Name}";
+            
+            // Clear the upload message after 3 seconds
+            await Task.Delay(3000);
+            uploadMessage = "";
+        }
+        catch (Exception ex)
+        {
+            uploadMessage = $"Upload failed: {ex.Message}";
+        }
+        finally
+        {
+            isUploading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task GoBack()
+    {
+        await JSRuntime.InvokeVoidAsync("history.back");
+    }
+}
+
+<div class="container-fluid py-5">
+    <div class="row mb-4">
+        <div class="col-12">
+            <!-- Back Button -->
+            <button class="btn btn-link px-0" type="button" title="Back" @onclick="GoBack">
+                <svg width="24" height="24" fill="none" viewBox="0 0 24 24">
+                    <path d="M15 18l-6-6 6-6" stroke="#757575" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </button>
+        </div>
+    </div>
+
+    <!-- Scholarship Card -->
+    <div class="row justify-content-center mb-4">
+        <div class="col-12 col-md-10 col-lg-8">
+            <div class="scholarship-card w-100">
+                <div class="scholarship-card-img">
+                    <!-- Decorative SVG -->
+                    <svg width="70" height="70" style="position:absolute; left:10px; top:10px;">
+                        <rect x="0" y="0" width="70" height="70" fill="none" stroke="#757575" stroke-width="2"/>
+                        <line x1="0" y1="0" x2="70" y2="70" stroke="#757575" stroke-width="2"/>
+                        <line x1="70" y1="0" x2="0" y2="70" stroke="#757575" stroke-width="2"/>
+                    </svg>
+                </div>
+                <div class="scholarship-card-info">
+                    <div class="scholarship-card-title">Scholarship Name</div>
+                    <div class="scholarship-card-provider">Benefactor / Provider Name</div>
+                    <div class="scholarship-card-date">Date Awarded: mm/dd/yyyy</div>
+                </div>
+                <div class="scholarship-card-status">Active</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Accordion Sections -->
+    <div class="row justify-content-center">
+        <div class="col-12 col-md-10 col-lg-8">
+            <div class="scholarship-accordion" id="scholarshipAccordion">
+                <div class="scholarship-accordion-item mb-3">
+                    <div class="scholarship-accordion-header" data-bs-toggle="collapse" data-bs-target="#detailsCollapse" aria-expanded="false" aria-controls="detailsCollapse" style="cursor:pointer;">
+                        Details
+                    </div>
+                    <div id="detailsCollapse" class="collapse scholarship-accordion-content" data-bs-parent="#scholarshipAccordion">
+                        <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque euismod.</p>
+                    </div>
+                </div>
+                <div class="scholarship-accordion-item">
+                    <div class="scholarship-accordion-header" data-bs-toggle="collapse" data-bs-target="#documentsCollapse" aria-expanded="false" aria-controls="documentsCollapse" style="cursor:pointer;">
+                        Documents
+                    </div>
+                    <div id="documentsCollapse" class="collapse scholarship-accordion-content" data-bs-parent="#scholarshipAccordion">
+                        <div class="table-responsive mb-4">
+                            <table class="table table-bordered align-middle mb-0" style="background: #fff;">
+                                <thead>
+                                    <tr>
+                                        <th class="fw-semibold" style="border-top-left-radius:8px;">Name</th>
+                                        <th class="fw-semibold">Date Uploaded <span style="font-size:1rem;">&#8593;</span></th>
+                                        <th class="fw-semibold" style="border-top-right-radius:8px;">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @if (documents.Count == 0)
+                                    {
+                                        <tr>
+                                            <td colspan="3" class="text-center text-muted py-4">
+                                                No documents uploaded yet. Click "Add Document +" to upload your first document.
+                                            </td>
+                                        </tr>
+                                    }
+                                    else
+                                    {
+                                        @foreach (var doc in documents.OrderByDescending(d => DateTime.Parse(d.DateUploaded)))
+                                        {
+                                            <tr>
+                                                <td>@doc.Name</td>
+                                                <td>@doc.DateUploaded</td>
+                                                <td><span class="@doc.StatusClass">@doc.Status</span></td>
+                                            </tr>
+                                        }
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <!-- Upload Section -->
+                        <div class="upload-section">
+                            <div class="d-flex justify-content-end align-items-center gap-3">
+                                @if (isUploading)
+                                {
+                                    <div class="d-flex align-items-center">
+                                        <div class="spinner-border spinner-border-sm text-primary me-2" role="status">
+                                            <span class="visually-hidden">Uploading...</span>
+                                        </div>
+                                        <span class="text-muted">Uploading...</span>
+                                    </div>
+                                }
+                                
+                                <InputFile id="fileUpload" style="display:none" OnChange="OnInputFileChange" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" />
+                                <label for="fileUpload" class="btn btn-primary @(isUploading ? "disabled" : "")" style="cursor: @(isUploading ? "not-allowed" : "pointer")">
+                                    @if (isUploading)
+                                    {
+                                        <span>Uploading...</span>
+                                    }
+                                    else
+                                    {
+                                        <span>Add Document +</span>
+                                    }
+                                </label>
+                            </div>
+                            
+                            @if (!string.IsNullOrEmpty(uploadMessage))
+                            {
+                                <div class="mt-3 alert @(uploadMessage.StartsWith("Successfully") ? "alert-success" : "alert-danger") alert-dismissible fade show" role="alert">
+                                    @uploadMessage
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Remove fixed width and negative positioning */
+.scholarship-details-container {
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    position: static;
+}
+
+.back-btn {
+    position: static;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    z-index: 2;
+}
+
+.scholarship-card {
+    display: flex;
+    align-items: center;
+    background: #3976c6;
+    border-radius: 8px;
+    padding: 28px 32px;
+    margin-bottom: 32px;
+    box-shadow: 0 2px 8px rgba(60,60,60,0.07);
+    position: relative;
+    width: 100%;
+}
+
+.scholarship-card-img {
+    width: 90px;
+    height: 90px;
+    background: #e3eafc;
+    border-radius: 6px;
+    margin-right: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+}
+.scholarship-card-info {
+    flex: 1;
+    color: #fff;
+}
+.scholarship-card-title {
+    font-size: 1.35rem;
+    font-weight: 700;
+    margin-bottom: 2px;
+}
+.scholarship-card-provider {
+    font-size: 1.08rem;
+    font-weight: 500;
+    margin-bottom: 6px;
+}
+.scholarship-card-date {
+    font-size: 0.95rem;
+    color: #e3eafc;
+}
+.scholarship-card-status {
+    position: absolute;
+    right: 18px;
+    bottom: 10px;
+    font-size: 0.85rem;
+    color: #fff;
+    opacity: 0.8;
+}
+
+.scholarship-accordion {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+.scholarship-accordion-item {
+    background: #fafafa;
+    border-radius: 8px;
+    box-shadow: 0 2px 6px rgba(60,60,60,0.06);
+    transition: box-shadow 0.2s;
+    padding: 0;
+}
+.scholarship-accordion-item:hover {
+    box-shadow: 0 4px 12px rgba(60,60,60,0.10);
+}
+.scholarship-accordion-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 18px 28px;
+    font-size: 1.13rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+.scholarship-accordion-content {
+    padding: 0 28px 18px 28px;
+    font-size: 1rem;
+    color: #333;
+}
+
+.upload-section {
+    border-top: 1px solid #e9ecef;
+    padding-top: 20px;
+    margin-top: 20px;
+}
+
+.upload-section .btn-primary.disabled {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+.spinner-border-sm {
+    width: 1rem;
+    height: 1rem;
+    border-width: 0.1rem;
+}
+</style>

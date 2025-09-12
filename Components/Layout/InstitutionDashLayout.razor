@@ -1,0 +1,376 @@
+@inherits LayoutComponentBase
+@implements IDisposable
+
+@inject NavigationManager Navigation
+@using Microsoft.AspNetCore.Components.Web
+@rendermode InteractiveServer
+
+@code {
+    private DateTime currentMonth = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1);
+
+    private string MonthYear => currentMonth.ToString("MMMM yyyy");
+
+    private int DaysInMonth => DateTime.DaysInMonth(currentMonth.Year, currentMonth.Month);
+
+    private int FirstDayOfWeek => (int)new DateTime(currentMonth.Year, currentMonth.Month, 1).DayOfWeek;
+
+    private int PrevMonthDays
+        => DateTime.DaysInMonth(currentMonth.AddMonths(-1).Year, currentMonth.AddMonths(-1).Month);
+
+    protected override void OnInitialized()
+    {
+        Navigation.LocationChanged += OnLocationChanged;
+    }
+
+    private void OnLocationChanged(object? sender, Microsoft.AspNetCore.Components.Routing.LocationChangedEventArgs e)
+    {
+        InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        Navigation.LocationChanged -= OnLocationChanged;
+    }
+
+    private void PrevMonth()
+    {
+        currentMonth = currentMonth.AddMonths(-1);
+    }
+
+    private void NextMonth()
+    {
+        currentMonth = currentMonth.AddMonths(1);
+    }
+
+    private bool IsToday(int day)
+    {
+        var today = DateTime.Today;
+        return today.Year == currentMonth.Year && today.Month == currentMonth.Month && today.Day == day;
+    }
+
+    private string GetSidebarLinkClass(string href)
+    {
+        var currentPath = Navigation.ToBaseRelativePath(Navigation.Uri).Split('?')[0].TrimEnd('/');
+        var linkPath = href.TrimStart('/').TrimEnd('/');
+        
+        // Debug logging
+        Console.WriteLine($"[DEBUG] Current path: '{currentPath}', Link path: '{linkPath}'");
+        
+        // Exact match
+        if (currentPath == linkPath)
+        {
+            Console.WriteLine($"[DEBUG] MATCH! Applying active class to: {href}");
+            return "nav-link d-flex align-items-center gap-2 sidebar-link active";
+        }
+            
+        return "nav-link d-flex align-items-center gap-2 sidebar-link";
+    }
+
+    private void NavigateToInstitutionProfile()
+    {
+        Navigation.NavigateTo("/dashboard/institution/profile");
+    }
+
+    private bool ShowChatbot = false;
+    private string UserInput = "";
+    private List<ChatMessage> Messages = new();
+
+    private void OpenChatbot()
+    {
+        ShowChatbot = true;
+        StateHasChanged();
+    }
+
+    private void CloseChatbot()
+    {
+        ShowChatbot = false;
+        StateHasChanged();
+    }
+
+    private async Task SendMessage()
+    {
+        if (string.IsNullOrWhiteSpace(UserInput)) return;
+        Messages.Add(new ChatMessage { Text = UserInput, IsUser = true });
+        var userMessage = UserInput;
+        UserInput = "";
+        StateHasChanged();
+
+        // TODO: UNCOMMENT WHEN BACKEND AI API IS READY
+        /*
+        try
+        {
+            var apiResponse = await CallAIBackend(userMessage);
+            Messages.Add(new ChatMessage { Text = apiResponse, IsUser = false });
+        }
+        catch (Exception ex)
+        {
+            Messages.Add(new ChatMessage { Text = "Sorry, I'm having trouble connecting right now. Please try again later.", IsUser = false });
+            // Log error: Console.WriteLine($"AI API Error: {ex.Message}");
+        }
+        */
+
+        // --- FRONTEND-ONLY MOCK REPLY (REMOVE WHEN BACKEND IS READY) ---
+        await Task.Delay(1000); // Simulate thinking time
+        
+        var userMessageLower = userMessage.ToLower();
+        string response = userMessageLower switch
+        {
+            var msg when msg.Contains("scholarship") => "I can help you manage institutional scholarships! You can create new scholarships, review applications, or manage existing programs. What would you like to do?",
+            var msg when msg.Contains("application") || msg.Contains("apply") => "You can review scholarship applications in your dashboard. Check pending applications, review submitted documents, and manage the selection process.",
+            var msg when msg.Contains("help") || msg.Contains("how") => "I'm here to help with your institutional dashboard! I can assist with scholarship management, application reviews, announcements, and platform navigation.",
+            var msg when msg.Contains("account") || msg.Contains("profile") => "You can update your institution profile by clicking the profile icon. Make sure your institution information is complete and verified.",
+            var msg when msg.Contains("announcement") => "You can create and manage announcements from your dashboard. Keep students informed about new scholarships, deadlines, and important updates.",
+            _ => "I understand you're asking about: \"" + userMessage + "\". I can help with scholarship management, application reviews, announcements, and institutional settings. Could you be more specific?"
+        };
+        
+        Messages.Add(new ChatMessage { Text = response, IsUser = false });
+        StateHasChanged();
+    }
+
+    // TODO: UNCOMMENT AND IMPLEMENT WHEN BACKEND AI API IS READY
+    /*
+    private async Task<string> CallAIBackend(string userMessage)
+    {
+        using var client = new HttpClient();
+        var requestBody = new
+        {
+            message = userMessage,
+            context = "eSkolar institutional dashboard assistant"
+        };
+        
+        var json = System.Text.Json.JsonSerializer.Serialize(requestBody);
+        var content = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+        
+        // Replace with your actual AI API endpoint
+        var response = await client.PostAsync("https://your-api-endpoint.com/ai/chat", content);
+        response.EnsureSuccessStatusCode();
+        
+        var responseJson = await response.Content.ReadAsStringAsync();
+        var apiResponse = System.Text.Json.JsonSerializer.Deserialize<dynamic>(responseJson);
+        
+        return apiResponse.response ?? "I'm having trouble processing your request right now.";
+    }
+    */
+
+    private async Task HandleKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            await SendMessage();
+        }
+    }
+
+    public class ChatMessage
+    {
+        public string Text { get; set; } = "";
+        public bool IsUser { get; set; }
+    }
+}
+<div class="d-flex min-vh-100">
+    <!-- Sidebar -->
+    <nav class="sidebar d-flex flex-column justify-content-between"
+         style="width: 260px; background: linear-gradient(180deg, #1560d4 0%, #0d387e 100%); padding: 2rem 1.5rem 1rem 1.5rem;">
+        <div>
+            <!-- Logo -->
+            <div class="mb-4">
+                <a class="eskolar-logo" href="/"></a>
+            </div>
+            <!-- Navigation Links -->
+            <ul class="nav flex-column gap-1">
+                <li class="nav-item">
+                    <a href="/dashboard/institution" class="@GetSidebarLinkClass("/dashboard/institution")">
+                        <i class="fa fa-home"></i> Dashboard
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="/dashboard/institution/scholarships" class="@GetSidebarLinkClass("/dashboard/institution/scholarships")">
+                        <i class="fa fa-graduation-cap"></i> Scholarships
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="/dashboard/institution/announcements" class="@GetSidebarLinkClass("/dashboard/institution/announcements")">
+                        <i class="fa fa-bullhorn"></i> Announcements
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="/dashboard/institution/partners" class="@GetSidebarLinkClass("/dashboard/institution/partners")">
+                        <i class="fa fa-handshake"></i> Partners
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="/dashboard/institution/bookmarks" class="@GetSidebarLinkClass("/dashboard/institution/bookmarks")">
+                        <i class="fa fa-star"></i> Bookmarks
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="/dashboard/institution/about" class="@GetSidebarLinkClass("/dashboard/institution/about")">
+                        <i class="fa fa-info-circle"></i> About
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="/dashboard/institution/settings" class="@GetSidebarLinkClass("/dashboard/institution/settings")">
+                        <i class="fa fa-cog"></i> Settings
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="/dashboard/institution/faqs" class="@GetSidebarLinkClass("/dashboard/institution/faqs")">
+                        <i class="fa fa-question-circle"></i> FAQs
+                    </a>
+                </li>
+            </ul>
+        </div>
+        <!-- Help Box -->
+        <button class="help-box-bottom" type="button" @onclick="OpenChatbot">
+            <div class="help-box-content">
+                <img src="images/NeedHelp.svg" alt="Help" class="help-box-img" />
+                <div class="help-box-text">
+                    <div class="help-box-title">Need help?</div>
+                    <div class="help-box-desc">Having trouble using eSkolar?<br />We're here to assist you!</div>
+                </div>
+            </div>
+        </button>
+    </nav>
+    <!-- Profile Icon Button (top right) -->
+<button class="dashboard-profile-absolute mt-5" type="button" data-bs-toggle="offcanvas" data-bs-target="#rightSidebar" aria-controls="rightSidebar">
+    <svg width="32" height="32" fill="none" viewBox="0 0 24 24">
+        <circle cx="12" cy="8" r="4" stroke="#222" stroke-width="2"/>
+        <circle cx="12" cy="12" r="11" stroke="#222" stroke-width="2"/>
+        <path d="M4 20c1.5-3 5.5-5 8-5s6.5 2 8 5" stroke="#222" stroke-width="2"/>
+    </svg>
+</button>
+
+<!-- Bootstrap Offcanvas Sidebar -->
+<div class="offcanvas offcanvas-end" tabindex="-1" id="rightSidebar" aria-labelledby="rightSidebarLabel">
+  <div class="offcanvas-header">
+    <h5 class="offcanvas-title" id="rightSidebarLabel">Profile</h5>
+    <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+  </div>
+  <div class="offcanvas-body">
+    <!-- Sidebar content here -->
+    <div class="sidebar-profile">
+        <svg width="32" height="32" fill="none" viewBox="0 0 24 24">
+            <circle cx="12" cy="8" r="4" stroke="#222" stroke-width="2"/>
+            <circle cx="12" cy="12" r="11" stroke="#222" stroke-width="2"/>
+            <path d="M4 20c1.5-3 5.5-5 8-5s6.5 2 8 5" stroke="#222" stroke-width="2"/>
+        </svg>
+        <div class="sidebar-profile-name">Marzella Capin</div>
+        <div class="sidebar-profile-role">Student</div>
+        <button class="sidebar-profile-btn" @onclick="NavigateToInstitutionProfile" data-bs-dismiss="offcanvas">Profile</button>
+    </div>
+    <div class="sidebar-calendar">
+        
+    <div class="sidebar-calendar">
+        <div style="background:#fff;padding:8px 0 0 0;border-radius:8px;margin:16px 0;">
+            <div class="d-flex justify-content-between align-items-center px-2 mb-1">
+                <button class="btn btn-sm btn-light px-1 py-0" @onclick="PrevMonth" style="font-size:12px;">&#8592;</button>
+                <strong style="font-size:13px;">@MonthYear</strong>
+                <button class="btn btn-sm btn-light px-1 py-0" @onclick="NextMonth" style="font-size:12px;">&#8594;</button>
+            </div>
+            <div class="table-responsive px-2 pb-2">
+                <table class="table table-bordered text-center align-middle mb-0" style="font-size:11px;">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="py-1" style="font-size:10px;">Sun</th>
+                            <th class="py-1" style="font-size:10px;">Mon</th>
+                            <th class="py-1" style="font-size:10px;">Tue</th>
+                            <th class="py-1" style="font-size:10px;">Wed</th>
+                            <th class="py-1" style="font-size:10px;">Thu</th>
+                            <th class="py-1" style="font-size:10px;">Fri</th>
+                            <th class="py-1" style="font-size:10px;">Sat</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @{
+                            int day = 1;
+                            int totalCells = ((DaysInMonth + FirstDayOfWeek) <= 35) ? 35 : 42;
+                            for (int week = 0; week < totalCells / 7; week++)
+                            {
+                                <tr>
+                                    @for (int dow = 0; dow < 7; dow++)
+                                    {
+                                        int cell = week * 7 + dow;
+                                        if (cell < FirstDayOfWeek)
+                                        {
+                                            <td class="text-muted" style="padding:2px;font-size:10px;">@((PrevMonthDays - FirstDayOfWeek + 1) + cell)</td>
+                                        }
+                                        else if (day > DaysInMonth)
+                                        {
+                                            <td class="text-muted" style="padding:2px;font-size:10px;">@((day - DaysInMonth))</td>
+                                            day++;
+                                        }
+                                        else
+                                        {
+                                            <td class="@(IsToday(day) ? "bg-primary text-white fw-bold" : "")" style="@(IsToday(day) ? "background:#1560d4;color:#fff;border-radius:50%;" : "")padding:2px;font-size:10px;">
+                                                @day
+                                            </td>
+                                            day++;
+                                        }
+                                    }
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    </div>
+    <div class="sidebar-notifications">
+        <div class="sidebar-notifications-header">
+            Notifications <span style="float:right;cursor:pointer;">Clear</span>
+        </div>
+        <div class="sidebar-notification-list">
+            @for (int i = 0; i < 3; i++)
+            {
+                <div class="sidebar-notification">
+                    <div class="sidebar-notification-title">Notif Title</div>
+                    <div class="sidebar-notification-desc">Short Description Short Description Short Description</div>
+                </div>
+            }
+        </div>
+    </div>
+  </div>
+</div>
+    <main class="main-content" style="flex:1; min-width:0; background: #f5f6fa;">
+        @Body
+    </main>
+</div>
+
+@if (ShowChatbot)
+{
+    <div class="chatbot-float-window">
+        <div class="chatbot-header">
+            <span>eSkolar Assistant</span>
+            <button class="btn-close" @onclick="CloseChatbot" aria-label="Close chatbot">×</button>
+        </div>
+        <div class="chatbot-body">
+            @if (!Messages.Any())
+            {
+                <div class="chat-message bot">
+                    <div class="message-avatar bot">AI</div>
+                    <div class="message-bubble bot">
+                        Hello! I'm your eSkolar assistant for institutions. How can I help you today? I can assist with scholarship management, application reviews, and platform navigation.
+                    </div>
+                </div>
+            }
+            @foreach (var msg in Messages)
+            {
+                <div class="chat-message @(msg.IsUser ? "user" : "bot")">
+                    <div class="message-avatar @(msg.IsUser ? "user" : "bot")">
+                        @(msg.IsUser ? "You" : "AI")
+                    </div>
+                    <div class="message-bubble @(msg.IsUser ? "user" : "bot")">
+                        @msg.Text
+                    </div>
+                </div>
+            }
+        </div>
+        <div class="chatbot-input">
+            <input @bind="UserInput" @bind:event="oninput" @onkeydown="HandleKeyDown" 
+                   placeholder="Type a message..." />
+            <button class="chatbot-send-btn" @onclick="SendMessage">
+                <i class="fa fa-paper-plane"></i>
+            </button>
+        </div>
+    </div>
+}

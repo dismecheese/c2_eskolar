@@ -1,0 +1,342 @@
+@page "/dashboard/benefactors/bookmarks"
+@layout Layout.BenefactorDashLayout
+
+<PageTitle>Settings</PageTitle>
+<div class="bookmarks-page">
+    <div class="container mt-4">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1><i class="fa fa-bookmark me-2"></i>My Bookmarks</h1>
+            <div class="d-flex gap-2">
+                <select class="form-select" style="width: auto;">
+                    <option>All Categories</option>
+                    <option>Scholarships</option>
+                    <option>Applications</option>
+                    <option>Resources</option>
+                    <option>Deadlines</option>
+                </select>
+                <input type="text" class="form-control" placeholder="Search bookmarks..." style="width: 200px;">
+            </div>
+        </div>
+        
+        <!-- Quick Stats -->
+        <div class="row mb-4">
+            <div class="col-md-3 mb-3">
+                <div class="card bg-primary text-white">
+                    <div class="card-body text-center">
+                        <i class="fa fa-bookmark fa-2x mb-2"></i>
+                        <h4 class="mb-0">24</h4>
+                        <small>Total Bookmarks</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="card bg-success text-white">
+                    <div class="card-body text-center">
+                        <i class="fa fa-graduation-cap fa-2x mb-2"></i>
+                        <h4 class="mb-0">18</h4>
+                        <small>Scholarships</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="card bg-warning text-white">
+                    <div class="card-body text-center">
+                        <i class="fa fa-clock-o fa-2x mb-2"></i>
+                        <h4 class="mb-0">6</h4>
+                        <small>Urgent Deadlines</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="card bg-info text-white">
+                    <div class="card-body text-center">
+                        <i class="fa fa-star fa-2x mb-2"></i>
+                        <h4 class="mb-0">12</h4>
+                        <small>High Match</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bookmarks List -->
+        <div class="row">
+            <div class="col-lg-8">
+                
+                <!-- Urgent Deadlines Section -->
+                <div class="mb-4">
+                    <h3 class="text-danger mb-3"><i class="fa fa-exclamation-triangle me-2"></i>Urgent Deadlines</h3>
+                    
+                    <div class="card mb-3 border-danger">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div class="flex-grow-1">
+                                    <h5 class="card-title text-danger">TechCorp Foundation Scholarship</h5>
+                                    <p class="card-text">Full tuition scholarship for computer science students with 3.5+ GPA. Includes internship opportunities.</p>
+                                    <div class="mb-2">
+                                        <span class="badge bg-danger me-2">Due in 3 days</span>
+                                        <span class="badge bg-primary me-2">Technology</span>
+                                        <span class="badge bg-success">95% Match</span>
+                                    </div>
+                                    <small class="text-muted">Bookmarked 2 weeks ago</small>
+                                </div>
+                                <div class="ms-3">
+                                    <button class="btn btn-danger btn-sm">Apply Now</button>
+                                    <button class="btn btn-outline-secondary btn-sm ms-1">
+                                        <i class="fa fa-bookmark"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card mb-3 border-warning">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div class="flex-grow-1">
+                                    <h5 class="card-title text-warning">Arts Foundation Creative Grant</h5>
+                                    <p class="card-text">Supporting emerging artists in digital media and creative technologies. Portfolio submission required.</p>
+                                    <div class="mb-2">
+                                        <span class="badge bg-warning text-dark me-2">Due in 1 week</span>
+                                        <span class="badge bg-info me-2">Arts</span>
+                                        <span class="badge bg-success">88% Match</span>
+                                    </div>
+                                    <small class="text-muted">Bookmarked 1 week ago</small>
+                                </div>
+                                <div class="ms-3">
+                                    <button class="btn btn-warning btn-sm">Apply Now</button>
+                                    <button class="btn btn-outline-secondary btn-sm ms-1">
+                                        <i class="fa fa-bookmark"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Regular Bookmarks -->
+                <div class="mb-4">
+                    <h3 class="mb-3"><i class="fa fa-bookmark-o me-2"></i>All Bookmarks</h3>
+                    
+                    <div class="card mb-3">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div class="flex-grow-1">
+                                    <h5 class="card-title">Global Education Trust International Scholarship</h5>
+                                    <p class="card-text">Study abroad scholarship for undergraduate students. Covers tuition and living expenses for one academic year.</p>
+                                    <div class="mb-2">
+                                        <span class="badge bg-primary me-2">Due in 2 months</span>
+                                        <span class="badge bg-success me-2">International</span>
+                                        <span class="badge bg-info">92% Match</span>
+                                    </div>
+                                    <small class="text-muted">Bookmarked 3 days ago</small>
+                                </div>
+                                <div class="ms-3">
+                                    <button class="btn btn-primary btn-sm">View Details</button>
+                                    <button class="btn btn-outline-secondary btn-sm ms-1">
+                                        <i class="fa fa-bookmark"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card mb-3">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div class="flex-grow-1">
+                                    <h5 class="card-title">HealthPlus Medical Student Support</h5>
+                                    <p class="card-text">Financial assistance for medical and nursing students. Priority given to underrepresented minorities.</p>
+                                    <div class="mb-2">
+                                        <span class="badge bg-primary me-2">Due in 6 weeks</span>
+                                        <span class="badge bg-warning text-dark me-2">Healthcare</span>
+                                        <span class="badge bg-info">85% Match</span>
+                                    </div>
+                                    <small class="text-muted">Bookmarked 1 week ago</small>
+                                </div>
+                                <div class="ms-3">
+                                    <button class="btn btn-primary btn-sm">View Details</button>
+                                    <button class="btn btn-outline-secondary btn-sm ms-1">
+                                        <i class="fa fa-bookmark"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card mb-3">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div class="flex-grow-1">
+                                    <h5 class="card-title">Community Bank Local Student Award</h5>
+                                    <p class="card-text">Supporting local students pursuing business and finance degrees. Community service requirements apply.</p>
+                                    <div class="mb-2">
+                                        <span class="badge bg-secondary me-2">Due in 3 months</span>
+                                        <span class="badge bg-primary me-2">Business</span>
+                                        <span class="badge bg-info">78% Match</span>
+                                    </div>
+                                    <small class="text-muted">Bookmarked 2 weeks ago</small>
+                                </div>
+                                <div class="ms-3">
+                                    <button class="btn btn-primary btn-sm">View Details</button>
+                                    <button class="btn btn-outline-secondary btn-sm ms-1">
+                                        <i class="fa fa-bookmark"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card mb-3">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div class="flex-grow-1">
+                                    <h5 class="card-title">Green Future Environmental Research Grant</h5>
+                                    <p class="card-text">Research funding for environmental science and sustainability projects. Graduate students preferred.</p>
+                                    <div class="mb-2">
+                                        <span class="badge bg-success me-2">Due in 4 months</span>
+                                        <span class="badge bg-success me-2">Environmental</span>
+                                        <span class="badge bg-warning text-dark">72% Match</span>
+                                    </div>
+                                    <small class="text-muted">Bookmarked 3 weeks ago</small>
+                                </div>
+                                <div class="ms-3">
+                                    <button class="btn btn-primary btn-sm">View Details</button>
+                                    <button class="btn btn-outline-secondary btn-sm ms-1">
+                                        <i class="fa fa-bookmark"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pagination -->
+                <nav aria-label="Bookmarks pagination">
+                    <ul class="pagination justify-content-center">
+                        <li class="page-item disabled">
+                            <a class="page-link" href="#" tabindex="-1">Previous</a>
+                        </li>
+                        <li class="page-item active"><a class="page-link" href="#">1</a></li>
+                        <li class="page-item"><a class="page-link" href="#">2</a></li>
+                        <li class="page-item"><a class="page-link" href="#">3</a></li>
+                        <li class="page-item">
+                            <a class="page-link" href="#">Next</a>
+                        </li>
+                    </ul>
+                </nav>
+
+            </div>
+            
+            <!-- Sidebar -->
+            <div class="col-lg-4">
+                
+                <!-- Quick Actions -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="fa fa-bolt me-2"></i>Quick Actions</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-grid gap-2">
+                            <button class="btn btn-primary btn-sm">
+                                <i class="fa fa-search me-2"></i>Find More Scholarships
+                            </button>
+                            <button class="btn btn-outline-danger btn-sm">
+                                <i class="fa fa-clock-o me-2"></i>View Urgent Deadlines
+                            </button>
+                            <button class="btn btn-outline-secondary btn-sm">
+                                <i class="fa fa-download me-2"></i>Export Bookmarks
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Categories -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="fa fa-tags me-2"></i>Categories</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-flex flex-wrap gap-2">
+                            <span class="badge bg-primary">Technology (8)</span>
+                            <span class="badge bg-success">International (4)</span>
+                            <span class="badge bg-info">Arts (3)</span>
+                            <span class="badge bg-warning text-dark">Healthcare (3)</span>
+                            <span class="badge bg-secondary">Business (2)</span>
+                            <span class="badge bg-success">Environmental (2)</span>
+                            <span class="badge bg-primary">STEM (2)</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Match Quality -->
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="fa fa-star me-2"></i>Match Quality</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between">
+                                <span>Excellent (90%+)</span>
+                                <span class="text-success">12 bookmarks</span>
+                            </div>
+                            <div class="progress">
+                                <div class="progress-bar bg-success" style="width: 50%"></div>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between">
+                                <span>Good (75-89%)</span>
+                                <span class="text-info">8 bookmarks</span>
+                            </div>
+                            <div class="progress">
+                                <div class="progress-bar bg-info" style="width: 33%"></div>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="d-flex justify-content-between">
+                                <span>Fair (60-74%)</span>
+                                <span class="text-warning">4 bookmarks</span>
+                            </div>
+                            <div class="progress">
+                                <div class="progress-bar bg-warning" style="width: 17%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .bookmarks-page {
+        min-height: 80vh;
+        background-color: #f8f9fa;
+        padding: 2rem 0;
+    }
+    
+    .card {
+        border: none;
+        box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+        transition: box-shadow 0.15s ease-in-out;
+    }
+    
+    .card:hover {
+        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+    }
+    
+    .card-header {
+        background-color: #fff;
+        border-bottom: 1px solid #dee2e6;
+        font-weight: 500;
+    }
+    
+    .progress {
+        height: 6px;
+    }
+    
+    .badge {
+        font-size: 0.75rem;
+    }
+</style>

@@ -1,0 +1,73 @@
+@page "/dashboard/benefactors/faqs"
+@layout Layout.BenefactorDashLayout
+@using Microsoft.AspNetCore.WebUtilities
+@using c2_eskolar.Components.Pages
+<PageTitle>FAQs</PageTitle>
+
+<div class="dashboard-faqs-page">
+    <div class="dashboard-faqs-header">
+        <h1 class="dashboard-faqs-title">Frequently Asked Questions</h1>
+        <div class="dashboard-faqs-desc">
+            Find answers to common questions about eSkolar, scholarships, and more.
+        </div>
+    </div>
+    <div class="dashboard-faqs-accordion accordion accordion-flush" id="dashboardFaqAccordion">
+        @foreach (var faq in faqs)
+        {
+            <div class="accordion-item">
+                <h2 class="accordion-header" id="@faq.HeadingId">
+                    <button class="accordion-button collapsed" type="button"
+                            data-bs-toggle="collapse"
+                            data-bs-target="#@faq.CollapseId"
+                            aria-expanded="false"
+                            aria-controls="@faq.CollapseId">
+                        <span>@faq.Question</span>
+                        <span class="faq-v-icon">
+                            <svg width="28" height="28" viewBox="0 0 28 28">
+                                <polyline points="7 11 14 18 21 11" fill="none" stroke="#181818" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </span>
+                    </button>
+                </h2>
+                <div id="@faq.CollapseId" class="accordion-collapse collapse"
+                     aria-labelledby="@faq.HeadingId"
+                     data-bs-parent="#dashboardFaqAccordion">
+                    <div class="accordion-body">
+                        @faq.Answer
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    private List<FaqItem> faqs = new()
+    {
+        new FaqItem("What is eSkolar?", "eSkolar is a centralized, AI-driven web platform that connects students, institutions, and benefactors for academic opportunities. It streamlines scholarship application, monitoring, and management for all stakeholders.", "faq-heading-1", "faq-collapse-1"),
+        new FaqItem("Who can use eSkolar?", "Students, educational institutions, benefactors (organizations, companies, foundations), and even parents or guardians (with limited access) can use eSkolar.", "faq-heading-2", "faq-collapse-2"),
+        new FaqItem("What are the minimum device requirements?", "Any web-enabled device such as a desktop, laptop, tablet, or smartphone with a modern browser (Chrome, Firefox, Edge, Safari) and a stable internet connection.", "faq-heading-3", "faq-collapse-3"),
+        new FaqItem("How does eSkolar protect my data?", "eSkolar uses HTTPS encryption, AES encryption at rest, role-based access control, multi-factor authentication, and follows the Data Privacy Act of 2012 (RA 10173).", "faq-heading-4", "faq-collapse-4"),
+        new FaqItem("How do I apply for a scholarship?", "Register as a student, complete your profile, browse available scholarships, and follow the application instructions for each scholarship. Some may require document uploads or external applications.", "faq-heading-5", "faq-collapse-5"),
+        new FaqItem("What is the difference between a Benefactor and an Institution?", "Benefactors are organizations or foundations that provide scholarships. Institutions are schools or universities that manage and monitor scholarships and scholars.", "faq-heading-6", "faq-collapse-6"),
+        new FaqItem("What browsers are supported?", "eSkolar supports Chrome, Firefox, Edge, and Safari on desktop and mobile devices.", "faq-heading-7", "faq-collapse-7"),
+        new FaqItem("Is there a mobile app?", "Not yet. eSkolar is fully responsive and works on all modern browsers and devices.", "faq-heading-8", "faq-collapse-8"),
+        new FaqItem("How do I become a partner?", "Institutions and benefactors can contact us through the Contact page to discuss partnership opportunities.", "faq-heading-9", "faq-collapse-9"),
+        new FaqItem("Who do I contact for support?", "For support, email us at <b>eskolarph@gmail.com</b> or use the Contact Us page.", "faq-heading-10", "faq-collapse-10"),
+    };
+
+    public class FaqItem
+    {
+        public string Question { get; }
+        public string Answer { get; }
+        public string HeadingId { get; }
+        public string CollapseId { get; }
+        public FaqItem(string q, string a, string headingId, string collapseId)
+        {
+            Question = q;
+            Answer = a;
+            HeadingId = headingId;
+            CollapseId = collapseId;
+        }
+    }
+}

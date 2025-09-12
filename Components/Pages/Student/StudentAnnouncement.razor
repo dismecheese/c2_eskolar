@@ -1,0 +1,505 @@
+@page "/dashboard/student/announcements"
+@attribute [Authorize(Roles = "Student")]
+@layout Layout.StudentDashLayout
+@using c2_eskolar.Models
+@using c2_eskolar.Models.Enums
+@using c2_eskolar.Services
+@inject AnnouncementService AnnouncementService
+
+<PageTitle>Announcements</PageTitle>
+
+<div class="container-fluid" style="min-height: 100vh;">
+    <div class="row justify-content-center">
+        <div class="col-12 col-lg-10">
+            <!-- Search and Header -->
+            <div class="d-flex flex-column flex-md-row align-items-md-center mb-4 gap-3 mt-5">
+                <div class="flex-grow-1">
+                    <div class="input-group">
+                        <input type="text" class="form-control" placeholder="Search announcements..." 
+                               @bind="searchTerm" @oninput="OnSearchChanged" />
+                        <span class="input-group-text bg-white border-0">
+                            <i class="bi bi-search"></i>
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Category Tabs -->
+            <div class="d-flex align-items-center mb-4 gap-3">
+                <ul class="nav nav-tabs border-0">
+                    <li class="nav-item">
+                        <a class="nav-link px-3 @(activeTab == "Institution" ? "active fw-bold" : "")"
+                           href="#" @onclick='() => SetActiveTab("Institution")' @onclick:preventDefault="true">
+                            <i class="bi bi-building me-1"></i>Institution
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link px-3 @(activeTab == "Application" ? "active fw-bold" : "")"
+                           href="#" @onclick='() => SetActiveTab("Application")' @onclick:preventDefault="true">
+                            <i class="bi bi-file-earmark-text me-1"></i>Applications
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link px-3 @(activeTab == "Grants" ? "active fw-bold" : "")"
+                           href="#" @onclick='() => SetActiveTab("Grants")' @onclick:preventDefault="true">
+                            <i class="bi bi-award me-1"></i>Grants
+                        </a>
+                    </li>
+                </ul>
+                <div class="ms-auto">
+                    <select class="form-select form-select-sm" @bind="selectedCategory">
+                        <option value="">All Categories</option>
+                        <option value="General">General</option>
+                        <option value="Scholarships">Scholarships</option>
+                        <option value="Applications">Applications</option>
+                        <option value="Funding">Funding</option>
+                        <option value="Events">Events</option>
+                        <option value="Urgent">Urgent</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="row">
+                <!-- Announcements List -->
+                <div class="col-lg-8">
+                    @if (isLoading)
+                    {
+                        <div class="d-flex justify-content-center py-5">
+                            <div class="spinner-border" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                        </div>
+                    }
+                    else if (filteredAnnouncements?.Any() == true)
+                    {
+                        <div class="mb-3">
+                            <h5 class="text-muted">@GetTabDescription()</h5>
+                        </div>
+
+                        <div class="d-flex flex-column gap-3">
+                            @foreach (var announcement in filteredAnnouncements.OrderByDescending(a => a.IsPinned).ThenByDescending(a => a.CreatedAt))
+                            {
+                                <div class="card shadow-sm border-0 @(announcement.IsPinned ? "border-warning border-2" : "")">
+                                    <div class="card-body">
+                                        <!-- Header with badges -->
+                                        <div class="d-flex justify-content-between align-items-start mb-2">
+                                            <div class="d-flex gap-2 flex-wrap">
+                                                @if (announcement.IsPinned)
+                                                {
+                                                    <span class="badge bg-warning text-dark">
+                                                        <i class="bi bi-pin-fill"></i> Pinned
+                                                    </span>
+                                                }
+                                                <span class="badge @(GetAuthorBadgeClass(announcement.AuthorType))">
+                                                    @announcement.AuthorType
+                                                </span>
+                                                @if (!string.IsNullOrEmpty(announcement.Category))
+                                                {
+                                                    <span class="badge bg-info">@announcement.Category</span>
+                                                }
+                                                <span class="badge bg-light text-dark">
+                                                    @GetAnnouncementSource(announcement)
+                                                </span>
+                                            </div>
+                                            <small class="text-muted">@announcement.CreatedAt.ToString("MMM dd, yyyy")</small>
+                                        </div>
+
+                                        <!-- Content -->
+                                        <div class="d-flex align-items-start gap-3">
+                                            <div>
+                                                <i class="@(GetAuthorIcon(announcement.AuthorType)) fs-2 text-secondary"></i>
+                                            </div>
+                                            <div class="flex-grow-1">
+                                                <div class="fw-semibold mb-1">@announcement.Title</div>
+                                                <div class="text-secondary">@announcement.Content</div>
+                                                @if (activeTab == "Application" || activeTab == "Grants")
+                                                {
+                                                    <div class="mt-2">
+                                                        <small class="text-muted">
+                                                            @if (activeTab == "Application")
+                                                            {
+                                                                <span><i class="bi bi-file-earmark"></i> Related to your scholarship application</span>
+                                                            }
+                                                            else
+                                                            {
+                                                                <span><i class="bi bi-trophy"></i> Related to your current scholarship</span>
+                                                            }
+                                                        </small>
+                                                    </div>
+                                                }
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+
+                        <!-- Pagination (if needed) -->
+                        @if (totalAnnouncements > pageSize)
+                        {
+                            <nav aria-label="Announcements pagination" class="mt-4">
+                                <ul class="pagination justify-content-center">
+                                    <li class="page-item @(currentPage == 1 ? "disabled" : "")">
+                                        <a class="page-link" href="#" @onclick="() => ChangePage(currentPage - 1)" @onclick:preventDefault="true">Previous</a>
+                                    </li>
+                                    @for (int i = 1; i <= totalPages; i++)
+                                    {
+                                        <li class="page-item @(currentPage == i ? "active" : "")">
+                                            <a class="page-link" href="#" @onclick="() => ChangePage(i)" @onclick:preventDefault="true">@i</a>
+                                        </li>
+                                    }
+                                    <li class="page-item @(currentPage == totalPages ? "disabled" : "")">
+                                        <a class="page-link" href="#" @onclick="() => ChangePage(currentPage + 1)" @onclick:preventDefault="true">Next</a>
+                                    </li>
+                                </ul>
+                            </nav>
+                        }
+                    }
+                    else
+                    {
+                        <div class="text-center py-5">
+                            <div class="mb-3">
+                                <i class="@GetEmptyStateIcon() fs-1 text-muted"></i>
+                            </div>
+                            <h5 class="text-muted">@GetEmptyStateTitle()</h5>
+                            <p class="text-muted">@GetEmptyStateMessage()</p>
+                            @if (!string.IsNullOrEmpty(searchTerm) || !string.IsNullOrEmpty(selectedCategory))
+                            {
+                                <button class="btn btn-outline-primary btn-sm" @onclick="ClearFilters">
+                                    Clear Filters
+                                </button>
+                            }
+                        </div>
+                    }
+                </div>
+
+                <!-- Category Sidebar -->
+                <div class="col-lg-4 mt-4 mt-lg-0">
+                    <div class="card shadow-sm border-0">
+                        <div class="card-body">
+                            <div class="fw-bold mb-3">Statistics for @activeTab</div>
+                            <div class="list-group list-group-flush">
+                                <div class="list-group-item d-flex justify-content-between align-items-center border-0 px-0">
+                                    <span>Total Announcements</span>
+                                    <span class="badge bg-primary rounded-pill">@GetTabCount()</span>
+                                </div>
+                                <div class="list-group-item d-flex justify-content-between align-items-center border-0 px-0">
+                                    <span>From Institutions</span>
+                                    <span class="badge bg-success rounded-pill">@institutionCount</span>
+                                </div>
+                                <div class="list-group-item d-flex justify-content-between align-items-center border-0 px-0">
+                                    <span>From Benefactors</span>
+                                    <span class="badge bg-info rounded-pill">@benefactorCount</span>
+                                </div>
+                                <div class="list-group-item d-flex justify-content-between align-items-center border-0 px-0">
+                                    <span>Pinned</span>
+                                    <span class="badge bg-warning rounded-pill">@pinnedCount</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tab Information -->
+                    <div class="card shadow-sm border-0 mt-3">
+                        <div class="card-body">
+                            <div class="fw-bold mb-3">About @activeTab</div>
+                            <p class="text-muted small">@GetTabInfo()</p>
+                            
+                            <div class="d-grid gap-2 mt-3">
+                                <button class="btn btn-outline-primary btn-sm" @onclick="RefreshAnnouncements">
+                                    <i class="bi bi-arrow-clockwise"></i> Refresh
+                                </button>
+                                @if (activeTab != "Institution")
+                                {
+                                    <button class="btn btn-outline-secondary btn-sm" @onclick='() => SetActiveTab("Institution")'>
+                                        <i class="bi bi-building"></i> View Institution Posts
+                                    </button>
+                                }
+                                @if (activeTab != "Application")
+                                {
+                                    <button class="btn btn-outline-info btn-sm" @onclick='() => SetActiveTab("Application")'>
+                                        <i class="bi bi-file-earmark-text"></i> View Applications
+                                    </button>
+                                }
+                                @if (activeTab != "Grants")
+                                {
+                                    <button class="btn btn-outline-success btn-sm" @onclick='() => SetActiveTab("Grants")'>
+                                        <i class="bi bi-award"></i> View Grants
+                                    </button>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private List<Announcement>? allAnnouncements;
+    private List<Announcement>? filteredAnnouncements;
+    private bool isLoading = true;
+    private string searchTerm = "";
+    private string selectedCategory = "";
+    private string activeTab = "Institution"; // Default to Institution tab
+    
+    // Pagination
+    private int currentPage = 1;
+    private int pageSize = 10;
+    private int totalAnnouncements = 0;
+    private int totalPages => (int)Math.Ceiling((double)totalAnnouncements / pageSize);
+    
+    // Statistics
+    private int institutionCount = 0;
+    private int benefactorCount = 0;
+    private int pinnedCount = 0;
+
+    // Mock data for student's scholarships (in a real app, this would come from the database)
+    private List<string> studentScholarshipApplications = new() { "Tech Excellence Scholarship", "STEM Leadership Grant" };
+    private List<string> studentCurrentGrants = new() { "Academic Merit Scholarship", "Community Service Award" };
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAnnouncements();
+    }
+
+    private async Task LoadAnnouncements()
+    {
+        isLoading = true;
+        try
+        {
+            allAnnouncements = await AnnouncementService.GetActiveAnnouncementsAsync();
+            UpdateStatistics();
+            ApplyFilters();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading announcements: {ex.Message}");
+            allAnnouncements = new List<Announcement>();
+            filteredAnnouncements = new List<Announcement>();
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private void UpdateStatistics()
+    {
+        if (allAnnouncements != null)
+        {
+            var tabFiltered = GetAnnouncementsForTab(activeTab);
+            totalAnnouncements = tabFiltered.Count;
+            institutionCount = tabFiltered.Count(a => a.AuthorType == UserRole.Institution);
+            benefactorCount = tabFiltered.Count(a => a.AuthorType == UserRole.Benefactor);
+            pinnedCount = tabFiltered.Count(a => a.IsPinned);
+        }
+    }
+
+    private List<Announcement> GetAnnouncementsForTab(string tab)
+    {
+        if (allAnnouncements == null) return new List<Announcement>();
+
+        return tab switch
+        {
+            "Institution" => allAnnouncements.Where(a => a.AuthorType == UserRole.Institution && IsGeneralInstitutionAnnouncement(a)).ToList(),
+            "Application" => allAnnouncements.Where(a => IsApplicationRelated(a)).ToList(),
+            "Grants" => allAnnouncements.Where(a => IsGrantRelated(a)).ToList(),
+            _ => allAnnouncements.ToList()
+        };
+    }
+
+    private bool IsGeneralInstitutionAnnouncement(Announcement announcement)
+    {
+        // General announcements from institutions (not specific to student's applications/grants)
+        return !IsApplicationRelated(announcement) && !IsGrantRelated(announcement);
+    }
+
+    private bool IsApplicationRelated(Announcement announcement)
+    {
+        // Check if announcement is related to scholarships the student has applied for
+        // In a real app, you'd check against the student's application records
+        return studentScholarshipApplications.Any(scholarship => 
+            announcement.Title.Contains(scholarship, StringComparison.OrdinalIgnoreCase) ||
+            announcement.Content.Contains(scholarship, StringComparison.OrdinalIgnoreCase) ||
+            announcement.Category == "Applications");
+    }
+
+    private bool IsGrantRelated(Announcement announcement)
+    {
+        // Check if announcement is related to scholarships the student currently has
+        // In a real app, you'd check against the student's current grants/scholarships
+        return studentCurrentGrants.Any(grant => 
+            announcement.Title.Contains(grant, StringComparison.OrdinalIgnoreCase) ||
+            announcement.Content.Contains(grant, StringComparison.OrdinalIgnoreCase)) ||
+            announcement.Category == "Funding";
+    }
+
+    private void ApplyFilters()
+    {
+        var tabAnnouncements = GetAnnouncementsForTab(activeTab);
+        var filtered = tabAnnouncements.AsEnumerable();
+
+        // Apply search filter
+        if (!string.IsNullOrEmpty(searchTerm))
+        {
+            filtered = filtered.Where(a => 
+                a.Title.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
+                a.Content.Contains(searchTerm, StringComparison.OrdinalIgnoreCase));
+        }
+
+        // Apply category filter
+        if (!string.IsNullOrEmpty(selectedCategory))
+        {
+            filtered = filtered.Where(a => a.Category == selectedCategory);
+        }
+
+        // Apply pagination
+        var skip = (currentPage - 1) * pageSize;
+        filteredAnnouncements = filtered.Skip(skip).Take(pageSize).ToList();
+        
+        // Update total count for pagination
+        var filteredCount = filtered.Count();
+        totalAnnouncements = filteredCount;
+        
+        UpdateStatistics();
+    }
+
+    private async Task OnSearchChanged(ChangeEventArgs e)
+    {
+        searchTerm = e.Value?.ToString() ?? "";
+        currentPage = 1;
+        ApplyFilters();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private void SetActiveTab(string tab)
+    {
+        activeTab = tab;
+        currentPage = 1;
+        ApplyFilters();
+    }
+
+    private void ChangePage(int page)
+    {
+        if (page >= 1 && page <= totalPages)
+        {
+            currentPage = page;
+            ApplyFilters();
+        }
+    }
+
+    private void ClearFilters()
+    {
+        searchTerm = "";
+        selectedCategory = "";
+        currentPage = 1;
+        ApplyFilters();
+    }
+
+    private async Task RefreshAnnouncements()
+    {
+        await LoadAnnouncements();
+    }
+
+    private string GetAuthorBadgeClass(UserRole authorType)
+    {
+        return authorType switch
+        {
+            UserRole.Institution => "bg-success",
+            UserRole.Benefactor => "bg-info",
+            _ => "bg-secondary"
+        };
+    }
+
+    private string GetAuthorIcon(UserRole authorType)
+    {
+        return authorType switch
+        {
+            UserRole.Institution => "bi bi-building",
+            UserRole.Benefactor => "bi bi-people",
+            _ => "bi bi-person-circle"
+        };
+    }
+
+    private string GetAnnouncementSource(Announcement announcement)
+    {
+        if (activeTab == "Application")
+        {
+            var matchingApp = studentScholarshipApplications.FirstOrDefault(app => 
+                announcement.Title.Contains(app, StringComparison.OrdinalIgnoreCase) ||
+                announcement.Content.Contains(app, StringComparison.OrdinalIgnoreCase));
+            return matchingApp ?? "Application Related";
+        }
+        else if (activeTab == "Grants")
+        {
+            var matchingGrant = studentCurrentGrants.FirstOrDefault(grant => 
+                announcement.Title.Contains(grant, StringComparison.OrdinalIgnoreCase) ||
+                announcement.Content.Contains(grant, StringComparison.OrdinalIgnoreCase));
+            return matchingGrant ?? "Grant Related";
+        }
+        return announcement.AuthorName ?? "Institution";
+    }
+
+    private string GetTabDescription()
+    {
+        return activeTab switch
+        {
+            "Institution" => "General announcements from educational institutions",
+            "Application" => "Updates related to your scholarship applications",
+            "Grants" => "Announcements about your current scholarships and grants",
+            _ => "All announcements"
+        };
+    }
+
+    private string GetTabInfo()
+    {
+        return activeTab switch
+        {
+            "Institution" => "These are general announcements from educational institutions that may be relevant to all students.",
+            "Application" => "These announcements are specifically related to scholarships you have applied for. Keep an eye on application deadlines and updates.",
+            "Grants" => "These announcements are related to scholarships and grants you currently have. Stay informed about requirements and opportunities.",
+            _ => ""
+        };
+    }
+
+    private string GetEmptyStateIcon()
+    {
+        return activeTab switch
+        {
+            "Institution" => "bi bi-building",
+            "Application" => "bi bi-file-earmark-text",
+            "Grants" => "bi bi-award",
+            _ => "bi bi-megaphone"
+        };
+    }
+
+    private string GetEmptyStateTitle()
+    {
+        return activeTab switch
+        {
+            "Institution" => "No Institution Announcements",
+            "Application" => "No Application Updates",
+            "Grants" => "No Grant Announcements",
+            _ => "No Announcements Found"
+        };
+    }
+
+    private string GetEmptyStateMessage()
+    {
+        return activeTab switch
+        {
+            "Institution" => "There are no general announcements from institutions at the moment.",
+            "Application" => "No updates available for your scholarship applications.",
+            "Grants" => "No announcements related to your current grants and scholarships.",
+            _ => "No announcements match your current filters."
+        };
+    }
+
+    private int GetTabCount()
+    {
+        if (allAnnouncements == null) return 0;
+        return GetAnnouncementsForTab(activeTab).Count;
+    }
+}

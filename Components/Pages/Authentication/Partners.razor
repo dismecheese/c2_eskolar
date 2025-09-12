@@ -1,0 +1,56 @@
+@page "/partners"
+@inject PartnerService PartnerService
+
+<PageTitle>Partners</PageTitle>
+
+<div class="partners-page">
+    <h1 class="partners-title">Meet our Partners</h1>
+    <p class="partners-subtitle">
+        Here are the organizations and sponsors who support our mission to connect students with academic opportunities.
+    </p>
+    
+    @if (partners != null && partners.Any())
+    {
+        <div class="partners-grid">
+            @foreach (var partner in partners)
+            {
+                <div class="partner-card">
+                    <div class="partner-logo">
+                        @if (!string.IsNullOrEmpty(partner.LogoPath) && File.Exists(Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", partner.LogoPath.TrimStart('/'))))
+                        {
+                            <img src="@partner.LogoPath" alt="@partner.OrganizationName Logo" style="width: 60px; height: 60px; object-fit: contain;" />
+                        }
+                        else
+                        {
+                            <!-- Fallback SVG if logo doesn't exist -->
+                            <svg width="60" height="60" viewBox="0 0 60 60">
+                                <rect width="60" height="60" fill="#E0E0E0"/>
+                                <text x="30" y="35" font-family="Arial" font-size="8" text-anchor="middle" fill="#666">LOGO</text>
+                            </svg>
+                        }
+                    </div>
+                    <div class="partner-name">@partner.OrganizationName</div>
+                </div>
+            }
+        </div>
+    }
+    else
+    {
+        <div class="text-center p-4">
+            <p>Loading partners...</p>
+        </div>
+    }
+    
+    <div class="partners-footer">
+        Want to be our partner? <b><a href="#" data-bs-toggle="modal" data-bs-target="#contactModal" style="color: inherit; text-decoration: none;">Contact us to collaborate.</a></b>
+    </div>
+</div>
+
+@code {
+    private List<Partner> partners = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        partners = await PartnerService.GetPartnersAsync();
+    }
+}

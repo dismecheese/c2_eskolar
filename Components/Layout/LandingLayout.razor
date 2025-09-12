@@ -1,0 +1,319 @@
+@inherits LayoutComponentBase
+@inject NavigationManager Navigation
+
+<div class="landing-page">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <header class="landing-header">
+        <nav class="navbar navbar-expand-lg navbar-dark navbar-custom">
+            <div class="container-fluid" style="max-height: fit-content;">
+                <a class="eskolar-logo" href="#"></a>
+
+                <!-- Toggle button for mobile -->
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+                        aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+
+                <!-- Collapsible nav links -->
+                <div class="collapse navbar-collapse" id="navbarNav">
+                    <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
+                        <li class="nav-item me-3">
+                            <a class="nav-link nav-link-custom nav-link-home" href="/#home">Home</a>
+                        </li>
+                        <li class="nav-item me-3">
+                            <a class="nav-link nav-link-custom" href="/#about">About</a>
+                        </li>
+                        <li class="nav-item me-3">
+                            <a class="nav-link nav-link-custom" href="/partners">Partners</a>
+                        </li>
+                        <li class="nav-item me-3">
+                            <a class="nav-link nav-link-custom" href="/faqs">FAQs</a>
+                        </li>
+                        <li class="nav-item me-3">
+                            <a class="nav-link nav-link-custom" href="#" data-bs-toggle="modal" data-bs-target="#contactModal">Contact Us</a>
+                        </li>
+                        <li class="nav-item me-3">
+                            <NavLink type="button" href="/signup" class="btn btn-primary nav-button ms-2" @onclick="GoToSignUp">Sign Up</NavLink>
+                        </li>
+                        <li class="nav-item me-3">
+                            <NavLink type="button" href="/login" class="btn btn-primary nav-button ms-2" @onclick="GoToLogin">Login</NavLink>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <main class="landing-main">
+        @Body
+    </main>
+
+    <footer class="landing-footer">
+    <div class="footer-container-custom">
+        <div class="footer-main-row">
+            <div class="footer-follow">
+                <strong>Follow Us</strong>
+                <div class="footer-social-icons">
+                    <a href="#" aria-label="Facebook"><i class="fab fa-facebook-f"></i></a>
+                    <a href="#" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
+                    <a href="#" aria-label="Telegram"><i class="fab fa-telegram-plane"></i></a>
+                    <a href="#" aria-label="LinkedIn"><i class="fab fa-linkedin-in"></i></a>
+                </div>
+            </div>
+            <div class="footer-divider"></div>
+            <div class="footer-contact">
+                <strong>Contact Us</strong>
+                <div class="footer-contact-email">
+                    <i class="far fa-envelope"></i>
+                    <span><a href="#" data-bs-toggle="modal" data-bs-target="#contactModal" style="color: inherit; text-decoration: none;">eskolarph@gmail.com</a></span>
+                </div>
+            </div>
+        </div>
+        <div class="footer-bottom-row">
+            <div class="footer-links">
+                <a href="#">Privacy Policy</a>
+                <a href="#" data-bs-toggle="modal" data-bs-target="#termsModal" role="button">
+                Terms &amp; Conditions
+                </a>
+                <a href="#">Site Map</a>
+            </div>
+        </div>
+        <div class="footer-copyright">
+                &copy; 2025 All Rights Reserved
+        </div>
+    </div>
+    </footer>
+</div>
+
+<!-- Modal -->
+<div class="modal fade" id="termsModal" tabindex="-1" aria-labelledby="termsModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="termsModalLabel">Terms and Conditions</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <!-- Terms and Conditions content for eSkolar -->
+        <p>
+            Welcome to eSkolar! By accessing or using our platform, you agree to comply with and be bound by the following terms and conditions. Please read them carefully.
+        </p>
+        <ul>
+            <li><strong>Eligibility:</strong> eSkolar is available to students, educational institutions, benefactors, and parents/guardians. You must provide accurate and complete information during registration.</li>
+            <li><strong>Account Security:</strong> You are responsible for maintaining the confidentiality of your account credentials. Do not share your password with others.</li>
+            <li><strong>Acceptable Use:</strong> Use eSkolar only for lawful purposes. Do not misuse the platform, attempt unauthorized access, or disrupt service for others.</li>
+            <li><strong>Privacy:</strong> Your data is protected under the Data Privacy Act of 2012 (RA 10173). We use encryption and security best practices to safeguard your information.</li>
+            <li><strong>Content:</strong> You are responsible for any content you submit. Do not upload false, misleading, or inappropriate material.</li>
+            <li><strong>Scholarship Applications:</strong> Application requirements and selection are determined by benefactors and institutions. eSkolar is not responsible for the outcome of applications.</li>
+            <li><strong>Changes to Terms:</strong> eSkolar may update these terms at any time. Continued use of the platform means you accept any changes.</li>
+            <li><strong>Termination:</strong> We reserve the right to suspend or terminate accounts that violate these terms or engage in harmful behavior.</li>
+            <li><strong>Support:</strong> For questions or support, contact us at <b>eskolarph@gmail.com</b>.</li>
+        </ul>
+        <p>
+            By using eSkolar, you acknowledge that you have read, understood, and agree to these terms and conditions.
+        </p>
+        <div class="form-check mt-3">
+            <input class="form-check-input" type="checkbox" id="acceptTerms" @bind="acceptedTerms" />
+            <label class="form-check-label" for="acceptTerms">
+                I have read and accept the terms and conditions.
+            </label>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-primary" data-bs-dismiss="modal">I Understand</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Contact Modal -->
+<div class="modal fade" id="contactModal" tabindex="-1" aria-labelledby="contactModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="contactModalLabel">Contact Us</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <p class="mb-4">We'd love to hear from you! Fill out the form below and we'll get back to you as soon as possible.</p>
+        
+        <form id="contactForm">
+          <div class="row mb-3">
+            <div class="col-md-6">
+              <label for="contactName" class="form-label">Name *</label>
+              <input type="text" class="form-control" id="contactName" required>
+            </div>
+            <div class="col-md-6">
+              <label for="contactEmail" class="form-label">Email Address *</label>
+              <input type="email" class="form-control" id="contactEmail" required>
+            </div>
+          </div>
+          
+          <div class="mb-3">
+            <label for="contactSubject" class="form-label">Subject *</label>
+            <select class="form-select" id="contactSubject" required>
+              <option value="">Select a topic...</option>
+              <option value="General Inquiry">General Inquiry</option>
+              <option value="Technical Support">Technical Support</option>
+              <option value="Scholarship Questions">Scholarship Questions</option>
+              <option value="Partnership Opportunities">Partnership Opportunities</option>
+              <option value="Feedback">Feedback</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+          
+          <div class="mb-3">
+            <label for="contactMessage" class="form-label">Message *</label>
+            <textarea class="form-control" id="contactMessage" rows="5" placeholder="Please describe your inquiry in detail..." required></textarea>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-primary" onclick="sendEmail()">Send Message</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function sendEmail() {
+    const name = document.getElementById('contactName').value;
+    const email = document.getElementById('contactEmail').value;
+    const subject = document.getElementById('contactSubject').value;
+    const message = document.getElementById('contactMessage').value;
+    
+    if (!name || !email || !subject || !message) {
+        alert('Please fill in all required fields.');
+        return;
+    }
+    
+    const emailBody = `Name: ${name}%0D%0AEmail: ${email}%0D%0A%0D%0AMessage:%0D%0A${encodeURIComponent(message)}`;
+    const mailtoLink = `mailto:eskolarph@gmail.com?subject=${encodeURIComponent('[eSkolar Contact] ' + subject)}&body=${emailBody}`;
+    
+    // Use Bootstrap's modal hide method
+    const modalElement = document.getElementById('contactModal');
+    try {
+        if (typeof bootstrap !== 'undefined') {
+            const modal = bootstrap.Modal.getInstance(modalElement);
+            if (modal) {
+                modal.hide();
+            }
+        } else if (typeof $ !== 'undefined') {
+            $('#contactModal').modal('hide');
+        }
+    } catch (e) {
+        console.log('Bootstrap modal hide failed:', e);
+    }
+    
+    // Reset form
+    document.getElementById('contactForm').reset();
+    
+    // Open email after modal closes
+    setTimeout(() => {
+        window.location.href = mailtoLink;
+    }, 300);
+}
+
+function forceCloseModal() {
+    // Reset form
+    document.getElementById('contactForm').reset();
+    
+    // Force remove all modal elements and classes
+    const modalElement = document.getElementById('contactModal');
+    
+    // Hide modal completely
+    modalElement.style.display = 'none !important';
+    modalElement.classList.remove('show', 'fade');
+    modalElement.setAttribute('aria-hidden', 'true');
+    modalElement.removeAttribute('aria-modal');
+    modalElement.removeAttribute('role');
+    
+    // Remove ALL possible backdrop elements
+    document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
+    document.querySelectorAll('[class*="modal-backdrop"]').forEach(el => el.remove());
+    
+    // Clean up body completely
+    document.body.classList.remove('modal-open');
+    document.body.style.overflow = 'auto';
+    document.body.style.paddingRight = '0px';
+    document.body.style.marginRight = '';
+    document.body.removeAttribute('style');
+    
+    // Remove any lingering modal-related elements
+    document.querySelectorAll('[style*="backdrop"]').forEach(el => el.remove());
+    
+    // Force page to be interactive again
+    document.documentElement.style.overflow = 'auto';
+    
+    console.log('Modal force closed');
+}
+
+// Ensure modal can be opened and closed properly
+document.addEventListener('DOMContentLoaded', function() {
+    const contactModal = document.getElementById('contactModal');
+    
+    // Handle modal close events
+    contactModal.addEventListener('hidden.bs.modal', function() {
+        forceCleanup();
+    });
+    
+    // Add click handlers for contact links
+    const contactLinks = document.querySelectorAll('[data-bs-target="#contactModal"]');
+    contactLinks.forEach(link => {
+        link.addEventListener('click', function(e) {
+            e.preventDefault();
+            // First ensure any previous modal state is cleaned
+            forceCleanup();
+            
+            // Then open modal
+            setTimeout(() => {
+                try {
+                    if (typeof bootstrap !== 'undefined') {
+                        const modal = new bootstrap.Modal(contactModal);
+                        modal.show();
+                    } else if (typeof $ !== 'undefined') {
+                        $('#contactModal').modal('show');
+                    }
+                } catch (e) {
+                    console.log('Modal open error:', e);
+                }
+            }, 50);
+        });
+    });
+    
+    // Also handle the Cancel button
+    const cancelBtn = contactModal.querySelector('[data-bs-dismiss="modal"]');
+    if (cancelBtn) {
+        cancelBtn.addEventListener('click', function() {
+            forceCleanup();
+        });
+    }
+});
+
+function forceCleanup() {
+    // Remove ALL modal-related classes and elements
+    document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
+    document.querySelectorAll('[class*="backdrop"]').forEach(el => el.remove());
+    
+    // Clean body
+    document.body.classList.remove('modal-open');
+    document.body.style.overflow = '';
+    document.body.style.paddingRight = '';
+    document.body.removeAttribute('style');
+    
+    // Clean html element too
+    document.documentElement.style.overflow = '';
+    
+    console.log('Force cleanup completed');
+}
+</script>
+
+@code {
+    private bool acceptedTerms = false;
+}
+
+@code {
+            void GoToSignUp() => Navigation.NavigateTo("/signup");
+            void GoToLogin() => Navigation.NavigateTo("/login");
+}

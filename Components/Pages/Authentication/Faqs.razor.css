@@ -1,0 +1,131 @@
+                                        /* FAQs Section */
+/* FAQ Accordion Custom Styles for BlazorBootstrap */
+.faq-container {
+    display: flex;
+    align-items: flex-start;
+    justify-content: flex-start;
+    max-width: 1400px;
+    margin: 60px auto 0 auto;
+    padding: 0 32px;
+    gap: 64px;
+}
+
+.faq-left {
+    flex: 1 1 40%;
+    min-width: 320px;
+    max-width: 480px;
+}
+
+.faq-title {
+    font-size: 3rem;
+    font-weight: 800;
+    margin-bottom: 32px;
+    line-height: 1.1;
+}
+
+.faq-desc {
+    color: #555;
+    font-size: 1.1rem;
+    margin-bottom: 32px;
+}
+
+.faq-contact-block {
+    margin-top: 32px;
+}
+
+.faq-contact-label {
+    color: #888;
+    font-size: 1rem;
+    margin-bottom: 4px;
+}
+
+.faq-contact-desc {
+    font-size: 1.25rem;
+    font-weight: 500;
+    margin-bottom: 16px;
+}
+
+.faq-contact-img {
+    width: 90px;
+    height: 90px;
+    margin-top: 8px;
+    border-radius: 18px;
+    box-shadow: 0 2px 12px 0 rgba(0,0,0,0.04);
+}
+
+/* FAQ Accordion Styles */
+.faq-right {
+    flex: 1 1 60%;
+    min-width: 340px;
+    max-width: 700px;
+}
+
+.faq-accordion .accordion-item {
+    border: none;
+    border-bottom: 1px solid #e0e0e0;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    margin-bottom: 0;
+}
+
+.faq-accordion .accordion-item:last-child {
+    border-bottom: none;
+}
+
+.faq-accordion .accordion-header {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+}
+
+.faq-accordion .accordion-button {
+    background: transparent !important;
+    box-shadow: none !important;
+    border: none !important;
+    padding: 28px 0 28px 0 !important;
+    font-size: 1.18rem;
+    font-weight: 700;
+    color: #181818;
+    text-align: left;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    transition: background 0.2s;
+    gap: 12px;
+}
+
+.faq-accordion .accordion-button:not(.collapsed) {
+    background: transparent !important;
+    color: #181818;
+}
+
+.faq-accordion .accordion-button:focus {
+    box-shadow: none !important;
+}
+
+.faq-accordion .accordion-button::after {
+    display: none; /* Hide default Bootstrap chevron */
+}
+
+.faq-accordion .faq-v-icon {
+    margin-left: 18px;
+    display: flex;
+    align-items: center;
+    font-size: 2rem;
+    transition: transform 0.3s cubic-bezier(0.4,0,0.2,1);
+}
+
+.faq-accordion .accordion-button:not(.collapsed) .faq-v-icon {
+    transform: rotate(180deg);
+}
+
+.faq-accordion .accordion-body {
+    background: transparent !important;
+    padding: 0 0 24px 0 !important;
+    font-size: 1.05rem;
+    color: #222;
+    line-height: 1.6;
+    margin: 0;
+}

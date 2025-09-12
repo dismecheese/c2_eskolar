@@ -1,0 +1,105 @@
+@page "/login"
+@rendermode InteractiveServer
+@using c2_eskolar.Models.ViewModels
+
+<PageTitle>Login</PageTitle>
+
+<div class="login-container">
+    <div class="login-card">
+        <div class="login-left">
+            <h2>Welcome Back!</h2>
+            <img src="/images/eSkolar-White.svg" alt="eSkolar Logo" class="login-logo" />
+        </div>
+        <div class="login-right">
+            <h3>Sign In to Your Account</h3>
+            
+            @if (!string.IsNullOrEmpty(errorMessage))
+            {
+                <div style="color: red; margin-bottom: 10px; padding: 8px; background: #ffebee; border-radius: 4px;">
+                    @errorMessage
+                </div>
+            }
+
+            @if (!string.IsNullOrEmpty(successMessage))
+            {
+                <div style="color: green; margin-bottom: 10px; padding: 8px; background: #e8f5e8; border-radius: 4px;">
+                    @successMessage
+                </div>
+            }
+
+            <form method="post" action="/api/auth/login">
+                <input class="login-input" type="email" name="email" placeholder="Email Address" 
+                       value="@loginModel.Email" required />
+                
+                <div class="password-wrapper">
+                    <input class="login-input"
+                           type="@(showPassword ? "text" : "password")"
+                           name="password"
+                           placeholder="Password" 
+                           value="@loginModel.Password" required />
+                    <button type="button" class="password-toggle" @onclick="TogglePassword">
+                        <img src="@(showPassword ? "/images/eye.svg" : "/images/eyeX.svg")" 
+                             alt="@(showPassword ? "Hide password" : "Show password")" />
+                    </button>
+                </div>
+                
+                <div class="forgot-password">
+                    <a href="/forgot-password" class="forgot-link">Forgot Password?</a>
+                </div>
+                
+                <label style="display: flex; align-items: center; margin-bottom: 1rem;">
+                    <input type="checkbox" name="remember" value="true" @bind="loginModel.RememberMe" style="margin-right: 8px;" />
+                    <span>Remember me</span>
+                </label>
+                
+                <button type="submit" class="btn btn-primary login-btn" disabled="@isLoading">
+                    @if (isLoading)
+                    {
+                        <span>Signing In...</span>
+                    }
+                    else
+                    {
+                        <span>Sign In</span>
+                    }
+                </button>
+                
+            </form>
+            
+            <div class="signup-link">
+                <p>Don't have an account? <a href="/signup">Sign up</a></p>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [SupplyParameterFromQuery] public string Error { get; set; } = string.Empty;
+    
+    private LoginViewModel loginModel { get; set; } = new();
+    private string errorMessage = string.Empty;
+    private string successMessage = string.Empty;
+    private bool isLoading = false;
+    private bool showPassword = false;
+
+    protected override void OnInitialized()
+    {
+        // Handle error messages from query string
+        if (!string.IsNullOrEmpty(Error))
+        {
+            errorMessage = Error switch
+            {
+                "invalid" => "Invalid login attempt.",
+                "failed" => "Login failed. Please try again.",
+                "exception" => "An error occurred during login.",
+                _ => Error // Use the actual error message from the controller
+            };
+        }
+    }
+
+    private void TogglePassword()
+    {
+        showPassword = !showPassword;
+    }
+}
+
+}
