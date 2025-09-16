@@ -1,0 +1,27 @@
+version: '3.8'
+
+services:
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: eskolar_sql
+    environment:
+      SA_PASSWORD: "eSkolar2025!"
+      ACCEPT_EULA: "Y"
+    ports:
+      - "14333:1433"
+    volumes:
+      - sql_data:/var/opt/mssql
+
+  eskolar-app:
+    build: .
+    container_name: eskolar_app
+    ports:
+      - "5101:80"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=Server=sqlserver,1433;Database=eSkolarDb;User Id=sa;Password=eSkolar2025!;TrustServerCertificate=true
+    depends_on:
+      - sqlserver
+
+volumes:
+  sql_data:
