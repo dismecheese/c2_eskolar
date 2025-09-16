@@ -46,7 +46,7 @@ namespace c2_eskolar.Controllers
                     string redirectUrl = userRole switch
                     {
                         "Student" => "/dashboard/student",
-                        "Benefactor" => "/dashboard/benefactors",
+                        "Benefactor" => "/dashboard/benefactor",
                         "Institution" => "/dashboard/institution",
                         _ => "/dashboard/student"
                     };

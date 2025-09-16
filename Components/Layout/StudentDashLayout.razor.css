@@ -35,6 +35,20 @@
 }
 /* Logo */
 
+.eskolar-brand {
+    letter-spacing: 1px;
+    font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+    color: #000000;
+    font-weight: bold;
+    font-size: 1.5rem;
+    text-align: center;
+    margin-top: 8px;
+}
+
+.sidebar-brand-container {
+    margin-bottom: 34px; /* Increase this value for more space */
+}
+
 /* Help Box */
 .help-box-bottom {
     width: 100%;

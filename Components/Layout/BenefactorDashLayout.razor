@@ -1,6 +1,5 @@
 @inherits LayoutComponentBase
 @implements IDisposable
-
 @inject NavigationManager Navigation
 @inject IJSRuntime JSRuntime
 @inject AuthenticationStateProvider AuthenticationStateProvider
@@ -8,28 +7,27 @@
 @using Microsoft.AspNetCore.Components.Web
 @using Microsoft.AspNetCore.Components.Authorization
 @using Microsoft.AspNetCore.Identity
+@using c2_eskolar.Components.UI
 @rendermode InteractiveServer
 
 @code {
-    private DateTime currentMonth = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1);
+    
+    // Stores the display name of the currently signed in user
     private string currentUserName = "Loading...";
+    
+    // Stores the email of the currently signed in user
     private string currentUserEmail = "";
 
-    private string MonthYear => currentMonth.ToString("MMMM yyyy");
+    private DateTime currentMonth = new(DateTime.Now.Year, DateTime.Now.Month, 1);
 
-    private int DaysInMonth => DateTime.DaysInMonth(currentMonth.Year, currentMonth.Month);
-
-    private int FirstDayOfWeek => (int)new DateTime(currentMonth.Year, currentMonth.Month, 1).DayOfWeek;
-
-    private int PrevMonthDays
-        => DateTime.DaysInMonth(currentMonth.AddMonths(-1).Year, currentMonth.AddMonths(-1).Month);
-
+    // Lifecycle method called when the component is initialized
     protected override async Task OnInitializedAsync()
     {
         Navigation.LocationChanged += OnLocationChanged;
         await LoadCurrentUser();
     }
 
+    // Loads the current user's information
     private async Task LoadCurrentUser()
     {
         try
@@ -60,12 +58,14 @@
             }
             else
             {
+                // Set default values for unauthenticated users
                 currentUserName = "Guest User";
                 currentUserEmail = "";
             }
         }
         catch (Exception ex)
         {
+            // Log any errors during user loading
             Console.WriteLine($"Error loading user: {ex.Message}");
             currentUserName = "User";
             currentUserEmail = "";
@@ -74,38 +74,27 @@
         StateHasChanged();
     }
 
+    // Event handler: invokes StateHasChanged to re-render the component whenever the URL changes
+    // Ensures that the sidebar link highlighting is updated
     private void OnLocationChanged(object? sender, Microsoft.AspNetCore.Components.Routing.LocationChangedEventArgs e)
     {
         InvokeAsync(StateHasChanged);
     }
 
+    // Lifecycle method: called when the component is removed from the UI
+    // Disposes of the component by unsubscribing from the Navigation.LocationChanged event to prevent memory leaks
     public void Dispose()
     {
         Navigation.LocationChanged -= OnLocationChanged;
     }
 
-    private void PrevMonth()
-    {
-        currentMonth = currentMonth.AddMonths(-1);
-    }
-
-    private void NextMonth()
-    {
-        currentMonth = currentMonth.AddMonths(1);
-    }
-
-    private bool IsToday(int day)
-    {
-        var today = DateTime.Today;
-        return today.Year == currentMonth.Year && today.Month == currentMonth.Month && today.Day == day;
-    }
-
+     // Determines the CSS class for a sidebar navigation link based on the current URL.
     private string GetSidebarLinkClass(string href)
     {
         var currentPath = Navigation.ToBaseRelativePath(Navigation.Uri).Split('?')[0].TrimEnd('/');
         var linkPath = href.TrimStart('/').TrimEnd('/');
         
-        // Debug logging
+        // Debug logging for development purposes
         Console.WriteLine($"[DEBUG] Current path: '{currentPath}', Link path: '{linkPath}'");
         
         // Exact match
@@ -120,7 +109,7 @@
 
     private void NavigateToBenefactorProfile()
     {
-        Navigation.NavigateTo("/dashboard/benefactors/profile");
+        Navigation.NavigateTo("/dashboard/benefactor/profile");
     }
 
     private void CloseSidebar()
@@ -230,48 +219,49 @@
          style="width: 260px; background: linear-gradient(180deg, #1560d4 0%, #0d387e 100%); padding: 2rem 1.5rem 1rem 1.5rem;">
         <div>
             <!-- Logo -->
-            <div class="mb-4">
+            <div class="sidebar-brand-container text-center">
                 <a class="eskolar-logo" href="/"></a>
+                <div class="eskolar-brand">eSkolar</div>
             </div>
             <!-- Navigation Links -->
             <ul class="nav flex-column gap-1">
                 <li class="nav-item">
-                    <a href="/dashboard/benefactors" class="@GetSidebarLinkClass("/dashboard/benefactor")">
+                    <a href="/dashboard/benefactor" class="@GetSidebarLinkClass("/dashboard/benefactor")">
                         <i class="fa fa-home"></i> Dashboard
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a href="/dashboard/benefactors/scholarships" class="@GetSidebarLinkClass("/dashboard/benefactor/scholarships")">
+                    <a href="/dashboard/benefactor/scholarships" class="@GetSidebarLinkClass("/dashboard/benefactor/scholarships")">
                         <i class="fa fa-graduation-cap"></i> Scholarships
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a href="/dashboard/benefactors/announcements" class="@GetSidebarLinkClass("/dashboard/benefactor/announcements")">
+                    <a href="/dashboard/benefactor/announcements" class="@GetSidebarLinkClass("/dashboard/benefactor/announcements")">
                         <i class="fa fa-bullhorn"></i> Announcements
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a href="/dashboard/benefactors/partners" class="@GetSidebarLinkClass("/dashboard/benefactor/partners")">
+                    <a href="/dashboard/benefactor/partners" class="@GetSidebarLinkClass("/dashboard/benefactor/partners")">
                         <i class="fa fa-handshake"></i> Partners
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a href="/dashboard/benefactors/bookmarks" class="@GetSidebarLinkClass("/dashboard/benefactor/bookmarks")">
+                    <a href="/dashboard/benefactor/bookmarks" class="@GetSidebarLinkClass("/dashboard/benefactor/bookmarks")">
                         <i class="fa fa-star"></i> Bookmarks
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a href="/dashboard/benefactors/about" class="@GetSidebarLinkClass("/dashboard/benefactor/about")">
+                    <a href="/dashboard/benefactor/about" class="@GetSidebarLinkClass("/dashboard/benefactor/about")">
                         <i class="fa fa-info-circle"></i> About
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a href="/dashboard/benefactors/settings" class="@GetSidebarLinkClass("/dashboard/benefactor/settings")">
+                    <a href="/dashboard/benefactor/settings" class="@GetSidebarLinkClass("/dashboard/benefactor/settings")">
                         <i class="fa fa-cog"></i> Settings
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a href="/dashboard/benefactors/faqs" class="@GetSidebarLinkClass("/dashboard/benefactor/faqs")">
+                    <a href="/dashboard/benefactor/faqs" class="@GetSidebarLinkClass("/dashboard/benefactor/faqs")">
                         <i class="fa fa-question-circle"></i> FAQs
                     </a>
                 </li>
@@ -315,63 +305,11 @@
         <div class="sidebar-profile-role">Student</div>
         <button class="sidebar-profile-btn" @onclick="NavigateToBenefactorProfile" data-bs-dismiss="offcanvas">Profile</button>
     </div>
-    <div class="sidebar-calendar">
         
     <div class="sidebar-calendar">
-        <div style="background:#fff;padding:8px 0 0 0;border-radius:8px;margin:16px 0;">
-            <div class="d-flex justify-content-between align-items-center px-2 mb-1">
-                <button class="btn btn-sm btn-light px-1 py-0" @onclick="PrevMonth" style="font-size:12px;">&#8592;</button>
-                <strong style="font-size:13px;">@MonthYear</strong>
-                <button class="btn btn-sm btn-light px-1 py-0" @onclick="NextMonth" style="font-size:12px;">&#8594;</button>
-            </div>
-            <div class="table-responsive px-2 pb-2">
-                <table class="table table-bordered text-center align-middle mb-0" style="font-size:11px;">
-                    <thead class="table-light">
-                        <tr>
-                            <th class="py-1" style="font-size:10px;">Sun</th>
-                            <th class="py-1" style="font-size:10px;">Mon</th>
-                            <th class="py-1" style="font-size:10px;">Tue</th>
-                            <th class="py-1" style="font-size:10px;">Wed</th>
-                            <th class="py-1" style="font-size:10px;">Thu</th>
-                            <th class="py-1" style="font-size:10px;">Fri</th>
-                            <th class="py-1" style="font-size:10px;">Sat</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @{
-                            int day = 1;
-                            int totalCells = ((DaysInMonth + FirstDayOfWeek) <= 35) ? 35 : 42;
-                            for (int week = 0; week < totalCells / 7; week++)
-                            {
-                                <tr>
-                                    @for (int dow = 0; dow < 7; dow++)
-                                    {
-                                        int cell = week * 7 + dow;
-                                        if (cell < FirstDayOfWeek)
-                                        {
-                                            <td class="text-muted" style="padding:2px;font-size:10px;">@((PrevMonthDays - FirstDayOfWeek + 1) + cell)</td>
-                                        }
-                                        else if (day > DaysInMonth)
-                                        {
-                                            <td class="text-muted" style="padding:2px;font-size:10px;">@((day - DaysInMonth))</td>
-                                            day++;
-                                        }
-                                        else
-                                        {
-                                            <td class="@(IsToday(day) ? "bg-primary text-white fw-bold" : "")" style="@(IsToday(day) ? "background:#1560d4;color:#fff;border-radius:50%;" : "")padding:2px;font-size:10px;">
-                                                @day
-                                            </td>
-                                            day++;
-                                        }
-                                    }
-                                </tr>
-                            }
-                        }
-                    </tbody>
-                </table>
-            </div>
-        </div>
+        <DashboardCalendar CurrentMonth="@currentMonth" CurrentMonthChanged="@(m => currentMonth = m)" />
     </div>
+
     </div>
     <div class="sidebar-notifications">
         <div class="sidebar-notifications-header">
@@ -392,7 +330,6 @@
     <main class="main-content" style="flex:1; min-width:0; background: #f5f6fa;" @onclick="@(() => JSRuntime.InvokeVoidAsync("closeSidebar"))">
         @Body
     </main>
-</div>
 
 @if (ShowChatbot)
 {

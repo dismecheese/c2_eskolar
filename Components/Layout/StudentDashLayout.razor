@@ -8,21 +8,12 @@
 @using Microsoft.AspNetCore.Components.Authorization
 @using Microsoft.AspNetCore.Identity
 @rendermode @(RenderMode.InteractiveServer)
+@using c2_eskolar.Components.UI
 
 @code {
     private DateTime currentMonth = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1);
     private string currentUserName = "Student"; // Default fallback
     private string currentUserEmail = "";
-
-    private string MonthYear => currentMonth.ToString("MMMM yyyy");
-
-    private int DaysInMonth => DateTime.DaysInMonth(currentMonth.Year, currentMonth.Month);
-
-    private int FirstDayOfWeek => (int)new DateTime(currentMonth.Year, currentMonth.Month, 1).DayOfWeek;
-
-    private int PrevMonthDays
-        => DateTime.DaysInMonth(currentMonth.AddMonths(-1).Year, currentMonth.AddMonths(-1).Month);
-
     protected override async Task OnInitializedAsync()
     {
         Navigation.LocationChanged += OnLocationChanged;
@@ -76,21 +67,6 @@
         Navigation.LocationChanged -= OnLocationChanged;
     }
 
-    private void PrevMonth()
-    {
-        currentMonth = currentMonth.AddMonths(-1);
-    }
-
-    private void NextMonth()
-    {
-        currentMonth = currentMonth.AddMonths(1);
-    }
-
-    private bool IsToday(int day)
-    {
-        var today = DateTime.Today;
-        return today.Year == currentMonth.Year && today.Month == currentMonth.Month && today.Day == day;
-    }
 
     private string GetSidebarLinkClass(string href)
     {
@@ -210,8 +186,9 @@
          style="width: 260px; background: linear-gradient(180deg, #1560d4 0%, #0d387e 100%); padding: 2rem 1.5rem 1rem 1.5rem;">
         <div>
             <!-- Logo -->
-            <div class="mb-4">
+            <div class="sidebar-brand-container text-center">
                 <a class="eskolar-logo" href="/"></a>
+                <div class="eskolar-brand">eSkolar</div>
             </div>
             <!-- Navigation Links -->
             <ul class="nav flex-column gap-1">
@@ -296,61 +273,7 @@
         <button class="sidebar-profile-btn" @onclick="NavigateToStudentProfile" data-bs-dismiss="offcanvas">Profile</button>
     </div>
     <div class="sidebar-calendar">
-      <div class="sidebar-calendar">
-        <div style="background:#fff;padding:8px 0 0 0;border-radius:8px;margin:16px 0;">
-            <div class="d-flex justify-content-between align-items-center px-2 mb-1">
-                <button class="btn btn-sm btn-light px-1 py-0" @onclick="PrevMonth" style="font-size:12px;">&#8592;</button>
-                <strong style="font-size:13px;">@MonthYear</strong>
-                <button class="btn btn-sm btn-light px-1 py-0" @onclick="NextMonth" style="font-size:12px;">&#8594;</button>
-            </div>
-            <div class="table-responsive px-2 pb-2">
-                <table class="table table-bordered text-center align-middle mb-0" style="font-size:11px;">
-                    <thead class="table-light">
-                        <tr>
-                            <th class="py-1" style="font-size:10px;">Sun</th>
-                            <th class="py-1" style="font-size:10px;">Mon</th>
-                            <th class="py-1" style="font-size:10px;">Tue</th>
-                            <th class="py-1" style="font-size:10px;">Wed</th>
-                            <th class="py-1" style="font-size:10px;">Thu</th>
-                            <th class="py-1" style="font-size:10px;">Fri</th>
-                            <th class="py-1" style="font-size:10px;">Sat</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @{
-                            int day = 1;
-                            int totalCells = ((DaysInMonth + FirstDayOfWeek) <= 35) ? 35 : 42;
-                            for (int week = 0; week < totalCells / 7; week++)
-                            {
-                                <tr>
-                                    @for (int dow = 0; dow < 7; dow++)
-                                    {
-                                        int cell = week * 7 + dow;
-                                        if (cell < FirstDayOfWeek)
-                                        {
-                                            <td class="text-muted" style="padding:2px;font-size:10px;">@((PrevMonthDays - FirstDayOfWeek + 1) + cell)</td>
-                                        }
-                                        else if (day > DaysInMonth)
-                                        {
-                                            <td class="text-muted" style="padding:2px;font-size:10px;">@((day - DaysInMonth))</td>
-                                            day++;
-                                        }
-                                        else
-                                        {
-                                            <td class="@(IsToday(day) ? "bg-primary text-white fw-bold" : "")" style="@(IsToday(day) ? "background:#1560d4;color:#fff;border-radius:50%;" : "")padding:2px;font-size:10px;">
-                                                @day
-                                            </td>
-                                            day++;
-                                        }
-                                    }
-                                </tr>
-                            }
-                        }
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
+        <DashboardCalendar CurrentMonth="@currentMonth" CurrentMonthChanged="@(m => currentMonth = m)" />
     </div>
     <div class="sidebar-notifications">
         <div class="sidebar-notifications-header">

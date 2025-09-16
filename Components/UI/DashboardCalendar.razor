@@ -1,0 +1,76 @@
+@code {
+    // Represents the current month being displayed in the calendar
+    [Parameter] public DateTime CurrentMonth { get; set; } = new(DateTime.Now.Year, DateTime.Now.Month, 1);
+    [Parameter] public EventCallback<DateTime> CurrentMonthChanged { get; set; }
+
+    // Sets the formatted month and year for the calendar header
+    private string MonthYear => CurrentMonth.ToString("MMMM yyyy");
+    
+    // Gets the number of days in the currently displayed month
+    private int DaysInMonth => DateTime.DaysInMonth(CurrentMonth.Year, CurrentMonth.Month);
+    
+    // Calculates the first day of the week for the current month
+    private int FirstDayOfWeek => (int)new DateTime(CurrentMonth.Year, CurrentMonth.Month, 1).DayOfWeek;
+    
+    // Gets the number of days of the previous month for proper alignment in the calendar
+    private int PrevMonthDays 
+        => DateTime.DaysInMonth(CurrentMonth.AddMonths(-1).Year, CurrentMonth.AddMonths(-1).Month);
+
+    private void PrevMonth() => CurrentMonthChanged.InvokeAsync(CurrentMonth.AddMonths(-1));
+    private void NextMonth() => CurrentMonthChanged.InvokeAsync(CurrentMonth.AddMonths(1));
+    private bool IsToday(int day) => DateTime.Today.Year == CurrentMonth.Year && DateTime.Today.Month == CurrentMonth.Month && DateTime.Today.Day == day;
+}
+
+<div style="background:#fff;padding:8px 0 0 0;border-radius:8px;margin:16px 0;">
+    <div class="d-flex justify-content-between align-items-center px-2 mb-1">
+        <button class="btn btn-sm btn-light px-1 py-0" @onclick="PrevMonth" style="font-size:12px;">&#8592;</button>
+        <strong style="font-size:13px;">@MonthYear</strong>
+        <button class="btn btn-sm btn-light px-1 py-0" @onclick="NextMonth" style="font-size:12px;">&#8594;</button>
+    </div>
+    <div class="table-responsive px-2 pb-2">
+        <table class="table table-bordered text-center align-middle mb-0" style="font-size:11px;">
+            <thead class="table-light">
+                <tr>
+                    <th class="py-1" style="font-size:10px;">Sun</th>
+                    <th class="py-1" style="font-size:10px;">Mon</th>
+                    <th class="py-1" style="font-size:10px;">Tue</th>
+                    <th class="py-1" style="font-size:10px;">Wed</th>
+                    <th class="py-1" style="font-size:10px;">Thu</th>
+                    <th class="py-1" style="font-size:10px;">Fri</th>
+                    <th class="py-1" style="font-size:10px;">Sat</th>
+                </tr>
+            </thead>
+            <tbody>
+                @{
+                    int day = 1;
+                    int totalCells = ((DaysInMonth + FirstDayOfWeek) <= 35) ? 35 : 42;
+                    for (int week = 0; week < totalCells / 7; week++)
+                    {
+                        <tr>
+                            @for (int dow = 0; dow < 7; dow++)
+                            {
+                                int cell = week * 7 + dow;
+                                if (cell < FirstDayOfWeek)
+                                {
+                                    <td class="text-muted" style="padding:2px;font-size:10px;">@((PrevMonthDays - FirstDayOfWeek + 1) + cell)</td>
+                                }
+                                else if (day > DaysInMonth)
+                                {
+                                    <td class="text-muted" style="padding:2px;font-size:10px;">@((day - DaysInMonth))</td>
+                                    day++;
+                                }
+                                else
+                                {
+                                    <td class="@(IsToday(day) ? "bg-primary text-white fw-bold" : "")" style="@(IsToday(day) ? "background:#1560d4;color:#fff;border-radius:50%;" : "")padding:2px;font-size:10px;">
+                                        @day
+                                    </td>
+                                    day++;
+                                }
+                            }
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
