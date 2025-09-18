@@ -1,39 +1,49 @@
+/* Main content area beside the sidebar */
 .main-content {
-    margin-left: 260px;
-    transition: margin-left 0.2s;
+    margin-left: 260px; /* Leaves space for the sidebar */
+    transition: margin-left 0.2s; /* Smooth slide effect when sidebar toggles */
     position: relative;
     z-index: 1;
-    background: #f5f6fa; /* Optional: ensures content background */
-    min-height: 100vh; /* Ensures content fills the viewport */
-    padding: 0 24px;   /* Optional: add horizontal padding for spacing */
+    background: #f5f6fa; 
+    min-height: 100vh; 
+    padding: 0 24px; 
 }
+
+/* Sidebar links (menu items) */
 .sidebar-link {
     color: #fff !important;
     border-radius: 6px;
     padding: 0.55rem 0.9rem;
-    transition: background 0.18s, color 0.18s;
+    transition: background 0.18s, color 0.18s; /* Smooth hover effects */
     font-size: 1.07rem;
     font-weight: 500;
 }
+
+/* Hover & active state for sidebar links */
 .sidebar-link:hover, .sidebar-link.active {
-    background: rgba(255,255,255,0.18);
+    background: rgba(255,255,255,0.18); /* Semi-transparent highlight */
     color: #ffe066 !important;
-    text-decoration: none;
+    /* text-decoration: none; */
 }
+
+/* Icons inside sidebar nav links */
 .sidebar .nav-link i {
     font-size: 1.15rem;
 }
+
+/* Sidebar container */
 .sidebar {
-    position: fixed;
+    position: fixed; /* Always stays on the left side */
     top: 0;
     left: 0;
     height: 100vh;
     min-height: 100vh;
     width: 260px;
     z-index: 1200;
-    /* background and padding as needed */
+    /* add background and padding if needed */
 }
 
+/* Brand/logo text inside sidebar */
 .eskolar-brand {
     letter-spacing: 1px;
     font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
@@ -44,10 +54,12 @@
     margin-top: 8px;
 }
 
+/* Space below brand area */
 .sidebar-brand-container {
-    margin-bottom: 32px; /* Increase this value for more space */
+    margin-bottom: 32px; 
 }
 
+/* Help box (bottom widget inside sidebar) */
 .help-box-bottom {
     width: 100%;
     background: rgba(255,255,255,0.13);
@@ -62,23 +74,30 @@
     transition: background 0.2s;
     cursor: pointer;
 }
+
+/* Hover effect for help box */
 .help-box-bottom:hover {
     background: rgba(255,255,255,0.18);
 }
+
+/* Content inside help box */
 .help-box-content {
     display: flex;
     flex-direction: column;
     align-items: center;
 }
-/* Help Box */
+
+/* Image inside help box */
 .help-box-img {
     width: 200px;
     height: 200px;
-    margin-top: -100px;    /* This moves the image upward, out of the box */
+    margin-top: -100px;  /* Moves image upwards, overlapping box */
     margin-left: -24px;
     z-index: 10;
     position: relative;
 }
+
+/* Text styles inside help box */
 .help-box-text {
     text-align: center;
 }
@@ -92,6 +111,8 @@
     font-size: 0.75rem;
     color: #fff; /* white */
 }
+
+/* Responsive styles for smaller screens */
 @media (max-width: 900px) {
     .help-box {
         width: 100vw !important;

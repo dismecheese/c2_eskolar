@@ -1,16 +1,23 @@
 @inherits LayoutComponentBase
 @implements IDisposable
+
+@* Inject necessary services for dependency injection *@
 @inject NavigationManager Navigation
 @inject IJSRuntime JSRuntime
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @inject UserManager<IdentityUser> UserManager
+
+@* Import namespaces to access Blazor and Identity components *@
 @using Microsoft.AspNetCore.Components.Web
 @using Microsoft.AspNetCore.Components.Authorization
 @using Microsoft.AspNetCore.Identity
 @using c2_eskolar.Components.UI
+
+@* Set the render mode to InteractiveServer, enabling server-side interactivity *@
 @rendermode InteractiveServer
 
 @code {
+    // --- USER INFORMATION STATE ---
     
     // Stores the display name of the currently signed in user
     private string currentUserName = "Loading...";
@@ -18,20 +25,26 @@
     // Stores the email of the currently signed in user
     private string currentUserEmail = "";
 
+    // Tracks the current month for the calendar component
     private DateTime currentMonth = new(DateTime.Now.Year, DateTime.Now.Month, 1);
 
-    // Lifecycle method called when the component is initialized
+    // --- LIFECYCLE METHODS ---
+
+    // Called when the layout initializes
     protected override async Task OnInitializedAsync()
     {
+        // Subscribe to the LocationChanged event to update UI on URL changes
         Navigation.LocationChanged += OnLocationChanged;
+        // Asynchronously load the user's information
         await LoadCurrentUser();
     }
 
-    // Loads the current user's information
+    // Loads the currently authenticated user's information
     private async Task LoadCurrentUser()
     {
         try
         {
+            // Get the authentication state asynchronously
             var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
             var user = authState.User;
 
@@ -53,14 +66,9 @@
                 }
                 else
                 {
+                    // Fallback if the IdentityUser object is not found
                     currentUserName = currentUserEmail.Split('@')[0];
                 }
-            }
-            else
-            {
-                // Set default values for unauthenticated users
-                currentUserName = "Guest User";
-                currentUserEmail = "";
             }
         }
         catch (Exception ex)
@@ -71,24 +79,26 @@
             currentUserEmail = "";
         }
         
+        // Notify the component to re-render with the updated state
         StateHasChanged();
     }
 
-    // Event handler: invokes StateHasChanged to re-render the component whenever the URL changes
-    // Ensures that the sidebar link highlighting is updated
+    // Called whenever the route/URL changes (to highlight correct sidebar link)
     private void OnLocationChanged(object? sender, Microsoft.AspNetCore.Components.Routing.LocationChangedEventArgs e)
     {
+        // Use InvokeAsync to ensure the StateHasChanged call happens on the UI thread
         InvokeAsync(StateHasChanged);
     }
 
-    // Lifecycle method: called when the component is removed from the UI
-    // Disposes of the component by unsubscribing from the Navigation.LocationChanged event to prevent memory leaks
+    // Dispose pattern: unsubscribe from events to avoid memory leaks
     public void Dispose()
     {
         Navigation.LocationChanged -= OnLocationChanged;
     }
 
-     // Determines the CSS class for a sidebar navigation link based on the current URL.
+    // --- SIDEBAR NAVIGATION ---
+
+     // Determines the CSS class for a sidebar navigation link based on the current URL
     private string GetSidebarLinkClass(string href)
     {
         var currentPath = Navigation.ToBaseRelativePath(Navigation.Uri).Split('?')[0].TrimEnd('/');
@@ -97,7 +107,7 @@
         // Debug logging for development purposes
         Console.WriteLine($"[DEBUG] Current path: '{currentPath}', Link path: '{linkPath}'");
         
-        // Exact match
+        // Exact match: Add the 'active' class for an exact path match to highlight the current page
         if (currentPath == linkPath)
         {
             Console.WriteLine($"[DEBUG] MATCH! Applying active class to: {href}");
@@ -107,6 +117,7 @@
         return "nav-link d-flex align-items-center gap-2 sidebar-link";
     }
 
+    // Navigates to the benefactor's profile page
     private void NavigateToBenefactorProfile()
     {
         Navigation.NavigateTo("/dashboard/benefactor/profile");
@@ -118,25 +129,34 @@
         StateHasChanged();
     }
 
-    private bool ShowChatbot = false;
-    private string UserInput = "";
-    private List<ChatMessage> Messages = new();
+    // --- CHATBOT STATE ---
 
+    private bool ShowChatbot = false; // Whether chatbot window is visible
+    
+    private string UserInput = ""; // Current user message text
+    
+    private List<ChatMessage> Messages = new(); // Chat history
+
+    // Opens the chatbot window and triggers a UI re-render
     private void OpenChatbot()
     {
         ShowChatbot = true;
         StateHasChanged();
     }
 
+    // Closes the chatbot window and triggers a UI re-render
     private void CloseChatbot()
     {
         ShowChatbot = false;
         StateHasChanged();
     }
 
+    // Handles sending a message to the chatbot.
     private async Task SendMessage()
     {
         if (string.IsNullOrWhiteSpace(UserInput)) return;
+
+        // Add user's message
         Messages.Add(new ChatMessage { Text = UserInput, IsUser = true });
         var userMessage = UserInput;
         UserInput = "";
@@ -175,6 +195,7 @@
     }
 
     // TODO: UNCOMMENT AND IMPLEMENT WHEN BACKEND AI API IS READY
+    // Placeholder for calling a backend AI service.
     /*
     private async Task<string> CallAIBackend(string userMessage)
     {
@@ -199,6 +220,7 @@
     }
     */
 
+    // Handles 'Enter' key press in the chatbot input field to send a message
     private async Task HandleKeyDown(KeyboardEventArgs e)
     {
         if (e.Key == "Enter")
@@ -207,23 +229,30 @@
         }
     }
 
+    // Data model for a single chat message
     public class ChatMessage
     {
-        public string Text { get; set; } = "";
-        public bool IsUser { get; set; }
+        public string Text { get; set; } = ""; // The text content of the message
+        public bool IsUser { get; set; } // Flag to determine if the message is from the user or the bot
     }
 }
+
+<!-- MAIN LAYOUT UI STRUCTURE   -->
+
 <div class="d-flex min-vh-100">
-    <!-- Sidebar -->
+
+    <!-- Sidebar (left navigation panel) -->
     <nav class="sidebar d-flex flex-column justify-content-between"
          style="width: 260px; background: linear-gradient(180deg, #1560d4 0%, #0d387e 100%); padding: 2rem 1.5rem 1rem 1.5rem;">
+        
         <div>
-            <!-- Logo -->
+            <!-- Brand/Logo Section -->
             <div class="sidebar-brand-container text-center">
                 <a class="eskolar-logo" href="/"></a>
                 <div class="eskolar-brand">eSkolar</div>
             </div>
-            <!-- Navigation Links -->
+
+            <!-- Sidebar Navigation Links -->
             <ul class="nav flex-column gap-1">
                 <li class="nav-item">
                     <a href="/dashboard/benefactor" class="@GetSidebarLinkClass("/dashboard/benefactor")">
@@ -267,7 +296,8 @@
                 </li>
             </ul>
         </div>
-        <!-- Help Box -->
+
+        <!-- "Need Help?" Button at Bottom of Sidebar -->
         <button class="help-box-bottom" type="button" @onclick="OpenChatbot">
             <div class="help-box-content">
                 <img src="images/NeedHelp.svg" alt="Help" class="help-box-img" />
@@ -278,39 +308,47 @@
             </div>
         </button>
     </nav>
-    <!-- Profile Icon Button (top right) -->
-<button class="dashboard-profile-absolute mt-5" type="button" data-bs-toggle="offcanvas" data-bs-target="#rightSidebar" aria-controls="rightSidebar">
-    <svg width="32" height="32" fill="none" viewBox="0 0 24 24">
-        <circle cx="12" cy="8" r="4" stroke="#222" stroke-width="2"/>
-        <circle cx="12" cy="12" r="11" stroke="#222" stroke-width="2"/>
-        <path d="M4 20c1.5-3 5.5-5 8-5s6.5 2 8 5" stroke="#222" stroke-width="2"/>
-    </svg>
-</button>
 
-<!-- Bootstrap Offcanvas Sidebar -->
-<div class="offcanvas offcanvas-end" tabindex="-1" id="rightSidebar" aria-labelledby="rightSidebarLabel" data-bs-backdrop="false">
-  <div class="offcanvas-header">
-    <h5 class="offcanvas-title" id="rightSidebarLabel">Profile</h5>
-    <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
-  </div>
-  <div class="offcanvas-body">
-    <!-- Sidebar content here -->
-    <div class="sidebar-profile">
+    <!-- Profile Icon (Top Right Corner) -->
+    <button class="dashboard-profile-absolute mt-5" type="button" data-bs-toggle="offcanvas" data-bs-target="#rightSidebar" aria-controls="rightSidebar">
         <svg width="32" height="32" fill="none" viewBox="0 0 24 24">
             <circle cx="12" cy="8" r="4" stroke="#222" stroke-width="2"/>
             <circle cx="12" cy="12" r="11" stroke="#222" stroke-width="2"/>
             <path d="M4 20c1.5-3 5.5-5 8-5s6.5 2 8 5" stroke="#222" stroke-width="2"/>
         </svg>
-        <div class="sidebar-profile-name">Marzella Capin</div>
-        <div class="sidebar-profile-role">Student</div>
-        <button class="sidebar-profile-btn" @onclick="NavigateToBenefactorProfile" data-bs-dismiss="offcanvas">Profile</button>
-    </div>
-        
-    <div class="sidebar-calendar">
-        <DashboardCalendar CurrentMonth="@currentMonth" CurrentMonthChanged="@(m => currentMonth = m)" />
+    </button>
+
+    <!-- Right Sidebar (Bootstrap Offcanvas) -->
+    <div class="offcanvas offcanvas-end" tabindex="-1" id="rightSidebar" aria-labelledby="rightSidebarLabel" data-bs-backdrop="false">
+    
+        <!-- Header of Right Sidebar -->
+        <div class="offcanvas-header">
+            <h5 class="offcanvas-title" id="rightSidebarLabel">Profile</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+        </div>
+
+        <!-- Body of Right Sidebar -->
+        <div class="offcanvas-body">
+
+            <!-- Profile Section -->
+            <div class="sidebar-profile">
+                <svg width="32" height="32" fill="none" viewBox="0 0 24 24">
+                    <circle cx="12" cy="8" r="4" stroke="#222" stroke-width="2"/>
+                    <circle cx="12" cy="12" r="11" stroke="#222" stroke-width="2"/>
+                    <path d="M4 20c1.5-3 5.5-5 8-5s6.5 2 8 5" stroke="#222" stroke-width="2"/>
+                </svg>
+                <div class="sidebar-profile-name">Marzella Capin</div>
+                <div class="sidebar-profile-role">Student</div>
+                <button class="sidebar-profile-btn" @onclick="NavigateToBenefactorProfile" data-bs-dismiss="offcanvas">Profile</button>
+            </div>
+
+            <!-- Calendar Component (Custom Blazor component) -->            
+            <div class="sidebar-calendar">
+                <DashboardCalendar CurrentMonth="@currentMonth" CurrentMonthChanged="@(m => currentMonth = m)" />
+            </div>
     </div>
 
-    </div>
+    <!-- Notifications Section -->
     <div class="sidebar-notifications">
         <div class="sidebar-notifications-header">
             Notifications <span style="float:right;cursor:pointer;">Clear</span>
@@ -326,21 +364,28 @@
         </div>
     </div>
   </div>
-</div>
-    <main class="main-content" style="flex:1; min-width:0; background: #f5f6fa;" @onclick="@(() => JSRuntime.InvokeVoidAsync("closeSidebar"))">
+
+    <!-- Main Content Area (Body placeholder for pages) -->
+    <main class="main-content" style="flex:1; min-width:0; background: #f5f6fa;">
         @Body
     </main>
+</div>
 
+<!-- Floating Chatbot Window -->
 @if (ShowChatbot)
 {
     <div class="chatbot-float-window">
+        <!-- Header -->
         <div class="chatbot-header">
             <span>eSkolar Assistant</span>
             <button class="btn-close" @onclick="CloseChatbot" aria-label="Close chatbot">×</button>
         </div>
+
+        <!-- Messages -->
         <div class="chatbot-body">
             @if (!Messages.Any())
             {
+                <!-- Initial greeting from chatbot -->
                 <div class="chat-message bot">
                     <div class="message-avatar bot">AI</div>
                     <div class="message-bubble bot">
@@ -360,6 +405,8 @@
                 </div>
             }
         </div>
+
+        <!-- Input field + send button -->
         <div class="chatbot-input">
             <input @bind="UserInput" @bind:event="oninput" @onkeydown="HandleKeyDown" 
                    placeholder="Type a message..." />
@@ -370,14 +417,18 @@
     </div>
 }
 
+<!-- JavaScript helper to close Bootstrap offcanvas programmatically -->
 <script>
-    window.closeSidebar = function() {
-        const offcanvas = document.getElementById('rightSidebar');
-        if (offcanvas && offcanvas.classList.contains('show')) {
+document.addEventListener('click', function(event) {
+    const offcanvas = document.getElementById('rightSidebar');
+    if (offcanvas && offcanvas.classList.contains('show')) {
+        // Ignore clicks inside the offcanvas or on the toggle button
+        if (!offcanvas.contains(event.target) && !event.target.matches('[data-bs-toggle="offcanvas"]')) {
             const bsOffcanvas = bootstrap.Offcanvas.getInstance(offcanvas);
             if (bsOffcanvas) {
                 bsOffcanvas.hide();
             }
         }
-    };
+    }
+});
 </script>

@@ -1,12 +1,15 @@
+/* Main content area beside the sidebar */
 .main-content {
     margin-left: 260px;
     transition: margin-left 0.2s;
     position: relative;
     z-index: 1;
-    background: #f5f6fa; /* Optional: ensures content background */
-    min-height: 100vh; /* Ensures content fills the viewport */
-    padding: 0 24px;   /* Optional: add horizontal padding for spacing */
+    background: #f5f6fa; 
+    min-height: 100vh; 
+    padding: 0 24px;   
 }
+
+/* Sidebar links (menu items) */
 .sidebar-link {
     color: #fff !important;
     border-radius: 6px;
@@ -15,14 +18,20 @@
     font-size: 1.07rem;
     font-weight: 500;
 }
+
+/* Hover & active state for sidebar links */
 .sidebar-link:hover, .sidebar-link.active {
     background: rgba(255,255,255,0.18);
     color: #ffe066 !important;
     text-decoration: none;
 }
+
+/* Icons inside sidebar nav links */
 .sidebar .nav-link i {
     font-size: 1.15rem;
 }
+
+/* Sidebar container */
 .sidebar {
     position: fixed;
     top: 0;
@@ -31,10 +40,9 @@
     min-height: 100vh;
     width: 260px;
     z-index: 1200;
-    /* background and padding as needed */
 }
-/* Logo */
 
+/* Brand/logo text inside sidebar */
 .eskolar-brand {
     letter-spacing: 1px;
     font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
@@ -45,11 +53,12 @@
     margin-top: 8px;
 }
 
+/* Space below brand area */
 .sidebar-brand-container {
-    margin-bottom: 34px; /* Increase this value for more space */
+    margin-bottom: 34px; 
 }
 
-/* Help Box */
+/* Help box (bottom widget inside sidebar) */
 .help-box-bottom {
     width: 100%;
     background: rgba(255,255,255,0.13);
@@ -64,22 +73,30 @@
     transition: background 0.2s;
     cursor: pointer;
 }
+
+/* Hover effect for help box */
 .help-box-bottom:hover {
     background: rgba(255,255,255,0.18);
 }
+
+/* Content inside help box */
 .help-box-content {
     display: flex;
     flex-direction: column;
     align-items: center;
 }
+
+/* Image inside help box */
 .help-box-img {
     width: 200px;
     height: 200px;
-    margin-top: -100px;    /* This moves the image upward, out of the box */
+    margin-top: -100px;    
     margin-left: -24px;
     z-index: 10;
     position: relative;
 }
+
+/* Text styles inside help box */
 .help-box-text {
     text-align: center;
 }
@@ -93,6 +110,8 @@
     font-size: 0.75rem;
     color: #fff; /* white */
 }
+
+/* Responsive styles for smaller screens */
 @media (max-width: 900px) {
     .help-box {
         width: 100vw !important;

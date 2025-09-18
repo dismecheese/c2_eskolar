@@ -1,14 +1,17 @@
 @inherits LayoutComponentBase
 @inject NavigationManager Navigation
 
+<!-- ---------------- LANDING PAGE LAYOUT ---------------- -->
 <div class="landing-page">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    
+    <!-- ---------------- HEADER & NAVBAR ---------------- -->
     <header class="landing-header">
         <nav class="navbar navbar-expand-lg navbar-dark navbar-custom">
             <div class="container-fluid" style="max-height: fit-content;">
                 <a class="eskolar-logo" href="#"></a>
 
-                <!-- Toggle button for mobile -->
+                <!-- Toggle button for mobile menu -->
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
                         aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
                     <span class="navbar-toggler-icon"></span>
@@ -44,13 +47,17 @@
         </nav>
     </header>
 
+    <!-- ---------------- MAIN CONTENT ---------------- -->
     <main class="landing-main">
-        @Body
+        @Body <!-- Page content will be rendered here -->
     </main>
 
+    <!-- ---------------- FOOTER ---------------- -->
     <footer class="landing-footer">
     <div class="footer-container-custom">
         <div class="footer-main-row">
+
+            <!-- Social media links -->
             <div class="footer-follow">
                 <strong>Follow Us</strong>
                 <div class="footer-social-icons">
@@ -61,6 +68,8 @@
                 </div>
             </div>
             <div class="footer-divider"></div>
+
+            <!-- Contact email -->
             <div class="footer-contact">
                 <strong>Contact Us</strong>
                 <div class="footer-contact-email">
@@ -69,6 +78,8 @@
                 </div>
             </div>
         </div>
+
+        <!-- Footer bottom links -->
         <div class="footer-bottom-row">
             <div class="footer-links">
                 <a href="#">Privacy Policy</a>
@@ -78,6 +89,8 @@
                 <a href="#">Site Map</a>
             </div>
         </div>
+
+        <!-- Copyright -->
         <div class="footer-copyright">
                 &copy; 2025 All Rights Reserved
         </div>
@@ -85,7 +98,7 @@
     </footer>
 </div>
 
-<!-- Modal -->
+<!-- ---------------- TERMS & CONDITIONS MODAL ---------------- -->
 <div class="modal fade" id="termsModal" tabindex="-1" aria-labelledby="termsModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered modal-lg">
     <div class="modal-content">
@@ -94,6 +107,7 @@
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body">
+
         <!-- Terms and Conditions content for eSkolar -->
         <p>
             Welcome to eSkolar! By accessing or using our platform, you agree to comply with and be bound by the following terms and conditions. Please read them carefully.
@@ -112,6 +126,8 @@
         <p>
             By using eSkolar, you acknowledge that you have read, understood, and agree to these terms and conditions.
         </p>
+
+        <!-- Checkbox for acceptance -->
         <div class="form-check mt-3">
             <input class="form-check-input" type="checkbox" id="acceptTerms" @bind="acceptedTerms" />
             <label class="form-check-label" for="acceptTerms">
@@ -119,14 +135,16 @@
             </label>
         </div>
       </div>
+
       <div class="modal-footer">
+      <!-- Confirmation button -->
         <button type="button" class="btn btn-primary" data-bs-dismiss="modal">I Understand</button>
       </div>
     </div>
   </div>
 </div>
 
-<!-- Contact Modal -->
+<!-- ---------------- CONTACT MODAL ---------------- -->
 <div class="modal fade" id="contactModal" tabindex="-1" aria-labelledby="contactModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered modal-lg">
     <div class="modal-content">
@@ -137,6 +155,7 @@
       <div class="modal-body">
         <p class="mb-4">We'd love to hear from you! Fill out the form below and we'll get back to you as soon as possible.</p>
         
+        <!-- Contact form -->
         <form id="contactForm">
           <div class="row mb-3">
             <div class="col-md-6">
@@ -176,7 +195,9 @@
   </div>
 </div>
 
+<!-- ---------------- JAVASCRIPT FOR MODAL & EMAIL ---------------- -->
 <script>
+/* Sends the email using mailto link and resets form */
 function sendEmail() {
     const name = document.getElementById('contactName').value;
     const email = document.getElementById('contactEmail').value;
@@ -191,7 +212,7 @@ function sendEmail() {
     const emailBody = `Name: ${name}%0D%0AEmail: ${email}%0D%0A%0D%0AMessage:%0D%0A${encodeURIComponent(message)}`;
     const mailtoLink = `mailto:eskolarph@gmail.com?subject=${encodeURIComponent('[eSkolar Contact] ' + subject)}&body=${emailBody}`;
     
-    // Use Bootstrap's modal hide method
+    // Hide modal properly (Bootstrap or jQuery fallback)
     const modalElement = document.getElementById('contactModal');
     try {
         if (typeof bootstrap !== 'undefined') {
@@ -206,7 +227,7 @@ function sendEmail() {
         console.log('Bootstrap modal hide failed:', e);
     }
     
-    // Reset form
+    // Reset form and open email client
     document.getElementById('contactForm').reset();
     
     // Open email after modal closes
@@ -215,6 +236,7 @@ function sendEmail() {
     }, 300);
 }
 
+/* Force close and cleanup in case modal is stuck */
 function forceCloseModal() {
     // Reset form
     document.getElementById('contactForm').reset();
@@ -229,7 +251,7 @@ function forceCloseModal() {
     modalElement.removeAttribute('aria-modal');
     modalElement.removeAttribute('role');
     
-    // Remove ALL possible backdrop elements
+    // Remove all possible backdrop elements
     document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
     document.querySelectorAll('[class*="modal-backdrop"]').forEach(el => el.remove());
     
@@ -253,7 +275,7 @@ function forceCloseModal() {
 document.addEventListener('DOMContentLoaded', function() {
     const contactModal = document.getElementById('contactModal');
     
-    // Handle modal close events
+    // Cleanup after modal is hidden
     contactModal.addEventListener('hidden.bs.modal', function() {
         forceCleanup();
     });
@@ -282,7 +304,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
     
-    // Also handle the Cancel button
+    // Handle Cancel button
     const cancelBtn = contactModal.querySelector('[data-bs-dismiss="modal"]');
     if (cancelBtn) {
         cancelBtn.addEventListener('click', function() {
@@ -291,6 +313,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
+/* Cleanup helper for removing leftover modal states */
 function forceCleanup() {
     // Remove ALL modal-related classes and elements
     document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
@@ -309,11 +332,13 @@ function forceCleanup() {
 }
 </script>
 
+<!-- ---------------- BLAZOR BACKEND CODE ---------------- -->
 @code {
-    private bool acceptedTerms = false;
+    private bool acceptedTerms = false; // Tracks if user accepted T&C
 }
 
 @code {
+            // Navigation handlers for header buttons
             void GoToSignUp() => Navigation.NavigateTo("/signup");
             void GoToLogin() => Navigation.NavigateTo("/login");
 }

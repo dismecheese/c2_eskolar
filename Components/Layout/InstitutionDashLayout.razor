@@ -2,38 +2,101 @@
 @implements IDisposable
 
 @inject NavigationManager Navigation
+@inject IJSRuntime JSRuntime
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject UserManager<IdentityUser> UserManager
+
 @using Microsoft.AspNetCore.Components.Web
-@rendermode InteractiveServer
+@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.AspNetCore.Identity
 @using c2_eskolar.Components.UI
 
-@code {
+@rendermode InteractiveServer
 
+@code {
+    // --- USER INFORMATION STATE ---
+    
+    // Stores the display name of the currently signed in user
+    private string currentUserName = "Loading...";
+    
+    // Stores the email of the currently signed in user
+    private string currentUserEmail = "";
+
+    // Tracks the current month for the calendar component
     private DateTime currentMonth = new(DateTime.Now.Year, DateTime.Now.Month, 1);
 
-    protected override void OnInitialized()
+    // --- LIFECYCLE METHODS ---
+
+    // Called when the layout initializes
+    protected override async Task OnInitializedAsync()
     {
         Navigation.LocationChanged += OnLocationChanged;
+        await LoadCurrentUser();
     }
 
+    // Loads the currently authenticated user's information
+    private async Task LoadCurrentUser()
+    {
+        try
+        {
+            var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+            var user = authState.User;
+
+            if (user.Identity?.IsAuthenticated == true)
+            {
+                currentUserEmail = user.Identity.Name ?? "";
+                
+                var identityUser = await UserManager.FindByEmailAsync(currentUserEmail);
+                
+                if (identityUser != null)
+                {
+                    currentUserName = user.FindFirst("DisplayName")?.Value 
+                                    ?? user.FindFirst("Name")?.Value 
+                                    ?? identityUser.UserName 
+                                    ?? currentUserEmail.Split('@')[0]; // Use email prefix as fallback
+                }
+                else
+                {
+                    // Fallback if the IdentityUser object is not found
+                    currentUserName = currentUserEmail.Split('@')[0];
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            // Log any errors during user loading
+            Console.WriteLine($"Error loading user: {ex.Message}");
+            currentUserName = "User";
+            currentUserEmail = "";
+        }
+        
+        // Notify the component to re-render with the updated state
+        StateHasChanged();
+    }
+
+    // Handles navigation changes and triggers UI re-render
     private void OnLocationChanged(object? sender, Microsoft.AspNetCore.Components.Routing.LocationChangedEventArgs e)
     {
         InvokeAsync(StateHasChanged);
     }
 
+    // Cleans up event subscriptions to avoid memory leaks
     public void Dispose()
     {
         Navigation.LocationChanged -= OnLocationChanged;
     }
 
+    // --- SIDEBAR LINK HANDLING ---
+    // Dynamically applies the "active" class to the current sidebar link based on the route
     private string GetSidebarLinkClass(string href)
     {
         var currentPath = Navigation.ToBaseRelativePath(Navigation.Uri).Split('?')[0].TrimEnd('/');
         var linkPath = href.TrimStart('/').TrimEnd('/');
         
-        // Debug logging
+        // Debug logging for development purposes
         Console.WriteLine($"[DEBUG] Current path: '{currentPath}', Link path: '{linkPath}'");
         
-        // Exact match
+        // Exact match condition
         if (currentPath == linkPath)
         {
             Console.WriteLine($"[DEBUG] MATCH! Applying active class to: {href}");
@@ -43,11 +106,14 @@
         return "nav-link d-flex align-items-center gap-2 sidebar-link";
     }
 
+    // Navigates the user to their institution profile
     private void NavigateToInstitutionProfile()
     {
         Navigation.NavigateTo("/dashboard/institution/profile");
     }
 
+    // --- CHATBOT STATE ---
+    // Controls chatbot visibility and stores chat messages.
     private bool ShowChatbot = false;
     private string UserInput = "";
     private List<ChatMessage> Messages = new();
@@ -64,6 +130,8 @@
         StateHasChanged();
     }
 
+    // --- CHATBOT MESSAGE HANDLING ---
+    // Handles sending user messages and generating AI responses
     private async Task SendMessage()
     {
         if (string.IsNullOrWhiteSpace(UserInput)) return;
@@ -129,6 +197,7 @@
     }
     */
 
+    // Handles pressing Enter in the chatbot input box
     private async Task HandleKeyDown(KeyboardEventArgs e)
     {
         if (e.Key == "Enter")
@@ -137,22 +206,29 @@
         }
     }
 
+    // --- CHAT MESSAGE MODEL ---
+    // Defines a simple message object for the chatbot
     public class ChatMessage
     {
         public string Text { get; set; } = "";
         public bool IsUser { get; set; }
     }
 }
+
+<!-- --- MAIN LAYOUT STRUCTURE --- -->
+
 <div class="d-flex min-vh-100">
-    <!-- Sidebar -->
+    <!-- --- SIDEBAR --- -->
     <nav class="sidebar d-flex flex-column justify-content-between"
          style="width: 260px; background: linear-gradient(180deg, #1560d4 0%, #0d387e 100%); padding: 2rem 1.5rem 1rem 1.5rem;">
+        
         <div>
-            <!-- Logo -->
+            <!-- Logo Section -->
             <div class="sidebar-brand-container text-center">
                 <a class="eskolar-logo" href="/"></a>
                 <div class="eskolar-brand">eSkolar</div>
             </div>
+
             <!-- Navigation Links -->
             <ul class="nav flex-column gap-1">
                 <li class="nav-item">
@@ -197,7 +273,8 @@
                 </li>
             </ul>
         </div>
-        <!-- Help Box -->
+
+        <!-- Help Box Button (opens chatbot) -->
         <button class="help-box-bottom" type="button" @onclick="OpenChatbot">
             <div class="help-box-content">
                 <img src="images/NeedHelp.svg" alt="Help" class="help-box-img" />
@@ -208,23 +285,25 @@
             </div>
         </button>
     </nav>
-    <!-- Profile Icon Button (top right) -->
-<button class="dashboard-profile-absolute mt-5" type="button" data-bs-toggle="offcanvas" data-bs-target="#rightSidebar" aria-controls="rightSidebar">
-    <svg width="32" height="32" fill="none" viewBox="0 0 24 24">
-        <circle cx="12" cy="8" r="4" stroke="#222" stroke-width="2"/>
-        <circle cx="12" cy="12" r="11" stroke="#222" stroke-width="2"/>
-        <path d="M4 20c1.5-3 5.5-5 8-5s6.5 2 8 5" stroke="#222" stroke-width="2"/>
-    </svg>
-</button>
 
-<!-- Bootstrap Offcanvas Sidebar -->
-<div class="offcanvas offcanvas-end" tabindex="-1" id="rightSidebar" aria-labelledby="rightSidebarLabel">
-  <div class="offcanvas-header">
-    <h5 class="offcanvas-title" id="rightSidebarLabel">Profile</h5>
-    <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+    <!-- --- PROFILE SIDEBAR (Bootstrap Offcanvas) --- -->
+    <button class="dashboard-profile-absolute mt-5" type="button" data-bs-toggle="offcanvas" data-bs-target="#rightSidebar" aria-controls="rightSidebar">
+        <svg width="32" height="32" fill="none" viewBox="0 0 24 24">
+            <circle cx="12" cy="8" r="4" stroke="#222" stroke-width="2"/>
+            <circle cx="12" cy="12" r="11" stroke="#222" stroke-width="2"/>
+            <path d="M4 20c1.5-3 5.5-5 8-5s6.5 2 8 5" stroke="#222" stroke-width="2"/>
+        </svg>
+    </button>
+
+<!-- Profile Sidebar Content -->
+<div class="offcanvas offcanvas-end" tabindex="-1" id="rightSidebar" aria-labelledby="rightSidebarLabel" data-bs-backdrop="false">
+    <div class="offcanvas-header">
+        <h5 class="offcanvas-title" id="rightSidebarLabel">Profile</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
   </div>
-  <div class="offcanvas-body">
-    <!-- Sidebar content here -->
+
+    <div class="offcanvas-body">
+    <!-- Sidebar Profile Section -->
     <div class="sidebar-profile">
         <svg width="32" height="32" fill="none" viewBox="0 0 24 24">
             <circle cx="12" cy="8" r="4" stroke="#222" stroke-width="2"/>
@@ -235,9 +314,13 @@
         <div class="sidebar-profile-role">Student</div>
         <button class="sidebar-profile-btn" @onclick="NavigateToInstitutionProfile" data-bs-dismiss="offcanvas">Profile</button>
     </div>
+    
+    <!-- Sidebar Calendar -->
     <div class="sidebar-calendar">
         <DashboardCalendar CurrentMonth="@currentMonth" CurrentMonthChanged="@(m => currentMonth = m)" />
     </div>
+
+    <!-- Sidebar Notifications -->
     <div class="sidebar-notifications">
         <div class="sidebar-notifications-header">
             Notifications <span style="float:right;cursor:pointer;">Clear</span>
@@ -252,13 +335,17 @@
             }
         </div>
     </div>
-  </div>
 </div>
+</div>
+
+    <!-- --- MAIN CONTENT AREA --- -->
     <main class="main-content" style="flex:1; min-width:0; background: #f5f6fa;">
         @Body
     </main>
+
 </div>
 
+<!-- --- CHATBOT FLOATING WINDOW --- -->
 @if (ShowChatbot)
 {
     <div class="chatbot-float-window">
@@ -266,7 +353,9 @@
             <span>eSkolar Assistant</span>
             <button class="btn-close" @onclick="CloseChatbot" aria-label="Close chatbot">×</button>
         </div>
+
         <div class="chatbot-body">
+        <!-- Default welcome message -->
             @if (!Messages.Any())
             {
                 <div class="chat-message bot">
@@ -276,6 +365,8 @@
                     </div>
                 </div>
             }
+
+            <!-- Render chat history -->
             @foreach (var msg in Messages)
             {
                 <div class="chat-message @(msg.IsUser ? "user" : "bot")">
@@ -288,6 +379,8 @@
                 </div>
             }
         </div>
+
+        <!-- Chat input field -->
         <div class="chatbot-input">
             <input @bind="UserInput" @bind:event="oninput" @onkeydown="HandleKeyDown" 
                    placeholder="Type a message..." />
@@ -297,3 +390,19 @@
         </div>
     </div>
 }
+
+<!-- JavaScript helper to close Bootstrap offcanvas programmatically -->
+<script>
+document.addEventListener('click', function(event) {
+    const offcanvas = document.getElementById('rightSidebar');
+    if (offcanvas && offcanvas.classList.contains('show')) {
+        // Ignore clicks inside the offcanvas or on the toggle button
+        if (!offcanvas.contains(event.target) && !event.target.matches('[data-bs-toggle="offcanvas"]')) {
+            const bsOffcanvas = bootstrap.Offcanvas.getInstance(offcanvas);
+            if (bsOffcanvas) {
+                bsOffcanvas.hide();
+            }
+        }
+    }
+});
+</script>
