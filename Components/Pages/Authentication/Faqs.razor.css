@@ -1,5 +1,6 @@
-                                        /* FAQs Section */
-/* FAQ Accordion Custom Styles for BlazorBootstrap */
+/* FAQs Section */
+
+/* Container for FAQ section */
 .faq-container {
     display: flex;
     align-items: flex-start;
@@ -10,12 +11,14 @@
     gap: 64px;
 }
 
+/* Left column with title and contact info */
 .faq-left {
     flex: 1 1 40%;
     min-width: 320px;
     max-width: 480px;
 }
 
+/* FAQ section main title */
 .faq-title {
     font-size: 3rem;
     font-weight: 800;
@@ -23,28 +26,33 @@
     line-height: 1.1;
 }
 
+/* Short description under the title */
 .faq-desc {
     color: #555;
     font-size: 1.1rem;
     margin-bottom: 32px;
 }
 
+/* Block holding contact label, text, and image */
 .faq-contact-block {
     margin-top: 32px;
 }
 
+/* Gray small label before contact message */
 .faq-contact-label {
     color: #888;
     font-size: 1rem;
     margin-bottom: 4px;
 }
 
+/* Contact message text */
 .faq-contact-desc {
     font-size: 1.25rem;
     font-weight: 500;
     margin-bottom: 16px;
 }
 
+/* Contact image (logo/chat icon) */
 .faq-contact-img {
     width: 90px;
     height: 90px;
@@ -53,13 +61,14 @@
     box-shadow: 0 2px 12px 0 rgba(0,0,0,0.04);
 }
 
-/* FAQ Accordion Styles */
+/* Right column containing accordion */
 .faq-right {
     flex: 1 1 60%;
     min-width: 340px;
     max-width: 700px;
 }
 
+/* Accordion item styles */
 .faq-accordion .accordion-item {
     border: none;
     border-bottom: 1px solid #e0e0e0;
@@ -69,10 +78,12 @@
     margin-bottom: 0;
 }
 
+/* Remove bottom border for last item */
 .faq-accordion .accordion-item:last-child {
     border-bottom: none;
 }
 
+/* Accordion header (button container) */
 .faq-accordion .accordion-header {
     background: transparent !important;
     border: none !important;
@@ -80,6 +91,7 @@
     padding: 0 !important;
 }
 
+/* Accordion button (FAQ question) */
 .faq-accordion .accordion-button {
     background: transparent !important;
     box-shadow: none !important;
@@ -96,19 +108,23 @@
     gap: 12px;
 }
 
+/* Active accordion button (opened) */
 .faq-accordion .accordion-button:not(.collapsed) {
     background: transparent !important;
     color: #181818;
 }
 
+/* Remove blue outline when focused */
 .faq-accordion .accordion-button:focus {
     box-shadow: none !important;
 }
 
+/* Hide Bootstrap’s default chevron */
 .faq-accordion .accordion-button::after {
-    display: none; /* Hide default Bootstrap chevron */
+    display: none; 
 }
 
+/* Custom chevron (SVG) wrapper */
 .faq-accordion .faq-v-icon {
     margin-left: 18px;
     display: flex;
@@ -117,10 +133,12 @@
     transition: transform 0.3s cubic-bezier(0.4,0,0.2,1);
 }
 
+/* Rotate chevron when open */
 .faq-accordion .accordion-button:not(.collapsed) .faq-v-icon {
     transform: rotate(180deg);
 }
 
+/* Accordion answer text */
 .faq-accordion .accordion-body {
     background: transparent !important;
     padding: 0 0 24px 0 !important;

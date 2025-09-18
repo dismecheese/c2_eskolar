@@ -3,32 +3,41 @@
 
 <PageTitle>Partners</PageTitle>
 
+<!-- Partners page container -->
 <div class="partners-page">
+
+    <!-- Page title and subtitle -->
     <h1 class="partners-title">Meet our Partners</h1>
     <p class="partners-subtitle">
         Here are the organizations and sponsors who support our mission to connect students with academic opportunities.
     </p>
     
+    <!-- Show partners if list is not empty -->
     @if (partners != null && partners.Any())
     {
         <div class="partners-grid">
             @foreach (var partner in partners)
             {
+                <!-- Individual partner card -->
                 <div class="partner-card">
+
                     <div class="partner-logo">
+                        <!-- Show uploaded logo if available -->
                         @if (!string.IsNullOrEmpty(partner.LogoPath) && File.Exists(Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", partner.LogoPath.TrimStart('/'))))
                         {
-                            <img src="@partner.LogoPath" alt="@partner.OrganizationName Logo" style="width: 60px; height: 60px; object-fit: contain;" />
+                            <img src="@partner.LogoPath" alt="@partner.OrganizationName Logo" class="partner-logo-img" />
                         }
                         else
                         {
                             <!-- Fallback SVG if logo doesn't exist -->
-                            <svg width="60" height="60" viewBox="0 0 60 60">
-                                <rect width="60" height="60" fill="#E0E0E0"/>
-                                <text x="30" y="35" font-family="Arial" font-size="8" text-anchor="middle" fill="#666">LOGO</text>
+                            <svg class="partner-logo-img" viewBox="0 0 60 60">
+                                <rect width="60" height="60" class="partner-logo-rect"/>
+                                <text x="30" y="35" class="partner-logo-text">LOGO</text>
                             </svg>
                         }
                     </div>
+
+                    <!-- Partner organization name -->
                     <div class="partner-name">@partner.OrganizationName</div>
                 </div>
             }
@@ -36,19 +45,23 @@
     }
     else
     {
+        <!-- Shown while partners list is empty -->
         <div class="text-center p-4">
             <p>Loading partners...</p>
         </div>
     }
     
+    <!-- Footer with collaboration link -->
     <div class="partners-footer">
-        Want to be our partner? <b><a href="#" data-bs-toggle="modal" data-bs-target="#contactModal" style="color: inherit; text-decoration: none;">Contact us to collaborate.</a></b>
+        Want to be our partner? <b><a href="#" data-bs-toggle="modal" data-bs-target="#contactModal" class="partner-contact-link">Contact us to collaborate.</a></b>
     </div>
 </div>
 
 @code {
+    // Holds list of partners
     private List<Partner> partners = new();
 
+     // Fetch partners from service on page load
     protected override async Task OnInitializedAsync()
     {
         partners = await PartnerService.GetPartnersAsync();

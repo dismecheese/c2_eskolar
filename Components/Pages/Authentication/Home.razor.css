@@ -1,8 +1,6 @@
-/* =======================
-   HOME PAGE
-   ======================= */
-/* Logo, Hero, Features, etc. */
+/* HOME PAGE */
 
+/* Hero section wrapper */
 .hero-section {
     width: 100%;
     min-height: 80vh;
@@ -16,6 +14,7 @@
     justify-content: center;
 }
 
+/* Logo container */
 .hero-logo {
     width: 100%;
     display: flex;
@@ -23,6 +22,7 @@
     margin-bottom: 0.5rem; 
 }
 
+/* Hero logo image */
 .hero-logo img {
     max-width: 600px;    
     height: auto;
@@ -32,11 +32,13 @@
     cursor: pointer;
 }
 
+/* Logo hover effect */
 .hero-logo img:hover {
     transform: scale(1.05) rotate(2deg);
     filter: drop-shadow(0 10px 20px rgba(0,0,0,0.15));
 }
 
+/* Text/content beside logo */
 .hero-content {
     width: 950px;            
     margin-left: 90px;         
@@ -48,6 +50,7 @@
     margin-bottom: 3rem;
 }
 
+/* Main hero title */
 .hero-title {
     font-size: 4rem;
     font-weight: 700;   
@@ -58,6 +61,7 @@
     font-family: 'Inter', 'Helvetica Neue', Helvetica, Arial, sans-serif; 
 }
 
+/* Subtitle under title */
 .hero-subtitle {
     font-size: 1.35rem;
     margin-bottom: 2.5rem;
@@ -68,11 +72,13 @@
     font-family: 'Inter', 'Helvetica Neue', Helvetica, Arial, sans-serif; 
 }
 
+/* Button container */
 .hero-buttons {
     display: flex;
     gap: 1rem;
 }
 
+/* Generic button styles */
 .hero-buttons .btn {
     padding: 10px 28px;
     font-weight: 500;
@@ -81,16 +87,19 @@
     box-shadow: none;
 }
 
+/* Primary button style */
 .hero-buttons .btn-primary {
     background: #1666c1;
     color: #fff;
     border: none;
 }
 
+/* Primary button hover */
 .hero-buttons .btn-primary:hover {
     background: #004ea2;
 }
 
+/* Mobile responsiveness */
 @media (max-width: 768px) {
     .hero-section {
         padding: 2rem 1rem;
@@ -107,16 +116,16 @@
     }
 }
 
-/* Features Section */
+/* Features section wrapper */
 .features-section {
     position: relative;
     padding: 5rem 0;
     background: linear-gradient(180deg, #0157C8 20%, #223167 100%);
-    /* Remove the SVG from here */
     z-index: 1;
     overflow: hidden;
 }
 
+/* Background SVG overlay */
 .features-section::before {
     content: "";
     position: absolute;
@@ -129,7 +138,7 @@
     animation: subtleFloat 8s ease-in-out infinite;
 }
 
-/* Subtle floating animation for LineBackground.svg */
+/* Subtle floating animation for svg */
 @keyframes subtleFloat {
     0%, 100% {
         transform: translateY(0) scale(1);
@@ -141,6 +150,7 @@
     }
 }
 
+/* Section title styling */
 .section-title {
     text-align: center;
     font-size: 2.5rem;
@@ -150,6 +160,7 @@
     text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
 }
 
+/* Grid layout for features */
 .features-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -158,6 +169,7 @@
     margin: 0 auto;
 }
 
+/* First feature card */
 .feature-card1 {
     background: rgba(255, 255, 255, 0.1); 
     padding: 1rem;
@@ -168,12 +180,14 @@
     cursor: pointer;
 }
 
+/* Hover effect for card1 */
 .feature-card1:hover {
     transform: translateY(-8px) scale(1.02);
     box-shadow: 0 15px 40px rgba(0,0,0,0.2);
     background: rgba(255, 255, 255, 0.15);
 }
 
+/* Second feature card */
 .feature-card2 {
     background: rgba(255, 255, 255, 0.1); 
     padding: 1rem;
@@ -184,32 +198,32 @@
     cursor: pointer;
 }
 
+/* Hover effect for card2 */
 .feature-card2:hover {
     transform: translateY(-8px) scale(1.02);
     box-shadow: 0 15px 40px rgba(0,0,0,0.2);
     background: rgba(255, 255, 255, 0.15);
 }
 
-.feature-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 10px 30px rgba(0,0,0,0.15);
-}
-
+/* Icon inside feature cards */
 .feature-icon {
     font-size: 3rem;
     margin-bottom: 1rem;
     transition: transform 0.3s ease;
 }
 
+/* Icon hover animation */
 .feature-card2:hover .feature-icon {
     transform: scale(1.1) rotate(5deg);
 }
 
+/* Card1 paragraph text */
 .feature-card1 p {
     color: #f2f2f2;
     line-height: 1.6;
 }
 
+/* Card2 paragraph text */
 .feature-card2 p {
     color: #f2f2f2;
     line-height: 1.6;
@@ -219,7 +233,7 @@
     margin-top: 4rem; /* Adds space above container2 */
 }
 
-/* Container for sections */
+/* Generic container wrapper */
 .container {
     max-width: 1200px;
     margin: 0 auto;

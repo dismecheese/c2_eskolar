@@ -5,6 +5,8 @@
 <PageTitle>FAQs</PageTitle>
 
 <div class="faq-container">
+
+<!-- Left section with title, description, and contact block -->
     <div class="faq-left">
         <h1 class="faq-title">Frequently Asked Questions</h1>
         <div class="faq-desc">Find answers to common questions about eSkolar, scholarships, and more.</div>
@@ -16,6 +18,8 @@
             </a>
         </div>
     </div>
+
+    <!-- Right section with FAQ accordion -->
     <div class="faq-right">
         <div class="accordion accordion-flush faq-accordion" id="faqAccordionFlush">
             @foreach (var faq in faqs)
@@ -31,6 +35,7 @@
                             </span>
                         </button>
                     </h2>
+                    <!-- Collapsible answer body -->
                     <div id="@faq.CollapseId" class="accordion-collapse collapse" aria-labelledby="@faq.HeadingId" data-bs-parent="#faqAccordionFlush">
                         <div class="accordion-body">
                             @faq.Answer
@@ -43,6 +48,7 @@
 </div>
 
 @code {
+    // FAQ items list
     private List<FaqItem> faqs = new()
     {
         new FaqItem("What is eSkolar?", "eSkolar is a centralized, AI-driven web platform that connects students, institutions, and benefactors for academic opportunities. It streamlines scholarship application, monitoring, and management for all stakeholders.", "flush-headingOne", "flush-collapseOne"),
@@ -57,6 +63,7 @@
         new FaqItem("Who do I contact for support?", "For support, email us at <b>eskolarph@gmail.com</b> or use the Contact Us page.", "flush-headingTen", "flush-collapseTen"),
     };
 
+    // FAQ item model
     public class FaqItem
     {
         public string Question { get; }

@@ -1,0 +1,26 @@
+/* Style for 'Contact us' link in footer */
+.partner-contact-link {
+    color: inherit;
+    text-decoration: none;
+}
+
+/* Partner logo image styling */
+.partner-logo-img {
+    width: 60px;
+    height: 60px;
+    object-fit: contain;
+    display: block;
+}
+
+/* Fallback SVG rectangle (logo placeholder) */
+.partner-logo-rect {
+    fill: #E0E0E0;
+}
+
+/* Fallback SVG text styling */
+.partner-logo-text {
+    font-family: Arial, sans-serif;
+    font-size: 8px;
+    text-anchor: middle;
+    fill: #666;
+}
