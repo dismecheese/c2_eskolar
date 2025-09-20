@@ -1,10 +1,10 @@
-/* Style for 'Contact us' link in footer */
+/* 'Contact us' link in footer */
 .partner-contact-link {
     color: inherit;
     text-decoration: none;
 }
 
-/* Partner logo image styling */
+/* Partner logo image */
 .partner-logo-img {
     width: 60px;
     height: 60px;
@@ -12,15 +12,182 @@
     display: block;
 }
 
-/* Fallback SVG rectangle (logo placeholder) */
+/* Placeholder rectangle (SVG fallback) */
 .partner-logo-rect {
     fill: #E0E0E0;
 }
 
-/* Fallback SVG text styling */
+/* Placeholder text (SVG fallback) */
 .partner-logo-text {
     font-family: Arial, sans-serif;
     font-size: 8px;
     text-anchor: middle;
     fill: #666;
+}
+
+/* Partners page container */
+.partners-page {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 40px 16px 0 16px;
+    text-align: center;
+}
+
+/* Main title */
+.partners-title {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    margin: 32px 0 8px 0;
+    letter-spacing: -1px;
+}
+
+/* Subtitle text */
+.partners-subtitle {
+    font-size: 1.15rem;
+    color: #444;
+    margin-bottom: 2.5rem;
+}
+
+/* Grid layout for partner cards */
+.partners-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 32px 24px;
+    justify-items: center;
+    margin-bottom: 2.5rem;
+}
+
+/* Logo container box */
+.partner-logo {
+    width: 64px;
+    height: 64px;
+    background: #f5f6fa;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 22px;
+    flex-shrink: 0;
+    margin-bottom: 10px;
+}
+
+/* Partner card container */
+.partner-card {
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 4px 18px 0 rgba(0,0,0,0.08);
+    padding: 18px 24px;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    min-width: 0;
+    min-height: 90px;
+    max-width: 340px;
+    width: 100%;
+    margin: 0 auto;
+    transition: box-shadow 0.18s, transform 0.18s;
+}
+
+/* Partner card hover effect */
+.partner-card:hover {
+    box-shadow: 0 8px 32px rgba(0,0,0,0.13);
+    transform: translateY(-2px) scale(1.02);
+}
+
+/* Partner name text */
+.partner-name {
+    font-weight: 700;
+    color: #222;
+    font-size: 1.13rem;
+    text-align: left;
+    flex: 1;
+    word-break: break-word;
+}
+
+/* Footer text */
+.partners-footer {
+    margin-top: 18px;
+    font-size: 1rem;
+    color: #222;
+    padding-bottom: 20px;
+}
+
+/* Bold text in footer */
+.partners-footer b {
+    font-weight: 600;
+}
+
+/* Footer link */
+.partners-footer b a {
+    cursor: pointer;
+    transition: transform 0.3s ease, color 0.3s ease;
+    display: inline-block;
+}
+
+/* Footer link hover effect */
+.partners-footer b a:hover {
+    transform: scale(1.1);
+    color: #1666c1 !important;
+    text-decoration: none;
+}
+
+/* Responsive breakpoints */
+
+/* 4 → 3 columns */
+@media (max-width: 1100px) {
+    .partners-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+/* 3 → 2 columns + narrower cards */
+@media (max-width: 1000px) {
+    .partners-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    .partner-card {
+        width: 90%;
+    }
+}
+
+/* Keep 2 columns on smaller screens */
+@media (max-width: 800px) {
+    .partners-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+/* Single column grid + smaller card width */
+@media (max-width: 700px) {
+    .partners-grid {
+        grid-template-columns: 1fr;
+    }
+    .dashboard-partners-page {
+        padding: 18px 0 0 0;
+    }
+    .partner-card {
+        max-width: 98vw;
+    }
+}
+
+/* Single column grid + reduced padding */
+@media (max-width: 600px) {
+    .partners-grid {
+        grid-template-columns: 1fr;
+    }
+    .partners-page {
+        padding: 0 8px 24px 8px;
+    }
+}
+
+/* Smallest screens → full-width cards */
+@media (max-width: 500px) {
+    .partners-grid {
+        grid-template-columns: 1fr;
+    }
+    .partner-card {
+        min-width: 0;
+        width: 100%;
+    }
 }

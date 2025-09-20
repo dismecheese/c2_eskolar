@@ -1,0 +1,43 @@
+.about-main-card {
+    background-color: rgba(1, 75, 173, 0.85);
+    max-width: 700px;
+}
+
+.about-main-text {
+    color: #fff;
+    text-align: justify;
+    width: 100%;
+    max-width: 600px;
+}
+
+.about-section-card {
+    background-color: rgba(1, 75, 173, 0.85);
+}
+
+.about-section-icon {
+    color: #fff;
+}
+
+.about-section-title {
+    color: #fff;
+}
+
+.about-section-desc {
+    color: #fff;
+    text-align: justify;
+}
+
+.about-main-card.rounded,
+.about-section-card.rounded {
+    background-color: rgba(1, 75, 173, 0.85) !important;
+    color: #fff !important;
+    border: none !important;
+}
+
+.about-main-text,
+.about-section-title,
+.about-section-desc,
+.about-section-icon {
+    color: #fff !important;
+    text-align: justify;
+}

@@ -58,59 +58,6 @@
     margin-bottom: 34px; 
 }
 
-/* Help box (bottom widget inside sidebar) */
-.help-box-bottom {
-    width: 100%;
-    background: rgba(255,255,255,0.13);
-    border-radius: 16px;
-    border: none;
-    padding: 18px 8px 12px 8px;
-    margin-top: 24px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    transition: background 0.2s;
-    cursor: pointer;
-}
-
-/* Hover effect for help box */
-.help-box-bottom:hover {
-    background: rgba(255,255,255,0.18);
-}
-
-/* Content inside help box */
-.help-box-content {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-}
-
-/* Image inside help box */
-.help-box-img {
-    width: 200px;
-    height: 200px;
-    margin-top: -100px;    
-    margin-left: -24px;
-    z-index: 10;
-    position: relative;
-}
-
-/* Text styles inside help box */
-.help-box-text {
-    text-align: center;
-}
-.help-box-title {
-    font-weight: 700;
-    font-size: 1.15rem;
-    color: #ffd700; /* yellow */
-    margin-bottom: 2px;
-}
-.help-box-desc {
-    font-size: 0.75rem;
-    color: #fff; /* white */
-}
-
 /* Responsive styles for smaller screens */
 @media (max-width: 900px) {
     .help-box {

@@ -9,12 +9,6 @@ html, body {
 html {
   scroll-behavior: smooth;
 }
-.login-container {
-    min-height: 100vh;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-}
 
 /* Better scroll offset for fixed headers */
 section[id] {
@@ -82,121 +76,8 @@ h1:focus {
 }
 
 /* =======================
-   SIGNUP PAGE
+   LOGIN AND SIGNUP PAGE
    ======================= */
-.signup-container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 80vh;
-    padding: 1rem 0;          /* Add vertical padding */
-    margin: 2rem 0;           /* Add vertical margin */
-}
-
-.signup-card {
-    display: flex;
-    width: 900px;
-    background: transparent;
-    border-radius: 20px;
-    box-shadow: none;
-    overflow: visible;
-}
-
-.signup-left {
-    flex: 1;
-    background: linear-gradient(135deg, #1670e3 0%, #182b4d 100%);
-    color: #fff;
-    padding: 48px 36px;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    border-radius: 20px 0 0 20px;
-    box-shadow: 0 4px 18px rgba(0,0,0,0.08);
-}
-
-.signup-left h2 {
-    font-size: 2.2rem;
-    font-weight: 700;
-    margin-bottom: 2.5rem;
-    text-align: center;
-}
-
-.role-label {
-    font-size: 1.2rem;
-    margin-bottom: 1.5rem;
-    text-align: center;
-    font-weight: 500;
-}
-
-.role-options {
-    display: flex;
-    flex-direction: column;
-    gap: 1.2rem;
-    align-items: center;
-}
-
-.role-option {
-    background: #fff;
-    color: #222;
-    border-radius: 10px;
-    padding: 0.7rem 2.5rem;
-    display: flex;
-    align-items: center;
-    font-size: 1.15rem;
-    font-weight: 500;
-    box-shadow: 0 2px 8px rgba(30,58,138,0.07);
-    cursor: pointer;
-    min-width: 240px;
-    border: 2px solid transparent;
-    transition: border 0.2s;
-}
-
-.role-option input[type="radio"] {
-    accent-color: #1670e3;
-    margin-right: 1rem;
-    width: 1.2em;
-    height: 1.2em;
-}
-
-.role-option:has(input[type="radio"]:checked) {
-    border: 2px solid #1670e3;
-}
-
-.signup-right {
-    flex: 1;
-    padding: 48px 36px;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    background: #fff;
-    border-radius: 0 20px 20px 0;
-    box-shadow: 0 4px 18px rgba(0,0,0,0.08);
-}
-
-.signup-right h3 {
-    font-size: 1.3rem;
-    font-weight: 700;
-    margin-bottom: 1.5rem;
-    text-align: center;
-    color: #222;
-}
-
-.signup-input {
-    width: 100%;
-    padding: 0.8rem 1rem;
-    margin-bottom: 1rem;
-    border: 1.5px solid #d1d5db;
-    border-radius: 7px;
-    font-size: 1rem;
-    outline: none;
-    transition: border 0.2s;
-    background: #f9f9f9;
-}
-
-.signup-input:focus {
-    border-color: #1670e3;
-    background: #fff;
-}
 
 .password-wrapper {
     position: relative;
@@ -222,199 +103,6 @@ h1:focus {
     cursor: pointer;
 }
 
-.password-wrapper {
-    position: relative;
-    display: flex;
-    align-items: center;
-}
-
-.password-wrapper .signup-input {
-    padding-right: 45px !important;
-}
-
-.signup-input[type="password"], .signup-input[type="text"] {
-    padding-right: 48px; /* space for the icon */
-}
-
-.terms-label {
-    display: flex;
-    align-items: center;
-    justify-content: center;    /* Centers horizontally */
-    font-size: 0.98rem;
-    color: #444;
-    margin-bottom: 1.2rem;
-    gap: 0.5rem;
-}
-
-.signup-btn {
-    width: 100%;
-    padding: 0.7rem 0;
-    font-size: 1.1rem;
-    font-weight: 600;
-    border-radius: 7px;
-    margin-bottom: 0.5rem;        /* Reduced from 1.2rem to 0.8rem */
-    background: #1670e3;
-    border: none;
-    color: #fff;
-    transition: background 0.2s;
-}
-
-.signup-btn:hover {
-    background: #125bb5;
-}
-
-.divider {
-    display: flex;
-    align-items: center;
-    text-align: center;
-    margin: 0.5rem 0;             /* Reduced from 1.2rem to 0.8rem */
-    color: #888;
-    font-size: 1rem;
-}
-
-.divider::before,
-.divider::after {
-    content: '';
-    flex: 1;
-    border-bottom: 1.5px solid #e5e7eb;
-    margin: 0 0.7em;
-}
-
-.btn-google {
-    width: 100%;
-    background: #1670e3;
-    color: #fff;
-    border: none;
-    font-weight: 600;
-    border-radius: 7px;
-    padding: 0.7rem 0;
-    font-size: 1.1rem;
-    transition: background 0.2s, color 0.2s;
-    margin-top: 0.1rem;           /* Reduced from 0.5rem to 0.2rem */
-}
-
-.btn-google:hover {
-    background: #125bb5;
-    color: #fff;
-}
-
-/* =======================
-   LOGIN PAGE
-   ======================= */
-.login-container {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 80vh;
-    padding: 1rem 0;
-    margin: 2rem 0;
-}
-
-.login-card {
-    display: flex;
-    width: 900px;
-    background: transparent;
-    border-radius: 20px;
-    box-shadow: none;
-    overflow: visible;
-}
-
-.login-left {
-    flex: 1;
-    background: linear-gradient(135deg, #1670e3 0%, #182b4d 100%);
-    color: #fff;
-    padding: 48px 36px;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    text-align: center;
-    border-radius: 20px 0 0 20px;
-    box-shadow: 0 4px 18px rgba(0,0,0,0.08);
-}
-
-.login-left h2 {
-    font-size: 2.2rem;
-    font-weight: 700;
-    margin-bottom: 1rem;
-    color: #fff;
-}
-
-.login-logo {
-    width: 250px;
-    height: auto;
-    margin-bottom: 2rem;
-}
-
-.login-right {
-    flex: 1;
-    padding: 48px 36px;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    background: #fff;
-    border-radius: 0 20px 20px 0;
-    box-shadow: 0 4px 18px rgba(0,0,0,0.08);
-}
-
-.login-right h3 {
-    font-size: 1.3rem;
-    font-weight: 700;
-    margin-bottom: 1.5rem;
-    text-align: center;
-    color: #222;
-}
-
-.login-input {
-    width: 100%;
-    padding: 0.8rem 1rem;
-    margin-bottom: 1rem;
-    border: 1.5px solid #d1d5db;
-    border-radius: 7px;
-    font-size: 1rem;
-    outline: none;
-    transition: border 0.2s;
-    background: #f9f9f9;
-}
-
-.login-input:focus {
-    border-color: #1670e3;
-    background: #fff;
-}
-
-.login-btn {
-    width: 100%;
-    padding: 0.7rem 0;
-    font-size: 1.1rem;
-    font-weight: 600;
-    border-radius: 7px;
-    margin-bottom: 0.5rem;
-    background: #1670e3;
-    border: none;
-    color: #fff;
-    transition: background 0.2s;
-    text-align: center;
-}
-
-.login-btn:hover {
-    background: #125bb5;
-}
-
-.forgot-password {
-    text-align: right;
-    margin-bottom: 1.5rem;
-}
-
-.forgot-link {
-    color: #3b82f6;
-    text-decoration: none;
-    font-size: 0.9rem;
-}
-
-.forgot-link:hover {
-    text-decoration: underline;
-}
-
 .signup-link {
     text-align: center;
     margin-top: 1rem;
@@ -434,13 +122,6 @@ h1:focus {
 /* =======================
    DASHBOARD PAGE
    ======================= */
-.dashboard-outer-content {
-    min-height: 100vh;
-    background: transparent;
-    width: 100%;
-    padding: 0;
-    margin: 0;
-}
 
 /* Shared container for banner, tabs, and sections */
 .dashboard-center-container {
@@ -453,14 +134,6 @@ h1:focus {
     align-items: stretch;
 }
 
-.dashboard-profile-absolute-wrapper {
-    width: 1000px;
-    max-width: 100%;
-    margin: 0 auto;
-    position: relative;
-    height: 0;
-}
-
 .dashboard-profile-absolute {
     position: fixed;
     right: 40px;
@@ -468,14 +141,11 @@ h1:focus {
     border: none;
     padding: 0;
     cursor: pointer;
-    z-index: 200;
+    z-index: 1040; /* or 200 idk */
 }
 
 .offcanvas.show {
     z-index: 1050 !important;
-}
-.dashboard-profile-absolute {
-    z-index: 1040 !important;
 }
 
 /* Topbar: align search left, profile right */  
@@ -519,42 +189,9 @@ h1:focus {
     text-align: left;
 }
 
-/* Main dashboard content area */
-.dashboard-main-content {
-    position: relative;
-    margin-left: 80px; /* for left sidebar */
-    margin-right: 380px; /* for right sidebar space */
-    padding: 40px 24px 40px 24px;
-    background: #fff;
-    min-height: 100vh;
-    width: auto;
-    box-shadow: none;
-    border-radius: 0;
-    display: flex;
-    flex-direction: column;
-    align-items: stretch;
-}
-
 /* =======================
    DASHBOARD SIDEBAR
    ======================= */
-.dashboard-right-sidebar {
-    position: fixed;
-    top: 0;
-    right: 0;
-    width: 370px;
-    max-width: 100vw;
-    height: 100vh;
-    background: #fff;
-    box-shadow: -2px 0 16px rgba(0,0,0,0.10);
-    z-index: 2100;
-    display: flex;
-    flex-direction: column;
-    padding: 32px 24px 24px 24px;
-    animation: slideInRight 0.25s;
-    overflow-y: auto;
-    align-items: center;
-}
 
 .offcanvas-header {
     padding-bottom: 0;
@@ -573,156 +210,15 @@ h1:focus {
     from { right: -360px; opacity: 0; }
     to { right: 0; opacity: 1; }
 }
+
 @keyframes fadeIn {
         from { opacity: 0; transform: translateY(30px);}
         to { opacity: 1; transform: translateY(0);}
     }
-.close-sidebar {
-    position: absolute;
-    top: 18px;
-    right: 18px;
-    background: none;
-    border: none;
-    font-size: 2rem;
-    color: #222;
-    cursor: pointer;
-    z-index: 2200;
-}
-/* Add to your CSS file */
-.dashboard-sidebar-popout {
-    position: fixed;
-    left: 0;
-    top: 0;
-    width: 80px;
-    height: 100vh;
-    background: #fff;
-    box-shadow: 2px 0 12px rgba(0,0,0,0.08);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    z-index: 100;
-}
-.sidebar-popout-img {
-    margin: 24px 0 32px 0;
-    display: flex;
-    justify-content: center;
-}
-.sidebar-popout-img img {
-    width: 48px;
-    height: 48px;
-    border-radius: 12px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-}
-.sidebar-popout-nav {
-    display: flex;
-    flex-direction: column;
-    gap: 24px;
-    width: 100%;
-    align-items: center;
-}
-.sidebar-popout-link {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    color: #222;
-    text-decoration: none;
-    font-size: 12px;
-    padding: 8px 0;
-    width: 100%;
-    transition: background 0.2s;
-}
-.sidebar-popout-link.active,
-.sidebar-popout-link:hover {
-    background: #ffe066;
-    color: #222;
-    border-radius: 8px;
-}
-.sidebar-popout-icon {
-    font-size: 20px;
-    margin-bottom: 4px;
-}
-.dashboard-main-content {
-    position: relative;
-    margin-left: 80px; /* for left sidebar */
-    margin-right: 380px; /* for right sidebar space */
-    padding: 40px 24px 40px 24px;
-    background: #fff;
-    min-height: 100vh;
-    width: auto;
-    box-shadow: none;
-    border-radius: 0;
-    display: flex;
-    flex-direction: column;
-    align-items: stretch;
-}
-
-/* Centered container for all dashboard content */
-.dashboard-center-container {
-    width: 900px;
-    max-width: 100%;
-    margin: 0 auto;
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    align-items: stretch;
-}
-
-/* Profile icon: fixed at top right */
-.dashboard-profile-absolute {
-    position: fixed;    
-    right: 48px;
-    background: none;
-    border: none;
-    padding: 0;
-    cursor: pointer;
-    z-index: 1201;
-}
 
 button.dashboard-profile-absolute:hover svg * {
     stroke: #111 !important;
     fill: #111 !important;
-}
-/* Sidebar overlay */
-.right-sidebar-overlay {
-    position: fixed;
-    top: 0; left: 0; right: 0; bottom: 0;
-    background: rgba(0,0,0,0.15);
-    z-index: 2000;
-}
-
-/* Sidebar panel */
-.dashboard-right-sidebar {
-    position: fixed;
-    top: 0;
-    right: 0;
-    width: 340px;
-    max-width: 100vw;
-    height: 100vh;
-    background: #fff;
-    box-shadow: -2px 0 16px rgba(0,0,0,0.10);
-    z-index: 2100;
-    display: flex;
-    flex-direction: column;
-    padding: 32px 24px 24px 24px;
-    animation: slideInRight 0.25s;
-    overflow-y: auto;
-}
-
-@keyframes slideInRight {
-    from { right: -360px; opacity: 0; }
-    to { right: 0; opacity: 1; }
-}
-
-.close-sidebar {
-    position: absolute;
-    top: 18px;
-    right: 18px;
-    background: none;
-    border: none;
-    font-size: 2rem;
-    color: #222;
-    cursor: pointer;
-    z-index: 2200;
 }
 
 .sidebar-profile {
@@ -832,6 +328,7 @@ button.dashboard-profile-absolute:hover svg * {
 /* =======================
    DASHBOARD TABS & BANNER
    ======================= */
+
 .dashboard-tabs {
     width: 100%;
     display: flex;
@@ -840,15 +337,13 @@ button.dashboard-profile-absolute:hover svg * {
     margin-bottom: 32px;
 }
 
-/* Insert after line 1022, or replace your existing .dashboard-tab and .dashboard-tab.active blocks */
-
 .dashboard-tab {
     background: #FFD600;
     color: #222;
     font-weight: 700;
     font-size: 1.1rem;
     border: none;
-    border-radius: 8px;
+    border-radius: 10px; /* or 8px */
     width: 260px;
     height: 54px;
     box-shadow: 0 4px 6px rgba(0,0,0,0.10);
@@ -871,36 +366,8 @@ button.dashboard-profile-absolute:hover svg * {
 .dashboard-tab:hover,
 .dashboard-tab:focus {
     filter: brightness(0.95);
-}
-
-.dashboard-tab {
-    background: #ffd600;
-    color: #222;
-    font-weight: 700;
-    font-size: 1.1rem;
-    border: none;
-    border-radius: 10px;
-    width: 260px;
-    height: 54px;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.10);
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    outline: none;
-    transition: background 0.2s, color 0.2s, box-shadow 0.2s;
-}
-
-.dashboard-tab:hover,
-.dashboard-tab:focus {
     color: #fff;
     background: #ffd600;
-}
-
-.dashboard-tab.active {
-    color: #222; /* black text for active tab */
-    background: #ffd600;
-    box-shadow: 0 6px 12px rgba(0,0,0,0.13);
 }
 
 .dashboard-tab.active:hover,
@@ -949,6 +416,7 @@ button.dashboard-profile-absolute:hover svg * {
 /* =======================
    SCHOLARSHIP SECTION
    ======================= */
+
 .scholarship-section {
     width: 100%;
     margin: 0;
@@ -959,13 +427,19 @@ button.dashboard-profile-absolute:hover svg * {
 }
 
 .scholarship-row-title {
-    display: flex;
+    font-family: 'Inter', 'Helvetica Neue', Arial, sans-serif;
+    font-size: 1.08rem;
+    font-weight: 700;
+    color: #222;
+    margin-bottom: 12px;
+    margin-left: 2px;
+    letter-spacing: 0.01em;
+    line-height: 1.2;
+    /* Remove flex and gap */
+    display: block; /*or flex */
+    /* gap: 8px; */
     align-items: center;
     justify-content: space-between;
-    font-weight: 700;
-    margin-bottom: 12px;
-    font-size: 1.05rem;
-    gap: 8px;
 }
 
 .scholarship-cards {
@@ -986,6 +460,12 @@ button.dashboard-profile-absolute:hover svg * {
     flex-direction: column;
     align-items: center;
     transition: box-shadow 0.2s, transform 0.2s;
+
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    height: 120px;
+    justify-content: center;
+    margin-bottom: 12px;
+    position: relative;
 }
 
 .scholarship-card:hover {
@@ -1012,42 +492,6 @@ button.dashboard-profile-absolute:hover svg * {
     text-align: center;
 }
 
-/* Add these styles to app.css */
-
-.scholarship-cards {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 24px;
-}
-
-.scholarship-card {
-    background: #fff;
-    border-radius: 12px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-    width: 260px;
-    height: 120px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    margin-bottom: 12px;
-    position: relative;
-}
-
-.scholarship-card-img {
-    width: 48px;
-    height: 48px;
-    background: #eee;
-    border-radius: 8px;
-    margin-bottom: 8px;
-}
-
-.scholarship-card-title {
-    font-weight: 600;
-    font-size: 1rem;
-    text-align: center;
-}
-
 .scholarship-card-status {
     position: absolute;
     right: 16px;
@@ -1057,289 +501,9 @@ button.dashboard-profile-absolute:hover svg * {
 }
 
 /* =======================
-   PARTNERS PAGE
-   ======================= */
-.partners-page {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 40px 16px 0 16px;
-    text-align: center;
-}
-
-.partners-title {
-    font-size: 2.5rem;
-    font-weight: 700;
-    margin-bottom: 0.5rem;
-}
-
-.partners-subtitle {
-    font-size: 1.15rem;
-    color: #444;
-    margin-bottom: 2.5rem;
-}
-
-.partners-grid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 32px 24px;
-    justify-items: center;
-    margin-bottom: 2.5rem;
-}
-
-.partner-card {
-    background: #fff;
-    border-radius: 12px;
-    box-shadow: 0 4px 16px rgba(0,0,0,0.10);
-    padding: 24px 16px 18px 16px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    min-width: 210px;
-    min-height: 110px;
-    transition: box-shadow 0.2s;
-}
-
-.partner-card:hover {
-    box-shadow: 0 8px 24px rgba(0,0,0,0.13);
-}
-
-.partner-logo {
-    margin-bottom: 10px;
-}
-
-.partner-name {
-    font-size: 1.08rem;
-    font-weight: 500;
-    color: #222;
-}
-
-.partners-footer {
-    margin-top: 18px;
-    font-size: 1rem;
-    color: #222;
-    padding-bottom: 20px;
-}
-
-.partners-footer b {
-    font-weight: 600;
-}
-
-.partners-footer b a {
-    cursor: pointer;
-    transition: transform 0.3s ease, color 0.3s ease;
-    display: inline-block;
-}
-
-.partners-footer b a:hover {
-    transform: scale(1.1);
-    color: #1666c1 !important;
-    text-decoration: none;
-}
-
-/* Responsive */
-@media (max-width: 1100px) {
-    .partners-grid {
-        grid-template-columns: repeat(3, 1fr);
-    }
-}
-@media (max-width: 800px) {
-    .partners-grid {
-        grid-template-columns: repeat(2, 1fr);
-    }
-}
-@media (max-width: 500px) {
-    .partners-grid {
-        grid-template-columns: 1fr;
-    }
-    .partner-card {
-        min-width: 0;
-        width: 100%;
-    }
-}
-
-                                    /* Dashboard Bookmarks Section*/
-.dashboard-bookmarks-page {
-    padding: 36px 0 0 0;
-    max-width: 1100px;
-    margin: 0 auto;
-}
-
-.dashboard-bookmarks-searchbar {
-    width: 100%;
-    max-width: 480px;
-    margin: 0 auto 18px auto;
-    position: relative;
-}
-.bookmarks-search-input {
-    width: 100%;
-    padding: 13px 44px 13px 16px;
-    border: 1.5px solid #e0e0e0;
-    border-radius: 8px;
-    font-size: 1.08rem;
-    background: #fff;
-    outline: none;
-}
-.search-icon {
-    position: absolute;
-    right: 16px;
-    top: 50%;
-    transform: translateY(-50%);
-    pointer-events: none;
-}
-
-.dashboard-bookmarks-tabs-row {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 24px;
-    margin-bottom: 18px;
-    flex-wrap: wrap;
-}
-
-.bookmarks-tabs {
-    display: flex;
-    gap: 2px;
-}
-.bookmarks-tab {
-    background: #f5f6fa;
-    border: none;
-    padding: 7px 22px;
-    border-radius: 6px 6px 0 0;
-    font-weight: 700;
-    color: #222;
-    font-size: 1rem;
-    cursor: pointer;
-    transition: background 0.18s, color 0.18s;
-    border-bottom: 2px solid transparent;
-}
-.bookmarks-tab.active,
-.bookmarks-tab:focus {
-    background: #1560d4;
-    color: #fff;
-    border-bottom: 2px solid #1560d4;
-}
-.bookmarks-filters {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-.bookmarks-filter-select {
-    padding: 7px 16px;
-    border-radius: 6px;
-    border: 1.5px solid #e0e0e0;
-    font-size: 1rem;
-    background: #fff;
-}
-.bookmarks-clear-filter {
-    background: none;
-    border: none;
-    color: #1560d4;
-    font-weight: 600;
-    margin-left: 6px;
-    cursor: pointer;
-    font-size: 1rem;
-}
-
-.bookmarks-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 32px;
-    justify-items: center;
-    margin-bottom: 32px;
-}
-
-.bookmark-card {
-    background: #fff;
-    border-radius: 16px;
-    box-shadow: 0 4px 18px 0 rgba(0,0,0,0.08);
-    padding: 18px 24px;
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    min-width: 0;
-    min-height: 90px;
-    max-width: 340px;
-    width: 100%;
-    margin: 0 auto;
-    transition: box-shadow 0.18s, transform 0.18s;
-    position: relative;
-}
-.bookmark-card:hover {
-    box-shadow: 0 8px 32px rgba(0,0,0,0.13);
-    transform: translateY(-2px) scale(1.02);
-}
-.bookmark-card-img {
-    width: 64px;
-    height: 64px;
-    background: #f5f6fa;
-    border-radius: 12px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-right: 22px;
-    flex-shrink: 0;
-}
-.bookmark-card-content {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    min-width: 0;
-}
-.bookmark-card-title-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    width: 100%;
-    gap: 8px;
-}
-.bookmark-card-title {
-    font-weight: 700;
-    color: #222;
-    font-size: 1.13rem;
-    text-align: left;
-    flex: 1;
-    word-break: break-word;
-}
-.bookmark-star {
-    margin-left: 8px;
-    display: flex;
-    align-items: center;
-}
-.bookmark-card-status {
-    font-size: 0.98rem;
-    color: #888;
-    margin-top: 6px;
-}
-
-.bookmarks-empty-message {
-    margin: 60px auto 0 auto;
-    text-align: center;
-    color: #222;
-    font-size: 1.13rem;
-    line-height: 1.7;
-    max-width: 400px;
-}
-
-@media (max-width: 1100px) {
-    .bookmarks-grid {
-        grid-template-columns: repeat(2, 1fr);
-    }
-}
-@media (max-width: 700px) {
-    .bookmarks-grid {
-        grid-template-columns: 1fr;
-    }
-    .dashboard-bookmarks-page {
-        padding: 18px 0 0 0;
-    }
-    .bookmark-card {
-        max-width: 98vw;
-    }
-}
-/* =======================
    CHATBOT MODAL STYLES
    ======================= */
+
 .chatbot-float-window {
     position: fixed;
     bottom: 32px;
@@ -1546,57 +710,70 @@ button.dashboard-profile-absolute:hover svg * {
 /* =======================
    HELP BOX STYLES
    ======================= */
+   
+/* Help box (bottom widget inside sidebar) */
+
 .help-box-bottom {
-    background: rgba(255, 255, 255, 0.15);
-    border: 1px solid rgba(255, 255, 255, 0.3);
-    border-radius: 12px;
-    padding: 12px;
-    cursor: pointer;
-    transition: all 0.2s ease;
     width: 100%;
-    color: white;
+    background: rgba(255,255,255,0.13);
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    padding: 18px 8px 12px 8px;
+    margin-top: 24px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
     display: flex;
+    flex-direction: column;
     align-items: center;
-    text-align: left;
+    transition: background 0.2s;
+    cursor: pointer;
+    color: white;
 }
 
+/* Hover effect for help box */
 .help-box-bottom:hover {
     background: rgba(255, 255, 255, 0.25);
     transform: translateY(-2px);
 }
 
+/* Content inside help box */
 .help-box-content {
     display: flex;
+    flex-direction: column;
     align-items: center;
     width: 100%;
 }
 
+/* Image inside help box */
 .help-box-img {
-    width: 48px;
-    height: 48px;
-    margin-right: 12px;
-    flex-shrink: 0;
+    width: 200px;
+    height: 200px;
+    margin-top: -100px;   
+    margin-left: -24px;
+    z-index: 10;
+    position: relative;
 }
 
+/* Text styles inside help box */
 .help-box-text {
     flex: 1;
+    text-align: center;
 }
 
 .help-box-title {
-    font-size: 1.1rem;
     font-weight: 700;
-    margin-bottom: 4px;
-    color: white;
+    font-size: 1.15rem;
+    color: #ffd700; /* yellow */
+    margin-bottom: 2px;
 }
 
 .help-box-desc {
-    font-size: 0.9rem;
+    font-size: 0.75rem;
     color: rgba(255, 255, 255, 0.9);
-    line-height: 1.3;
 }
-                /* =======================
-                     DASHBOARD FAQs Section  
-                    ======================= */
+
+/* =======================
+    DASHBOARD FAQs Section  
+======================= */
 
 .dashboard-faqs-page {
     max-width: 800px;
@@ -1677,269 +854,12 @@ button.dashboard-profile-absolute:hover svg * {
     line-height: 1.6;
     margin: 0;
 }
-                                        /* Dashboard Partners Section */
-.dashboard-partners-page {
-    padding: 40px 0 0 0;
-    text-align: center;
-    max-width: 1100px;
-    margin: 0 auto;
-}
-
-.dashboard-partners-searchbar {
-    width: 100%;
-    max-width: 480px;
-    margin: 0 auto 18px auto;
-    position: relative;
-}
-.partners-search-input {
-    width: 100%;
-    padding: 13px 44px 13px 16px;
-    border: 1.5px solid #e0e0e0;
-    border-radius: 8px;
-    font-size: 1.08rem;
-    background: #fff;
-    outline: none;
-}
-.search-icon {
-    position: absolute;
-    right: 16px;
-    top: 50%;
-    transform: translateY(-50%);
-    pointer-events: none;
-}
-
-.dashboard-partners-tabs-row {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 24px;
-    margin-bottom: 18px;
-    flex-wrap: wrap;
-}
-
-.partners-tabs {
-    display: flex;
-    gap: 2px;
-}
-.partners-tab {
-    background: #f5f6fa;
-    border: none;
-    padding: 7px 22px;
-    border-radius: 6px 6px 0 0;
-    font-weight: 700;
-    color: #222;
-    font-size: 1rem;
-    cursor: pointer;
-    transition: background 0.18s, color 0.18s;
-    border-bottom: 2px solid transparent;
-}
-.partners-tab.active,
-.partners-tab:focus {
-    background: #1560d4;
-    color: #fff;
-    border-bottom: 2px solid #1560d4;
-}
-.partners-filter-select {
-    padding: 7px 16px;
-    border-radius: 6px;
-    border: 1.5px solid #e0e0e0;
-    font-size: 1rem;
-    background: #fff;
-    margin-left: 18px;
-}
-
-.partners-title {
-    font-size: 2.5rem;
-    font-weight: 800;
-    margin: 32px 0 8px 0;
-    letter-spacing: -1px;
-}
-.partners-subtitle {
-    color: #444;
-    font-size: 1.18rem;
-    margin-bottom: 32px;
-}
-
-.partners-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 32px;
-    justify-items: center;
-    margin-bottom: 32px;
-}
-
-.partner-card {
-    background: #fff;
-    border-radius: 16px;
-    box-shadow: 0 4px 18px 0 rgba(0,0,0,0.08);
-    padding: 18px 24px;
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    min-width: 0;
-    min-height: 90px;
-    max-width: 340px;
-    width: 100%;
-    margin: 0 auto;
-    transition: box-shadow 0.18s, transform 0.18s;
-}
-.partner-card:hover {
-    box-shadow: 0 8px 32px rgba(0,0,0,0.13);
-    transform: translateY(-2px) scale(1.02);
-}
-.partner-logo {
-    width: 64px;
-    height: 64px;
-    background: #f5f6fa;
-    border-radius: 12px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-right: 22px;
-    flex-shrink: 0;
-}
-.partner-name {
-    font-weight: 700;
-    color: #222;
-    font-size: 1.13rem;
-    text-align: left;
-    flex: 1;
-    word-break: break-word;
-}
-
-.partners-footer {
-    margin-top: 18px;
-    color: #222;
-    font-size: 1.08rem;
-    padding-bottom: 24px;
-}
-.partners-footer b {
-    font-weight: 700;
-}
-
-@media (max-width: 1100px) {
-    .partners-grid {
-        grid-template-columns: repeat(2, 1fr);
-    }
-}
-@media (max-width: 700px) {
-    .partners-grid {
-        grid-template-columns: 1fr;
-    }
-    .dashboard-partners-page {
-        padding: 18px 0 0 0;
-    }
-    .partner-card {
-        max-width: 98vw;
-    }
-}
-                                            /* Scholarship Sections */
-.scholarship-section {
-    width: 100%;
-    margin: 0;
-}
-
-.scholarship-row {
-    margin-bottom: 32px;
-}
-
-.scholarship-row-title {
-    font-family: 'Inter', 'Helvetica Neue', Arial, sans-serif;
-    font-size: 1.08rem;
-    font-weight: 700;
-    color: #222;
-    margin-bottom: 12px;
-    margin-left: 2px;
-    letter-spacing: 0.01em;
-    line-height: 1.2;
-    /* Remove flex and gap */
-    display: block;
-    /* Optional: add a little bottom margin for separation */
-}
-
-.scholarship-row-title span {
-    font-size: 1.1em;
-    font-weight: 400;
-    margin-left: 4px;
-    color: #222;
-    vertical-align: middle;
-}
-
-.scholarship-cards {
-    display: flex;
-    gap: 32px;
-    flex-wrap: wrap;
-    width: 100%;
-}
-
-.scholarship-card {
-    background: #fff;
-    border-radius: 12px;
-    box-shadow: 0 4px 16px rgba(0,0,0,0.13);
-    padding: 1.2rem 1.2rem 1rem 1.2rem;
-    width: 260px;
-    min-height: 160px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    transition: box-shadow 0.2s, transform 0.2s;
-}
-
-.scholarship-card:hover {
-    box-shadow: 0 8px 32px rgba(0,0,0,0.18);
-    transform: translateY(-4px) scale(1.03);
-}
-
-.scholarship-card-img {
-    width: 70px;
-    height: 70px;
-    background: #eaeaea;
-    border-radius: 8px;
-    margin-bottom: 1rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border: 2px solid #bdbdbd;
-}
-
-.scholarship-card-title {
-    font-size: 1rem;
-    font-weight: 600;
-    color: #222;
-    text-align: center;
-}
-
-/* =======================
-   CUSTOM NOTIFICATIONS
-   ======================= */
-.custom-notification-list {
-    max-height: 200px;
-}
 
 /* =======================
    MEDIA QUERIES
    ======================= */
-@media (max-width: 1100px) {
-    .partners-grid {
-        grid-template-columns: repeat(2, 1fr);
-    }
-}
-@media (max-width: 1000px) {
-    .partners-grid {
-        grid-template-columns: repeat(2, 1fr);
-    }
-    .partner-card {
-        width: 90%;
-    }
-}
-@media (max-width: 600px) {
-    .partners-grid {
-        grid-template-columns: 1fr;
-    }
-    .partners-page {
-        padding: 0 8px 24px 8px;
-    }
-}
+
+
 @media (max-width: 800px) {
     .dashboard-center-container,
     .dashboard-topbar {
@@ -1963,107 +883,12 @@ button.dashboard-profile-absolute:hover svg * {
     }
 }
 
-.right-sidebar-overlay {
-    position: fixed;
-    top: 0; left: 0; right: 0; bottom: 0;
-    background: rgba(0,0,0,0.15);
-    z-index: 2000;
-}
-
-.dashboard-right-sidebar.custom-sidebar {
-    border-top-right-radius: 32px;
-    background: #f5f6fa;
-    box-shadow: -2px 0 24px rgba(0,0,0,0.10);
-    width: 370px;
-    padding: 40px 32px 32px 32px;
-    min-width: 320px;
-    max-width: 100vw;
-    right: 0;
-    top: 0;
-    z-index: 200;
-    overflow-y: auto;
-    transition: right 0.3s;
-}
-
-.custom-close {
-    position: absolute;
-    top: 24px;
-    right: 24px;
-    background: none;
-    border: none;
-    padding: 0;
-    cursor: pointer;
-    z-index: 10;
-}
-
-.custom-profile {
-    margin-top: 32px;
-    margin-bottom: 32px;
-}
-
-.custom-profile-name {
-    font-size: 1.25rem;
-    font-weight: 700;
-    margin-top: 18px;
-    color: #222;
-}
-
-.custom-profile-role {
-    color: #888;
-    font-size: 1.05rem;
-    margin-bottom: 16px;
-}
-
-.custom-profile-btn {
-    background: #444;
-    color: #fff;
-    border: none;
-    border-radius: 18px;
-    padding: 8px 32px;
-    font-size: 1.05rem;
-    cursor: pointer;
-    margin-top: 8px;
-}
-
-.custom-calendar .calendar-box {
-    background: #fff;
-    padding: 18px;
-    border-radius: 16px;
-    margin: 24px 0;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-    text-align: center;
-}
-
-.calendar-placeholder {
-    font-size: 14px;
-    color: #888;
-    margin-top: 8px;
-}
-
-.custom-notifications-header {
-    font-weight: 700;
-    margin-bottom: 10px;
-    font-size: 1.08rem;
-    color: #222;
-}
-
 .clear-link {
     float: right;
     color: #888;
     font-size: 0.95rem;
     cursor: pointer;
     font-weight: 400;
-}
-
-.custom-notification-list {
-    max-height: 200px;
-}
-
-@media (max-width: 600px) {
-    .dashboard-right-sidebar {
-        width: 100vw;
-        padding: 24px 8px;
-    }
 }
 
 .scholarship-row-title-btn {
