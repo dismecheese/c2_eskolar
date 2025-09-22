@@ -105,7 +105,7 @@ namespace c2_eskolar.Models
 
         // Academic Performance (for AI recommendations)
         [Range(1.0, 5.0)]
-        public decimal? GPA { get; set; }
+        public decimal? GPA1 { get; set; }
 
         // Timestamps
         public DateTime CreatedAt { get; set; } = DateTime.Now;
