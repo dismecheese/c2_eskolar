@@ -23,9 +23,11 @@ namespace c2_eskolar.Services
 
         public async Task<IdentityResult> RegisterAsync(RegisterViewModel model)
         {
+            var username = $"{model.FirstName}.{model.LastName}".ToLower().Replace(" ", "");
+
             var user = new IdentityUser
             {
-                UserName = model.Email,
+                UserName = username,
                 Email = model.Email
             };
 

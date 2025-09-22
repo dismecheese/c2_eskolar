@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using c2_eskolar.Data;
 
@@ -11,9 +12,11 @@ using c2_eskolar.Data;
 namespace c2_eskolar.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250921155405_FixNavigationProperties")]
+    partial class FixNavigationProperties
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -627,6 +630,9 @@ namespace c2_eskolar.Migrations
                     b.Property<int>("StudentProfileId")
                         .HasColumnType("int");
 
+                    b.Property<int>("StudentProfileId1")
+                        .HasColumnType("int");
+
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2");
 
@@ -639,6 +645,8 @@ namespace c2_eskolar.Migrations
                     b.HasIndex("ScholarshipId");
 
                     b.HasIndex("StudentProfileId");
+
+                    b.HasIndex("StudentProfileId1");
 
                     b.ToTable("ScholarshipApplications");
                 });
@@ -799,9 +807,17 @@ namespace c2_eskolar.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("c2_eskolar.Models.StudentProfile", "StudentProfile")
+                        .WithMany()
+                        .HasForeignKey("StudentProfileId1")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.Navigation("Scholarship");
 
                     b.Navigation("Student");
+
+                    b.Navigation("StudentProfile");
                 });
 
             modelBuilder.Entity("c2_eskolar.Models.BenefactorProfile", b =>

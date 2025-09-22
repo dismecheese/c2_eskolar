@@ -16,6 +16,9 @@ builder.Services.AddBlazorBootstrap();
 // Add Controllers for API endpoints
 builder.Services.AddControllers();
 
+// 🔧 Fix: Register HttpClient
+builder.Services.AddHttpClient();
+
 // Add Entity Framework with SQL Server
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
