@@ -29,10 +29,12 @@ namespace c2_eskolar.Services
         // Register a new user and create profile based on selected role
         public async Task<IdentityResult> RegisterAsync(RegisterViewModel model)
         {
+            var username = $"{model.FirstName}.{model.LastName}".ToLower().Replace(" ", "");
+
             // Create new Identity user object from registration info
             var user = new IdentityUser
             {
-                UserName = model.Email,
+                UserName = username,
                 Email = model.Email
             };
 

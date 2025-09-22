@@ -7,8 +7,9 @@ services:
     environment:
       SA_PASSWORD: "eSkolar2025!"
       ACCEPT_EULA: "Y"
+      MSSQL_PID: "Express"
     ports:
-      - "14333:1433"
+      - "1433:1433"
     volumes:
       - sql_data:/var/opt/mssql
 
@@ -16,12 +17,13 @@ services:
     build: .
     container_name: eskolar_app
     ports:
-      - "5101:80"
+      - "8080:8080"
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
-      - ConnectionStrings__DefaultConnection=Server=sqlserver,1433;Database=eSkolarDb;User Id=sa;Password=eSkolar2025!;TrustServerCertificate=true
+      - ConnectionStrings__DefaultConnection=Server=sqlserver,1433;Database=eSkolarDb;User Id=sa;Password=eSkolar2025!;TrustServerCertificate=true;
     depends_on:
       - sqlserver
+    restart: unless-stopped
 
 volumes:
   sql_data:

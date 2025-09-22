@@ -1,506 +1,95 @@
 @page "/dashboard/student/profile"
 @attribute [Authorize(Roles = "Student")]
 @layout Layout.StudentDashLayout
-@inject AuthenticationStateProvider AuthenticationStateProvider
-@inject UserManager<IdentityUser> UserManager
-@using Microsoft.AspNetCore.Components.Authorization
-@using Microsoft.AspNetCore.Identity
 
-<div class="container-fluid p-5" style="padding-left: 80px; padding-right: 120px;">
-    <!-- Header Section -->
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="d-flex justify-content-between align-items-center">
-                <h2 class="mb-0">My Profile</h2>
-                <div class="d-flex gap-2">
-                    <button class="btn btn-primary" @onclick="ToggleEditMode">
-                        <i class="fas fa-edit me-2"></i>@(IsEditMode ? "Cancel" : "Edit Profile")
-                    </button>
-                    @if (IsEditMode)
-                    {
-                        <button class="btn btn-success" @onclick="SaveProfile">
-                            <i class="fas fa-save me-2"></i>Save Changes
-                        </button>
-                    }
-                </div>
-            </div>
+<h2 class="p-4">My Profile</h2>
+
+<div class="container-fluid px-5">
+    <button class="btn btn-primary mb-3" @onclick="ToggleEditMode">
+        @(IsEditMode ? "Cancel" : "Edit Profile")
+    </button>
+
+    @if (!IsEditMode)
+    {
+        <!-- View Mode -->
+        <div class="card p-4">
+            <dl class="row">
+                <dt class="col-sm-3">Full Name</dt>
+                <dd class="col-sm-9">Charles Cedric C. Almadrones</dd>
+
+                <dt class="col-sm-3">Email</dt>
+                <dd class="col-sm-9">student@example.com</dd>
+
+                <dt class="col-sm-3">Phone</dt>
+                <dd class="col-sm-9">09123456789</dd>
+
+                <dt class="col-sm-3">Address</dt>
+                <dd class="col-sm-9">123 Poblacion, Makati City</dd>
+
+                <dt class="col-sm-3">University</dt>
+                <dd class="col-sm-9">University of the Philippines</dd>
+
+                <dt class="col-sm-3">Course</dt>
+                <dd class="col-sm-9">BS Computer Science</dd>
+
+                <dt class="col-sm-3">Year Level</dt>
+                <dd class="col-sm-9">3rd Year</dd>
+            </dl>
         </div>
-    </div>
+    }
+    else
+    {
+        <!-- Edit Mode -->
+        <div class="card p-4">
+            <form>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label>Full Name</label>
+                        <input type="text" class="form-control" value="Charles Cedric C. Almadrones" />
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label>Email</label>
+                        <input type="email" class="form-control" value="student@example.com" disabled />
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label>Phone</label>
+                        <input type="text" class="form-control" value="09123456789" />
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label>Address</label>
+                        <input type="text" class="form-control" value="123 Poblacion, Makati City" />
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label>University</label>
+                        <input type="text" class="form-control" value="University of the Philippines" />
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label>Course</label>
+                        <input type="text" class="form-control" value="BS Computer Science" />
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label>Year Level</label>
+                        <select class="form-control">
+                            <option selected>3rd Year</option>
+                            <option>1st Year</option>
+                            <option>2nd Year</option>
+                            <option>4th Year</option>
+                            <option>Graduate</option>
+                        </select>
+                    </div>
+                </div>
 
-    <div class="row">
-        <!-- Profile Summary (Left Column) -->
-        <div class="col-lg-4 mb-4">
-            <!-- Profile Card -->
-            <div class="card shadow-sm mb-4">
-                <div class="card-body text-center">
-                    <div class="position-relative d-inline-block mb-3">
-                        <img src="@ProfilePicture" class="rounded-circle profile-image" alt="Profile Picture" width="120" height="120" />
-                        @if (IsEditMode)
-                        {
-                            <button class="btn btn-sm btn-primary position-absolute bottom-0 end-0 rounded-circle" style="width: 30px; height: 30px;">
-                                <i class="fas fa-camera"></i>
-                            </button>
-                        }
-                    </div>
-                    <h4 class="card-title mb-1">@FullName</h4>
-                    <p class="text-muted mb-2">@Role</p>
-                    <div class="mb-3">
-                        <span class="badge bg-@(Status == "Active" ? "success" : "secondary") fs-6">@Status</span>
-                    </div>
-                    <div class="text-start">
-                        <p class="mb-2"><i class="fas fa-envelope text-primary me-2"></i>@Email</p>
-                        <p class="mb-2"><i class="fas fa-phone text-primary me-2"></i>@Phone</p>
-                        <p class="mb-2"><i class="fas fa-map-marker-alt text-primary me-2"></i>@Location</p>
-                        <p class="mb-0"><i class="fas fa-calendar text-primary me-2"></i>Member since @CreatedDate.ToString("MMM yyyy")</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Quick Stats -->
-            <div class="card shadow-sm mb-4">
-                <div class="card-header bg-primary text-white">
-                    <h6 class="mb-0"><i class="fas fa-chart-bar me-2"></i>Academic Summary</h6>
-                </div>
-                <div class="card-body">
-                    <div class="row text-center">
-                        <div class="col-4">
-                            <div class="stat-item">
-                                <h4 class="text-primary mb-1">@ScholarshipsReceived</h4>
-                                <small class="text-muted">Scholarships</small>
-                            </div>
-                        </div>
-                        <div class="col-4">
-                            <div class="stat-item">
-                                <h4 class="text-success mb-1">@Applications</h4>
-                                <small class="text-muted">Applications</small>
-                            </div>
-                        </div>
-                        <div class="col-4">
-                            <div class="stat-item">
-                                <h4 class="text-info mb-1">@GPA</h4>
-                                <small class="text-muted">GPA</small>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Verification Status -->
-            <div class="card shadow-sm">
-                <div class="card-header bg-white">
-                    <h6 class="mb-0"><i class="fas fa-shield-check me-2"></i>Account Verification</h6>
-                </div>
-                <div class="card-body">
-                    <div class="verification-item d-flex justify-content-between align-items-center mb-2">
-                        <span>Email Verified</span>
-                        <i class="fas fa-@(EmailVerified ? "check-circle text-success" : "clock text-warning")"></i>
-                    </div>
-                    <div class="verification-item d-flex justify-content-between align-items-center mb-2">
-                        <span>Phone Verified</span>
-                        <i class="fas fa-@(PhoneVerified ? "check-circle text-success" : "clock text-warning")"></i>
-                    </div>
-                    <div class="verification-item d-flex justify-content-between align-items-center mb-2">
-                        <span>Student ID Verified</span>
-                        <i class="fas fa-@(StudentIdVerified ? "check-circle text-success" : "clock text-warning")"></i>
-                    </div>
-                    <div class="verification-item d-flex justify-content-between align-items-center">
-                        <span>Academic Records</span>
-                        <i class="fas fa-@(AcademicRecordsVerified ? "check-circle text-success" : "clock text-warning")"></i>
-                    </div>
-                </div>
-            </div>
+                <button type="submit" class="btn btn-success">Save</button>
+            </form>
         </div>
-
-        <!-- Profile Details (Right Column) -->
-        <div class="col-lg-8">
-            <!-- Personal Information -->
-            <div class="card shadow-sm mb-4">
-                <div class="card-header bg-white">
-                    <h5 class="mb-0"><i class="fas fa-user me-2"></i>Personal Information</h5>
-                </div>
-                <div class="card-body">
-                    @if (IsEditMode)
-                    {
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">Full Name</label>
-                                <input type="text" class="form-control" @bind="FullName" />
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">Username</label>
-                                <input type="text" class="form-control" @bind="Username" readonly />
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">Email</label>
-                                <input type="email" class="form-control" @bind="Email" readonly />
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">Phone</label>
-                                <input type="tel" class="form-control" @bind="Phone" />
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">Location</label>
-                                <input type="text" class="form-control" @bind="Location" />
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">University</label>
-                                <input type="text" class="form-control" @bind="University" />
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">Course/Major</label>
-                                <input type="text" class="form-control" @bind="Course" />
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">Year Level</label>
-                                <select class="form-control" @bind="YearLevel">
-                                    <option value="1st Year">1st Year</option>
-                                    <option value="2nd Year">2nd Year</option>
-                                    <option value="3rd Year">3rd Year</option>
-                                    <option value="4th Year">4th Year</option>
-                                    <option value="Graduate">Graduate</option>
-                                </select>
-                            </div>
-                            <div class="col-12 mb-3">
-                                <label class="form-label">Bio</label>
-                                <textarea class="form-control" rows="3" @bind="Bio"></textarea>
-                            </div>
-                        </div>
-                    }
-                    else
-                    {
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <h6 class="text-muted mb-1">Full Name</h6>
-                                <p class="mb-0">@FullName</p>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <h6 class="text-muted mb-1">Username</h6>
-                                <p class="mb-0">@Username</p>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <h6 class="text-muted mb-1">Email</h6>
-                                <p class="mb-0">@Email</p>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <h6 class="text-muted mb-1">Phone</h6>
-                                <p class="mb-0">@Phone</p>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <h6 class="text-muted mb-1">Location</h6>
-                                <p class="mb-0">@Location</p>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <h6 class="text-muted mb-1">University</h6>
-                                <p class="mb-0">@University</p>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <h6 class="text-muted mb-1">Course/Major</h6>
-                                <p class="mb-0">@Course</p>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <h6 class="text-muted mb-1">Year Level</h6>
-                                <p class="mb-0">@YearLevel</p>
-                            </div>
-                            <div class="col-12 mb-3">
-                                <h6 class="text-muted mb-1">Bio</h6>
-                                <p class="mb-0">@Bio</p>
-                            </div>
-                        </div>
-                    }
-                </div>
-            </div>
-
-            <!-- Recent Activity -->
-            <div class="card shadow-sm mb-4">
-                <div class="card-header bg-white">
-                    <h5 class="mb-0"><i class="fas fa-history me-2"></i>Recent Activity</h5>
-                </div>
-                <div class="card-body">
-                    <div class="activity-timeline">
-                        <div class="activity-item d-flex mb-3">
-                            <div class="activity-icon bg-success text-white rounded-circle me-3">
-                                <i class="fas fa-graduation-cap"></i>
-                            </div>
-                            <div class="activity-content">
-                                <h6 class="mb-1">Scholarship Application Submitted</h6>
-                                <p class="text-muted small mb-0">Applied for "Excellence in Engineering" scholarship - 2 hours ago</p>
-                            </div>
-                        </div>
-                        <div class="activity-item d-flex mb-3">
-                            <div class="activity-icon bg-info text-white rounded-circle me-3">
-                                <i class="fas fa-user-check"></i>
-                            </div>
-                            <div class="activity-content">
-                                <h6 class="mb-1">Profile Updated</h6>
-                                <p class="text-muted small mb-0">Updated academic information and GPA - 1 day ago</p>
-                            </div>
-                        </div>
-                        <div class="activity-item d-flex mb-3">
-                            <div class="activity-icon bg-warning text-white rounded-circle me-3">
-                                <i class="fas fa-bell"></i>
-                            </div>
-                            <div class="activity-content">
-                                <h6 class="mb-1">New Scholarship Available</h6>
-                                <p class="text-muted small mb-0">New scholarship opportunity matched your profile - 3 days ago</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Security Settings -->
-            <div class="card shadow-sm">
-                <div class="card-header bg-white">
-                    <h5 class="mb-0"><i class="fas fa-lock me-2"></i>Security Settings</h5>
-                </div>
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <div>
-                                    <h6 class="mb-1">Two-Factor Authentication</h6>
-                                    <p class="text-muted small mb-0">Add extra security to your account</p>
-                                </div>
-                                <div class="form-check form-switch">
-                                    <input class="form-check-input" type="checkbox" @bind="IsTwoFactorEnabled" />
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <h6 class="mb-1">Last Login</h6>
-                            <p class="text-muted small mb-0">@LastLogin.ToString("MMM dd, yyyy hh:mm tt")</p>
-                        </div>
-                        <div class="col-12">
-                            <button class="btn btn-outline-primary">
-                                <i class="fas fa-key me-2"></i>Change Password
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+    }
 </div>
 
-<style>
-    .profile-image {
-        object-fit: cover;
-        border: 4px solid #f8f9fa;
-        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-    }
-    
-    .stat-item {
-        padding: 0.5rem 0;
-    }
-    
-    .verification-item {
-        padding: 0.25rem 0;
-    }
-    
-    .activity-icon {
-        width: 40px;
-        height: 40px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        flex-shrink: 0;
-    }
-    
-    .activity-timeline {
-        position: relative;
-    }
-    
-    .card-header {
-        border-bottom: 1px solid #dee2e6;
-    }
-    
-    .form-check-input:checked {
-        background-color: #198754;
-        border-color: #198754;
-    }
-</style>
-
 @code {
-    // Edit mode state
     private bool IsEditMode = false;
-    private bool isLoading = true;
-    
-    // Profile Info - Dynamic from logged in user
-    private string FullName = "";
-    private string Username = "";
-    private string Email = "";
-    private string Phone = "";
-    private string Location = "";
-    private string University = "";
-    private string Course = "";
-    private string YearLevel = "1st Year";
-    private string Bio = "";
-    private string Role = "Student";
-    private string Status = "Active";
-    private DateTime CreatedDate = DateTime.Now;
-    private string ProfilePicture = "https://via.placeholder.com/120";
 
-    // Verification Status
-    private bool EmailVerified = false;
-    private bool PhoneVerified = false;
-    private bool StudentIdVerified = false;
-    private bool AcademicRecordsVerified = false;
-
-    // Security
-    private bool IsTwoFactorEnabled = false;
-    private DateTime LastLogin = DateTime.Now;
-
-    // Stats
-    private int ScholarshipsReceived = 0;
-    private int Applications = 0;
-    private string GPA = "0.00";
-
-    protected override async Task OnInitializedAsync()
-    {
-        await LoadUserData();
-        isLoading = false;
-        StateHasChanged();
-    }
-
-    private async Task LoadUserData()
-    {
-        try
-        {
-            var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
-            if (authState.User.Identity?.IsAuthenticated == true)
-            {
-                var user = await UserManager.GetUserAsync(authState.User);
-                if (user != null)
-                {
-                    // Load basic Identity data
-                    Email = user.Email ?? "";
-                    Username = user.UserName ?? "";
-                    FullName = user.UserName ?? "Student User"; // You can expand this to include first/last name
-                    
-                    // Check email confirmation status
-                    EmailVerified = await UserManager.IsEmailConfirmedAsync(user);
-                    
-                    // Set creation date from user registration
-                    CreatedDate = user.LockoutEnd?.DateTime ?? DateTime.Now;
-                    
-                    // Set last login (you may need to track this separately)
-                    LastLogin = DateTime.Now.AddHours(-1); // Placeholder
-                    
-                    // TODO: Load additional profile data from your custom database tables
-                    // Example: Load student-specific data from StudentProfile table
-                    await LoadExtendedProfileData(user.Id);
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error loading user data: {ex.Message}");
-            // Set default values
-            FullName = "Student User";
-            Email = "student@example.com";
-            Username = "student.user";
-        }
-    }
-
-    private async Task LoadExtendedProfileData(string userId)
-    {
-        try
-        {
-            // TODO: Replace with actual database calls
-            // Example of what you might implement:
-            
-            // var studentProfile = await DbContext.StudentProfiles
-            //     .FirstOrDefaultAsync(sp => sp.UserId == userId);
-            
-            // if (studentProfile != null)
-            // {
-            //     FullName = $"{studentProfile.FirstName} {studentProfile.LastName}";
-            //     Phone = studentProfile.Phone;
-            //     Location = studentProfile.Location;
-            //     University = studentProfile.University;
-            //     Course = studentProfile.Course;
-            //     YearLevel = studentProfile.YearLevel;
-            //     Bio = studentProfile.Bio;
-            //     GPA = studentProfile.GPA.ToString("F2");
-            //     ProfilePicture = studentProfile.ProfilePictureUrl ?? "https://via.placeholder.com/120";
-            //     
-            //     // Load verification status
-            //     PhoneVerified = studentProfile.PhoneVerified;
-            //     StudentIdVerified = studentProfile.StudentIdVerified;
-            //     AcademicRecordsVerified = studentProfile.AcademicRecordsVerified;
-            //     
-            //     // Load statistics
-            //     ScholarshipsReceived = await DbContext.ScholarshipApplications
-            //         .CountAsync(sa => sa.StudentId == userId && sa.Status == "Approved");
-            //     Applications = await DbContext.ScholarshipApplications
-            //         .CountAsync(sa => sa.StudentId == userId);
-            // }
-            
-            // For now, set some default values based on username
-            if (!string.IsNullOrEmpty(Username))
-            {
-                FullName = Username.Replace(".", " ").Replace("_", " ");
-                // Capitalize each word
-                FullName = System.Globalization.CultureInfo.CurrentCulture.TextInfo.ToTitleCase(FullName);
-            }
-            
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error loading extended profile data: {ex.Message}");
-        }
-    }
-
-    // Methods
     private void ToggleEditMode()
     {
         IsEditMode = !IsEditMode;
-    }
-
-    private async Task SaveProfile()
-    {
-        try
-        {
-            var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
-            var user = await UserManager.GetUserAsync(authState.User);
-            
-            if (user != null)
-            {
-                // TODO: Implement save functionality to database
-                // Save to your custom StudentProfile table
-                
-                // Example:
-                // var studentProfile = await DbContext.StudentProfiles
-                //     .FirstOrDefaultAsync(sp => sp.UserId == user.Id);
-                
-                // if (studentProfile == null)
-                // {
-                //     studentProfile = new StudentProfile { UserId = user.Id };
-                //     DbContext.StudentProfiles.Add(studentProfile);
-                // }
-                
-                // studentProfile.FirstName = FullName.Split(' ').FirstOrDefault();
-                // studentProfile.LastName = FullName.Split(' ').LastOrDefault();
-                // studentProfile.Phone = Phone;
-                // studentProfile.Location = Location;
-                // studentProfile.University = University;
-                // studentProfile.Course = Course;
-                // studentProfile.YearLevel = YearLevel;
-                // studentProfile.Bio = Bio;
-                
-                // await DbContext.SaveChangesAsync();
-                
-                IsEditMode = false;
-                Console.WriteLine("Student profile updated successfully!");
-                
-                // Show success message to user
-                // You might want to add a toast notification here
-            }
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error saving profile: {ex.Message}");
-            // Show error message to user
-        }
     }
 }

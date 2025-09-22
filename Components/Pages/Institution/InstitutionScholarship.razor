@@ -1,67 +1,93 @@
-@page "/dashboard/institution/scholarships"
-@attribute [Authorize(Roles = "Institution")] 
+@page "/dashboard/institution/scholarships/"
+@attribute [Authorize(Roles = "Institution")]
 @layout Layout.InstitutionDashLayout
+
+@using Microsoft.EntityFrameworkCore
+@using c2_eskolar.Data
+@using c2_eskolar.Models
+@inject ApplicationDbContext DbContext
+@inject NavigationManager Navigation
 
 <PageTitle>Scholarships</PageTitle>
 
-<div class="scholarship-dashboard-container" style="max-width:600px;margin:32px auto;">
-    <!-- Top Bar -->
-    <div class="d-flex align-items-center justify-content-between mb-4">
-        <input type="text" class="form-control" placeholder="Search" style="width:60%;" />
-        <div>
-            <select class="form-select d-inline-block me-2" style="width:auto;">
-                <option>Filter</option>
-            </select>
-            <select class="form-select d-inline-block" style="width:auto;">
-                <option>Sort</option>
-            </select>
-        </div>
+<div class="container my-5" style="margin-right: 80px;">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fw-bold mb-0">Scholarships</h2>
+        <button class="btn btn-primary" @onclick="AddScholarship">➕ Add Scholarship</button>
     </div>
 
-    <!-- Scholarship Card -->
-    <div class="d-flex align-items-center gap-3 bg-primary rounded-3 p-4 mb-4 shadow position-relative">
-        <button class="btn position-absolute start-0 translate-middle-y" style="left:-40px;top:50%;background:none;border:none;">
-            <svg width="28" height="28" fill="none" viewBox="0 0 24 24">
-                <polyline points="15 18 9 12 15 6" stroke="#222" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-        </button>
-        <div class="bg-light rounded-2 d-flex align-items-center justify-content-center" style="width:80px;height:80px;">
-            <svg width="60" height="48"><rect width="60" height="48" fill="#ccc"/><line x1="0" y1="0" x2="60" y2="48" stroke="#888"/><line x1="60" y1="0" x2="0" y2="48" stroke="#888"/></svg>
+    @if (scholarships is null)
+    {
+        <div class="text-center">Loading...</div>
+    }
+    else if (!scholarships.Any())
+    {
+        <div class="alert alert-light text-center">
+            No scholarships posted yet.
         </div>
-        <div>
-            <div class="fw-bold fs-4 text-white">Scholarship Name</div>
-            <div class="text-light">Benefactor / Provider Name</div>
-        </div>
-    </div>
+    }
+    else
+    {
+        <div class="row g-4">
+            @foreach (var scholarship in scholarships)
+            {
+                <div class="col-md-6 col-lg-4">
+                    <div class="card shadow-sm h-100 clickable-card"
+                         @onclick="() => ViewScholarship(scholarship.ScholarshipId)"
+                         style="cursor: pointer;">
+                        <div class="card-body d-flex flex-column">
+                            <h5 class="card-title">@scholarship.Title</h5>
+                            <p class="card-text text-muted mb-4">
+                                @(!string.IsNullOrEmpty(scholarship.Institution?.InstitutionName)
+                                    ? scholarship.Institution.InstitutionName
+                                    : scholarship.Benefactor?.OrganizationName ?? "Unknown Provider")
+                            </p>
 
-    <!-- Student Accordion List (Bootstrap 5 only) -->
-    <div class="accordion" id="studentsAccordion">
-        <div class="accordion-item mb-2" style="border-radius:8px;overflow:hidden;box-shadow:0 1px 4px #0001;">
-            <h2 class="accordion-header" id="heading1">
-                <button class="accordion-button fw-semibold" type="button" data-bs-toggle="collapse" data-bs-target="#collapse1" aria-expanded="true" aria-controls="collapse1" style="background:#F5F5F5;">
-                    Student 1
-                </button>
-            </h2>
-            <div id="collapse1" class="accordion-collapse collapse show" aria-labelledby="heading1" data-bs-parent="#studentsAccordion">
-                <div class="accordion-body">
-                    <div style="color:#444;">Details for Student 1 go here.</div>
-                </div>
-            </div>
-        </div>
-        @for (int i = 2; i <= 7; i++)
-        {
-            <div class="accordion-item mb-2" style="border-radius:8px;overflow:hidden;box-shadow:0 1px 4px #0001;">
-                <h2 class="accordion-header" id="heading@(i)">
-                    <button class="accordion-button collapsed fw-semibold" type="button" data-bs-toggle="collapse" data-bs-target="#collapse@(i)" aria-expanded="false" aria-controls="collapse@(i)" style="background:#F5F5F5;">
-                        Student @(i)
-                    </button>
-                </h2>
-                <div id="collapse@(i)" class="accordion-collapse collapse" aria-labelledby="heading@(i)" data-bs-parent="#studentsAccordion">
-                    <div class="accordion-body">
-                        <div style="color:#444;">Details for Student @(i) go here.</div>
+                            <div class="mt-auto d-flex justify-content-end">
+                                <button class="btn btn-sm btn-outline-danger"
+                                        @onclick:stopPropagation="true"
+                                        @onclick="() => DeleteScholarship(scholarship.ScholarshipId)">
+                                    🗑 Delete
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
-            </div>
-        }
-    </div>
+            }
+        </div>
+    }
 </div>
+
+@code {
+    private List<Scholarship>? scholarships;
+
+    protected override async Task OnInitializedAsync()
+    {
+        scholarships = await DbContext.Scholarships
+            .Include(s => s.Institution)
+            .Include(s => s.Benefactor)
+            .OrderByDescending(s => s.CreatedAt)
+            .ToListAsync();
+    }
+
+    private void ViewScholarship(int id)
+    {
+        Navigation.NavigateTo($"/dashboard/institution/scholarships-info/{id}");
+    }
+
+    private async Task DeleteScholarship(int id)
+    {
+        var scholarship = await DbContext.Scholarships.FindAsync(id);
+        if (scholarship is not null)
+        {
+            DbContext.Scholarships.Remove(scholarship);
+            await DbContext.SaveChangesAsync();
+            scholarships?.RemoveAll(s => s.ScholarshipId == id);
+        }
+    }
+
+    private void AddScholarship()
+    {
+        Navigation.NavigateTo("/dashboard/institution/scholarships/post");
+    }
+}
