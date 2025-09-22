@@ -8,24 +8,33 @@
 
 <PageTitle>Signup</PageTitle>
 
+<!-- SIGNUP CONTAINER -->
 <div class="signup-container">
     <div class="signup-card">
+
+        <!-- LEFT SIDE: ROLE SELECTION -->
         <div class="signup-left">
             <h2>Welcome to eSkolar!</h2>
             <p class="role-label">Please select your role:</p>
+
             <div class="role-options">
+                <!-- Student role -->
                 <label class="role-option">
                     <input type="radio" name="role" value="@UserRole.Student" 
                            @onchange="@(() => registerModel.UserRole = UserRole.Student)" 
                            checked="@(registerModel.UserRole == UserRole.Student)" />
                     <span>Student</span>
                 </label>
+
+                <!-- Institution role -->
                 <label class="role-option">
                     <input type="radio" name="role" value="@UserRole.Institution" 
                            @onchange="@(() => registerModel.UserRole = UserRole.Institution)"
                            checked="@(registerModel.UserRole == UserRole.Institution)" />
                     <span>Institution</span>
                 </label>
+
+                <!-- Benefactor role -->
                 <label class="role-option">
                     <input type="radio" name="role" value="@UserRole.Benefactor" 
                            @onchange="@(() => registerModel.UserRole = UserRole.Benefactor)"
@@ -34,9 +43,12 @@
                 </label>
             </div>
         </div>
+
+         <!-- RIGHT SIDE: SIGNUP FORM -->
         <div class="signup-right">
             <h3>Create an Account</h3>
             
+            <!-- Error message -->
             @if (!string.IsNullOrEmpty(errorMessage))
             {
                 <div class="signup-error">
@@ -44,6 +56,7 @@
                 </div>
             }
 
+             <!-- Success message -->
             @if (!string.IsNullOrEmpty(successMessage))
             {
                 <div class="signup-success">
@@ -51,22 +64,27 @@
                 </div>
             }
 
+             <!-- SIGNUP FORM -->
             <EditForm Model="@registerModel" OnValidSubmit="@HandleRegistration" FormName="SignupForm">
                 <DataAnnotationsValidator />
                 <AntiforgeryToken />
                 
+                <!-- First name -->
                 <input class="signup-input" type="text" placeholder="First Name" 
                        @bind="registerModel.FirstName" />
                 <ValidationMessage For="@(() => registerModel.FirstName)" />
                 
+                <!-- Last name -->
                 <input class="signup-input" type="text" placeholder="Last Name" 
                        @bind="registerModel.LastName" />
                 <ValidationMessage For="@(() => registerModel.LastName)" />
                 
+                <!-- Email -->
                 <input class="signup-input" type="email" placeholder="Email Address" 
                        @bind="registerModel.Email" />
                 <ValidationMessage For="@(() => registerModel.Email)" />
                 
+                <!-- Password with toggle -->
                 <div class="password-wrapper">
                     <input class="signup-input"
                            type="@(showPassword ? "text" : "password")"
@@ -79,11 +97,13 @@
                 </div>
                 <ValidationMessage For="@(() => registerModel.Password)" />
                 
+                <!-- Terms and conditions -->
                 <label class="terms-label">
                     <input type="checkbox" @bind="registerModel.AgreeToTerms" />
                     <span>I agree to the Terms & Conditions</span>
                 </label>
                 
+                <!-- Submit button -->
                 <button type="submit" class="btn btn-primary signup-btn" disabled="@(!registerModel.AgreeToTerms || isLoading)">
                     @if (isLoading)
                     {
@@ -97,11 +117,15 @@
                 
             </EditForm>
             
+            <!-- Divider -->
             <div class="divider">
                 <span>or</span>
             </div>
+
+            <!-- institutional signup -->
             <button class="btn btn-google">Sign up with institutional email</button>
             
+            <!-- Link to login -->
             <div class="signup-link">
                 <p>Already have an account? <a href="/login" class="signup-link-a">Sign in</a></p>
             </div>
@@ -110,23 +134,33 @@
 </div>
 
 @code {
+    // Registration model bound to the form
     private RegisterViewModel registerModel = new();
+    
+     // Toggle password visibility
     private bool showPassword = false;
+    
+     // Track loading state
     private bool isLoading = false;
+    
+    // Store error messages
     private string errorMessage = string.Empty;
+    // Store success messages
     private string successMessage = string.Empty;
 
     protected override void OnInitialized()
     {
-        // Set default role to Benefactor (as in your original design)
-        registerModel.UserRole = UserRole.Benefactor;
+        // Default role is Student
+        registerModel.UserRole = UserRole.Student;
     }
 
+    // Toggle password visibility
     private void TogglePassword()
     {
         showPassword = !showPassword;
     }
 
+    // Handle form submission
     private async Task HandleRegistration()
     {
         try
@@ -135,6 +169,7 @@
             errorMessage = string.Empty;
             successMessage = string.Empty;
 
+             // Call authentication service to register user
             var result = await AuthService.RegisterAsync(registerModel);
 
             if (result.Succeeded)
@@ -147,11 +182,13 @@
             }
             else
             {
+                // Show errors from registration attempt
                 errorMessage = string.Join(", ", result.Errors.Select(e => e.Description));
             }
         }
         catch (Exception ex)
         {
+            // Catch unexpected errors
             errorMessage = $"An error occurred during registration: {ex.Message}";
         }
         finally

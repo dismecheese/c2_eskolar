@@ -7,18 +7,22 @@ namespace c2_eskolar.Services
 {
     public class AnnouncementService
     {
+        // Database context for accessing announcements table
         private readonly ApplicationDbContext _context;
 
+        // Constructor injects the database context (Dependency Injection)
         public AnnouncementService(ApplicationDbContext context)
         {
             _context = context;
         }
+        
+        // GET ANNOUNCEMENTS
 
-        // Get announcements for students (public + active)
+        // Get announcements visible to students (public + active + within publish/expiry date)
         public async Task<List<Announcement>> GetPublicAnnouncementsAsync()
         {
             return await _context.Announcements
-                .Where(a => a.IsPublic && a.IsActive && 
+                .Where(a => a.IsPublic && a.IsActive &&
                            (a.PublishDate == null || a.PublishDate <= DateTime.Now) &&
                            (a.ExpiryDate == null || a.ExpiryDate > DateTime.Now))
                 .OrderByDescending(a => a.IsPinned)
@@ -27,7 +31,7 @@ namespace c2_eskolar.Services
                 .ToListAsync();
         }
 
-        // Get active announcements (for student view)
+        // Get announcements that are still active (ignores public/private restriction)
         public async Task<List<Announcement>> GetActiveAnnouncementsAsync()
         {
             return await _context.Announcements
@@ -40,7 +44,7 @@ namespace c2_eskolar.Services
                 .ToListAsync();
         }
 
-        // Get ALL announcements (for shared viewing across roles)
+        // Get all announcements (ignores active/public checks — admin view)
         public async Task<List<Announcement>> GetAllAnnouncementsAsync()
         {
             return await _context.Announcements
@@ -50,7 +54,7 @@ namespace c2_eskolar.Services
                 .ToListAsync();
         }
 
-        // Search announcements by text
+        // Search announcements by keyword (title, content, author, category)
         public async Task<List<Announcement>> SearchAnnouncementsAsync(string searchTerm)
         {
             if (string.IsNullOrWhiteSpace(searchTerm))
@@ -70,7 +74,7 @@ namespace c2_eskolar.Services
                 .ToListAsync();
         }
 
-        // Get announcements by category
+        // Get announcements filtered by category (ex: "Funding", "Applications")
         public async Task<List<Announcement>> GetAnnouncementsByCategoryAsync(string category)
         {
             return await _context.Announcements
@@ -84,7 +88,7 @@ namespace c2_eskolar.Services
                 .ToListAsync();
         }
 
-        // Get announcements by author (for admin pages)
+        // Get announcements by author ID (used for admin management)
         public async Task<List<Announcement>> GetAnnouncementsByAuthorAsync(string authorId)
         {
             return await _context.Announcements
@@ -93,7 +97,7 @@ namespace c2_eskolar.Services
                 .ToListAsync();
         }
 
-        // Get announcements by author type (Institution/Benefactor)
+        // Get announcements by author type (Institution / Benefactor)
         public async Task<List<Announcement>> GetAnnouncementsByAuthorTypeAsync(string authorType)
         {
             if (Enum.TryParse<UserRole>(authorType, out var userRole))
@@ -105,6 +109,14 @@ namespace c2_eskolar.Services
             }
             return new List<Announcement>();
         }
+
+        // Get single announcement
+        public async Task<Announcement?> GetAnnouncementByIdAsync(int id)
+        {
+            return await _context.Announcements.FindAsync(id);
+        }
+
+        // CREATE / UPDATE
 
         // Create new announcement
         public async Task<Announcement> CreateAnnouncementAsync(Announcement announcement)
@@ -120,6 +132,7 @@ namespace c2_eskolar.Services
             var announcement = await _context.Announcements.FindAsync(id);
             if (announcement == null) return null;
 
+            // Copy fields from updated object
             announcement.Title = updatedAnnouncement.Title;
             announcement.Content = updatedAnnouncement.Content;
             announcement.Summary = updatedAnnouncement.Summary;
@@ -160,12 +173,14 @@ namespace c2_eskolar.Services
             return announcement;
         }
 
-        // Delete announcement
+        // DELETE
+         
+        // Delete announcement if it belongs to given author
         public async Task<bool> DeleteAnnouncementAsync(int id, string authorId)
         {
             var announcement = await _context.Announcements
                 .FirstOrDefaultAsync(a => a.AnnouncementId == id && a.AuthorId == authorId);
-            
+
             if (announcement == null) return false;
 
             _context.Announcements.Remove(announcement);
@@ -173,7 +188,7 @@ namespace c2_eskolar.Services
             return true;
         }
 
-        // Delete announcement (overload with just ID)
+        // Delete announcement by ID only (admin override) (overload with just ID)
         public async Task<bool> DeleteAnnouncementAsync(int id)
         {
             var announcement = await _context.Announcements.FindAsync(id);
@@ -184,18 +199,14 @@ namespace c2_eskolar.Services
             return true;
         }
 
-        // Get single announcement
-        public async Task<Announcement?> GetAnnouncementByIdAsync(int id)
-        {
-            return await _context.Announcements.FindAsync(id);
-        }
+        // MANAGEMENT / HELPERS
 
-        // Toggle pin status
+        // Toggle pin status (pinned items always appear at top)
         public async Task<bool> TogglePinAsync(int id, string authorId)
         {
             var announcement = await _context.Announcements
                 .FirstOrDefaultAsync(a => a.AnnouncementId == id && a.AuthorId == authorId);
-            
+
             if (announcement == null) return false;
 
             announcement.IsPinned = !announcement.IsPinned;
@@ -204,7 +215,7 @@ namespace c2_eskolar.Services
             return true;
         }
 
-        // Increment view count
+        // Increment view count (tracks how many times announcement viewed)
         public async Task IncrementViewCountAsync(int id)
         {
             var announcement = await _context.Announcements.FindAsync(id);
@@ -215,14 +226,14 @@ namespace c2_eskolar.Services
             }
         }
 
-        // Check if user can manage announcement (authorization helper)
+        // Check if a user is the author (authorization helper)
         public async Task<bool> CanUserManageAnnouncementAsync(int announcementId, string userId)
         {
             return await _context.Announcements
                 .AnyAsync(a => a.AnnouncementId == announcementId && a.AuthorId == userId);
         }
 
-        // Toggle active status (for soft delete/archive)
+        // Toggle active/inactive status (used for archiving instead of hard delete)
         public async Task<bool> ToggleActiveAsync(int id, string authorId)
         {
             var announcement = await _context.Announcements

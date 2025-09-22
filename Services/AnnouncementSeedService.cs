@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace c2_eskolar.Services
 {
+    // SERVICE TO SEED SAMPLE ANNOUNCEMENTS INTO DATABASE
     public class AnnouncementSeedService
     {
         private readonly ApplicationDbContext _context;
@@ -14,17 +15,19 @@ namespace c2_eskolar.Services
             _context = context;
         }
 
+        // SEEDS DEMO ANNOUNCEMENTS IF NONE EXIST
         public async Task SeedSampleAnnouncementsAsync()
         {
             // Check if we already have announcements
             if (await _context.Announcements.AnyAsync())
             {
-                return; // Already seeded
+                return; // Skip seeding if data already present
             }
 
+            // CREATE SAMPLE ANNOUNCEMENTS LIST
             var sampleAnnouncements = new List<Announcement>
             {
-                // Institution Announcements
+                // INSTITUTION ANNOUNCEMENTS
                 new Announcement
                 {
                     Title = "Welcome to the New Academic Year 2025!",
@@ -58,13 +61,13 @@ namespace c2_eskolar.Services
                     UpdatedAt = DateTime.UtcNow.AddDays(-3)
                 },
 
-                // Benefactor Announcements
+                // BENEFACTOR ANNOUNCEMENTS
                 new Announcement
                 {
                     Title = "Tech Excellence Scholarship Application Deadline Extended",
                     Content = "Due to high interest, we are extending the application deadline for the Tech Excellence Scholarship until January 15, 2025. This scholarship provides full tuition coverage for outstanding students in STEM fields.",
                     Summary = "Tech Excellence Scholarship deadline extension",
-                    AuthorId = "benefactor-001", 
+                    AuthorId = "benefactor-001",
                     AuthorName = "Tech Innovation Foundation",
                     AuthorType = UserRole.Benefactor,
                     Category = "Applications",
@@ -97,7 +100,7 @@ namespace c2_eskolar.Services
                     Content = "Attention STEM Leadership Grant recipients: Your mid-term progress reports are due by January 30, 2025. Please submit your report through the scholarship portal. Include your academic progress, community involvement, and research activities.",
                     Summary = "STEM Leadership Grant mid-term report deadline",
                     AuthorId = "benefactor-001",
-                    AuthorName = "Tech Innovation Foundation", 
+                    AuthorName = "Tech Innovation Foundation",
                     AuthorType = UserRole.Benefactor,
                     Category = "Applications",
                     Priority = AnnouncementPriority.Normal,
@@ -108,7 +111,7 @@ namespace c2_eskolar.Services
                     UpdatedAt = DateTime.UtcNow.AddHours(-12)
                 },
 
-                // More Institution Announcements
+                // MORE INSTITUTION ANNOUNCEMENTS
                 new Announcement
                 {
                     Title = "Campus WiFi Maintenance Scheduled",
@@ -126,7 +129,7 @@ namespace c2_eskolar.Services
                     UpdatedAt = DateTime.UtcNow.AddHours(-6)
                 },
 
-                // Community Service Related
+                // COMMUNITY SERVICE RELATED
                 new Announcement
                 {
                     Title = "Community Service Award - Application Open",
@@ -145,6 +148,7 @@ namespace c2_eskolar.Services
                 }
             };
 
+            // SAVE TO DATABASE
             _context.Announcements.AddRange(sampleAnnouncements);
             await _context.SaveChangesAsync();
         }

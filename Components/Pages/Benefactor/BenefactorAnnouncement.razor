@@ -16,7 +16,8 @@
 <div class="container-fluid" style="min-height: 100vh;">
     <div class="row justify-content-center">
         <div class="col-12 col-lg-10">
-            <!-- Search and Header -->
+
+            <!-- SEARCH BAR + CREATE BUTTON -->
             <div class="d-flex flex-column flex-md-row align-items-md-center mb-4 gap-3 mt-5">
                 <div class="flex-grow-1">
                     <div class="input-group">
@@ -27,34 +28,43 @@
                         </span>
                     </div>
                 </div>
-                <!-- Create Button for Benefactor -->
+
+                <!-- Create new announcement -->
                 <button class="btn btn-primary d-flex align-items-center gap-2" @onclick="ShowCreateForm">
                     <i class="bi bi-plus-circle"></i>
                     <span>Create Announcement</span>
                 </button>
             </div>
 
-            <!-- Category Tabs -->
+            <!-- CATEGORY TABS + FILTER DROPDOWN -->
             <div class="d-flex align-items-center mb-4 gap-3">
                 <ul class="nav nav-tabs border-0">
+                    
+                    <!-- All -->
                     <li class="nav-item">
                         <a class="nav-link px-3 @(activeTab == "all" ? "active fw-bold" : "")"
                            href="#" @onclick='() => SetActiveTab("all")' @onclick:preventDefault="true">
                             <i class="bi bi-collection me-1"></i>All
                         </a>
                     </li>
+
+                    <!-- Institution -->
                     <li class="nav-item">
                         <a class="nav-link px-3 @(activeTab == "institution" ? "active fw-bold" : "")"
                            href="#" @onclick='() => SetActiveTab("institution")' @onclick:preventDefault="true">
                             <i class="bi bi-building me-1"></i>Institution
                         </a>
                     </li>
+
+                    <!-- Benefactor -->
                     <li class="nav-item">
                         <a class="nav-link px-3 @(activeTab == "benefactor" ? "active fw-bold" : "")"
                            href="#" @onclick='() => SetActiveTab("benefactor")' @onclick:preventDefault="true">
                             <i class="bi bi-hand-thumbs-up me-1"></i>Benefactor
                         </a>
                     </li>
+
+                    <!-- My Posts -->
                     <li class="nav-item">
                         <a class="nav-link px-3 @(activeTab == "mine" ? "active fw-bold" : "")"
                            href="#" @onclick='() => SetActiveTab("mine")' @onclick:preventDefault="true">
@@ -62,6 +72,8 @@
                         </a>
                     </li>
                 </ul>
+
+                <!-- Category filter -->
                 <div class="ms-auto">
                     <select class="form-select form-select-sm" @bind="selectedCategory">
                         <option value="">All Categories</option>
@@ -74,10 +86,11 @@
             </div>
             
             <div class="row">
-                <!-- Announcements List -->
+                <!-- ANNOUNCEMENTS LIST -->
                 <div class="col-lg-8">
                     @if (isLoading)
                     {
+                        <!-- Loading state -->
                         <div class="d-flex justify-content-center py-5">
                             <div class="spinner-border" role="status">
                                 <span class="visually-hidden">Loading...</span>
@@ -86,16 +99,17 @@
                     }
                     else if (filteredAnnouncements?.Any() == true)
                     {
+                        <!-- Tab description -->
                         <div class="mb-3">
                             <h5 class="text-muted">@GetTabDescription()</h5>
                         </div>
-
+                        <!-- List of announcement cards -->
                         <div class="d-flex flex-column gap-3">
                             @foreach (var announcement in filteredAnnouncements.OrderByDescending(a => a.IsPinned).ThenByDescending(a => a.CreatedAt))
                             {
                                 <div class="card shadow-sm border-0 @(announcement.IsPinned ? "border-warning border-2" : "")">
                                     <div class="card-body">
-                                        <!-- Header with badges -->
+                                        <!-- Header with badges and date -->
                                         <div class="d-flex justify-content-between align-items-start mb-2">
                                             <div class="d-flex gap-2 flex-wrap">
                                                 @if (announcement.IsPinned)
@@ -117,6 +131,7 @@
                                             </div>
                                             <div class="d-flex align-items-center gap-2">
                                                 <small class="text-muted">@announcement.CreatedAt.ToString("MMM dd, yyyy")</small>
+                                                <!-- Expand/Collapse toggle -->
                                                 <button class="btn btn-sm btn-outline-secondary" 
                                                         @onclick="() => ToggleAnnouncementExpansion(announcement.AnnouncementId)"
                                                         @onclick:stopPropagation="true">
@@ -125,17 +140,19 @@
                                             </div>
                                         </div>
 
-                                        <!-- Content -->
+                                        <!-- Content section -->
                                         <div class="d-flex align-items-start gap-3">
+                                            <!-- Icon based on author type -->
                                             <div>
                                                 <i class="@(GetAuthorIcon(announcement.AuthorType)) fs-2 text-secondary"></i>
                                             </div>
                                             <div class="flex-grow-1">
+                                                <!-- Title clickable -->
                                                 <div class="fw-semibold mb-1 cursor-pointer" @onclick="() => IncrementView(announcement.AnnouncementId)">
                                                     @announcement.Title
                                                 </div>
                                                 
-                                                <!-- Summary/Preview (always visible) -->
+                                                <!-- Preview text (always visible) -->
                                                 <div class="text-secondary mb-2">
                                                     @(announcement.Summary ?? 
                                                       (announcement.Content.Length > 150 ? 
@@ -184,13 +201,14 @@
                                                     </div>
                                                 }
                                                 
+                                                <!-- Footer with views + management actions -->
                                                 <div class="mt-2 d-flex justify-content-between align-items-center">
                                                     <small class="text-muted">
                                                         <i class="bi bi-eye"></i> @announcement.ViewCount views
                                                         • By @announcement.AuthorName
                                                     </small>
                                                     
-                                                    <!-- Management Buttons (only for own announcements) -->
+                                                     <!-- Edit/Delete/Pin buttons for owner -->
                                                     @if (announcement.AuthorId == currentUserId)
                                                     {
                                                         <div class="btn-group btn-group-sm">
@@ -220,6 +238,7 @@
                     }
                     else
                     {
+                        <!-- EMPTY STATE -->
                         <div class="text-center py-5">
                             <div class="mb-3">
                                 <i class="bi bi-megaphone fs-1 text-muted"></i>
@@ -242,12 +261,14 @@
                     }
                 </div>
 
-                <!-- Statistics Sidebar -->
+                <!-- STATISTICS SIDEBAR -->
                 <div class="col-lg-4 mt-4 mt-lg-0">
                     <div class="card shadow-sm border-0">
                         <div class="card-body">
                             <div class="fw-bold mb-3">Statistics for @activeTab</div>
                             <div class="list-group list-group-flush">
+
+                                <!-- Totals by category -->
                                 <div class="list-group-item d-flex justify-content-between align-items-center border-0 px-0">
                                     <span>Total Announcements</span>
                                     <span class="badge bg-primary rounded-pill">@GetTabCount()</span>
@@ -277,33 +298,38 @@
     </div>
 </div>
 
-<!-- Create/Edit Modal -->
+<!-- CREATE/EDIT MODAL -->
 @if (showModal)
 {
     <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
+                <!-- Modal header -->
                 <div class="modal-header">
                     <h5 class="modal-title">@(editingAnnouncement?.AnnouncementId > 0 ? "Edit" : "Create") Announcement</h5>
                     <button type="button" class="btn-close" @onclick="HideModal"></button>
                 </div>
                 <div class="modal-body">
+                    <!-- EditForm for creating/updating announcements -->
                     <EditForm Model="editingAnnouncement" OnValidSubmit="SaveAnnouncement">
                         <DataAnnotationsValidator />
                         
+                        <!-- Title -->
                         <div class="mb-3">
                             <label class="form-label">Title</label>
                             <InputText @bind-Value="editingAnnouncement!.Title" class="form-control" />
                             <ValidationMessage For="@(() => editingAnnouncement!.Title)" />
                         </div>
 
+                        <!-- Organization -->
                         <div class="mb-3">
-                            <label class="form-label">University/Organization</label>
+                            <label class="form-label">Insitution/Organization</label>
                             <InputText @bind-Value="editingAnnouncement.OrganizationName" class="form-control" 
                                       placeholder="e.g., ABC Foundation" />
-                            <small class="form-text text-muted">Name of your organization or foundation</small>
+                            <small class="form-text text-muted">Name of your institution or organization</small>
                         </div>
 
+                        <!-- Category -->
                         <div class="mb-3">
                             <label class="form-label">Category</label>
                             <InputSelect @bind-Value="editingAnnouncement.Category" class="form-select">
@@ -315,18 +341,21 @@
                             </InputSelect>
                         </div>
 
+                        <!-- Description -->
                         <div class="mb-3">
                             <label class="form-label">Description</label>
                             <InputTextArea @bind-Value="editingAnnouncement.Content" class="form-control" rows="6" />
                             <ValidationMessage For="@(() => editingAnnouncement.Content)" />
                         </div>
 
+                        <!-- Deadline -->
                         <div class="mb-3">
                             <label class="form-label">Deadline (Optional)</label>
                             <InputDate @bind-Value="editingAnnouncement.ExpiryDate" class="form-control" />
                             <small class="form-text text-muted">When this announcement expires or when the deadline is</small>
                         </div>
 
+                        <!-- Visibility -->
                         <div class="mb-3">
                             <label class="form-label">Visibility</label>
                             <InputRadioGroup @bind-Value="editingAnnouncement.IsPublic" Name="visibility">
@@ -345,6 +374,7 @@
                             </InputRadioGroup>
                         </div>
 
+                        <!-- Pin option -->
                         <div class="mb-3">
                             <div class="form-check">
                                 <InputCheckbox @bind-Value="editingAnnouncement.IsPinned" class="form-check-input" />
@@ -352,6 +382,7 @@
                             </div>
                         </div>
 
+                        <!-- Footer buttons -->
                         <div class="modal-footer">
                             <button type="button" class="btn btn-secondary" @onclick="HideModal">Cancel</button>
                             <button type="submit" class="btn btn-primary" disabled="@isLoadingModal">
@@ -369,7 +400,9 @@
     </div>
 }
 
+<!-- BACKEND LOGIC -->
 @code {
+    // Main data and state variables
     private List<Announcement>? announcements;
     private List<Announcement>? filteredAnnouncements;
     private string searchTerm = "";
@@ -380,12 +413,13 @@
     private bool isLoadingModal = false;
     private HashSet<int> expandedAnnouncements = new HashSet<int>();
     
-    // Statistics
+    // Statistics counters
     private int institutionCount = 0;
     private int benefactorCount = 0;
     private int myPostsCount = 0;
     private int pinnedCount = 0;
     
+     // Model for editing
     private Announcement editingAnnouncement = new() 
     { 
         Title = "",
@@ -398,12 +432,14 @@
     private string currentUserId = "";
     private string currentUserName = "";
 
+    // Load current user + announcements on init
     protected override async Task OnInitializedAsync()
     {
         await LoadCurrentUser();
         await LoadAnnouncements();
     }
 
+    // Load user details from authentication
     private async Task LoadCurrentUser()
     {
         var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
@@ -418,6 +454,7 @@
         }
     }
 
+    // Fetch announcements from service
     private async Task LoadAnnouncements()
     {
         isLoading = true;
@@ -440,6 +477,7 @@
         }
     }
 
+    // Update statistics counters
     private void UpdateStatistics()
     {
         if (announcements == null) return;
@@ -450,18 +488,23 @@
         pinnedCount = announcements.Count(a => a.IsPinned);
     }
 
+    // Change active tab
     private void SetActiveTab(string tab)
     {
         activeTab = tab;
         FilterAnnouncements();
     }
 
+// FILTER MANAGEMENT
+
+    // Trigger filter on search
     private void OnSearchChanged(ChangeEventArgs e)
     {
         searchTerm = e.Value?.ToString() ?? "";
         FilterAnnouncements();
     }
 
+    // Apply filtering logic
     private void FilterAnnouncements()
     {
         if (announcements == null) return;
@@ -496,6 +539,7 @@
         StateHasChanged();
     }
 
+    // Reset filters and reload announcements
     private void ClearFilters()
     {
         searchTerm = "";
@@ -503,6 +547,8 @@
         FilterAnnouncements();
     }
 
+// CREATE ANNOUNCEMENT FORM
+    // Initialize a new announcement draft for creation
     private void ShowCreateForm()
     {
         editingAnnouncement = new Announcement
@@ -519,6 +565,8 @@
         showModal = true;
     }
 
+// EDIT ANNOUNCEMENT FORM
+    // Load an existing announcement into edit form
     private void EditAnnouncement(Announcement announcement)
     {
         editingAnnouncement = new Announcement
@@ -542,6 +590,7 @@
         showModal = true;
     }
 
+// SAVE ANNOUNCEMENT (CREATE OR UPDATE)
     private async Task SaveAnnouncement()
     {
         isLoadingModal = true;
@@ -549,10 +598,12 @@
         {
             if (editingAnnouncement.AnnouncementId > 0)
             {
+                // Update existing announcement
                 await AnnouncementService.UpdateAnnouncementAsync(editingAnnouncement.AnnouncementId, editingAnnouncement);
             }
             else
             {
+                // Create new announcement
                 await AnnouncementService.CreateAnnouncementAsync(editingAnnouncement);
             }
             
@@ -569,6 +620,7 @@
         }
     }
 
+    // TOGGLE PIN ON ANNOUNCEMENT
     private async Task TogglePin(int announcementId)
     {
         try
@@ -582,6 +634,7 @@
         }
     }
 
+    // DELETE ANNOUNCEMENT
     private async Task DeleteAnnouncement(int announcementId)
     {
         try
@@ -597,12 +650,13 @@
         }
     }
 
+    // INCREMENT VIEW COUNT
     private async Task IncrementView(int announcementId)
     {
         try
         {
             await AnnouncementService.IncrementViewCountAsync(announcementId);
-            // Update local count without full reload
+            // Update local view count without reloading everything
             var announcement = announcements?.FirstOrDefault(a => a.AnnouncementId == announcementId);
             if (announcement != null)
             {
@@ -616,6 +670,8 @@
         }
     }
 
+// MODAL HANDLING
+    // Close modal and reset editing announcement
     private void HideModal()
     {
         showModal = false;
@@ -629,11 +685,14 @@
         };
     }
 
+// ANNOUNCEMENT EXPANSION (SHOW MORE/LESS)
+    // Check if announcement is expanded
     private bool IsAnnouncementExpanded(int announcementId)
     {
         return expandedAnnouncements.Contains(announcementId);
     }
 
+    // Expand or collapse announcement details
     private void ToggleAnnouncementExpansion(int announcementId)
     {
         if (expandedAnnouncements.Contains(announcementId))
@@ -647,7 +706,8 @@
         StateHasChanged();
     }
 
-    // Helper methods for UI
+// UI HELPERS
+    // Provide tab-specific description
     private string GetTabDescription()
     {
         return activeTab switch
@@ -660,6 +720,7 @@
         };
     }
 
+    // Provide empty state title based on tab
     private string GetEmptyStateTitle()
     {
         return activeTab switch
@@ -674,11 +735,13 @@
 
     private string GetEmptyStateMessage()
     {
+        // Suggest adjustments if filters/search applied
         if (!string.IsNullOrEmpty(searchTerm) || !string.IsNullOrEmpty(selectedCategory))
         {
             return "Try adjusting your search terms or filters.";
         }
         
+        // Provide tab-specific empty state message
         return activeTab switch
         {
             "all" => "There are no announcements to display at this time.",
@@ -689,6 +752,7 @@
         };
     }
 
+    // Return count of announcements based on tab
     private int GetTabCount()
     {
         return activeTab switch
@@ -701,6 +765,7 @@
         };
     }
 
+    // Return badge style based on author type
     private string GetAuthorBadgeClass(UserRole authorType)
     {
         return authorType switch
@@ -711,6 +776,7 @@
         };
     }
 
+    // Return icon class based on author type
     private string GetAuthorIcon(UserRole authorType)
     {
         return authorType switch
@@ -721,6 +787,7 @@
         };
     }
 
+    // Return color based on announcement priority
     private string GetPriorityColor(AnnouncementPriority priority)
     {
         return priority switch
@@ -733,18 +800,3 @@
         };
     }
 }
-
-<style>
-    .cursor-pointer {
-        cursor: pointer;
-    }
-    
-    .announcement-details {
-        animation: fadeIn 0.3s ease-in-out;
-    }
-    
-    @@keyframes fadeIn {
-        from { opacity: 0; transform: translateY(-10px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
-</style>

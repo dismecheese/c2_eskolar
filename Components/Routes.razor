@@ -1,9 +1,17 @@
-﻿<Router AppAssembly="typeof(Program).Assembly">
+﻿<!-- ROUTER CONFIGURATION -->
+<Router AppAssembly="typeof(Program).Assembly">
+
+    <!-- ROUTE FOUND -->
     <Found Context="routeData">
+
+        <!-- AUTHORIZATION HANDLING -->
         <AuthorizeRouteView RouteData="routeData" DefaultLayout="typeof(Layout.LandingLayout)">
+            
+            <!-- NOT AUTHORIZED VIEW -->
             <NotAuthorized>
                 @if (context.User.Identity?.IsAuthenticated == true)
                 {
+                    <!-- User is logged in but lacks permission -->
                     <div class="container py-5 text-center">
                         <h1 class="text-danger">Access Denied</h1>
                         <p class="lead">You do not have permission to access this page.</p>
@@ -12,6 +20,7 @@
                 }
                 else
                 {
+                    <!-- User is not logged in -->
                     <div class="container py-5 text-center">
                         <h1>Authentication Required</h1>
                         <p class="lead">Please log in to access this page.</p>
@@ -20,11 +29,16 @@
                 }
             </NotAuthorized>
         </AuthorizeRouteView>
+
+        <!-- AUTO FOCUS FIRST HEADING AFTER NAVIGATION -->
         <FocusOnNavigate RouteData="routeData" Selector="h1" />
     </Found>
+    
+    <!-- ROUTE NOT FOUND -->
     <NotFound>
         <PageTitle>Not found</PageTitle>
         <LayoutView Layout="typeof(Layout.LandingLayout)">
+            <!-- Page not found error message -->
             <div class="container py-5 text-center">
                 <h1>Page Not Found</h1>
                 <p role="alert">Sorry, there's nothing at this address.</p>
@@ -35,6 +49,7 @@
 </Router>
 
 @code {
+    // Provides access to current HTTP context
     [CascadingParameter]
     private HttpContext HttpContext { get; set; } = default!;
 }
