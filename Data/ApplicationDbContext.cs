@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 namespace c2_eskolar.Data
 {
     // APPLICATION DATABASE CONTEXT
-    public class ApplicationDbContext : IdentityDbContext<IdentityUser>
+    public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     {
         // Constructor: passes DbContext options to the base class
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options)
