@@ -4,7 +4,7 @@
 @inject NavigationManager Navigation
 @inject IJSRuntime JSRuntime
 @inject AuthenticationStateProvider AuthenticationStateProvider
-@inject UserManager<IdentityUser> UserManager
+@inject UserManager<ApplicationUser> UserManager
 
 @using Microsoft.AspNetCore.Components.Web
 @using Microsoft.AspNetCore.Components.Authorization
@@ -101,7 +101,7 @@
     // Navigates the user to their student profile
     private void NavigateToStudentProfile()
     {
-        Navigation.NavigateTo("/dashboard/student/profile");
+        Navigation.NavigateTo("/dashboard/student/profile/");
     }
 
     // --- CHATBOT STATE ---

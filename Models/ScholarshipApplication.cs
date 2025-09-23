@@ -39,6 +39,9 @@ namespace c2_eskolar.Models
         public DateTime? ReviewDate { get; set; }
         public string? ReviewedBy { get; set; } // UserId of who reviewed
         
+        // ✅ ADD THIS PROPERTY
+        public string ApplicationReference { get; set; } = $"APP-{Guid.NewGuid().ToString("N")[..8].ToUpper()}";
+        
         // Timestamps
         public DateTime ApplicationDate { get; set; } = DateTime.Now;
         public DateTime? UpdatedAt { get; set; }

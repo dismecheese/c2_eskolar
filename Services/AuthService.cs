@@ -8,12 +8,12 @@ namespace c2_eskolar.Services
 {
     public class AuthService
     {
-        private readonly UserManager<IdentityUser> _userManager;
-        private readonly SignInManager<IdentityUser> _signInManager;
+        private readonly UserManager<ApplicationUser> _userManager;
+        private readonly SignInManager<ApplicationUser> _signInManager;
         private readonly ApplicationDbContext _context;
 
-        public AuthService(UserManager<IdentityUser> userManager, 
-                           SignInManager<IdentityUser> signInManager,
+        public AuthService(UserManager<ApplicationUser> userManager, 
+                           SignInManager<ApplicationUser> signInManager,
                            ApplicationDbContext context)
         {
             _userManager = userManager;
@@ -23,9 +23,11 @@ namespace c2_eskolar.Services
 
         public async Task<IdentityResult> RegisterAsync(RegisterViewModel model)
         {
-            var user = new IdentityUser
+            var username = $"{model.FirstName}.{model.LastName}".ToLower().Replace(" ", "");
+
+            var user = new ApplicationUser
             {
-                UserName = model.Email,
+                UserName = username,
                 Email = model.Email
             };
 
