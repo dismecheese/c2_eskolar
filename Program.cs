@@ -58,6 +58,10 @@ try
     // Register custom services
     builder.Services.AddScoped<PartnerService>();
     builder.Services.AddScoped<AnnouncementService>();
+    builder.Services.AddScoped<IPasswordResetService, PasswordResetService>();
+    
+    // Email service for EmailJS
+    builder.Services.AddScoped<IEmailService, EmailService>();
     builder.Services.AddScoped<AnnouncementSeedService>();
 
     var app = builder.Build();

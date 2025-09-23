@@ -21,6 +21,7 @@ namespace c2_eskolar.Data
         public DbSet<Scholarship> Scholarships { get; set; }
         public DbSet<ScholarshipApplication> ScholarshipApplications { get; set; }
         public DbSet<Announcement> Announcements { get; set; }
+        public DbSet<PasswordReset> PasswordResets { get; set; }
 
         // MODEL CONFIGURATION & RELATIONSHIPS
         protected override void OnModelCreating(ModelBuilder modelBuilder)
