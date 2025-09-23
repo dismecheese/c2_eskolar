@@ -19,7 +19,7 @@ namespace c2_eskolar.Services
             return await context.StudentProfiles.FirstOrDefaultAsync(sp => sp.UserId == userId);
         }
 
-        public async Task SaveProfileAsync(StudentProfile profile)
+        public async Task SaveProfileAsync(StudentProfile profile, string? identityEmail = null)
         {
             await using var context = _contextFactory.CreateDbContext();
             var existing = await context.StudentProfiles.FirstOrDefaultAsync(sp => sp.UserId == profile.UserId);
@@ -28,11 +28,14 @@ namespace c2_eskolar.Services
                 // Ensure required fields are set
                 if (string.IsNullOrWhiteSpace(profile.FirstName) || string.IsNullOrWhiteSpace(profile.LastName))
                     throw new ArgumentException("FirstName and LastName are required.");
+                // Always set email from Identity if provided
+                if (!string.IsNullOrWhiteSpace(identityEmail))
+                    profile.Email = identityEmail;
                 context.StudentProfiles.Add(profile);
             }
             else
             {
-                // Update fields
+                // Update ALL fields
                 existing.FirstName = profile.FirstName;
                 existing.MiddleName = profile.MiddleName;
                 existing.LastName = profile.LastName;
@@ -41,8 +44,24 @@ namespace c2_eskolar.Services
                 existing.PermanentAddress = profile.PermanentAddress;
                 existing.BirthDate = profile.BirthDate;
                 existing.MobileNumber = profile.MobileNumber;
-                existing.Email = profile.Email;
-                // ...add other fields as needed
+                // Always set email from Identity if provided
+                if (!string.IsNullOrWhiteSpace(identityEmail))
+                    existing.Email = identityEmail;
+                else
+                    existing.Email = profile.Email;
+
+                existing.UniversityName = profile.UniversityName;
+                existing.StudentNumber = profile.StudentNumber;
+                existing.Course = profile.Course;
+                existing.YearLevel = profile.YearLevel;
+                existing.VerificationStatus = profile.VerificationStatus;
+                existing.ProfilePicture = profile.ProfilePicture;
+                existing.IsVerified = profile.IsVerified;
+                existing.VerificationDate = profile.VerificationDate;
+                existing.GPA = profile.GPA;
+                existing.CreatedAt = profile.CreatedAt;
+                existing.UpdatedAt = DateTime.Now;
+                // Add any other fields as needed
             }
             await context.SaveChangesAsync();
         }

@@ -42,12 +42,7 @@ namespace c2_eskolar.Models
         // Personal Details
         public DateTime? BirthDate { get; set; }
 
-        [StringLength(255)]
-        public string? Address { get; set; }
-
-        [Phone]
-        [StringLength(15)]
-        public string? ContactNumber { get; set; }
+    // Removed unused Address and ContactNumber properties
 
         // Academic Information
         [StringLength(100)]
