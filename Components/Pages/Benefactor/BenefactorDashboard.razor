@@ -2,6 +2,8 @@
 @attribute [Authorize(Roles = "Benefactor")]
 @layout Layout.BenefactorDashLayout
 @inject NavigationManager Navigation
+@inject BenefactorProfileService BenefactorProfileService
+@inject AuthenticationStateProvider AuthStateProvider
 
 <PageTitle>Benefactors Dashboard</PageTitle>
 
@@ -21,7 +23,7 @@
     <!-- Welcome Banner -->
     <div class="dashboard-banner-centered">
         <div class="banner-text">
-            <h2>Welcome, Ralph!</h2>
+            <h2>Welcome, @(adminFirstName ?? "Benefactor")!</h2>
         </div>
         <img src="images/eskolar_books.svg" alt="Books" class="banner-img" />
     </div>
@@ -221,15 +223,24 @@
 @code {
     private int activeTab = -1;
     private bool showScholarshipList = false;
-    private int scholarshipTab = 0; // 0: Institutional, 1: Open, 2: All, 3: Recommended
+    private int scholarshipTab = 0;
+    private string? adminFirstName;
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
         var uri = Navigation.ToAbsoluteUri(Navigation.Uri);
         var query = QueryHelpers.ParseQuery(uri.Query);
         if (query.TryGetValue("tab", out var tabValue) && int.TryParse(tabValue, out var tabIndex))
         {
             activeTab = tabIndex;
+        }
+
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var userId = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        if (userId != null)
+        {
+            var profile = await BenefactorProfileService.GetProfileByUserIdAsync(userId);
+            adminFirstName = profile?.AdminFirstName;
         }
     }
 

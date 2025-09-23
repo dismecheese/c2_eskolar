@@ -17,7 +17,11 @@ builder.Services.AddBlazorBootstrap();
 builder.Services.AddControllers();
 
 // Add Entity Framework with SQL Server
-builder.Services.AddDbContext<ApplicationDbContext>(options =>
+// builder.Services.AddDbContext<ApplicationDbContext>(options =>
+//     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+// Register IDbContextFactory for ApplicationDbContext in DI container for Blazor Server concurrency safety
+builder.Services.AddDbContextFactory<ApplicationDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 // Add ASP.NET Core Identity
@@ -56,6 +60,9 @@ builder.Services.AddScoped<AuthService>();
 builder.Services.AddScoped<PartnerService>();
 builder.Services.AddScoped<AnnouncementService>();
 builder.Services.AddScoped<AnnouncementSeedService>();
+builder.Services.AddScoped<StudentProfileService>();
+builder.Services.AddScoped<BenefactorProfileService>();
+builder.Services.AddScoped<InstitutionProfileService>();
 
 var app = builder.Build();
 

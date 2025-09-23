@@ -122,88 +122,78 @@
                     @if (IsEditMode)
                     {
                         <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">Full Name</label>
-                                <input type="text" class="form-control" @bind="FullName" />
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">First Name</label>
+                                <input type="text" class="form-control" @bind="FirstName" />
                             </div>
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">Username</label>
-                                <input type="text" class="form-control" @bind="Username" readonly />
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Middle Name</label>
+                                <input type="text" class="form-control" @bind="MiddleName" />
                             </div>
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">Email</label>
-                                <input type="email" class="form-control" @bind="Email" readonly />
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Last Name</label>
+                                <input type="text" class="form-control" @bind="LastName" />
                             </div>
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">Phone</label>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Sex</label>
+                                <select class="form-control" @bind="Sex">
+                                    <option value="Male">Male</option>
+                                    <option value="Female">Female</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Date of Birth</label>
+                                <input type="date" class="form-control" @bind="BirthDate" />
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Mobile Number</label>
                                 <input type="tel" class="form-control" @bind="Phone" />
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label class="form-label">Location</label>
-                                <input type="text" class="form-control" @bind="Location" />
+                                <label class="form-label">Permanent Address</label>
+                                <input type="text" class="form-control" @bind="PermanentAddress" />
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label class="form-label">University</label>
-                                <input type="text" class="form-control" @bind="University" />
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">Course/Major</label>
-                                <input type="text" class="form-control" @bind="Course" />
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">Year Level</label>
-                                <select class="form-control" @bind="YearLevel">
-                                    <option value="1st Year">1st Year</option>
-                                    <option value="2nd Year">2nd Year</option>
-                                    <option value="3rd Year">3rd Year</option>
-                                    <option value="4th Year">4th Year</option>
-                                    <option value="Graduate">Graduate</option>
-                                </select>
-                            </div>
-                            <div class="col-12 mb-3">
-                                <label class="form-label">Bio</label>
-                                <textarea class="form-control" rows="3" @bind="Bio"></textarea>
+                                <label class="form-label">Email Address</label>
+                                <input type="email" class="form-control" @bind="Email" readonly />
                             </div>
                         </div>
                     }
                     else
                     {
                         <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <h6 class="text-muted mb-1">Full Name</h6>
-                                <p class="mb-0">@FullName</p>
+                            <div class="col-md-4 mb-3">
+                                <h6 class="text-muted mb-1">First Name</h6>
+                                <p class="mb-0">@FirstName</p>
                             </div>
-                            <div class="col-md-6 mb-3">
-                                <h6 class="text-muted mb-1">Username</h6>
-                                <p class="mb-0">@Username</p>
+                            <div class="col-md-4 mb-3">
+                                <h6 class="text-muted mb-1">Middle Name</h6>
+                                <p class="mb-0">@MiddleName</p>
                             </div>
-                            <div class="col-md-6 mb-3">
-                                <h6 class="text-muted mb-1">Email</h6>
-                                <p class="mb-0">@Email</p>
+                            <div class="col-md-4 mb-3">
+                                <h6 class="text-muted mb-1">Last Name</h6>
+                                <p class="mb-0">@LastName</p>
                             </div>
-                            <div class="col-md-6 mb-3">
-                                <h6 class="text-muted mb-1">Phone</h6>
+                            <div class="col-md-4 mb-3">
+                                <h6 class="text-muted mb-1">Sex</h6>
+                                <p class="mb-0">@Sex</p>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <h6 class="text-muted mb-1">Date of Birth</h6>
+                                <p class="mb-0">@(BirthDate == default(DateTime) ? "" : BirthDate.ToString("yyyy-MM-dd"))</p>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <h6 class="text-muted mb-1">Mobile Number</h6>
                                 <p class="mb-0">@Phone</p>
                             </div>
                             <div class="col-md-6 mb-3">
-                                <h6 class="text-muted mb-1">Location</h6>
-                                <p class="mb-0">@Location</p>
+                                <h6 class="text-muted mb-1">Permanent Address</h6>
+                                <p class="mb-0">@PermanentAddress</p>
                             </div>
                             <div class="col-md-6 mb-3">
-                                <h6 class="text-muted mb-1">University</h6>
-                                <p class="mb-0">@University</p>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <h6 class="text-muted mb-1">Course/Major</h6>
-                                <p class="mb-0">@Course</p>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <h6 class="text-muted mb-1">Year Level</h6>
-                                <p class="mb-0">@YearLevel</p>
-                            </div>
-                            <div class="col-12 mb-3">
-                                <h6 class="text-muted mb-1">Bio</h6>
-                                <p class="mb-0">@Bio</p>
+                                <h6 class="text-muted mb-1">Email Address</h6>
+                                <p class="mb-0">@Email</p>
                             </div>
                         </div>
                     }
@@ -354,6 +344,14 @@
     private int ScholarshipsReceived = 0;
     private int Applications = 0;
     private string GPA = "0.00";
+
+    // Additional Personal Info
+    private string FirstName = "";
+    private string MiddleName = "";
+    private string LastName = "";
+    private string Sex = "Male";
+    private DateTime BirthDate = DateTime.Now;
+    private string PermanentAddress = "";
 
     protected override async Task OnInitializedAsync()
     {
