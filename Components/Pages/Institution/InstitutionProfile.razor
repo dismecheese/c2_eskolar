@@ -323,7 +323,7 @@
 @code {
     // Edit mode state
     private bool IsEditMode = false;
-    private bool isLoading = true;
+    // Removed unused isLoading field
     
     // Profile Info - Dynamic from logged in user
     private string FullName = "";
@@ -357,9 +357,8 @@
 
     protected override async Task OnInitializedAsync()
     {
-        await LoadUserData();
-        isLoading = false;
-        StateHasChanged();
+    await LoadUserData();
+    StateHasChanged();
     }
 
     private async Task LoadUserData()
@@ -388,7 +387,7 @@
                     
                     // TODO: Load additional profile data from your custom database tables
                     // Example: Load student-specific data from StudentProfile table
-                    await LoadExtendedProfileData(user.Id);
+                    LoadExtendedProfileData(user.Id);
                 }
             }
         }
@@ -402,7 +401,7 @@
         }
     }
 
-    private async Task LoadExtendedProfileData(string userId)
+    private void LoadExtendedProfileData(string userId)
     {
         try
         {

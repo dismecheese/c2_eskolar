@@ -1,4 +1,6 @@
+
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace c2_eskolar.Models
 {
@@ -19,7 +21,7 @@ namespace c2_eskolar.Models
         public required string Benefits { get; set; } // "₱50,000 tuition + laptop + mentorship program"
         
         // Optional: For AI filtering/matching (extract main monetary value)
-        [Range(0, 10000000)]
+        [System.ComponentModel.DataAnnotations.Schema.Column(TypeName = "decimal(18,2)")]
         public decimal? MonetaryValue { get; set; }
         
         [Required]
@@ -36,8 +38,9 @@ namespace c2_eskolar.Models
         public int? SlotsAvailable { get; set; }
         
         // Eligibility Criteria (for AI matching)
-        [Range(1.0, 5.0)]
-        public decimal? MinimumGPA { get; set; }
+    [Range(1.0, 5.0)]
+    [Column(TypeName = "decimal(18,2)")]
+    public decimal? MinimumGPA { get; set; }
         
         [StringLength(100)]
         public string? RequiredCourse { get; set; }
@@ -68,6 +71,7 @@ namespace c2_eskolar.Models
         // Foreign Keys - Who created/manages this scholarship
         public int? BenefactorProfileId { get; set; } // For external scholarships
         public int? InstitutionProfileId { get; set; } // For institutional scholarships
+        public int ScholarshipTypeId { get; set; } // FK to ScholarshipType
         
         // Navigation Properties
         public BenefactorProfile? Benefactor { get; set; }

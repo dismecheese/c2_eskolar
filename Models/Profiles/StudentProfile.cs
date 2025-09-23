@@ -1,4 +1,6 @@
+
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace c2_eskolar.Models
 {
@@ -32,7 +34,6 @@ namespace c2_eskolar.Models
         [StringLength(100)]
         public string? UniversityName { get; set; }
         
-        [Range(1, 8)]
         public int? YearLevel { get; set; }
         
         [StringLength(100)]
@@ -40,6 +41,7 @@ namespace c2_eskolar.Models
         
         [StringLength(50)]
         public string? StudentNumber { get; set; }
+    [Range(1.0, 5.0)]
         
         // Profile & Verification (from your proposal)
         [StringLength(255)]
@@ -50,8 +52,9 @@ namespace c2_eskolar.Models
         public DateTime? VerificationDate { get; set; }
         
         // Academic Performance (for AI recommendations)
-        [Range(1.0, 5.0)]
-        public decimal? GPA { get; set; }
+    [Range(1.0, 5.0)]
+    [Column(TypeName = "decimal(18,2)")]
+    public decimal? GPA { get; set; }
         
         // Timestamps
         public DateTime CreatedAt { get; set; } = DateTime.Now;
