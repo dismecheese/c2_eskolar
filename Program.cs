@@ -2,6 +2,7 @@ using System;
 using c2_eskolar.Components;
 using c2_eskolar.Data;
 using c2_eskolar.Services; // Add this import
+using c2_eskolar.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc; // Add this for [FromForm]
 using Microsoft.EntityFrameworkCore;
@@ -24,23 +25,22 @@ try
         options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
     // Add ASP.NET Core Identity
-    builder.Services.AddDefaultIdentity<IdentityUser>(options =>
-    {
-        // Password requirements
-        options.Password.RequireDigit = true;
-        options.Password.RequireLowercase = true;
-        options.Password.RequireNonAlphanumeric = false;
-        options.Password.RequireUppercase = true;
-        options.Password.RequiredLength = 6;
-        options.Password.RequiredUniqueChars = 1;
+        builder.Services.AddDefaultIdentity<ApplicationUser>(options =>
+        {
+            // Password requirements
+            options.Password.RequireDigit = true;
+            options.Password.RequireLowercase = true;
+            options.Password.RequireNonAlphanumeric = false;
+            options.Password.RequireUppercase = true;
+            options.Password.RequiredLength = 6;
+            options.Password.RequiredUniqueChars = 1;
 
-        // Email confirmation (disable for development)
-        options.SignIn.RequireConfirmedEmail = false;
-        options.SignIn.RequireConfirmedAccount = false;
-    })
-    .AddRoles<IdentityRole>() // Add role support
-    .AddEntityFrameworkStores<ApplicationDbContext>();
-
+            // Email confirmation (disable for development)
+            options.SignIn.RequireConfirmedEmail = false;
+            options.SignIn.RequireConfirmedAccount = false;
+        })
+        .AddRoles<IdentityRole>() // Add role support
+        .AddEntityFrameworkStores<ApplicationDbContext>();
     builder.Services.ConfigureApplicationCookie(options =>
     {
         options.LoginPath = "/login";
@@ -90,7 +90,7 @@ try
         {
             using var scope = app.Services.CreateScope();
             var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
-            var userManager = scope.ServiceProvider.GetRequiredService<UserManager<IdentityUser>>();
+            var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
             string[] roles = { "Student", "Benefactor", "Institution" };
             foreach (var role in roles)
             {
@@ -104,7 +104,7 @@ try
             var existingUser = await userManager.FindByEmailAsync(testEmail);
             if (existingUser == null)
             {
-                var testUser = new IdentityUser
+                var testUser = new ApplicationUser
                 {
                     UserName = testEmail,
                     Email = testEmail,
@@ -125,7 +125,7 @@ try
             var existingBenefactor = await userManager.FindByEmailAsync(benefactorEmail);
             if (existingBenefactor == null)
             {
-                var benefactorUser = new IdentityUser
+                var benefactorUser = new ApplicationUser
                 {
                     UserName = benefactorEmail,
                     Email = benefactorEmail,
@@ -146,7 +146,7 @@ try
             var existingInstitution = await userManager.FindByEmailAsync(institutionEmail);
             if (existingInstitution == null)
             {
-                var institutionUser = new IdentityUser
+                var institutionUser = new ApplicationUser
                 {
                     UserName = institutionEmail,
                     Email = institutionEmail,
