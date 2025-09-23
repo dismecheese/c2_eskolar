@@ -1,3 +1,4 @@
+
 @inherits LayoutComponentBase
 @implements IDisposable
 
@@ -104,13 +105,9 @@
         var currentPath = Navigation.ToBaseRelativePath(Navigation.Uri).Split('?')[0].TrimEnd('/');
         var linkPath = href.TrimStart('/').TrimEnd('/');
         
-        // Debug logging for development purposes
-        Console.WriteLine($"[DEBUG] Current path: '{currentPath}', Link path: '{linkPath}'");
-        
         // Exact match: Add the 'active' class for an exact path match to highlight the current page
         if (currentPath == linkPath)
         {
-            Console.WriteLine($"[DEBUG] MATCH! Applying active class to: {href}");
             return "nav-link d-flex align-items-center gap-2 sidebar-link active";
         }
             
@@ -298,19 +295,9 @@
             </ul>
         </div>
 
-        <!-- "Need Help?" Button at Bottom of Sidebar -->
-        <button class="help-box-bottom" type="button" @onclick="OpenChatbot">
-            <div class="help-box-content">
-                <img src="images/NeedHelp.svg" alt="Help" class="help-box-img" />
-                <div class="help-box-text">
-                    <div class="help-box-title">Need help?</div>
-                    <div class="help-box-desc">Having trouble using eSkolar?<br />We're here to assist you!</div>
-                </div>
-            </div>
-        </button>
     </nav>
 
-    <!-- Profile Icon (Top Right Corner) -->
+        <!-- Profile Icon (Top Right Corner) -->
     <button class="dashboard-profile-absolute mt-5" type="button" data-bs-toggle="offcanvas" data-bs-target="#rightSidebar" aria-controls="rightSidebar">
         <svg width="32" height="32" fill="none" viewBox="0 0 24 24">
             <circle cx="12" cy="8" r="4" stroke="#222" stroke-width="2"/>
@@ -318,7 +305,6 @@
             <path d="M4 20c1.5-3 5.5-5 8-5s6.5 2 8 5" stroke="#222" stroke-width="2"/>
         </svg>
     </button>
-
     <!-- Right Sidebar (Bootstrap Offcanvas) -->
     <div class="offcanvas offcanvas-end" tabindex="-1" id="rightSidebar" aria-labelledby="rightSidebarLabel" data-bs-backdrop="false">
     
@@ -338,31 +324,31 @@
                     <circle cx="12" cy="12" r="11" stroke="#222" stroke-width="2"/>
                     <path d="M4 20c1.5-3 5.5-5 8-5s6.5 2 8 5" stroke="#222" stroke-width="2"/>
                 </svg>
-                <div class="sidebar-profile-name">Marzella Capin</div>
-                <div class="sidebar-profile-role">Student</div>
+                <div class="sidebar-profile-name">@currentUserName</div>
+                <div class="sidebar-profile-role">Benefactor</div>
                 <button class="sidebar-profile-btn" @onclick="NavigateToBenefactorProfile" data-bs-dismiss="offcanvas">Profile</button>
             </div>
 
-            <!-- Calendar Component (Custom Blazor component) -->            
+            <!-- Calendar Section -->
             <div class="sidebar-calendar">
                 <DashboardCalendar CurrentMonth="@currentMonth" CurrentMonthChanged="@(m => currentMonth = m)" />
             </div>
-    </div>
 
-    <!-- Notifications Section -->
-    <div class="sidebar-notifications">
-        <div class="sidebar-notifications-header">
-            Notifications <span style="float:right;cursor:pointer;">Clear</span>
-        </div>
-        <div class="sidebar-notification-list">
-            @for (int i = 0; i < 3; i++)
-            {
-                <div class="sidebar-notification">
-                    <div class="sidebar-notification-title">Notif Title</div>
-                    <div class="sidebar-notification-desc">Short Description Short Description Short Description</div>
+            <!-- Notifications Section -->
+            <div class="sidebar-notifications">
+                <div class="sidebar-notifications-header">
+                    Notifications <span style="float:right;cursor:pointer;">Clear</span>
                 </div>
-            }
-        </div>
+                <div class="sidebar-notification-list">
+                    @for (int i = 0; i < 3; i++)
+                    {
+                        <div class="sidebar-notification">
+                            <div class="sidebar-notification-title">Notif Title</div>
+                            <div class="sidebar-notification-desc">Short Description Short Description Short Description</div>
+                        </div>
+                    }
+                </div>
+            </div>
     </div>
   </div>
 

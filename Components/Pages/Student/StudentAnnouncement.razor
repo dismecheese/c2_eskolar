@@ -25,36 +25,28 @@
             </div>
 
             <!-- Category Tabs -->
-            <div class="d-flex align-items-center mb-4 gap-3">
-                <ul class="nav nav-tabs border-0">
-                    <li class="nav-item">
-                        <a class="nav-link px-3 @(activeTab == "Institution" ? "active fw-bold" : "")"
-                           href="#" @onclick='() => SetActiveTab("Institution")' @onclick:preventDefault="true">
-                            <i class="bi bi-building me-1"></i>Institution
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link px-3 @(activeTab == "Application" ? "active fw-bold" : "")"
-                           href="#" @onclick='() => SetActiveTab("Application")' @onclick:preventDefault="true">
-                            <i class="bi bi-file-earmark-text me-1"></i>Applications
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link px-3 @(activeTab == "Grants" ? "active fw-bold" : "")"
-                           href="#" @onclick='() => SetActiveTab("Grants")' @onclick:preventDefault="true">
-                            <i class="bi bi-award me-1"></i>Grants
-                        </a>
-                    </li>
-                </ul>
-                <div class="ms-auto">
+            <div class="modern-tabs d-flex align-items-center mb-4 gap-3">
+                <div class="tab-pills">
+                    <button class="tab-pill @(activeTab == "Institution" ? "active" : "")" @onclick='() => SetActiveTab("Institution")'>
+                        <i class="bi bi-building"></i> <span>Institution</span>
+                    </button>
+                    <button class="tab-pill @(activeTab == "Application" ? "active" : "")" @onclick='() => SetActiveTab("Application")'>
+                        <i class="bi bi-file-earmark-text"></i> <span>Applications</span>
+                    </button>
+                    <button class="tab-pill @(activeTab == "Grants" ? "active" : "")" @onclick='() => SetActiveTab("Grants")'>
+                        <i class="bi bi-award"></i> <span>Grants</span>
+                    </button>
+                    <button class="tab-pill @(activeTab == "Benefactor" ? "active" : "")" @onclick='() => SetActiveTab("Benefactor")'>
+                        <i class="bi bi-globe"></i> <span>Benefactor</span>
+                    </button>
+                </div>
+                <div class="ms-auto" style="min-width:180px;">
                     <select class="form-select form-select-sm" @bind="selectedCategory">
                         <option value="">All Categories</option>
-                        <option value="General">General</option>
-                        <option value="Scholarships">Scholarships</option>
-                        <option value="Applications">Applications</option>
-                        <option value="Funding">Funding</option>
+                        <option value="Requirements">Requirements</option>
+                        <option value="Results">Results</option>
                         <option value="Events">Events</option>
-                        <option value="Urgent">Urgent</option>
+                        <option value="General">General</option>
                     </select>
                 </div>
             </div>
@@ -204,29 +196,11 @@
                         <div class="card-body">
                             <div class="fw-bold mb-3">About @activeTab</div>
                             <p class="text-muted small">@GetTabInfo()</p>
-                            
                             <div class="d-grid gap-2 mt-3">
                                 <button class="btn btn-outline-primary btn-sm" @onclick="RefreshAnnouncements">
                                     <i class="bi bi-arrow-clockwise"></i> Refresh
                                 </button>
-                                @if (activeTab != "Institution")
-                                {
-                                    <button class="btn btn-outline-secondary btn-sm" @onclick='() => SetActiveTab("Institution")'>
-                                        <i class="bi bi-building"></i> View Institution Posts
-                                    </button>
-                                }
-                                @if (activeTab != "Application")
-                                {
-                                    <button class="btn btn-outline-info btn-sm" @onclick='() => SetActiveTab("Application")'>
-                                        <i class="bi bi-file-earmark-text"></i> View Applications
-                                    </button>
-                                }
-                                @if (activeTab != "Grants")
-                                {
-                                    <button class="btn btn-outline-success btn-sm" @onclick='() => SetActiveTab("Grants")'>
-                                        <i class="bi bi-award"></i> View Grants
-                                    </button>
-                                }
+                                <!-- No create/edit/delete for students -->
                             </div>
                         </div>
                     </div>
@@ -236,12 +210,70 @@
     </div>
 </div>
 
+<style>
+    .modern-tabs {
+        background: #f8f9fa;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+        padding: 0.75rem 1rem;
+    }
+    .tab-pills {
+        display: flex;
+        gap: 1rem;
+    }
+    .tab-pill {
+        background: #fff;
+        border: 1px solid #e0e0e0;
+        border-radius: 24px;
+        padding: 0.5rem 1.25rem;
+        font-weight: 500;
+        color: #333;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        box-shadow: 0 1px 4px rgba(0,0,0,0.03);
+        transition: background 0.2s, color 0.2s, box-shadow 0.2s;
+        cursor: pointer;
+        border: none;
+        outline: none;
+    }
+    .tab-pill.active {
+        background: #2563eb;
+        color: #fff;
+        box-shadow: 0 2px 8px rgba(37,99,235,0.08);
+    }
+    .tab-pill:hover:not(.active) {
+        background: #e0e7ff;
+        color: #2563eb;
+    }
+    .tab-pill i {
+        font-size: 1.1rem;
+    }
+    .modern-tabs .form-select {
+        border-radius: 24px;
+        font-size: 0.95rem;
+        padding-left: 1rem;
+    }
+</style>
+
 @code {
     private List<Announcement>? allAnnouncements;
     private List<Announcement>? filteredAnnouncements;
     private bool isLoading = true;
     private string searchTerm = "";
-    private string selectedCategory = "";
+    private string _selectedCategory = "";
+    private string selectedCategory
+    {
+        get => _selectedCategory;
+        set
+        {
+            if (_selectedCategory != value)
+            {
+                _selectedCategory = value;
+                ApplyFilters();
+            }
+        }
+    }
     private string activeTab = "Institution"; // Default to Institution tab
     
     // Pagination
@@ -352,7 +384,7 @@
         // Apply category filter
         if (!string.IsNullOrEmpty(selectedCategory))
         {
-            filtered = filtered.Where(a => a.Category == selectedCategory);
+            filtered = filtered.Where(a => a.Category != null && a.Category.Contains(selectedCategory, StringComparison.OrdinalIgnoreCase));
         }
 
         // Apply pagination
@@ -418,9 +450,10 @@
         return authorType switch
         {
             UserRole.Institution => "bi bi-building",
-            UserRole.Benefactor => "bi bi-people",
+            UserRole.Benefactor => "bi bi-globe",
             _ => "bi bi-person-circle"
         };
+
     }
 
     private string GetAnnouncementSource(Announcement announcement)

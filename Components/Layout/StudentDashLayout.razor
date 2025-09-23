@@ -310,7 +310,9 @@
 
     <!-- Sidebar Calendar -->
     <div class="sidebar-calendar">
-        <DashboardCalendar CurrentMonth="@currentMonth" CurrentMonthChanged="@(m => currentMonth = m)" />
+        <div class="rounded-lg border p-3 bg-white shadow-sm">
+            <DashboardCalendar CurrentMonth="@currentMonth" CurrentMonthChanged="@(m => currentMonth = m)" />
+        </div>
     </div>
 
     <!-- Sidebar Notifications -->

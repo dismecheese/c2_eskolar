@@ -93,13 +93,9 @@
         var currentPath = Navigation.ToBaseRelativePath(Navigation.Uri).Split('?')[0].TrimEnd('/');
         var linkPath = href.TrimStart('/').TrimEnd('/');
         
-        // Debug logging for development purposes
-        Console.WriteLine($"[DEBUG] Current path: '{currentPath}', Link path: '{linkPath}'");
-        
         // Exact match condition
         if (currentPath == linkPath)
         {
-            Console.WriteLine($"[DEBUG] MATCH! Applying active class to: {href}");
             return "nav-link d-flex align-items-center gap-2 sidebar-link active";
         }
             
@@ -275,16 +271,6 @@
             </ul>
         </div>
 
-        <!-- Help Box Button (opens chatbot) -->
-        <button class="help-box-bottom" type="button" @onclick="OpenChatbot">
-            <div class="help-box-content">
-                <img src="images/NeedHelp.svg" alt="Help" class="help-box-img" />
-                <div class="help-box-text">
-                    <div class="help-box-title">Need help?</div>
-                    <div class="help-box-desc">Having trouble using eSkolar?<br />We're here to assist you!</div>
-                </div>
-            </div>
-        </button>
     </nav>
 
     <!-- --- PROFILE SIDEBAR (Bootstrap Offcanvas) --- -->
@@ -311,8 +297,8 @@
             <circle cx="12" cy="12" r="11" stroke="#222" stroke-width="2"/>
             <path d="M4 20c1.5-3 5.5-5 8-5s6.5 2 8 5" stroke="#222" stroke-width="2"/>
         </svg>
-        <div class="sidebar-profile-name">Marzella Capin</div>
-        <div class="sidebar-profile-role">Student</div>
+        <div class="sidebar-profile-name">@currentUserName</div>
+        <div class="sidebar-profile-role">Institution</div>
         <button class="sidebar-profile-btn" @onclick="NavigateToInstitutionProfile" data-bs-dismiss="offcanvas">Profile</button>
     </div>
     
