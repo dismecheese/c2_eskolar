@@ -1,8 +1,9 @@
 using c2_eskolar.Components;
 using c2_eskolar.Data;
-using c2_eskolar.Services; // Add this import
+using c2_eskolar.Models;
+using c2_eskolar.Services;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Mvc; // Add this for [FromForm]
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using BlazorBootstrap;
 
@@ -13,33 +14,17 @@ builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 builder.Services.AddBlazorBootstrap();
 
-// Add Controllers for API endpoints
 builder.Services.AddControllers();
-
-// 🔧 Fix: Register HttpClient
 builder.Services.AddHttpClient();
 
 // Add Entity Framework with SQL Server
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// Add ASP.NET Core Identity
-builder.Services.AddDefaultIdentity<IdentityUser>(options =>
-{
-    // Password requirements
-    options.Password.RequireDigit = true;
-    options.Password.RequireLowercase = true;
-    options.Password.RequireNonAlphanumeric = false;
-    options.Password.RequireUppercase = true;
-    options.Password.RequiredLength = 6;
-    options.Password.RequiredUniqueChars = 1;
-
-    // Email confirmation (disable for development)
-    options.SignIn.RequireConfirmedEmail = false;
-    options.SignIn.RequireConfirmedAccount = false;
-})
-.AddRoles<IdentityRole>() // Add role support
-.AddEntityFrameworkStores<ApplicationDbContext>();
+// Add ASP.NET Core Identity (use ApplicationUser)
+builder.Services.AddDefaultIdentity<ApplicationUser>(options => options.SignIn.RequireConfirmedAccount = false)
+    .AddRoles<IdentityRole>()
+    .AddEntityFrameworkStores<ApplicationDbContext>();
 
 builder.Services.ConfigureApplicationCookie(options =>
 {
@@ -49,13 +34,10 @@ builder.Services.ConfigureApplicationCookie(options =>
     options.SlidingExpiration = true;
 });
 
-// Add authorization services
 builder.Services.AddAuthorization();
 
-// ADD THIS LINE: Register AuthService
+// Custom services
 builder.Services.AddScoped<AuthService>();
-
-// Register custom services
 builder.Services.AddScoped<PartnerService>();
 builder.Services.AddScoped<AnnouncementService>();
 builder.Services.AddScoped<AnnouncementSeedService>();
@@ -67,35 +49,32 @@ if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Error", createScopeForErrors: true);
     app.UseHsts();
-    app.UseHttpsRedirection(); // Only use HTTPS redirection in production
+    app.UseHttpsRedirection();
 }
 else
 {
     app.UseExceptionHandler("/Error", createScopeForErrors: true);
 }
+
 app.UseStaticFiles();
-
-// ADD THESE IN THE CORRECT ORDER:
 app.UseRouting();
-app.UseAuthentication();  // Must come before UseAuthorization
+app.UseAuthentication();
 app.UseAuthorization();
-
 app.UseAntiforgery();
 
 app.MapStaticAssets();
-app.MapControllers(); // Add this for API controllers
+app.MapControllers();
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
 
-// UPDATED SECTION: Seed roles and test users
+// ✅ Seed roles and test users
 using (var scope = app.Services.CreateScope())
 {
     var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
-    var userManager = scope.ServiceProvider.GetRequiredService<UserManager<IdentityUser>>();
+    var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
 
-    // Create roles
     string[] roles = { "Student", "Benefactor", "Institution" };
-    
+
     foreach (var role in roles)
     {
         if (!await roleManager.RoleExistsAsync(role))
@@ -105,82 +84,64 @@ using (var scope = app.Services.CreateScope())
         }
     }
 
-    // Create a test student user
-    var testEmail = "student@test.com";
-    var existingUser = await userManager.FindByEmailAsync(testEmail);
-    
-    if (existingUser == null)
+    // Create Student
+    var studentEmail = "student@test.com";
+    if (await userManager.FindByEmailAsync(studentEmail) == null)
     {
-        var testUser = new IdentityUser
+        var student = new ApplicationUser
         {
-            UserName = testEmail,
-            Email = testEmail,
+            UserName = studentEmail,
+            Email = studentEmail,
             EmailConfirmed = true
         };
-        
-        var result = await userManager.CreateAsync(testUser, "Student123!");
+
+        var result = await userManager.CreateAsync(student, "Student123!");
         if (result.Succeeded)
         {
-            await userManager.AddToRoleAsync(testUser, "Student");
-            Console.WriteLine($"✅ Created test user: {testEmail} / Student123!");
-        }
-        else
-        {
-            Console.WriteLine($"❌ Failed to create test user: {string.Join(", ", result.Errors.Select(e => e.Description))}");
+            await userManager.AddToRoleAsync(student, "Student");
+            Console.WriteLine($"✅ Created test student: {studentEmail} / Student123!");
         }
     }
 
-    // Create a test benefactor user
+    // Create Benefactor
     var benefactorEmail = "benefactor@test.com";
-    var existingBenefactor = await userManager.FindByEmailAsync(benefactorEmail);
-    
-    if (existingBenefactor == null)
+    if (await userManager.FindByEmailAsync(benefactorEmail) == null)
     {
-        var benefactorUser = new IdentityUser
+        var benefactor = new ApplicationUser
         {
             UserName = benefactorEmail,
             Email = benefactorEmail,
             EmailConfirmed = true
         };
-        
-        var result = await userManager.CreateAsync(benefactorUser, "Benefactor123!");
+
+        var result = await userManager.CreateAsync(benefactor, "Benefactor123!");
         if (result.Succeeded)
         {
-            await userManager.AddToRoleAsync(benefactorUser, "Benefactor");
+            await userManager.AddToRoleAsync(benefactor, "Benefactor");
             Console.WriteLine($"✅ Created test benefactor: {benefactorEmail} / Benefactor123!");
-        }
-        else
-        {
-            Console.WriteLine($"❌ Failed to create test benefactor: {string.Join(", ", result.Errors.Select(e => e.Description))}");
         }
     }
 
-    // Create a test institution user
+    // Create Institution
     var institutionEmail = "institution@test.com";
-    var existingInstitution = await userManager.FindByEmailAsync(institutionEmail);
-    
-    if (existingInstitution == null)
+    if (await userManager.FindByEmailAsync(institutionEmail) == null)
     {
-        var institutionUser = new IdentityUser
+        var institution = new ApplicationUser
         {
             UserName = institutionEmail,
             Email = institutionEmail,
             EmailConfirmed = true
         };
-        
-        var result = await userManager.CreateAsync(institutionUser, "Institution123!");
+
+        var result = await userManager.CreateAsync(institution, "Institution123!");
         if (result.Succeeded)
         {
-            await userManager.AddToRoleAsync(institutionUser, "Institution");
+            await userManager.AddToRoleAsync(institution, "Institution");
             Console.WriteLine($"✅ Created test institution: {institutionEmail} / Institution123!");
         }
-        else
-        {
-            Console.WriteLine($"❌ Failed to create test institution: {string.Join(", ", result.Errors.Select(e => e.Description))}");
-        }
     }
-    
-    // Seed sample announcements
+
+    // Seed announcements
     var seedService = scope.ServiceProvider.GetRequiredService<AnnouncementSeedService>();
     await seedService.SeedSampleAnnouncementsAsync();
 }

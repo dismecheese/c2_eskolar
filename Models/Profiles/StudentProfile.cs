@@ -5,13 +5,16 @@ namespace c2_eskolar.Models
     public class StudentProfile
     {
         [Key]
-        public int StudentProfileId { get; set; }
+    public int StudentProfileId { get; set; }
 
         /// <summary>
         /// Links this profile to the IdentityUser.
         /// </summary>
         [Required]
-        public required string UserId { get; set; }
+        public required string UserId { get; set; } // Foreign key to ApplicationUser
+
+        // Navigation property
+        public virtual ApplicationUser? User { get; set; }
 
         #region Basic Information
 
@@ -59,7 +62,10 @@ namespace c2_eskolar.Models
 
         [StringLength(100)]
         [Display(Name = "University Name")]
-        public string? UniversityName { get; set; }
+    public string? UniversityName { get; set; }
+
+    // Student biography
+    public string? Bio { get; set; }
 
         [Range(1, 8)]
         [Display(Name = "Year Level")]

@@ -26,7 +26,11 @@
 <!-- 📄 Content -->
 <div class="container my-5" style="margin-right: 80px;">
 
-    @if (scholarships is null)
+    @if (!string.IsNullOrEmpty(errorMessage))
+    {
+        <div class="alert alert-danger text-center">@errorMessage</div>
+    }
+    else if (scholarships is null)
     {
         <div class="text-center">Loading...</div>
     }
@@ -62,23 +66,40 @@
 
 @code {
     private List<Scholarship>? scholarships;
+    private string? errorMessage;
 
     protected override async Task OnInitializedAsync()
     {
-        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
-        var user = authState.User;
+        try
+        {
+            var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+            var user = authState.User;
 
-        // Load scholarships (visible to student)
-        scholarships = await DbContext.Scholarships
-            .Include(s => s.Institution)
-            .Include(s => s.Benefactor)
-            .Where(s => s.IsActive) // only active scholarships
-            .OrderByDescending(s => s.CreatedAt)
-            .ToListAsync();
+            scholarships = await DbContext.Scholarships
+                .Include(s => s.Institution)
+                .Include(s => s.Benefactor)
+                .Where(s => s.IsActive)
+                .OrderByDescending(s => s.CreatedAt)
+                .ToListAsync();
+
+            if (scholarships == null)
+            {
+                errorMessage = "Scholarships list is null after query.";
+            }
+            else if (!scholarships.Any())
+            {
+                // No scholarships, not an error
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Failed to load scholarships: {ex.Message}";
+        }
     }
 
     private void ViewScholarship(int id)
     {
-        Navigation.NavigateTo($"/dashboard/student/scholarships-info/{id}");
+    Navigation.NavigateTo($"/dashboard/student/scholarships-info/{id}");
     }
+
 }

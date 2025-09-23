@@ -2,94 +2,291 @@
 @attribute [Authorize(Roles = "Student")]
 @layout Layout.StudentDashLayout
 
-<h2 class="p-4">My Profile</h2>
+@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.AspNetCore.Identity
+@using c2_eskolar.Models
+@using c2_eskolar.Data
+@using Microsoft.EntityFrameworkCore
 
-<div class="container-fluid px-5">
-    <button class="btn btn-primary mb-3" @onclick="ToggleEditMode">
-        @(IsEditMode ? "Cancel" : "Edit Profile")
-    </button>
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject UserManager<ApplicationUser> UserManager
+@inject ApplicationDbContext DbContext
 
-    @if (!IsEditMode)
+<div class="container-fluid p-5" style="padding-left: 80px; padding-right: 120px;">
+    <!-- HEADER -->
+    <div class="row mb-4">
+        <div class="col-12 d-flex justify-content-between align-items-center">
+            <h2 class="mb-0">My Profile</h2>
+
+            <div class="d-flex gap-2">
+                <button class="btn btn-primary" @onclick="EnableEdit" disabled="@isEditing">
+                    <i class="fas fa-edit me-2"></i> Edit Profile
+                </button>
+                <button class="btn btn-success" @onclick="SaveChanges" disabled="@(!isEditing)">
+                    <i class="fas fa-save me-2"></i> Save Changes
+                </button>
+            </div>
+        </div>
+    </div>
+
+    @if (currentUser != null)
     {
-        <!-- View Mode -->
-        <div class="card p-4">
-            <dl class="row">
-                <dt class="col-sm-3">Full Name</dt>
-                <dd class="col-sm-9">Charles Cedric C. Almadrones</dd>
+        <div class="row">
+            <!-- LEFT COLUMN -->
+            <div class="col-lg-4 mb-4">
+                <div class="card shadow-sm mb-4">
+                    <div class="card-body text-center">
+                        <img src="@(studentProfile?.ProfilePicture ?? "https://via.placeholder.com/120")"
+                             class="rounded-circle profile-image mb-3"
+                             alt="Profile Picture"
+                             width="120" height="120" />
 
-                <dt class="col-sm-3">Email</dt>
-                <dd class="col-sm-9">student@example.com</dd>
+                        <h4 class="card-title mb-1">@studentProfile?.FirstName @studentProfile?.LastName</h4>
+                        <p class="text-muted mb-2">Student</p>
 
-                <dt class="col-sm-3">Phone</dt>
-                <dd class="col-sm-9">09123456789</dd>
+                        <div class="mb-3">
+                            <span class="badge bg-success fs-6">Active</span>
+                        </div>
 
-                <dt class="col-sm-3">Address</dt>
-                <dd class="col-sm-9">123 Poblacion, Makati City</dd>
+                        <div class="text-start">
+                            <p class="mb-2"><i class="fas fa-envelope text-primary me-2"></i> @currentUser.Email</p>
+                            <p class="mb-2"><i class="fas fa-phone text-primary me-2"></i> @(string.IsNullOrWhiteSpace(studentProfile?.ContactNumber) ? "No phone provided" : studentProfile.ContactNumber)</p>
+                            <p class="mb-2"><i class="fas fa-map-marker-alt text-primary me-2"></i> @(string.IsNullOrWhiteSpace(studentProfile?.Address) ? "No address provided" : studentProfile.Address)</p>
+                        </div>
+                    </div>
+                </div>
 
-                <dt class="col-sm-3">University</dt>
-                <dd class="col-sm-9">University of the Philippines</dd>
+                <!-- Academic Summary -->
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-primary text-white">
+                        <h6 class="mb-0"><i class="fas fa-chart-bar me-2"></i> Academic Summary</h6>
+                    </div>
+                    <div class="card-body text-center">
+                        <h5 class="mb-1 text-info">GPA: @(studentProfile?.GPA?.ToString("0.00") ?? "N/A")</h5>
+                        <p class="text-muted mb-0">
+                            @((!string.IsNullOrWhiteSpace(studentProfile?.Course) ? studentProfile.Course : "No course provided"))
+                            &nbsp;|&nbsp;
+                            @(studentProfile?.YearLevel?.ToString() ?? "No year level provided")
+                        </p>
+                        <p class="text-muted mb-0">University: @(string.IsNullOrWhiteSpace(studentProfile?.UniversityName) ? "No university provided" : studentProfile.UniversityName)</p>
+                    </div>
+                </div>
+            </div>
 
-                <dt class="col-sm-3">Course</dt>
-                <dd class="col-sm-9">BS Computer Science</dd>
-
-                <dt class="col-sm-3">Year Level</dt>
-                <dd class="col-sm-9">3rd Year</dd>
-            </dl>
+            <!-- RIGHT COLUMN -->
+            <div class="col-lg-8">
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-white">
+                        <h5 class="mb-0"><i class="fas fa-user me-2"></i> Personal Information</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <h6 class="text-muted mb-1">First Name</h6>
+                                @if (isEditing)
+                                {
+                                    <input class="form-control" @bind="editableFirstName" />
+                                }
+                                else
+                                {
+                                    <p>@studentProfile?.FirstName</p>
+                                }
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <h6 class="text-muted mb-1">Last Name</h6>
+                                @if (isEditing)
+                                {
+                                    <input class="form-control" @bind="editableLastName" />
+                                }
+                                else
+                                {
+                                    <p>@studentProfile?.LastName</p>
+                                }
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <h6 class="text-muted mb-1">Email</h6>
+                                @if (isEditing)
+                                {
+                                    <input class="form-control" @bind="editableEmail" />
+                                }
+                                else
+                                {
+                                    <p>@currentUser.Email</p>
+                                }
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <h6 class="text-muted mb-1">Phone</h6>
+                                @if (isEditing)
+                                {
+                                    <input class="form-control" @bind="editableContactNumber" />
+                                }
+                                else
+                                {
+                                    <p>@(string.IsNullOrWhiteSpace(studentProfile?.ContactNumber) ? "No phone provided" : studentProfile.ContactNumber)</p>
+                                }
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <h6 class="text-muted mb-1">University</h6>
+                                @if (isEditing)
+                                {
+                                    <input class="form-control" @bind="editableUniversityName" />
+                                }
+                                else
+                                {
+                                    <p>@(string.IsNullOrWhiteSpace(studentProfile?.UniversityName) ? "No university provided" : studentProfile.UniversityName)</p>
+                                }
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <h6 class="text-muted mb-1">Course</h6>
+                                @if (isEditing)
+                                {
+                                    <input class="form-control" @bind="editableCourse" />
+                                }
+                                else
+                                {
+                                    <p>@(string.IsNullOrWhiteSpace(studentProfile?.Course) ? "No course provided" : studentProfile.Course)</p>
+                                }
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <h6 class="text-muted mb-1">Year Level</h6>
+                                @if (isEditing)
+                                {
+                                    <input class="form-control" type="number" @bind="editableYearLevel" />
+                                }
+                                else
+                                {
+                                    <p>@(studentProfile?.YearLevel?.ToString() ?? "No year level provided")</p>
+                                }
+                            </div>
+                            <div class="col-12 mb-3">
+                                <h6 class="text-muted mb-1">Bio</h6>
+                                @if (isEditing)
+                                {
+                                    <textarea class="form-control" rows="4" @bind="editableBio"></textarea>
+                                }
+                                else
+                                {
+                                    <p>@(string.IsNullOrWhiteSpace(studentProfile?.Bio) ? "No bio provided" : studentProfile.Bio)</p>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     }
     else
     {
-        <!-- Edit Mode -->
-        <div class="card p-4">
-            <form>
-                <div class="row">
-                    <div class="col-md-6 mb-3">
-                        <label>Full Name</label>
-                        <input type="text" class="form-control" value="Charles Cedric C. Almadrones" />
-                    </div>
-                    <div class="col-md-6 mb-3">
-                        <label>Email</label>
-                        <input type="email" class="form-control" value="student@example.com" disabled />
-                    </div>
-                    <div class="col-md-6 mb-3">
-                        <label>Phone</label>
-                        <input type="text" class="form-control" value="09123456789" />
-                    </div>
-                    <div class="col-md-6 mb-3">
-                        <label>Address</label>
-                        <input type="text" class="form-control" value="123 Poblacion, Makati City" />
-                    </div>
-                    <div class="col-md-6 mb-3">
-                        <label>University</label>
-                        <input type="text" class="form-control" value="University of the Philippines" />
-                    </div>
-                    <div class="col-md-6 mb-3">
-                        <label>Course</label>
-                        <input type="text" class="form-control" value="BS Computer Science" />
-                    </div>
-                    <div class="col-md-6 mb-3">
-                        <label>Year Level</label>
-                        <select class="form-control">
-                            <option selected>3rd Year</option>
-                            <option>1st Year</option>
-                            <option>2nd Year</option>
-                            <option>4th Year</option>
-                            <option>Graduate</option>
-                        </select>
-                    </div>
-                </div>
-
-                <button type="submit" class="btn btn-success">Save</button>
-            </form>
-        </div>
+        <div class="alert alert-info">Loading profile...</div>
     }
 </div>
 
 @code {
-    private bool IsEditMode = false;
+    private ApplicationUser? currentUser;
+    private c2_eskolar.Models.StudentProfile? studentProfile;
+    private bool isLoading = true;
+    private bool isEditing = false;
+    private string? editableBio;
+    private string? editableFirstName;
+    private string? editableLastName;
+    private string? editableEmail;
+    private string? editableContactNumber;
+    private string? editableUniversityName;
+    private string? editableCourse;
+    private int? editableYearLevel;
+    private bool isSaving = false;
+    private string? errorMessage;
 
-    private void ToggleEditMode()
+    protected override async Task OnInitializedAsync()
     {
-        IsEditMode = !IsEditMode;
+        try
+        {
+            var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+            var user = authState.User;
+
+            if (user.Identity?.IsAuthenticated == true)
+            {
+                currentUser = await UserManager.GetUserAsync(user);
+
+                if (currentUser != null)
+                {
+                    studentProfile = currentUser.StudentProfile;
+
+                    if (studentProfile == null)
+                    {
+                        studentProfile = await DbContext.StudentProfiles
+                            .FirstOrDefaultAsync(sp => sp.UserId == currentUser.Id);
+                    }
+                    editableFirstName = studentProfile?.FirstName;
+                    editableLastName = studentProfile?.LastName;
+                    editableEmail = currentUser.Email;
+                    editableContactNumber = studentProfile?.ContactNumber;
+                    editableUniversityName = studentProfile?.UniversityName;
+                    editableCourse = studentProfile?.Course;
+                    editableYearLevel = studentProfile?.YearLevel;
+                    editableBio = studentProfile?.Bio;
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading profile: {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private void EnableEdit()
+    {
+        isEditing = true;
+        editableFirstName = studentProfile?.FirstName;
+        editableLastName = studentProfile?.LastName;
+        editableEmail = currentUser?.Email;
+        editableContactNumber = studentProfile?.ContactNumber;
+        editableUniversityName = studentProfile?.UniversityName;
+        editableCourse = studentProfile?.Course;
+        editableYearLevel = studentProfile?.YearLevel;
+        editableBio = studentProfile?.Bio;
+        errorMessage = null;
+    }
+
+    private async Task SaveChanges()
+    {
+        if (studentProfile == null || currentUser == null)
+            return;
+
+        isSaving = true;
+        errorMessage = null;
+        try
+        {
+            studentProfile.FirstName = editableFirstName ?? studentProfile.FirstName;
+            studentProfile.LastName = editableLastName ?? studentProfile.LastName;
+            studentProfile.ContactNumber = editableContactNumber;
+            studentProfile.UniversityName = editableUniversityName;
+            studentProfile.Course = editableCourse;
+            studentProfile.YearLevel = editableYearLevel;
+            studentProfile.Bio = editableBio;
+
+            // Optionally update email if you want to allow email changes
+            if (!string.IsNullOrWhiteSpace(editableEmail) && editableEmail != currentUser.Email)
+            {
+                currentUser.Email = editableEmail;
+                DbContext.Users.Update(currentUser);
+            }
+
+            DbContext.StudentProfiles.Update(studentProfile);
+            await DbContext.SaveChangesAsync();
+            isEditing = false;
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error saving changes: {ex.Message}";
+        }
+        finally
+        {
+            isSaving = false;
+        }
     }
 }

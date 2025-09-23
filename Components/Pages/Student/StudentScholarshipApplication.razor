@@ -16,117 +16,138 @@
 
 <PageTitle>Scholarship Application</PageTitle>
 
-<h3>Scholarship Application</h3>
 
-@if (isLoading)
-{
-    <p>Loading...</p>
-}
-else if (scholarship == null)
-{
-    <div class="alert alert-danger">Scholarship not found.</div>
-}
-else if (alreadyApplied)
-{
-    <div class="alert alert-info">
-        <h5>Application Already Submitted</h5>
-        <p>You have already applied for this scholarship.</p>
-        <a href="/dashboard/student/scholarships" class="btn btn-secondary">View Other Scholarships</a>
-    </div>
-}
-else
-{
-    <div class="card p-4">
-        <h4>@scholarship.Title</h4>
-        <p class="text-muted">@scholarship.Institution?.AdminFullName</p>
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow-lg border-0 mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="mb-0"><i class="fas fa-file-signature me-2"></i>Scholarship Application</h3>
+                </div>
+                <div class="card-body">
+                    @if (isLoading)
+                    {
+                        <div class="d-flex justify-content-center align-items-center" style="min-height: 200px;">
+                            <div class="spinner-border text-primary" role="status"></div>
+                            <span class="ms-3">Loading...</span>
+                        </div>
+                    }
+                    else if (scholarship == null)
+                    {
+                        <div class="alert alert-danger">Scholarship not found.</div>
+                    }
+                    else if (alreadyApplied)
+                    {
+                        <div class="alert alert-info">
+                            <h5><i class="fas fa-check-circle me-2"></i>Application Already Submitted</h5>
+                            <p>You have already applied for this scholarship.</p>
+                            <a href="/dashboard/student/scholarships" class="btn btn-outline-primary">View Other Scholarships</a>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="mb-4">
+                            <h4 class="fw-bold mb-1">@scholarship.Title</h4>
+                            <p class="text-muted mb-2">@scholarship.Institution?.AdminFullName</p>
+                            <span class="badge bg-info text-dark mb-2">Deadline: @scholarship.ApplicationDeadline.ToString("MMMM dd, yyyy")</span>
+                            <div class="mb-2"><strong>Description:</strong> @scholarship.Description</div>
+                        </div>
 
-        <div class="mb-3">
-            <strong>Description:</strong>
-            <p>@scholarship.Description</p>
-        </div>
+                        <EditForm Model="application" OnValidSubmit="HandleSubmit">
+                            <DataAnnotationsValidator />
+                            <ValidationSummary />
 
-        <EditForm Model="application" OnValidSubmit="HandleSubmit">
-            <DataAnnotationsValidator />
-            <ValidationSummary />
+                            <div class="mb-4">
+                                <h5 class="mb-2"><i class="fas fa-tasks me-2"></i>Application Type</h5>
+                                <InputRadioGroup @bind-Value="application.IsExternalApplication">
+                                    <div class="form-check">
+                                        <InputRadio class="form-check-input" Value="false" />
+                                        <label class="form-check-label">Internal (via this portal)</label>
+                                    </div>
+                                    <div class="form-check">
+                                        <InputRadio class="form-check-input" Value="true" />
+                                        <label class="form-check-label">External (redirect to provider site)</label>
+                                    </div>
+                                </InputRadioGroup>
+                            </div>
 
-            <!-- Toggle Application Type -->
-            <div class="mb-3">
-                <label class="form-label">Application Type</label>
-                <InputRadioGroup @bind-Value="application.IsExternalApplication">
-                    <div class="form-check">
-                        <InputRadio class="form-check-input" Value="false" /> 
-                        <label class="form-check-label">Internal (via this portal)</label>
-                    </div>
-                    <div class="form-check">
-                        <InputRadio class="form-check-input" Value="true" /> 
-                        <label class="form-check-label">External (redirect to provider site)</label>
-                    </div>
-                </InputRadioGroup>
+                            @if (application.IsExternalApplication)
+                            {
+                                <div class="mb-4 p-3 border rounded bg-light">
+                                    <h6 class="fw-bold mb-2"><i class="fas fa-external-link-alt me-2"></i>External Application</h6>
+                                    <label for="ExternalApplicationUrl" class="form-label">Application Link</label>
+                                    <InputText id="ExternalApplicationUrl" class="form-control mb-2"
+                                               @bind-Value="application.ExternalApplicationUrl"
+                                               placeholder="https://provider.com/apply" />
+                                    <ValidationMessage For="@(() => application.ExternalApplicationUrl)" />
+
+                                    <div class="form-check mt-2">
+                                        <InputCheckbox id="HasAppliedExternally" class="form-check-input"
+                                                       @bind-Value="application.HasAppliedExternally" />
+                                        <label class="form-check-label" for="HasAppliedExternally">
+                                            I confirm I have applied on the provider’s site
+                                        </label>
+                                    </div>
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="mb-4 p-3 border rounded bg-light">
+                                    <h6 class="fw-bold mb-2"><i class="fas fa-user-edit me-2"></i>Internal Application</h6>
+                                    <label for="PersonalStatement" class="form-label">Personal Statement <span class="text-danger">*</span></label>
+                                    <InputTextArea id="PersonalStatement" class="form-control mb-2"
+                                                   @bind-Value="application.PersonalStatement" rows="6"
+                                                   placeholder="Explain why you deserve this scholarship..." />
+                                    <ValidationMessage For="@(() => application.PersonalStatement)" />
+
+                                    <label for="UploadedDocuments" class="form-label mt-2">Supporting Documents</label>
+                                    <InputText id="UploadedDocuments" class="form-control mb-2"
+                                               @bind-Value="application.UploadedDocuments"
+                                               placeholder="Enter file names or links (demo only)" />
+                                    <ValidationMessage For="@(() => application.UploadedDocuments)" />
+                                </div>
+                            }
+
+                            <div class="d-flex align-items-center mt-4">
+                                <button type="submit" class="btn btn-success px-4" disabled="@isSubmitting">
+                                    @if (isSubmitting)
+                                    {
+                                        <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                                        @:Submitting...
+                                    }
+                                    else
+                                    {
+                                        @:Submit Application
+                                    }
+                                </button>
+                                <a href="/dashboard/student/scholarships" class="btn btn-outline-secondary ms-3">Cancel</a>
+                            </div>
+
+                            @if (!string.IsNullOrEmpty(successMessage))
+                            {
+                                <div class="alert alert-success mt-4">
+                                    <i class="fas fa-check-circle me-2"></i>@successMessage
+                                    <div class="mt-2">
+                                        <a href="/dashboard/student/applications" class="btn btn-sm btn-outline-success">
+                                            <i class="fas fa-folder-open me-1"></i>View My Applications
+                                        </a>
+                                    </div>
+                                </div>
+                            }
+
+                            @if (!string.IsNullOrEmpty(errorMessage))
+                            {
+                                <div class="alert alert-danger mt-4">
+                                    <i class="fas fa-exclamation-triangle me-2"></i>@errorMessage
+                                </div>
+                            }
+                        </EditForm>
+                    }
+                </div>
             </div>
-
-            @if (application.IsExternalApplication)
-            {
-                <!-- External Application Section -->
-                <div class="mb-3">
-                    <label for="ExternalApplicationUrl" class="form-label">Application Link</label>
-                    <InputText id="ExternalApplicationUrl" class="form-control" 
-                               @bind-Value="application.ExternalApplicationUrl" 
-                               placeholder="https://provider.com/apply" />
-                    <ValidationMessage For="@(() => application.ExternalApplicationUrl)" />
-                </div>
-
-                <div class="form-check mb-3">
-                    <InputCheckbox id="HasAppliedExternally" class="form-check-input" 
-                                   @bind-Value="application.HasAppliedExternally" />
-                    <label class="form-check-label" for="HasAppliedExternally">
-                        I confirm I have applied on the provider’s site
-                    </label>
-                </div>
-            }
-            else
-            {
-                <!-- Internal Application Section -->
-                <div class="mb-3">
-                    <label for="PersonalStatement" class="form-label">Personal Statement <span class="text-danger">*</span></label>
-                    <InputTextArea id="PersonalStatement" class="form-control" 
-                                   @bind-Value="application.PersonalStatement" rows="6" 
-                                   placeholder="Explain why you deserve this scholarship..." />
-                    <ValidationMessage For="@(() => application.PersonalStatement)" />
-                </div>
-
-                <div class="mb-3">
-                    <label for="UploadedDocuments" class="form-label">Supporting Documents</label>
-                    <InputText id="UploadedDocuments" class="form-control" 
-                               @bind-Value="application.UploadedDocuments" 
-                               placeholder="Enter file names or links (demo only)" />
-                    <ValidationMessage For="@(() => application.UploadedDocuments)" />
-                </div>
-            }
-
-            <button type="submit" class="btn btn-success" disabled="@isSubmitting">
-                @(isSubmitting ? "Submitting..." : "Submit Application")
-            </button>
-            <a href="/dashboard/student/scholarships" class="btn btn-secondary ms-2">Cancel</a>
-
-            @if (!string.IsNullOrEmpty(successMessage))
-            {
-                <div class="alert alert-success mt-3">
-                    @successMessage
-                    <div class="mt-2">
-                        <a href="/dashboard/student/applications" class="btn btn-sm btn-outline-success">
-                            View My Applications
-                        </a>
-                    </div>
-                </div>
-            }
-
-            @if (!string.IsNullOrEmpty(errorMessage))
-            {
-                <div class="alert alert-danger mt-3">@errorMessage</div>
-            }
-        </EditForm>
+        </div>
     </div>
-}
+</div>
 
 @code {
     [Parameter] public int ScholarshipId { get; set; }
@@ -154,8 +175,29 @@ else
             return;
         }
 
-        // Mock student (replace with real Identity UserId -> StudentProfileId)
-        int studentId = 1;
+        // Get the current user's ID from claims
+        var authState = await AuthProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+        var userId = user.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+
+        if (string.IsNullOrEmpty(userId))
+        {
+            Navigation.NavigateTo("/login");
+            return;
+        }
+
+        // Find the student's profile
+        var studentProfile = await DbContext.StudentProfiles
+            .FirstOrDefaultAsync(sp => sp.UserId == userId);
+
+        if (studentProfile == null)
+        {
+            errorMessage = "Student profile not found. Please complete your profile first.";
+            isLoading = false;
+            return;
+        }
+
+        int studentId = studentProfile.StudentProfileId;
 
         // Check if already applied
         alreadyApplied = await DbContext.ScholarshipApplications

@@ -95,7 +95,18 @@
     }
 </style>
 
-@if (isLoading)
+@if (!string.IsNullOrEmpty(errorMessage))
+{
+    <div class="container-fluid px-4">
+        <div class="alert alert-danger text-center">@errorMessage</div>
+        <div class="text-center">
+            <a href="/dashboard/student/scholarships" class="btn btn-outline-primary">
+                <i class="fas fa-arrow-left me-2"></i>Back to Scholarships
+            </a>
+        </div>
+    </div>
+}
+else if (isLoading)
 {
     <div class="d-flex justify-content-center align-items-center" style="min-height: 400px;">
         <div class="text-center">
@@ -350,9 +361,17 @@ else
                         else
                         {
                             <button class="btn btn-apply btn-primary btn-lg w-100 mb-3"
-                                    @onclick="@(() => Navigation.NavigateTo($"/dashboard/student/apply/{scholarship!.ScholarshipId}"))">
-                                <i class="fas fa-paper-plane me-2"></i>
-                                Apply Now
+                                    @onclick="Apply" disabled="@(isSubmitting)">
+                                @if (isSubmitting)
+                                {
+                                    <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                                    @("Submitting...")
+                                }
+                                else
+                                {
+                                    <i class="fas fa-paper-plane me-2"></i>
+                                    @("Apply Now")
+                                }
                             </button>
                         }
 
@@ -408,35 +427,46 @@ else
     private bool isLoading = true;
     private bool isSubmitting = false;
     private string? successMessage;
+    private string? errorMessage;
 
     protected override async Task OnInitializedAsync()
     {
-        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
-        var user = authState.User;
-        var userId = user.Identity?.Name;
-
-        if (string.IsNullOrEmpty(userId))
+        try
         {
-            Navigation.NavigateTo("/login");
-            return;
+            var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+            var user = authState.User;
+            var userId = user.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+
+            if (string.IsNullOrEmpty(userId))
+            {
+                Navigation.NavigateTo("/login");
+                return;
+            }
+
+            currentStudent = await DbContext.StudentProfiles
+                .FirstOrDefaultAsync(s => s.UserId == userId);
+
+            scholarship = await DbContext.Scholarships
+                .Include(s => s.Institution)
+                .Include(s => s.Benefactor)
+                .Include(s => s.Applications)
+                .FirstOrDefaultAsync(s => s.ScholarshipId == ScholarshipId);
+
+            if (scholarship != null && currentStudent != null)
+            {
+                hasApplied = scholarship.Applications
+                    .Any(a => a.StudentProfileId == currentStudent.StudentProfileId);
+            }
         }
-
-        currentStudent = await DbContext.StudentProfiles
-            .FirstOrDefaultAsync(s => s.UserId == userId);
-
-        scholarship = await DbContext.Scholarships
-            .Include(s => s.Institution)
-            .Include(s => s.Benefactor)
-            .Include(s => s.Applications)
-            .FirstOrDefaultAsync(s => s.ScholarshipId == ScholarshipId);
-
-        if (scholarship != null && currentStudent != null)
+        catch (Exception ex)
         {
-            hasApplied = scholarship.Applications
-                .Any(a => a.StudentProfileId == currentStudent.StudentProfileId);
+            errorMessage = $"Failed to load scholarship details: {ex.Message}";
+            Console.WriteLine($"ERROR: {errorMessage}");
         }
-
-        isLoading = false;
+        finally
+        {
+            isLoading = false;
+        }
     }
 
     private async Task Apply()
@@ -459,5 +489,8 @@ else
         hasApplied = true;
         successMessage = "✅ You have successfully applied for this scholarship!";
         isSubmitting = false;
+
+        // Navigate to the application details page
+        Navigation.NavigateTo($"/dashboard/student/applications/{application.ScholarshipApplicationId}");
     }
 }
