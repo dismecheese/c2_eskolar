@@ -5,6 +5,7 @@
 @inject IJSRuntime JSRuntime
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @inject UserManager<IdentityUser> UserManager
+@inject StudentProfileService StudentProfileService
 
 @using Microsoft.AspNetCore.Components.Web
 @using Microsoft.AspNetCore.Components.Authorization
@@ -22,6 +23,10 @@
     // Stores the email of the currently signed in user
     private string currentUserEmail = "";
 
+    // Stores the first and last name of the signed in student
+    private string? studentFirstName;
+    private string? studentLastName;
+
     // Tracks the current month for the calendar component
     private DateTime currentMonth = new(DateTime.Now.Year, DateTime.Now.Month, 1);
     
@@ -32,7 +37,28 @@
     {
         Navigation.LocationChanged += OnLocationChanged;
         await LoadCurrentUser();
+            await LoadStudentProfile();
     }
+
+        private async Task LoadStudentProfile()
+        {
+            try
+            {
+                var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+                var userId = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+                if (!string.IsNullOrEmpty(userId))
+                {
+                    var profile = await StudentProfileService.GetProfileByUserIdAsync(userId);
+                    studentFirstName = profile?.FirstName;
+                    studentLastName = profile?.LastName;
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error loading student profile: {ex.Message}");
+            }
+            StateHasChanged();
+        }
 
     // Loads the currently authenticated user's information
     private async Task LoadCurrentUser()
@@ -302,7 +328,7 @@
             <circle cx="12" cy="12" r="11" stroke="#222" stroke-width="2"/>
             <path d="M4 20c1.5-3 5.5-5 8-5s6.5 2 8 5" stroke="#222" stroke-width="2"/>
         </svg>
-        <div class="sidebar-profile-name">@currentUserName</div>
+        <div class="sidebar-profile-name">@((studentFirstName ?? "Student") + (string.IsNullOrWhiteSpace(studentLastName) ? "" : $" {studentLastName}"))</div>
         <div class="sidebar-profile-role">Student</div>
         <button class="sidebar-profile-btn" @onclick="NavigateToStudentProfile" data-bs-dismiss="offcanvas">Profile</button>
     </div>

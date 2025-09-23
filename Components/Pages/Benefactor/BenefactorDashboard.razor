@@ -146,9 +146,23 @@
     {
         <!-- Recently Viewed Scholarships Tab (separate layout) -->
         <div class="scholarship-section">
-            <div style="display: flex; justify-content: flex-end; align-items: center; margin-bottom: 8px;">
-                <button class="clear-link" style="background:none;border:none;color:#bbb;font-weight:500;font-size:16px;">Clear</button>
+            <!-- Notifications Card -->
+            <div style="background:#fff;border-radius:16px;box-shadow:0 2px 8px rgba(0,0,0,0.04);padding:24px;width:800px;max-width:100%;align-self:center;margin:0 auto 24px auto;">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+                    <h2 style="font-size:1.25rem;font-weight:600;">Notifications</h2>
+                    <button class="clear-link" style="background:none;border:none;color:#bbb;font-weight:500;font-size:16px;">Clear</button>
+                </div>
+                <!-- Example notification items -->
+                <div style="margin-bottom:16px;background:#fff;border-radius:12px;padding:18px 20px;box-shadow:0 1px 4px rgba(0,0,0,0.03);">
+                    <div style="font-weight:600;font-size:1.1rem;">Notif Title</div>
+                    <div style="color:#666;margin-top:4px;">Short Description Short Description Short Description</div>
+                </div>
+                <div style="margin-bottom:16px;background:#fff;border-radius:12px;padding:18px 20px;box-shadow:0 1px 4px rgba(0,0,0,0.03);">
+                    <div style="font-weight:600;font-size:1.1rem;">Notif Title</div>
+                    <div style="color:#666;margin-top:4px;">Short Description Short Description Short Description</div>
+                </div>
             </div>
+            <!-- Scholarship grid below -->
             <div class="scholarship-cards" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 32px;">
                 @for (int i = 0; i < 9; i++)
                 {
@@ -202,22 +216,6 @@
             </div>
         </div>
     }
-</div>
-
-
-<!-- Profile Pop-out Component -->
-<div class="profile-popout">
-    <button class="profile-popout-close" aria-label="Close" @onclick="CloseProfilePopout">&#10005;</button>
-    <div class="profile-popout-avatar" style="margin-top:32px;">
-        <svg width="110" height="110" viewBox="0 0 110 110">
-            <circle cx="55" cy="55" r="54" fill="#fff" stroke="#222" stroke-width="4"/>
-            <circle cx="55" cy="45" r="28" fill="#222"/>
-            <ellipse cx="55" cy="90" rx="36" ry="18" fill="#222"/>
-        </svg>
-    </div>
-    <div class="profile-popout-name" style="font-size:1.18rem;font-weight:700;margin-bottom:2px;text-align:center;">Ralph Marilao</div>
-    <div class="profile-popout-position" style="font-size:1rem;color:#666;margin-bottom:18px;text-align:center;">Position</div>
-    <button class="profile-popout-profile-btn" style="background:#888;border:none;border-radius:18px;padding:6px 32px;font-weight:600;color:#fff;cursor:pointer;">Profile</button>
 </div>
 
 @code {
