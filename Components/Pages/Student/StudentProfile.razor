@@ -5,6 +5,7 @@
 @inject UserManager<IdentityUser> UserManager
 @using Microsoft.AspNetCore.Components.Authorization
 @using Microsoft.AspNetCore.Identity
+@using Microsoft.EntityFrameworkCore
 
 <div class="container-fluid p-5" style="padding-left: 80px; padding-right: 120px;">
     <!-- Header Section -->
@@ -323,7 +324,7 @@
 @code {
     // Edit mode state
     private bool IsEditMode = false;
-    private bool isLoading = true;
+    // Removed unused isLoading field
     
     // Profile Info - Dynamic from logged in user
     private string FullName = "";
@@ -357,9 +358,8 @@
 
     protected override async Task OnInitializedAsync()
     {
-        await LoadUserData();
-        isLoading = false;
-        StateHasChanged();
+    await LoadUserData();
+    StateHasChanged();
     }
 
     private async Task LoadUserData()
@@ -392,9 +392,8 @@
                 }
             }
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            Console.WriteLine($"Error loading user data: {ex.Message}");
             // Set default values
             FullName = "Student User";
             Email = "student@example.com";
@@ -402,52 +401,52 @@
         }
     }
 
+    [Inject]
+    private c2_eskolar.Data.ApplicationDbContext DbContext { get; set; } = default!;
+
     private async Task LoadExtendedProfileData(string userId)
     {
         try
         {
-            // TODO: Replace with actual database calls
-            // Example of what you might implement:
-            
-            // var studentProfile = await DbContext.StudentProfiles
-            //     .FirstOrDefaultAsync(sp => sp.UserId == userId);
-            
-            // if (studentProfile != null)
-            // {
-            //     FullName = $"{studentProfile.FirstName} {studentProfile.LastName}";
-            //     Phone = studentProfile.Phone;
-            //     Location = studentProfile.Location;
-            //     University = studentProfile.University;
-            //     Course = studentProfile.Course;
-            //     YearLevel = studentProfile.YearLevel;
-            //     Bio = studentProfile.Bio;
-            //     GPA = studentProfile.GPA.ToString("F2");
-            //     ProfilePicture = studentProfile.ProfilePictureUrl ?? "https://via.placeholder.com/120";
-            //     
-            //     // Load verification status
-            //     PhoneVerified = studentProfile.PhoneVerified;
-            //     StudentIdVerified = studentProfile.StudentIdVerified;
-            //     AcademicRecordsVerified = studentProfile.AcademicRecordsVerified;
-            //     
-            //     // Load statistics
-            //     ScholarshipsReceived = await DbContext.ScholarshipApplications
-            //         .CountAsync(sa => sa.StudentId == userId && sa.Status == "Approved");
-            //     Applications = await DbContext.ScholarshipApplications
-            //         .CountAsync(sa => sa.StudentId == userId);
-            // }
-            
-            // For now, set some default values based on username
-            if (!string.IsNullOrEmpty(Username))
+            var studentProfile = await DbContext.StudentProfiles.FirstOrDefaultAsync(sp => sp.UserId == userId);
+            if (studentProfile != null)
             {
-                FullName = Username.Replace(".", " ").Replace("_", " ");
-                // Capitalize each word
-                FullName = System.Globalization.CultureInfo.CurrentCulture.TextInfo.ToTitleCase(FullName);
+                FullName = studentProfile.FullName;
+                Phone = studentProfile.ContactNumber ?? "";
+                Location = studentProfile.Address ?? "";
+                University = studentProfile.UniversityName ?? "";
+                Course = studentProfile.Course ?? "";
+                YearLevel = studentProfile.YearLevel?.ToString() ?? "";
+                Bio = studentProfile.StudentNumber ?? "";
+                GPA = studentProfile.GPA?.ToString("F2") ?? "0.00";
+                ProfilePicture = studentProfile.ProfilePicture ?? "https://via.placeholder.com/120";
+
+                // Verification status
+                PhoneVerified = studentProfile.IsVerified;
+                StudentIdVerified = studentProfile.VerificationStatus == "Verified";
+                AcademicRecordsVerified = studentProfile.VerificationStatus == "Verified";
+
+                // Statistics
+                ScholarshipsReceived = await DbContext.ScholarshipApplications
+                    .Where(sa => sa.StudentProfileId == studentProfile.StudentProfileId && sa.Status == "Approved")
+                    .CountAsync();
+                Applications = await DbContext.ScholarshipApplications
+                    .Where(sa => sa.StudentProfileId == studentProfile.StudentProfileId)
+                    .CountAsync();
             }
-            
+            else
+            {
+                // Fallback to username if no profile found
+                if (!string.IsNullOrEmpty(Username))
+                {
+                    FullName = Username.Replace(".", " ").Replace("_", " ");
+                    FullName = System.Globalization.CultureInfo.CurrentCulture.TextInfo.ToTitleCase(FullName);
+                }
+            }
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            Console.WriteLine($"Error loading extended profile data: {ex.Message}");
+            // Optionally log error
         }
     }
 
@@ -497,9 +496,8 @@
                 // You might want to add a toast notification here
             }
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            Console.WriteLine($"Error saving profile: {ex.Message}");
             // Show error message to user
         }
     }

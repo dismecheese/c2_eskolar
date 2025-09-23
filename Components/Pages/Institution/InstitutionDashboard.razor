@@ -204,20 +204,6 @@
     }
 </div>
 
-<!-- Profile Pop-out Component -->
-<div class="profile-popout">
-    <button class="profile-popout-close" aria-label="Close" @onclick="CloseProfilePopout">&#10005;</button>
-    <div class="profile-popout-avatar" style="margin-top:32px;">
-        <svg width="110" height="110" viewBox="0 0 110 110">
-            <circle cx="55" cy="55" r="54" fill="#fff" stroke="#222" stroke-width="4"/>
-            <circle cx="55" cy="45" r="28" fill="#222"/>
-            <ellipse cx="55" cy="90" rx="36" ry="18" fill="#222"/>
-        </svg>
-    </div>
-    <div class="profile-popout-name" style="font-size:1.18rem;font-weight:700;margin-bottom:2px;text-align:center;">Ralph Marilao</div>
-    <div class="profile-popout-position" style="font-size:1rem;color:#666;margin-bottom:18px;text-align:center;">Position</div>
-    <button class="profile-popout-profile-btn" style="background:#888;border:none;border-radius:18px;padding:6px 32px;font-weight:600;color:#fff;cursor:pointer;">Profile</button>
-</div>
 
 @code {
     private int activeTab = -1;

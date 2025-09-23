@@ -8,7 +8,7 @@
 @using Microsoft.AspNetCore.Identity
 @using Microsoft.AspNetCore.Components.Authorization
 @inject AnnouncementService AnnouncementService
-@inject UserManager<IdentityUser> UserManager
+@inject UserManager<ApplicationUser> UserManager
 @inject AuthenticationStateProvider AuthenticationStateProvider
 
 <PageTitle>Announcements</PageTitle>
@@ -35,34 +35,22 @@
             </div>
 
             <!-- Category Tabs -->
-            <div class="d-flex align-items-center mb-4 gap-3">
-                <ul class="nav nav-tabs border-0">
-                    <li class="nav-item">
-                        <a class="nav-link px-3 @(activeTab == "all" ? "active fw-bold" : "")"
-                           href="#" @onclick='() => SetActiveTab("all")' @onclick:preventDefault="true">
-                            <i class="bi bi-collection me-1"></i>All
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link px-3 @(activeTab == "institution" ? "active fw-bold" : "")"
-                           href="#" @onclick='() => SetActiveTab("institution")' @onclick:preventDefault="true">
-                            <i class="bi bi-building me-1"></i>Institution
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link px-3 @(activeTab == "benefactor" ? "active fw-bold" : "")"
-                           href="#" @onclick='() => SetActiveTab("benefactor")' @onclick:preventDefault="true">
-                            <i class="bi bi-hand-thumbs-up me-1"></i>Benefactor
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link px-3 @(activeTab == "mine" ? "active fw-bold" : "")"
-                           href="#" @onclick='() => SetActiveTab("mine")' @onclick:preventDefault="true">
-                            <i class="bi bi-person-circle me-1"></i>My Posts
-                        </a>
-                    </li>
-                </ul>
-                <div class="ms-auto">
+            <div class="modern-tabs d-flex align-items-center mb-4 gap-3">
+                <div class="tab-pills">
+                    <button class="tab-pill @(activeTab == "all" ? "active" : "")" @onclick='() => SetActiveTab("all")'>
+                        <i class="bi bi-collection"></i> <span>All</span>
+                    </button>
+                    <button class="tab-pill @(activeTab == "institution" ? "active" : "")" @onclick='() => SetActiveTab("institution")'>
+                        <i class="bi bi-building"></i> <span>Institution</span>
+                    </button>
+                    <button class="tab-pill @(activeTab == "benefactor" ? "active" : "")" @onclick='() => SetActiveTab("benefactor")'>
+                        <i class="bi bi-globe"></i> <span>Benefactor</span>
+                    </button>
+                    <button class="tab-pill @(activeTab == "mine" ? "active" : "")" @onclick='() => SetActiveTab("mine")'>
+                        <i class="bi bi-person-circle"></i> <span>My Posts</span>
+                    </button>
+                </div>
+                <div class="ms-auto" style="min-width:180px;">
                     <select class="form-select form-select-sm" @bind="selectedCategory">
                         <option value="">All Categories</option>
                         <option value="Requirements">Requirements</option>
@@ -374,8 +362,20 @@
     private List<Announcement>? filteredAnnouncements;
     private string searchTerm = "";
     private string activeTab = "all";
-    private string selectedCategory = "";
-    private bool isLoading = true;
+    private string _selectedCategory = "";
+    private string selectedCategory
+    {
+        get => _selectedCategory;
+        set
+        {
+            if (_selectedCategory != value)
+            {
+                _selectedCategory = value;
+                FilterAnnouncements();
+            }
+        }
+    }
+    private bool isLoading = false;
     private bool showModal = false;
     private bool isLoadingModal = false;
     private HashSet<int> expandedAnnouncements = new HashSet<int>();
@@ -401,7 +401,9 @@
     protected override async Task OnInitializedAsync()
     {
         await LoadCurrentUser();
-        await LoadAnnouncements();
+        // Only load announcements after user is loaded and all async work is complete
+        // Use InvokeAsync to ensure no concurrency issues
+        await InvokeAsync(async () => await LoadAnnouncements());
     }
 
     private async Task LoadCurrentUser()
@@ -420,6 +422,7 @@
 
     private async Task LoadAnnouncements()
     {
+        if (isLoading) return;
         isLoading = true;
         try
         {
@@ -716,7 +719,7 @@
         return authorType switch
         {
             UserRole.Institution => "bi bi-building",
-            UserRole.Benefactor => "bi bi-hand-thumbs-up",
+            UserRole.Benefactor => "bi bi-globe",
             _ => "bi bi-person"
         };
     }
@@ -738,11 +741,53 @@
     .cursor-pointer {
         cursor: pointer;
     }
-    
+
+    .modern-tabs {
+        background: #f8f9fa;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+        padding: 0.75rem 1rem;
+    }
+    .tab-pills {
+        display: flex;
+        gap: 1rem;
+    }
+    .tab-pill {
+        background: #fff;
+        border: 1px solid #e0e0e0;
+        border-radius: 24px;
+        padding: 0.5rem 1.25rem;
+        font-weight: 500;
+        color: #333;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        box-shadow: 0 1px 4px rgba(0,0,0,0.03);
+        transition: background 0.2s, color 0.2s, box-shadow 0.2s;
+        cursor: pointer;
+        border: none;
+        outline: none;
+    }
+    .tab-pill.active {
+        background: #2563eb;
+        color: #fff;
+        box-shadow: 0 2px 8px rgba(37,99,235,0.08);
+    }
+    .tab-pill:hover:not(.active) {
+        background: #e0e7ff;
+        color: #2563eb;
+    }
+    .tab-pill i {
+        font-size: 1.1rem;
+    }
+    .modern-tabs .form-select {
+        border-radius: 24px;
+        font-size: 0.95rem;
+        padding-left: 1rem;
+    }
     .announcement-details {
         animation: fadeIn 0.3s ease-in-out;
     }
-    
     @@keyframes fadeIn {
         from { opacity: 0; transform: translateY(-10px); }
         to { opacity: 1; transform: translateY(0); }

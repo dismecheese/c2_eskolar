@@ -59,6 +59,17 @@
     margin-bottom: 32px; 
 }
 
+.eskolar-logo-img {
+    width: 120px;
+    height: auto;
+    transition: filter 0.2s;
+}
+
+.eskolar-logo:hover .eskolar-logo-img {
+    content: url('/images/main/eSkolar-Yellow.svg');
+    filter: drop-shadow(0 0 6px #ffe066);
+}
+
 /* Responsive styles for smaller screens */
 @media (max-width: 900px) {
     .help-box {
