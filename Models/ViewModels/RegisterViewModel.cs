@@ -7,13 +7,31 @@ namespace c2_eskolar.Models.ViewModels
     // ViewModel for handling user registration form data
     public class RegisterViewModel
     {
-        // User's first name (required field)
-        [Required(ErrorMessage = "First name is required")]
-        public string FirstName { get; set; } = string.Empty;
+    // User's first name (required field)
+    [Required(ErrorMessage = "First name is required")]
+    public string FirstName { get; set; } = string.Empty;
 
-        // User's last name (required field)
-        [Required(ErrorMessage = "Last name is required")]
-        public string LastName { get; set; } = string.Empty;
+    // User's middle name (optional)
+    public string MiddleName { get; set; } = string.Empty;
+
+    // User's last name (required field)
+    [Required(ErrorMessage = "Last name is required")]
+    public string LastName { get; set; } = string.Empty;
+
+    // Sex
+    public string Sex { get; set; } = string.Empty;
+
+    // Nationality
+    public string Nationality { get; set; } = string.Empty;
+
+    // Permanent Address
+    public string PermanentAddress { get; set; } = string.Empty;
+
+    // Date of Birth
+    public DateTime? DateOfBirth { get; set; }
+
+    // Mobile Number
+    public string MobileNumber { get; set; } = string.Empty;
 
         // User's email address (required and must be in a valid email format)
         [Required(ErrorMessage = "Email is required")]

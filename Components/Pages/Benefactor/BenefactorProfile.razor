@@ -4,6 +4,7 @@
 
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @inject UserManager<IdentityUser> UserManager
+@inject BenefactorProfileService BenefactorProfileService
 @using Microsoft.AspNetCore.Components.Authorization
 @using Microsoft.AspNetCore.Identity
 
@@ -49,9 +50,9 @@
                         <span class="badge bg-@(Status == "Active" ? "success" : "secondary") fs-6">@Status</span>
                     </div>
                     <div class="text-start">
-                        <p class="mb-2"><i class="fas fa-envelope text-primary me-2"></i>@Email</p>
-                        <p class="mb-2"><i class="fas fa-phone text-primary me-2"></i>@Phone</p>
-                        <p class="mb-2"><i class="fas fa-map-marker-alt text-primary me-2"></i>@Location</p>
+                        <p class="mb-2"><i class="fas fa-envelope text-primary me-2"></i>@ContactEmail</p>
+                        <p class="mb-2"><i class="fas fa-phone text-primary me-2"></i>@ContactNumber</p>
+                        <p class="mb-2"><i class="fas fa-map-marker-alt text-primary me-2"></i>@Address</p>
                         <p class="mb-0"><i class="fas fa-calendar text-primary me-2"></i>Member since @CreatedDate.ToString("MMM yyyy")</p>
                     </div>
                 </div>
@@ -123,88 +124,86 @@
                     @if (IsEditMode)
                     {
                         <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">Full Name</label>
-                                <input type="text" class="form-control" @bind="FullName" />
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">First Name</label>
+                                <input type="text" class="form-control" @bind="AdminFirstName" />
                             </div>
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">Username</label>
-                                <input type="text" class="form-control" @bind="Username" readonly />
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Middle Name</label>
+                                <input type="text" class="form-control" @bind="AdminMiddleName" />
                             </div>
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">Email</label>
-                                <input type="email" class="form-control" @bind="Email" readonly />
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Last Name</label>
+                                <input type="text" class="form-control" @bind="AdminLastName" />
                             </div>
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">Phone</label>
-                                <input type="tel" class="form-control" @bind="Phone" />
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">Location</label>
-                                <input type="text" class="form-control" @bind="Location" />
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">University</label>
-                                <input type="text" class="form-control" @bind="University" />
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">Course/Major</label>
-                                <input type="text" class="form-control" @bind="Course" />
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">Year Level</label>
-                                <select class="form-control" @bind="YearLevel">
-                                    <option value="1st Year">1st Year</option>
-                                    <option value="2nd Year">2nd Year</option>
-                                    <option value="3rd Year">3rd Year</option>
-                                    <option value="4th Year">4th Year</option>
-                                    <option value="Graduate">Graduate</option>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Sex</label>
+                                <select class="form-control" @bind="Sex">
+                                    <option value="Male">Male</option>
+                                    <option value="Female">Female</option>
+                                    <option value="Other">Other</option>
                                 </select>
                             </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Nationality</label>
+                                <input type="text" class="form-control" @bind="Nationality" />
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label">Date of Birth</label>
+                                <input type="date" class="form-control" @bind="BirthDate" />
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Mobile Number</label>
+                                <input type="tel" class="form-control" @bind="ContactNumber" />
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Email Address</label>
+                                <input type="email" class="form-control" @bind="ContactEmail" readonly />
+                            </div>
                             <div class="col-12 mb-3">
-                                <label class="form-label">Bio</label>
-                                <textarea class="form-control" rows="3" @bind="Bio"></textarea>
+                                <label class="form-label">Permanent Address</label>
+                                <input type="text" class="form-control" @bind="Address" />
                             </div>
                         </div>
                     }
                     else
                     {
                         <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <h6 class="text-muted mb-1">Full Name</h6>
-                                <p class="mb-0">@FullName</p>
+                            <div class="col-md-4 mb-3">
+                                <h6 class="text-muted mb-1">First Name</h6>
+                                <p class="mb-0">@AdminFirstName</p>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <h6 class="text-muted mb-1">Middle Name</h6>
+                                <p class="mb-0">@AdminMiddleName</p>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <h6 class="text-muted mb-1">Last Name</h6>
+                                <p class="mb-0">@AdminLastName</p>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <h6 class="text-muted mb-1">Sex</h6>
+                                <p class="mb-0">@Sex</p>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <h6 class="text-muted mb-1">Nationality</h6>
+                                <p class="mb-0">@Nationality</p>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <h6 class="text-muted mb-1">Date of Birth</h6>
+                                <p class="mb-0">@(BirthDate == default(DateTime) ? "" : BirthDate.ToString("yyyy-MM-dd"))</p>
                             </div>
                             <div class="col-md-6 mb-3">
-                                <h6 class="text-muted mb-1">Username</h6>
-                                <p class="mb-0">@Username</p>
+                                <h6 class="text-muted mb-1">Mobile Number</h6>
+                                <p class="mb-0">@ContactNumber</p>
                             </div>
                             <div class="col-md-6 mb-3">
-                                <h6 class="text-muted mb-1">Email</h6>
-                                <p class="mb-0">@Email</p>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <h6 class="text-muted mb-1">Phone</h6>
-                                <p class="mb-0">@Phone</p>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <h6 class="text-muted mb-1">Location</h6>
-                                <p class="mb-0">@Location</p>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <h6 class="text-muted mb-1">University</h6>
-                                <p class="mb-0">@University</p>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <h6 class="text-muted mb-1">Course/Major</h6>
-                                <p class="mb-0">@Course</p>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <h6 class="text-muted mb-1">Year Level</h6>
-                                <p class="mb-0">@YearLevel</p>
+                                <h6 class="text-muted mb-1">Email Address</h6>
+                                <p class="mb-0">@ContactEmail</p>
                             </div>
                             <div class="col-12 mb-3">
-                                <h6 class="text-muted mb-1">Bio</h6>
-                                <p class="mb-0">@Bio</p>
+                                <h6 class="text-muted mb-1">Permanent Address</h6>
+                                <p class="mb-0">@Address</p>
                             </div>
                         </div>
                     }
@@ -326,17 +325,18 @@
     private bool IsEditMode = false;
     private bool isLoading = true;
     
-    // Profile Info - Dynamic from logged in user
+    // Benefactor Profile Info
+    private string AdminFirstName = "";
+    private string AdminMiddleName = "";
+    private string AdminLastName = "";
+    private string Sex = "Male";
+    private string Nationality = "";
+    private DateTime BirthDate = DateTime.Now;
+    private string ContactNumber = "";
+    private string ContactEmail = "";
+    private string Address = "";
     private string FullName = "";
-    private string Username = "";
-    private string Email = "";
-    private string Phone = "";
-    private string Location = "";
-    private string University = "";
-    private string Course = "";
-    private string YearLevel = "1st Year";
-    private string Bio = "";
-    private string Role = "Student";
+    private string Role = "Benefactor";
     private string Status = "Active";
     private DateTime CreatedDate = DateTime.Now;
     private string ProfilePicture = "https://via.placeholder.com/120";
@@ -374,9 +374,8 @@
                 if (user != null)
                 {
                     // Load basic Identity data
-                    Email = user.Email ?? "";
-                    Username = user.UserName ?? "";
-                    FullName = user.UserName ?? "Student User"; // You can expand this to include first/last name
+                    ContactEmail = user.Email ?? "";
+                    FullName = user.UserName ?? "Benefactor User"; // You can expand this to include first/last name
                     
                     // Check email confirmation status
                     EmailVerified = await UserManager.IsEmailConfirmedAsync(user);
@@ -398,8 +397,7 @@
             Console.WriteLine($"Error loading user data: {ex.Message}");
             // Set default values
             FullName = "Student User";
-            Email = "student@example.com";
-            Username = "student.user";
+            ContactEmail = "benefactor@example.com";
         }
     }
 
@@ -407,44 +405,21 @@
     {
         try
         {
-            // TODO: Replace with actual database calls
-            // Example of what you might implement:
-            
-            // var studentProfile = await DbContext.StudentProfiles
-            //     .FirstOrDefaultAsync(sp => sp.UserId == userId);
-            
-            // if (studentProfile != null)
-            // {
-            //     FullName = $"{studentProfile.FirstName} {studentProfile.LastName}";
-            //     Phone = studentProfile.Phone;
-            //     Location = studentProfile.Location;
-            //     University = studentProfile.University;
-            //     Course = studentProfile.Course;
-            //     YearLevel = studentProfile.YearLevel;
-            //     Bio = studentProfile.Bio;
-            //     GPA = studentProfile.GPA.ToString("F2");
-            //     ProfilePicture = studentProfile.ProfilePictureUrl ?? "https://via.placeholder.com/120";
-            //     
-            //     // Load verification status
-            //     PhoneVerified = studentProfile.PhoneVerified;
-            //     StudentIdVerified = studentProfile.StudentIdVerified;
-            //     AcademicRecordsVerified = studentProfile.AcademicRecordsVerified;
-            //     
-            //     // Load statistics
-            //     ScholarshipsReceived = await DbContext.ScholarshipApplications
-            //         .CountAsync(sa => sa.StudentId == userId && sa.Status == "Approved");
-            //     Applications = await DbContext.ScholarshipApplications
-            //         .CountAsync(sa => sa.StudentId == userId);
-            // }
-            
-            // For now, set some default values based on username
-            if (!string.IsNullOrEmpty(Username))
+            var profile = await BenefactorProfileService.GetProfileByUserIdAsync(userId);
+            if (profile != null)
             {
-                FullName = Username.Replace(".", " ").Replace("_", " ");
-                // Capitalize each word
-                FullName = System.Globalization.CultureInfo.CurrentCulture.TextInfo.ToTitleCase(FullName);
+                AdminFirstName = profile.AdminFirstName;
+                AdminMiddleName = profile.AdminMiddleName ?? "";
+                AdminLastName = profile.AdminLastName;
+                FullName = profile.AdminFullName;
+                Sex = profile.Sex ?? "";
+                Nationality = profile.Nationality ?? "";
+                BirthDate = profile.BirthDate ?? DateTime.Now;
+                ContactNumber = profile.ContactNumber ?? "";
+                ContactEmail = profile.ContactEmail ?? ContactEmail;
+                Address = profile.Address ?? "";
+                // You can set other fields as needed
             }
-            
         }
         catch (Exception ex)
         {

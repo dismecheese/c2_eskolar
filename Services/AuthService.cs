@@ -115,7 +115,14 @@ namespace c2_eskolar.Services
                     {
                         UserId = userId,
                         FirstName = model.FirstName,
-                        LastName = model.LastName
+                        MiddleName = model.MiddleName,
+                        LastName = model.LastName,
+                        Sex = model.Sex,
+                        Nationality = model.Nationality,
+                        PermanentAddress = model.PermanentAddress,
+                        BirthDate = model.DateOfBirth,
+                        MobileNumber = model.MobileNumber,
+                        Email = model.Email
                     });
                     break;
 

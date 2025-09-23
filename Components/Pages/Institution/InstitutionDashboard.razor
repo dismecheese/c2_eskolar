@@ -1,8 +1,11 @@
 @page "/dashboard/institution"
 @attribute [Authorize(Roles = "Institution")] 
 @layout Layout.InstitutionDashLayout
+
+@using c2_eskolar.Models
 @using Microsoft.AspNetCore.WebUtilities
 @using c2_eskolar.Components.Pages
+
 @inject NavigationManager Navigation
 @inject InstitutionProfileService InstitutionProfileService
 @inject AuthenticationStateProvider AuthStateProvider
@@ -25,7 +28,7 @@
     <!-- Welcome Banner -->
     <div class="dashboard-banner-centered">
         <div class="banner-text">
-            <h2>Welcome, @(adminFirstName ?? "Institution")!</h2>
+            <h2>Welcome, @(profile?.AdminFirstName ?? "Institution") @(profile?.AdminLastName ?? "")!</h2>
         </div>
         <img src="images/eskolar_books.svg" alt="Books" class="banner-img" />
     </div>
@@ -225,7 +228,7 @@
     private int activeTab = -1;
     private bool showScholarshipList = false;
     private int scholarshipTab = 0;
-    private string? adminFirstName;
+    private c2_eskolar.Models.InstitutionProfile? profile;
 
     protected override async Task OnInitializedAsync()
     {
@@ -240,8 +243,7 @@
         var userId = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
         if (userId != null)
         {
-            var profile = await InstitutionProfileService.GetProfileByUserIdAsync(userId);
-            adminFirstName = profile?.AdminFirstName;
+            profile = await InstitutionProfileService.GetProfileByUserIdAsync(userId);
         }
     }
 
