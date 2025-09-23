@@ -234,7 +234,7 @@
             DbContext.ScholarshipApplications.Add(application);
             await DbContext.SaveChangesAsync();
 
-            successMessage = $"✅ Application submitted successfully! Reference: {application.ApplicationReference}";
+            successMessage = $"✅ Application submitted successfully! Reference ID: {application.ScholarshipApplicationId}";
             alreadyApplied = true;
         }
         catch (Exception ex)

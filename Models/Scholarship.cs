@@ -29,9 +29,9 @@ namespace c2_eskolar.Models
         [StringLength(3000)]
         public string? Requirements { get; set; }
 
-        // SCHOLARSHIP DETAILS
-        [StringLength(50)]
-        public string? ScholarshipType { get; set; } // "Academic", "Athletic", "Need-based", "Merit-based"
+    // SCHOLARSHIP DETAILS
+    public int ScholarshipTypeId { get; set; }
+    public ScholarshipType ScholarshipType { get; set; } = null!;
 
         [Range(1, 1000)]
         public int? SlotsAvailable { get; set; }

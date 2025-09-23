@@ -42,3 +42,28 @@ A comprehensive scholarship management platform built with **Blazor Server** and
 ```bash
 git clone https://github.com/[your-username]/c2_eskolar.git
 cd c2_eskolar
+ 
+
+## 🐳 Docker Workflow
+
+### 1. Build and Run with Docker Compose
+```powershell
+docker compose build
+docker compose up
+```
+
+This will start both the SQL Server and the Blazor Server app containers. The app will be available at [http://localhost:80](http://localhost:80).
+
+### 2. Environment Variables
+- Connection strings and environment variables are set in `docker-compose.yml`.
+- For HTTPS in development, see the commented instructions in `docker-compose.yml` and [Microsoft's official guide](https://learn.microsoft.com/en-us/aspnet/core/security/docker-https?view=aspnetcore-9.0).
+
+### 3. Common Issues
+- **Decimal precision warnings:** These do not prevent the app from running, but you may want to configure precision in your EF Core models.
+- **Data Protection keys warning:** Keys are stored in the container and reset on restart. For production, use persistent storage.
+- **Identity DI errors:** Ensure all Identity services use `ApplicationUser` consistently.
+
+### 4. Stopping Containers
+```powershell
+docker compose down
+```

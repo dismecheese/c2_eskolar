@@ -10,16 +10,16 @@ namespace c2_eskolar.Services
     public class AuthService
     {
         // ASP.NET Identity managers for user operations and login handling
-        private readonly UserManager<IdentityUser> _userManager;
-        private readonly SignInManager<IdentityUser> _signInManager;
+    private readonly UserManager<ApplicationUser> _userManager;
+    private readonly SignInManager<ApplicationUser> _signInManager;
 
         // Database context for saving related user profile info
         private readonly ApplicationDbContext _context;
 
         // Constructor injects dependencies (DI for Identity + DbContext)
-        public AuthService(UserManager<IdentityUser> userManager,
-                           SignInManager<IdentityUser> signInManager,
-                           ApplicationDbContext context)
+    public AuthService(UserManager<ApplicationUser> userManager,
+               SignInManager<ApplicationUser> signInManager,
+               ApplicationDbContext context)
         {
             _userManager = userManager;
             _signInManager = signInManager;
@@ -30,7 +30,7 @@ namespace c2_eskolar.Services
         public async Task<IdentityResult> RegisterAsync(RegisterViewModel model)
         {
             // Create new Identity user object from registration info
-            var user = new IdentityUser
+            var user = new ApplicationUser
             {
                 UserName = model.Email,
                 Email = model.Email
