@@ -1,3 +1,40 @@
+# Team Local Docker & Azure SQL Setup
+
+## Quickstart for Team Members
+
+1. **Clone the repository:**
+	```
+	git clone <repo-url>
+	cd <repo-folder>
+	```
+
+2. **Ensure your `.env` file exists in the project root and contains the Azure SQL connection string:**
+	```
+	AZURE_SQL_CONNECTION_STRING=Server=tcp:eskolar.database.windows.net,1433;Initial Catalog=eskolardb;Persist Security Info=False;User ID=eskolaradmin;Password=...;MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;
+	```
+	> **Never commit real passwords to public repos!**
+
+3. **Run the app using Docker Compose:**
+	```
+	docker-compose up --build
+	```
+
+4. **Access the app:**
+	- Open your browser to [http://localhost](http://localhost)
+
+5. **All team members share the same Azure SQL database.**
+	- Any changes to data are visible to everyone.
+
+6. **If you update the `.env` or code, push/pull changes as needed.**
+
+---
+**Troubleshooting:**
+- If you see connection errors, check your `.env` file and Azure SQL firewall settings.
+- Make sure you run `docker-compose up` from the same directory as your `.env` file.
+- If schema errors occur, run:
+  ```
+  dotnet ef database update
+  ```
 # eSkolar - Scholarship Application and Management System
 
 A comprehensive scholarship management platform built with **Blazor Server** and **ASP.NET Core**. This system aims to connect students, benefactors, and educational institutions to streamline the scholarship application and management process.
