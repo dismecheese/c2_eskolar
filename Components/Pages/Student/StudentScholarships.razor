@@ -1,43 +1,37 @@
-@page "/dashboard/student/scholarships"
+@page "/dashboard/student/scholarships/"
 @attribute [Authorize(Roles = "Student")]
-@layout Layout.StudentDashLayout
+@layout Layout.InstitutionDashLayout
 
-@using Microsoft.AspNetCore.Components.Authorization
 @using Microsoft.EntityFrameworkCore
 @using c2_eskolar.Data
 @using c2_eskolar.Models
 @inject ApplicationDbContext DbContext
 @inject NavigationManager Navigation
-@inject AuthenticationStateProvider AuthenticationStateProvider
 
 <PageTitle>Scholarships</PageTitle>
 
-<!-- 🟦 Banner -->
-<div class="scholarship-banner text-white mb-5 me-lg-5"
-     style="background: linear-gradient(135deg, #004085, #007bff); padding: 40px 30px; border-radius: 8px; display: flex; align-items: center; margin-right: 80px;">
-    <img src="https://via.placeholder.com/60x60.png?text=🎓" alt="Scholarship Icon"
-         style="width: 60px; height: 60px; border-radius: 50%; background-color: white; padding: 8px; margin-right: 20px;" />
-    <div>
-        <h1 class="mb-1" style="font-size: 1.8rem;">Scholarships</h1>
-        <p class="mb-0" style="opacity: 0.9;">Explore scholarship opportunities available for you</p>
-    </div>
-</div>
-
-<!-- 📄 Content -->
 <div class="container my-5" style="margin-right: 80px;">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold mb-0">
+                <i class="bi bi-mortarboard-fill text-primary me-2"></i> Scholarships
+            </h2>
+            <p class="text-muted mb-0">View and manage your posted scholarships below.</p>
+        </div>
+    </div>
 
-    @if (!string.IsNullOrEmpty(errorMessage))
+    @if (scholarships is null)
     {
-        <div class="alert alert-danger text-center">@errorMessage</div>
-    }
-    else if (scholarships is null)
-    {
-        <div class="text-center">Loading...</div>
+        <div class="d-flex justify-content-center align-items-center" style="height: 200px;">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>
     }
     else if (!scholarships.Any())
     {
-        <div class="alert alert-light text-center">
-            No scholarships posted yet.
+        <div class="alert alert-info text-center py-4">
+            <i class="bi bi-emoji-frown me-2"></i> No scholarships posted yet.
         </div>
     }
     else
@@ -46,16 +40,28 @@
             @foreach (var scholarship in scholarships)
             {
                 <div class="col-md-6 col-lg-4">
-                    <div class="card shadow-sm h-100 clickable-card"
+                    <div class="card shadow-sm h-100 clickable-card border-0"
                          @onclick="() => ViewScholarship(scholarship.ScholarshipId)"
-                         style="cursor: pointer;">
+                         style="cursor: pointer; transition: box-shadow 0.2s;">
                         <div class="card-body d-flex flex-column">
-                            <h5 class="card-title">@scholarship.Title</h5>
-                            <p class="card-text text-muted mb-0">
-                                @(!string.IsNullOrEmpty(scholarship.Institution?.InstitutionName)
+                            <div class="d-flex align-items-center mb-2">
+                                <i class="bi bi-award text-warning me-2 fs-4"></i>
+                                <h5 class="card-title mb-0">@scholarship.Title</h5>
+                            </div>
+                            <p class="card-text text-muted mb-2">
+                                <span class="badge bg-primary me-1">@(!string.IsNullOrEmpty(scholarship.Institution?.InstitutionName)
                                     ? scholarship.Institution.InstitutionName
-                                    : scholarship.Benefactor?.OrganizationName ?? "Unknown Provider")
+                                    : scholarship.Benefactor?.OrganizationName ?? "Unknown Provider")</span>
                             </p>
+                            <div class="mb-2">
+                                <span class="badge bg-success">@scholarship.CreatedAt.ToString("MMM dd, yyyy")</span>
+                                <span class="badge bg-secondary ms-1">@((scholarship.IsInternal ? "Internal" : "External"))</span>
+                            </div>
+                            <div class="mt-auto d-flex justify-content-between align-items-center">
+                                <span class="badge @(scholarship.IsActive ? "bg-success" : "bg-danger")">
+                                    @(scholarship.IsActive ? "Active" : "Inactive")
+                                </span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -66,40 +72,18 @@
 
 @code {
     private List<Scholarship>? scholarships;
-    private string? errorMessage;
 
     protected override async Task OnInitializedAsync()
     {
-        try
-        {
-            var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
-            var user = authState.User;
-
-            scholarships = await DbContext.Scholarships
-                .Include(s => s.Institution)
-                .Include(s => s.Benefactor)
-                .Where(s => s.IsActive)
-                .OrderByDescending(s => s.CreatedAt)
-                .ToListAsync();
-
-            if (scholarships == null)
-            {
-                errorMessage = "Scholarships list is null after query.";
-            }
-            else if (!scholarships.Any())
-            {
-                // No scholarships, not an error
-            }
-        }
-        catch (Exception ex)
-        {
-            errorMessage = $"Failed to load scholarships: {ex.Message}";
-        }
+        scholarships = await DbContext.Scholarships
+            .Include(s => s.Institution)
+            .Include(s => s.Benefactor)
+            .OrderByDescending(s => s.CreatedAt)
+            .ToListAsync();
     }
 
     private void ViewScholarship(int id)
     {
-    Navigation.NavigateTo($"/dashboard/student/scholarships-info/{id}");
+        Navigation.NavigateTo($"/dashboard/student/scholarships-info/{id}");
     }
-
 }

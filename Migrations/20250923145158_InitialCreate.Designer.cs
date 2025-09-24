@@ -12,8 +12,8 @@ using c2_eskolar.Data;
 namespace c2_eskolar.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20250923140244_FixStudentProfileIdColumn")]
-    partial class FixStudentProfileIdColumn
+    [Migration("20250923145158_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -551,9 +551,8 @@ namespace c2_eskolar.Migrations
                         .HasMaxLength(3000)
                         .HasColumnType("nvarchar(3000)");
 
-                    b.Property<string>("ScholarshipType")
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
+                    b.Property<int>("ScholarshipTypeId")
+                        .HasColumnType("int");
 
                     b.Property<int?>("SlotsAvailable")
                         .HasColumnType("int");
@@ -571,6 +570,8 @@ namespace c2_eskolar.Migrations
                     b.HasIndex("BenefactorProfileId");
 
                     b.HasIndex("InstitutionProfileId");
+
+                    b.HasIndex("ScholarshipTypeId");
 
                     b.ToTable("Scholarships");
                 });
@@ -642,6 +643,24 @@ namespace c2_eskolar.Migrations
                     b.HasIndex("StudentProfileId");
 
                     b.ToTable("ScholarshipApplications");
+                });
+
+            modelBuilder.Entity("c2_eskolar.Models.ScholarshipType", b =>
+                {
+                    b.Property<int>("ScholarshipTypeId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ScholarshipTypeId"));
+
+                    b.Property<string>("TypeName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.HasKey("ScholarshipTypeId");
+
+                    b.ToTable("ScholarshipTypes");
                 });
 
             modelBuilder.Entity("c2_eskolar.Models.StudentProfile", b =>
@@ -789,9 +808,17 @@ namespace c2_eskolar.Migrations
                         .WithMany("ManagedScholarships")
                         .HasForeignKey("InstitutionProfileId");
 
+                    b.HasOne("c2_eskolar.Models.ScholarshipType", "ScholarshipType")
+                        .WithMany("Scholarships")
+                        .HasForeignKey("ScholarshipTypeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.Navigation("Benefactor");
 
                     b.Navigation("Institution");
+
+                    b.Navigation("ScholarshipType");
                 });
 
             modelBuilder.Entity("c2_eskolar.Models.ScholarshipApplication", b =>
@@ -826,6 +853,11 @@ namespace c2_eskolar.Migrations
             modelBuilder.Entity("c2_eskolar.Models.Scholarship", b =>
                 {
                     b.Navigation("Applications");
+                });
+
+            modelBuilder.Entity("c2_eskolar.Models.ScholarshipType", b =>
+                {
+                    b.Navigation("Scholarships");
                 });
 
             modelBuilder.Entity("c2_eskolar.Models.StudentProfile", b =>

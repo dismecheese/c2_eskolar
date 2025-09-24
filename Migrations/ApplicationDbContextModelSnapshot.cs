@@ -548,7 +548,7 @@ namespace c2_eskolar.Migrations
                         .HasMaxLength(3000)
                         .HasColumnType("nvarchar(3000)");
 
-                    b.Property<int>("ScholarshipTypeId")
+                    b.Property<int?>("ScholarshipTypeId")
                         .HasColumnType("int");
 
                     b.Property<int?>("SlotsAvailable")
@@ -805,17 +805,13 @@ namespace c2_eskolar.Migrations
                         .WithMany("ManagedScholarships")
                         .HasForeignKey("InstitutionProfileId");
 
-                    b.HasOne("c2_eskolar.Models.ScholarshipType", "ScholarshipType")
+                    b.HasOne("c2_eskolar.Models.ScholarshipType", null)
                         .WithMany("Scholarships")
-                        .HasForeignKey("ScholarshipTypeId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("ScholarshipTypeId");
 
                     b.Navigation("Benefactor");
 
                     b.Navigation("Institution");
-
-                    b.Navigation("ScholarshipType");
                 });
 
             modelBuilder.Entity("c2_eskolar.Models.ScholarshipApplication", b =>

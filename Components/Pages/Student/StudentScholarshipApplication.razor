@@ -8,11 +8,14 @@
 @using Microsoft.AspNetCore.Components.Authorization
 @using Microsoft.AspNetCore.Identity
 @using System.Security.Claims
+@using Blazored.LocalStorage
+
 
 @inject ApplicationDbContext DbContext
 @inject AuthenticationStateProvider AuthProvider
 @inject UserManager<ApplicationUser> UserManager
 @inject NavigationManager Navigation
+@inject Blazored.LocalStorage.ILocalStorageService LocalStorage
 
 <PageTitle>Scholarship Application</PageTitle>
 
@@ -36,14 +39,6 @@
                     {
                         <div class="alert alert-danger">Scholarship not found.</div>
                     }
-                    else if (alreadyApplied)
-                    {
-                        <div class="alert alert-info">
-                            <h5><i class="fas fa-check-circle me-2"></i>Application Already Submitted</h5>
-                            <p>You have already applied for this scholarship.</p>
-                            <a href="/dashboard/student/scholarships" class="btn btn-outline-primary">View Other Scholarships</a>
-                        </div>
-                    }
                     else
                     {
                         <div class="mb-4">
@@ -53,13 +48,14 @@
                             <div class="mb-2"><strong>Description:</strong> @scholarship.Description</div>
                         </div>
 
+
                         <EditForm Model="application" OnValidSubmit="HandleSubmit">
                             <DataAnnotationsValidator />
                             <ValidationSummary />
 
                             <div class="mb-4">
                                 <h5 class="mb-2"><i class="fas fa-tasks me-2"></i>Application Type</h5>
-                                <InputRadioGroup @bind-Value="application.IsExternalApplication">
+                                <InputRadioGroup @bind-Value="application.IsExternalApplication" @onchange="async _ => await OnFieldChanged()">
                                     <div class="form-check">
                                         <InputRadio class="form-check-input" Value="false" />
                                         <label class="form-check-label">Internal (via this portal)</label>
@@ -78,12 +74,14 @@
                                     <label for="ExternalApplicationUrl" class="form-label">Application Link</label>
                                     <InputText id="ExternalApplicationUrl" class="form-control mb-2"
                                                @bind-Value="application.ExternalApplicationUrl"
+                                               @oninput="async _ => await OnFieldChanged()"
                                                placeholder="https://provider.com/apply" />
                                     <ValidationMessage For="@(() => application.ExternalApplicationUrl)" />
 
                                     <div class="form-check mt-2">
                                         <InputCheckbox id="HasAppliedExternally" class="form-check-input"
-                                                       @bind-Value="application.HasAppliedExternally" />
+                                                       @bind-Value="application.HasAppliedExternally"
+                                                       @onchange="async _ => await OnFieldChanged()" />
                                         <label class="form-check-label" for="HasAppliedExternally">
                                             I confirm I have applied on the provider’s site
                                         </label>
@@ -96,14 +94,26 @@
                                     <h6 class="fw-bold mb-2"><i class="fas fa-user-edit me-2"></i>Internal Application</h6>
                                     <label for="PersonalStatement" class="form-label">Personal Statement <span class="text-danger">*</span></label>
                                     <InputTextArea id="PersonalStatement" class="form-control mb-2"
-                                                   @bind-Value="application.PersonalStatement" rows="6"
+                                                   @bind-Value="application.PersonalStatement"
+                                                   @oninput="async _ => await OnFieldChanged()"
+                                                   rows="6"
                                                    placeholder="Explain why you deserve this scholarship..." />
                                     <ValidationMessage For="@(() => application.PersonalStatement)" />
 
                                     <label for="UploadedDocuments" class="form-label mt-2">Supporting Documents</label>
-                                    <InputText id="UploadedDocuments" class="form-control mb-2"
-                                               @bind-Value="application.UploadedDocuments"
-                                               placeholder="Enter file names or links (demo only)" />
+                                    <InputFile id="UploadedDocuments" class="form-control mb-2" OnChange="OnFilesSelected" multiple />
+                                    @if (uploadedFileNames.Any())
+                                    {
+                                        <div class="mt-2">
+                                            <strong>Selected Files:</strong>
+                                            <ul class="mb-0">
+                                                @foreach (var file in uploadedFileNames)
+                                                {
+                                                    <li>@file</li>
+                                                }
+                                            </ul>
+                                        </div>
+                                    }
                                     <ValidationMessage For="@(() => application.UploadedDocuments)" />
                                 </div>
                             }
@@ -120,7 +130,7 @@
                                         @:Submit Application
                                     }
                                 </button>
-                                <a href="/dashboard/student/scholarships" class="btn btn-outline-secondary ms-3">Cancel</a>
+                                <button type="button" class="btn btn-outline-secondary ms-3" @onclick="CancelAndClearAsync">Cancel</button>
                             </div>
 
                             @if (!string.IsNullOrEmpty(successMessage))
@@ -152,13 +162,55 @@
 @code {
     [Parameter] public int ScholarshipId { get; set; }
 
+
     private Scholarship? scholarship;
     private ScholarshipApplication application = new();
     private bool isLoading = true;
     private bool isSubmitting = false;
-    private bool alreadyApplied = false;
     private string? successMessage;
     private string? errorMessage;
+    private List<string> uploadedFileNames = new();
+    private List<IBrowserFile> selectedFiles = new();
+    private const string LocalStorageKey = "student-scholarship-application";
+
+    private async Task OnFilesSelected(InputFileChangeEventArgs e)
+    {
+        selectedFiles = e.GetMultipleFiles().ToList();
+        uploadedFileNames = selectedFiles.Select(f => f.Name).ToList();
+        await SaveFormStateAsync();
+        // Files will be saved on submit
+    }
+
+    private async Task SaveFormStateAsync()
+    {
+        // Only save serializable data
+        var state = new PersistedApplicationState
+        {
+            Application = application,
+            UploadedFileNames = uploadedFileNames
+        };
+        await LocalStorage.SetItemAsync(LocalStorageKey + ScholarshipId, state);
+    }
+
+    private async Task RestoreFormStateAsync()
+    {
+        var state = await LocalStorage.GetItemAsync<PersistedApplicationState>(LocalStorageKey + ScholarshipId);
+        if (state != null)
+        {
+            application = state.Application ?? new ScholarshipApplication();
+            uploadedFileNames = state.UploadedFileNames ?? new List<string>();
+        }
+    }
+
+    private async Task ClearFormStateAsync()
+    {
+        await LocalStorage.RemoveItemAsync(LocalStorageKey + ScholarshipId);
+    }
+
+    private async Task OnFieldChanged()
+    {
+        await SaveFormStateAsync();
+    }
 
     protected override async Task OnInitializedAsync()
     {
@@ -199,17 +251,18 @@
 
         int studentId = studentProfile.StudentProfileId;
 
-        // Check if already applied
-        alreadyApplied = await DbContext.ScholarshipApplications
-            .AnyAsync(a => a.ScholarshipId == ScholarshipId && a.StudentProfileId == studentId);
-
-        // Initialize new application
-        application = new ScholarshipApplication
+        // Try to restore form state
+        await RestoreFormStateAsync();
+        // If no state, initialize new application
+        if (application == null || application.ScholarshipId == 0)
         {
-            ScholarshipId = scholarship.ScholarshipId,
-            StudentProfileId = studentId,
-            ApplicationDate = DateTime.Now
-        };
+            application = new ScholarshipApplication
+            {
+                ScholarshipId = scholarship.ScholarshipId,
+                StudentProfileId = studentId,
+                ApplicationDate = DateTime.Now
+            };
+        }
 
         isLoading = false;
     }
@@ -231,11 +284,29 @@
                 return;
             }
 
+            // Save uploaded files
+            var savedPaths = new List<string>();
+            var uploadPath = Path.Combine("wwwroot", "uploads", "student_documents");
+            Directory.CreateDirectory(uploadPath);
+            foreach (var file in selectedFiles)
+            {
+                var uniqueName = $"{Guid.NewGuid()}_{Path.GetFileName(file.Name)}";
+                var filePath = Path.Combine(uploadPath, uniqueName);
+                using (var stream = File.Create(filePath))
+                {
+                    await file.OpenReadStream(20 * 1024 * 1024).CopyToAsync(stream); // 20MB max per file
+                }
+                savedPaths.Add($"/uploads/student_documents/{uniqueName}");
+            }
+            application.UploadedDocuments = string.Join(",", savedPaths);
+
             DbContext.ScholarshipApplications.Add(application);
             await DbContext.SaveChangesAsync();
 
             successMessage = $"✅ Application submitted successfully! Reference ID: {application.ScholarshipApplicationId}";
-            alreadyApplied = true;
+            uploadedFileNames.Clear();
+            selectedFiles.Clear();
+            await ClearFormStateAsync();
         }
         catch (Exception ex)
         {
@@ -245,5 +316,18 @@
         {
             isSubmitting = false;
         }
+    }
+
+    private async Task CancelAndClearAsync()
+    {
+        await ClearFormStateAsync();
+        Navigation.NavigateTo("/dashboard/student/scholarships");
+    }
+
+    // Helper class for persisting state
+    public class PersistedApplicationState
+    {
+        public ScholarshipApplication? Application { get; set; }
+        public List<string>? UploadedFileNames { get; set; }
     }
 }

@@ -63,19 +63,7 @@
             <label class="form-label">Requirements</label>
             <InputTextArea class="form-control" rows="2" @bind-Value="scholarship.Requirements" />
         </div>
-
-        <div class="mb-3">
-            <label class="form-label">Scholarship Type</label>
-            <InputSelect class="form-control" @bind-Value="scholarship.ScholarshipTypeId">
-                <option value="">Select type...</option>
-                @foreach (var type in ScholarshipTypes)
-                {
-                    <option value="@type.ScholarshipTypeId">@type.TypeName</option>
-                }
-            </InputSelect>
-            <ValidationMessage For="@(() => scholarship.ScholarshipTypeId)" />
-        </div>
-
+        
         <div class="mb-3">
             <label class="form-label">Slots Available</label>
             <InputNumber class="form-control" @bind-Value="scholarship.SlotsAvailable" />
@@ -129,15 +117,9 @@
         IsActive = true,
         IsInternal = true
     };
-
-    private List<ScholarshipType> ScholarshipTypes = new();
     private bool isSubmitted = false;
     private string? errorMessage;
 
-    protected override async Task OnInitializedAsync()
-    {
-        ScholarshipTypes = await DbContext.ScholarshipTypes.ToListAsync();
-    }
 
     private async Task HandleSubmit()
     {

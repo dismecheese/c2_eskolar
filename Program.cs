@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc; // Add this for [FromForm]
 using Microsoft.EntityFrameworkCore;
 using BlazorBootstrap;
+using Blazored.LocalStorage;
 
 try
 {
@@ -15,7 +16,9 @@ try
     // Add services to the container.
     builder.Services.AddRazorComponents()
         .AddInteractiveServerComponents();
+
     builder.Services.AddBlazorBootstrap();
+    builder.Services.AddBlazoredLocalStorage();
 
     // Add Controllers for API endpoints
     builder.Services.AddControllers();
