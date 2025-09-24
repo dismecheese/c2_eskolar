@@ -3,7 +3,7 @@
 
 
 html, body {
-    font-family: 'Inter', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
 }
 
 html {
@@ -427,7 +427,7 @@ button.dashboard-profile-absolute:hover svg * {
 }
 
 .scholarship-row-title {
-    font-family: 'Inter', 'Helvetica Neue', Arial, sans-serif;
+    font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
     font-size: 1.08rem;
     font-weight: 700;
     color: #222;

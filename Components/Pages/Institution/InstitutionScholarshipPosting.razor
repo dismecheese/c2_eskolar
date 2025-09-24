@@ -1,0 +1,173 @@
+@page "/dashboard/institution/scholarships/post"
+@attribute [Authorize(Roles = "Institution")]
+@layout Layout.InstitutionDashLayout
+
+@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.EntityFrameworkCore
+@using System.Security.Claims
+@using c2_eskolar.Data
+@using c2_eskolar.Models
+@inject ApplicationDbContext DbContext
+@inject NavigationManager Navigation
+@inject AuthenticationStateProvider AuthenticationStateProvider
+
+<PageTitle>Post Scholarship</PageTitle>
+
+<div class="container my-5" style="max-width: 700px;">
+    <h2 class="fw-bold mb-4">Post a New Scholarship</h2>
+
+    @if (isSubmitted)
+    {
+        <div class="alert alert-success mb-4">
+            ✅ Scholarship posted successfully! Redirecting...
+        </div>
+    }
+
+    @if (!string.IsNullOrEmpty(errorMessage))
+    {
+        <div class="alert alert-danger mb-4">
+            ❌ @errorMessage
+        </div>
+    }
+
+    <EditForm Model="@scholarship" OnValidSubmit="HandleSubmit">
+        <DataAnnotationsValidator />
+        <ValidationSummary />
+
+        <!-- Form Fields -->
+
+        <div class="mb-3">
+            <label class="form-label">Title</label>
+            <InputText class="form-control" @bind-Value="scholarship.Title" />
+            <ValidationMessage For="@(() => scholarship.Title)" />
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Benefits</label>
+            <InputText class="form-control" @bind-Value="scholarship.Benefits" />
+            <ValidationMessage For="@(() => scholarship.Benefits)" />
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Description</label>
+            <InputTextArea class="form-control" rows="3" @bind-Value="scholarship.Description" />
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Application Deadline</label>
+            <InputDate class="form-control" @bind-Value="scholarship.ApplicationDeadline" />
+            <ValidationMessage For="@(() => scholarship.ApplicationDeadline)" />
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Requirements</label>
+            <InputTextArea class="form-control" rows="2" @bind-Value="scholarship.Requirements" />
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Scholarship Type</label>
+            <InputText class="form-control" @bind-Value="scholarship.ScholarshipType" />
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Slots Available</label>
+            <InputNumber class="form-control" @bind-Value="scholarship.SlotsAvailable" />
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Minimum GPA</label>
+            <InputNumber class="form-control" @bind-Value="scholarship.MinimumGPA" step="0.01" />
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Required Course</label>
+            <InputText class="form-control" @bind-Value="scholarship.RequiredCourse" />
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Required Year Level</label>
+            <InputNumber class="form-control" @bind-Value="scholarship.RequiredYearLevel" />
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Required University</label>
+            <InputText class="form-control" @bind-Value="scholarship.RequiredUniversity" />
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">External Application URL (optional)</label>
+            <InputText class="form-control" @bind-Value="scholarship.ExternalApplicationUrl" />
+        </div>
+
+        <div class="form-check mb-3">
+            <InputCheckbox class="form-check-input" @bind-Value="scholarship.IsInternal" />
+            <label class="form-check-label">This is an internal scholarship</label>
+        </div>
+
+        <div class="form-check mb-4">
+            <InputCheckbox class="form-check-input" @bind-Value="scholarship.IsActive" />
+            <label class="form-check-label">Active</label>
+        </div>
+
+        <button type="submit" class="btn btn-primary">Post Scholarship</button>
+    </EditForm>
+</div>
+
+@code {
+    private Scholarship scholarship = new()
+    {
+        Title = "",
+        Benefits = "",
+        ApplicationDeadline = DateTime.Today.AddMonths(1),
+        IsActive = true,
+        IsInternal = true
+    };
+
+    private bool isSubmitted = false;
+    private string? errorMessage;
+
+    private async Task HandleSubmit()
+    {
+        try
+        {
+            // ✅ Get the user's ID from Claims (NameIdentifier)
+            var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+            var user = authState.User;
+            var userId = user?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+            if (string.IsNullOrEmpty(userId))
+            {
+                errorMessage = "Unable to identify logged-in user.";
+                return;
+            }
+
+            // ✅ Look up the InstitutionProfile of the current user
+            var institution = await DbContext.InstitutionProfiles
+                .FirstOrDefaultAsync(p => p.UserId == userId);
+
+            if (institution is null)
+            {
+                errorMessage = "No institution profile found for this user.";
+                return;
+            }
+
+            // ✅ Assign foreign key and timestamps
+            scholarship.InstitutionProfileId = institution.InstitutionProfileId;
+            scholarship.CreatedAt = DateTime.Now;
+
+            // ✅ Save to database
+            DbContext.Scholarships.Add(scholarship);
+            await DbContext.SaveChangesAsync();
+
+            isSubmitted = true;
+
+            await Task.Delay(1500);
+            Navigation.NavigateTo("/dashboard/institution/scholarships");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error: {ex.Message}");
+            errorMessage = "An error occurred while posting the scholarship.";
+        }
+    }
+}

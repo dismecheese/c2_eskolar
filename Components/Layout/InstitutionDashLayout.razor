@@ -119,13 +119,9 @@
         var currentPath = Navigation.ToBaseRelativePath(Navigation.Uri).Split('?')[0].TrimEnd('/');
         var linkPath = href.TrimStart('/').TrimEnd('/');
         
-        // Debug logging for development purposes
-        Console.WriteLine($"[DEBUG] Current path: '{currentPath}', Link path: '{linkPath}'");
-        
         // Exact match condition
         if (currentPath == linkPath)
         {
-            Console.WriteLine($"[DEBUG] MATCH! Applying active class to: {href}");
             return "nav-link d-flex align-items-center gap-2 sidebar-link active";
         }
             
@@ -251,8 +247,9 @@
         <div>
             <!-- Logo Section -->
             <div class="sidebar-brand-container text-center">
-                <a class="eskolar-logo" href="/"></a>
-                <div class="eskolar-brand">eSkolar</div>
+                <a class="eskolar-logo" href="/">
+                    <img src="images/main/eSkolar-White.svg" alt="eSkolar Logo" class="eskolar-logo-img" />
+                </a>
             </div>
 
             <!-- Navigation Links -->
@@ -300,16 +297,6 @@
             </ul>
         </div>
 
-        <!-- Help Box Button (opens chatbot) -->
-        <button class="help-box-bottom" type="button" @onclick="OpenChatbot">
-            <div class="help-box-content">
-                <img src="images/NeedHelp.svg" alt="Help" class="help-box-img" />
-                <div class="help-box-text">
-                    <div class="help-box-title">Need help?</div>
-                    <div class="help-box-desc">Having trouble using eSkolar?<br />We're here to assist you!</div>
-                </div>
-            </div>
-        </button>
     </nav>
 
     <!-- --- PROFILE SIDEBAR (Bootstrap Offcanvas) --- -->

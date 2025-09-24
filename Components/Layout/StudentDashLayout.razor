@@ -127,7 +127,7 @@
     // Navigates the user to their student profile
     private void NavigateToStudentProfile()
     {
-        Navigation.NavigateTo("/dashboard/student/profile");
+        Navigation.NavigateTo("/dashboard/student/profile/");
     }
 
     // --- CHATBOT STATE ---
@@ -243,8 +243,9 @@
         <div>
             <!-- Logo Section -->
             <div class="sidebar-brand-container text-center">
-                <a class="eskolar-logo" href="/"></a>
-                <div class="eskolar-brand">eSkolar</div>
+                <a class="eskolar-logo" href="/">
+                    <img src="images/main/eSkolar-White.svg" alt="eSkolar Logo" class="eskolar-logo-img" />
+                </a>
             </div>
             
             <!-- Navigation Links -->
@@ -335,7 +336,9 @@
 
     <!-- Sidebar Calendar -->
     <div class="sidebar-calendar">
-        <DashboardCalendar CurrentMonth="@currentMonth" CurrentMonthChanged="@(m => currentMonth = m)" />
+        <div class="rounded-lg border p-3 bg-white shadow-sm">
+            <DashboardCalendar CurrentMonth="@currentMonth" CurrentMonthChanged="@(m => currentMonth = m)" />
+        </div>
     </div>
 
     <!-- Sidebar Notifications -->

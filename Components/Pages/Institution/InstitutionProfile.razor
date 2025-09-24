@@ -321,7 +321,7 @@
 @code {
     // Edit mode state
     private bool IsEditMode = false;
-    private bool isLoading = true;
+    // Removed unused isLoading field
     
     // Institution Profile Info
     private string AdminFirstName = "";
@@ -341,7 +341,7 @@
     private string University = "";
     private string Course = "";
     private string YearLevel = "1st Year";
-    private string Bio = "";
+    // private string Bio = "";
     private string Role = "Institution";
     private string Status = "Active";
     private DateTime CreatedDate = DateTime.Now;
@@ -364,9 +364,8 @@
 
     protected override async Task OnInitializedAsync()
     {
-        await LoadUserData();
-        isLoading = false;
-        StateHasChanged();
+    await LoadUserData();
+    StateHasChanged();
     }
 
     private async Task LoadUserData()

@@ -32,6 +32,10 @@ namespace c2_eskolar.Models
         // APPLICATION STATUS (mainly for internal applications)
         [StringLength(50)]
         public string Status { get; set; } = "Submitted"; // "Submitted", "Under Review", "Approved", "Rejected", "External"
+        
+        // Unique reference for the application (added for error fix)
+        [StringLength(100)]
+        public string? ApplicationReference { get; set; }
 
         // REVIEW INFORMATION (for internal applications)
         [StringLength(1000)]
