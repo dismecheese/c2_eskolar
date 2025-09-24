@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace c2_eskolar.Models
 {
@@ -7,8 +8,9 @@ namespace c2_eskolar.Models
     {
         [Key]
         public int DocumentId { get; set; }
-        public int UserId { get; set; }
-        public User User { get; set; } = null!;
+    public int UserId { get; set; }
+    [ForeignKey("UserId")]
+    public User User { get; set; } = null!;
         [StringLength(100)]
         public string? DocumentType { get; set; }
         [StringLength(255)]

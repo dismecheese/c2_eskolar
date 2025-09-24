@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace c2_eskolar.Models
 {
@@ -7,10 +8,12 @@ namespace c2_eskolar.Models
     {
         [Key]
         public int ViewId { get; set; }
-        public int StudentId { get; set; }
-        public User Student { get; set; } = null!;
-        public int ScholarshipId { get; set; }
-        public Scholarship Scholarship { get; set; } = null!;
+    public int StudentId { get; set; }
+    [ForeignKey("StudentId")]
+    public User Student { get; set; } = null!;
+    public int ScholarshipId { get; set; }
+    [ForeignKey("ScholarshipId")]
+    public Scholarship Scholarship { get; set; } = null!;
         public DateTime? ViewedAt { get; set; }
     }
 }

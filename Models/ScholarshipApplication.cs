@@ -1,4 +1,6 @@
+
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace c2_eskolar.Models
 {
@@ -8,8 +10,10 @@ namespace c2_eskolar.Models
         public int ScholarshipApplicationId { get; set; }
 
         // FOREIGN KEYS
-        public int StudentProfileId { get; set; }
-        public int ScholarshipId { get; set; }
+    [ForeignKey("Student")]
+    public int StudentProfileId { get; set; }
+    [ForeignKey("Scholarship")]
+    public int ScholarshipId { get; set; }
 
         // APPLICATION TYPE MANAGEMENT
         public bool IsExternalApplication { get; set; } // true = external link, false = internal form
@@ -49,7 +53,7 @@ namespace c2_eskolar.Models
         public DateTime? UpdatedAt { get; set; }
 
         // NAVIGATION PROPERTIES
-        public StudentProfile Student { get; set; } = null!;
-        public Scholarship Scholarship { get; set; } = null!;
+    public virtual StudentProfile Student { get; set; } = null!;
+    public virtual Scholarship Scholarship { get; set; } = null!;
     }
 }

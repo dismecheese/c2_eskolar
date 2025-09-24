@@ -15,19 +15,71 @@ namespace c2_eskolar.Data
         }
 
         // DbSets for your eSkolar models
-    public DbSet<StudentProfile> StudentProfiles { get; set; }
-    public DbSet<BenefactorProfile> BenefactorProfiles { get; set; }
-    public DbSet<InstitutionProfile> InstitutionProfiles { get; set; }
-    public DbSet<Scholarship> Scholarships { get; set; }
-    public DbSet<ScholarshipApplication> ScholarshipApplications { get; set; }
-    public DbSet<Announcement> Announcements { get; set; }
-    public DbSet<ScholarshipType> ScholarshipTypes { get; set; }
+        public DbSet<StudentProfile> StudentProfiles { get; set; }
+        public DbSet<BenefactorProfile> BenefactorProfiles { get; set; }
+        public DbSet<InstitutionProfile> InstitutionProfiles { get; set; }
+        public DbSet<Scholarship> Scholarships { get; set; }
+        public DbSet<ScholarshipApplication> ScholarshipApplications { get; set; }
+        public DbSet<Announcement> Announcements { get; set; }
+        public DbSet<ScholarshipType> ScholarshipTypes { get; set; }
+        public DbSet<VerificationDocument> VerificationDocuments { get; set; }
+        public DbSet<RecentlyViewedScholarship> RecentlyViewedScholarships { get; set; }
+        public DbSet<InstitutionBenefactorPartnership> InstitutionBenefactorPartnerships { get; set; }
+        public DbSet<InstitutionAdminProfile> InstitutionAdminProfiles { get; set; }
+        public DbSet<BenefactorAdminProfile> BenefactorAdminProfiles { get; set; }
 
         // MODEL CONFIGURATION & RELATIONSHIPS
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            // Call base method to apply Identity model configurations
             base.OnModelCreating(modelBuilder);
+
+            // VerificationDocument: User 1-to-many
+            modelBuilder.Entity<VerificationDocument>()
+                .HasOne(v => v.User)
+                .WithMany(u => u.VerificationDocuments)
+                .HasForeignKey(v => v.UserId);
+
+            // RecentlyViewedScholarship: Student (User) 1-to-many, Scholarship 1-to-many
+            modelBuilder.Entity<RecentlyViewedScholarship>()
+                .HasOne(r => r.Student)
+                .WithMany()
+                .HasForeignKey(r => r.StudentId)
+                .OnDelete(DeleteBehavior.Restrict);
+            modelBuilder.Entity<RecentlyViewedScholarship>()
+                .HasOne(r => r.Scholarship)
+                .WithMany()
+                .HasForeignKey(r => r.ScholarshipId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // InstitutionBenefactorPartnership: Institution 1-to-many, Benefactor 1-to-many
+            modelBuilder.Entity<InstitutionBenefactorPartnership>()
+                .HasOne(p => p.Institution)
+                .WithMany(i => i.Partnerships)
+                .HasForeignKey(p => p.InstitutionId);
+            modelBuilder.Entity<InstitutionBenefactorPartnership>()
+                .HasOne(p => p.Benefactor)
+                .WithMany(b => b.Partnerships)
+                .HasForeignKey(p => p.BenefactorId);
+
+            // InstitutionAdminProfile: User 1-to-many, Institution 1-to-many
+            modelBuilder.Entity<InstitutionAdminProfile>()
+                .HasOne(a => a.User)
+                .WithMany()
+                .HasForeignKey(a => a.UserId);
+            modelBuilder.Entity<InstitutionAdminProfile>()
+                .HasOne(a => a.Institution)
+                .WithMany(i => i.AdminProfiles)
+                .HasForeignKey(a => a.InstitutionId);
+
+            // BenefactorAdminProfile: User 1-to-many, Benefactor 1-to-many
+            modelBuilder.Entity<BenefactorAdminProfile>()
+                .HasOne(a => a.User)
+                .WithMany()
+                .HasForeignKey(a => a.UserId);
+            modelBuilder.Entity<BenefactorAdminProfile>()
+                .HasOne(a => a.Benefactor)
+                .WithMany(b => b.AdminProfiles)
+                .HasForeignKey(a => a.BenefactorId);
 
             // A scholarship application belongs to one student, student has many applications
             modelBuilder.Entity<ScholarshipApplication>()
