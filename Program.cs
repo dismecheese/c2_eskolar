@@ -66,6 +66,8 @@ builder.Services.AddDbContextFactory<ApplicationDbContext>(options =>
 builder.Services.AddScoped<PartnerService>();
 builder.Services.AddScoped<AnnouncementService>();
 builder.Services.AddScoped<AnnouncementSeedService>();
+builder.Services.AddScoped<IPasswordResetService, PasswordResetService>();
+builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<StudentProfileService>();
 builder.Services.AddScoped<BenefactorProfileService>();
 builder.Services.AddScoped<InstitutionProfileService>();

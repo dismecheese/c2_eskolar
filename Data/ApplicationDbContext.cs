@@ -15,13 +15,15 @@ namespace c2_eskolar.Data
         }
 
         // DbSets for your eSkolar models
-    public DbSet<StudentProfile> StudentProfiles { get; set; }
-    public DbSet<BenefactorProfile> BenefactorProfiles { get; set; }
-    public DbSet<InstitutionProfile> InstitutionProfiles { get; set; }
-    public DbSet<Scholarship> Scholarships { get; set; }
-    public DbSet<ScholarshipApplication> ScholarshipApplications { get; set; }
-    public DbSet<Announcement> Announcements { get; set; }
-    public DbSet<ScholarshipType> ScholarshipTypes { get; set; }
+
+public DbSet<StudentProfile> StudentProfiles { get; set; }
+public DbSet<BenefactorProfile> BenefactorProfiles { get; set; }
+public DbSet<InstitutionProfile> InstitutionProfiles { get; set; }
+public DbSet<Scholarship> Scholarships { get; set; }
+public DbSet<ScholarshipApplication> ScholarshipApplications { get; set; }
+public DbSet<Announcement> Announcements { get; set; }
+public DbSet<PasswordReset> PasswordResets { get; set; }
+public DbSet<ScholarshipType> ScholarshipTypes { get; set; }
 
         // MODEL CONFIGURATION & RELATIONSHIPS
         protected override void OnModelCreating(ModelBuilder modelBuilder)
