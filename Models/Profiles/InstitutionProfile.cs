@@ -9,15 +9,18 @@ namespace c2_eskolar.Models
         public required string UserId { get; set; } // Links to Identity User (admin account)
 
         // Admin Information (person managing this institution's account)
-        [Required]
-        [StringLength(50)]
-        public required string AdminFirstName { get; set; }
+    [Required]
+    [StringLength(50)]
+    public required string AdminFirstName { get; set; }
 
-        [Required]
-        [StringLength(50)]
-        public required string AdminLastName { get; set; }
+    [StringLength(50)]
+    public string? AdminMiddleName { get; set; }
 
-        public string AdminFullName => $"{AdminFirstName} {AdminLastName}";
+    [Required]
+    [StringLength(50)]
+    public required string AdminLastName { get; set; }
+
+    public string AdminFullName => $"{AdminFirstName} {AdminMiddleName} {AdminLastName}";
 
         [StringLength(100)]
         public string? AdminPosition { get; set; } // "Dean of Student Affairs", "Registrar", etc.

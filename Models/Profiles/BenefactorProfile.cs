@@ -13,11 +13,22 @@ namespace c2_eskolar.Models
         [StringLength(50)]
         public required string AdminFirstName { get; set; }
 
+        [StringLength(50)]
+        public string? AdminMiddleName { get; set; }
+
         [Required]
         [StringLength(50)]
         public required string AdminLastName { get; set; }
 
-        public string AdminFullName => $"{AdminFirstName} {AdminLastName}";
+        public string AdminFullName => $"{AdminFirstName} {AdminMiddleName} {AdminLastName}";
+
+        [StringLength(10)]
+        public string? Sex { get; set; }
+
+        [StringLength(50)]
+        public string? Nationality { get; set; }
+
+        public DateTime? BirthDate { get; set; }
 
         [StringLength(100)]
         public string? AdminPosition { get; set; } // "Scholarship Coordinator", "HR Manager", etc.

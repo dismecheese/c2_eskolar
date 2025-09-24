@@ -1,29 +1,21 @@
 version: '3.8'
 
 services:
-  sqlserver:
-    image: mcr.microsoft.com/mssql/server:2022-latest
-    container_name: eskolar_sql
-    environment:
-      SA_PASSWORD: "eSkolar2025!"
-      ACCEPT_EULA: "Y"
-      MSSQL_PID: "Express"
-    ports:
-      - "1433:1433"
-    volumes:
-      - sql_data:/var/opt/mssql
-
   eskolar-app:
     build: .
     container_name: eskolar_app
     ports:
-      - "8080:8080"
+      - "80:80"
+      # Uncomment below to enable HTTPS in development (see README for setup)
+      # - "443:443"
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
-      - ConnectionStrings__DefaultConnection=Server=sqlserver,1433;Database=eSkolarDb;User Id=sa;Password=eSkolar2025!;TrustServerCertificate=true;
-    depends_on:
-      - sqlserver
+      - ConnectionStrings__DefaultConnection=${AZURE_SQL_CONNECTION_STRING}
+      # Uncomment below for HTTPS support (see README for setup)
+      # - ASPNETCORE_URLS=https://+;http://+
+      # - ASPNETCORE_Kestrel__Certificates__Default__Password=<YOUR_CERT_PASSWORD>
+      # - ASPNETCORE_Kestrel__Certificates__Default__Path=/https/aspnetapp.pfx
+    # Uncomment below to mount your dev certificate for HTTPS
+    # volumes:
+    #   - ${USERPROFILE}/.aspnet/https:/https/
     restart: unless-stopped
-
-volumes:
-  sql_data:

@@ -10,15 +10,15 @@ namespace c2_eskolar.Services
     public class AuthService
     {
     // ASP.NET Identity managers for user operations and login handling
-    private readonly UserManager<ApplicationUser> _userManager;
-    private readonly SignInManager<ApplicationUser> _signInManager;
+    private readonly UserManager<IdentityUser> _userManager;
+    private readonly SignInManager<IdentityUser> _signInManager;
 
         // Database context for saving related user profile info
         private readonly ApplicationDbContext _context;
 
         // Constructor injects dependencies (DI for Identity + DbContext)
-        public AuthService(UserManager<ApplicationUser> userManager,
-                           SignInManager<ApplicationUser> signInManager,
+    public AuthService(UserManager<IdentityUser> userManager,
+               SignInManager<IdentityUser> signInManager,
                            ApplicationDbContext context)
         {
             _userManager = userManager;
@@ -29,8 +29,8 @@ namespace c2_eskolar.Services
         // Register a new user and create profile based on selected role
         public async Task<IdentityResult> RegisterAsync(RegisterViewModel model)
         {
-            // Create new ApplicationUser object from registration info
-            var user = new ApplicationUser
+            // Create new IdentityUser object from registration info
+            var user = new IdentityUser
             {
                 UserName = model.Email,
                 Email = model.Email
@@ -115,7 +115,14 @@ namespace c2_eskolar.Services
                     {
                         UserId = userId,
                         FirstName = model.FirstName,
-                        LastName = model.LastName
+                        MiddleName = model.MiddleName,
+                        LastName = model.LastName,
+                        Sex = model.Sex,
+                        Nationality = model.Nationality,
+                        PermanentAddress = model.PermanentAddress,
+                        BirthDate = model.DateOfBirth,
+                        MobileNumber = model.MobileNumber,
+                        Email = model.Email
                     });
                     break;
 

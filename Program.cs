@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc; // Add this for [FromForm]
 using Microsoft.EntityFrameworkCore;
 using BlazorBootstrap;
+using Blazored.LocalStorage;
 
 try
 {
@@ -15,17 +16,23 @@ try
     // Add services to the container.
     builder.Services.AddRazorComponents()
         .AddInteractiveServerComponents();
+
     builder.Services.AddBlazorBootstrap();
+    builder.Services.AddBlazoredLocalStorage();
 
     // Add Controllers for API endpoints
     builder.Services.AddControllers();
 
-    // Add Entity Framework with SQL Server
-    builder.Services.AddDbContext<ApplicationDbContext>(options =>
-        options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+// Add Entity Framework with SQL Server
+// builder.Services.AddDbContext<ApplicationDbContext>(options =>
+//     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+// Register IDbContextFactory for ApplicationDbContext in DI container for Blazor Server concurrency safety
+builder.Services.AddDbContextFactory<ApplicationDbContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
     // Add ASP.NET Core Identity
-        builder.Services.AddDefaultIdentity<ApplicationUser>(options =>
+    builder.Services.AddDefaultIdentity<IdentityUser>(options =>
         {
             // Password requirements
             options.Password.RequireDigit = true;
@@ -55,14 +62,15 @@ try
     // ADD THIS LINE: Register AuthService
     builder.Services.AddScoped<AuthService>();
 
-    // Register custom services
-    builder.Services.AddScoped<PartnerService>();
-    builder.Services.AddScoped<AnnouncementService>();
-    builder.Services.AddScoped<IPasswordResetService, PasswordResetService>();
-    
-    // Email service for EmailJS
-    builder.Services.AddScoped<IEmailService, EmailService>();
-    builder.Services.AddScoped<AnnouncementSeedService>();
+// Register custom services
+builder.Services.AddScoped<PartnerService>();
+builder.Services.AddScoped<AnnouncementService>();
+builder.Services.AddScoped<AnnouncementSeedService>();
+builder.Services.AddScoped<IPasswordResetService, PasswordResetService>();
+builder.Services.AddScoped<IEmailService, EmailService>();
+builder.Services.AddScoped<StudentProfileService>();
+builder.Services.AddScoped<BenefactorProfileService>();
+builder.Services.AddScoped<InstitutionProfileService>();
 
     var app = builder.Build();
 
@@ -84,7 +92,7 @@ try
     app.UseAntiforgery();
     app.MapStaticAssets();
     app.MapControllers();
-    app.MapRazorComponents<App>()
+    app.MapRazorComponents<c2_eskolar.Components.App>()
         .AddInteractiveServerRenderMode();
 
     // Move seeding logic to async method and await before app.Run
@@ -94,7 +102,7 @@ try
         {
             using var scope = app.Services.CreateScope();
             var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
-            var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+            var userManager = scope.ServiceProvider.GetRequiredService<UserManager<IdentityUser>>();
             string[] roles = { "Student", "Benefactor", "Institution" };
             foreach (var role in roles)
             {
@@ -108,7 +116,7 @@ try
             var existingUser = await userManager.FindByEmailAsync(testEmail);
             if (existingUser == null)
             {
-                var testUser = new ApplicationUser
+                var testUser = new IdentityUser
                 {
                     UserName = testEmail,
                     Email = testEmail,
@@ -129,7 +137,7 @@ try
             var existingBenefactor = await userManager.FindByEmailAsync(benefactorEmail);
             if (existingBenefactor == null)
             {
-                var benefactorUser = new ApplicationUser
+                var benefactorUser = new IdentityUser
                 {
                     UserName = benefactorEmail,
                     Email = benefactorEmail,
@@ -150,7 +158,7 @@ try
             var existingInstitution = await userManager.FindByEmailAsync(institutionEmail);
             if (existingInstitution == null)
             {
-                var institutionUser = new ApplicationUser
+                var institutionUser = new IdentityUser
                 {
                     UserName = institutionEmail,
                     Email = institutionEmail,

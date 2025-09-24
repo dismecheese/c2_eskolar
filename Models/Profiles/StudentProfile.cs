@@ -9,25 +9,40 @@ namespace c2_eskolar.Models
         public required string UserId { get; set; } // Links to Identity User
 
         // Basic Information
-        [Required]
-        [StringLength(50)]
-        public required string FirstName { get; set; }
+    [Required]
+    [StringLength(50)]
+    public required string FirstName { get; set; }
 
-        [Required]
-        [StringLength(50)]
-        public required string LastName { get; set; }
+    [StringLength(50)]
+    public string? MiddleName { get; set; }
 
-        public string FullName => $"{FirstName} {LastName}";
+    [Required]
+    [StringLength(50)]
+    public required string LastName { get; set; }
+
+    public string FullName => $"{FirstName} {MiddleName} {LastName}";
+
+    [StringLength(20)]
+    public string? Sex { get; set; }
+
+    [StringLength(50)]
+    public string? Nationality { get; set; }
+
+    [StringLength(255)]
+    public string? PermanentAddress { get; set; }
+
+    [EmailAddress]
+    [StringLength(100)]
+    public string? Email { get; set; }
+
+    [Phone]
+    [StringLength(15)]
+    public string? MobileNumber { get; set; }
 
         // Personal Details
         public DateTime? BirthDate { get; set; }
 
-        [StringLength(255)]
-        public string? Address { get; set; }
-
-        [Phone]
-        [StringLength(15)]
-        public string? ContactNumber { get; set; }
+    // Removed unused Address and ContactNumber properties
 
         // Academic Information
         [StringLength(100)]

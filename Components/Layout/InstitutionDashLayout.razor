@@ -4,7 +4,8 @@
 @inject NavigationManager Navigation
 @inject IJSRuntime JSRuntime
 @inject AuthenticationStateProvider AuthenticationStateProvider
-@inject UserManager<ApplicationUser> UserManager
+@inject UserManager<IdentityUser> UserManager
+@inject InstitutionProfileService InstitutionProfileService
 
 @using Microsoft.AspNetCore.Components.Web
 @using Microsoft.AspNetCore.Components.Authorization
@@ -18,9 +19,12 @@
     
     // Stores the display name of the currently signed in user
     private string currentUserName = "Loading...";
-    
     // Stores the email of the currently signed in user
     private string currentUserEmail = "";
+
+    // Stores the first and last name of the signed in institution admin
+    private string? adminFirstName;
+    private string? adminLastName;
 
     // Tracks the current month for the calendar component
     private DateTime currentMonth = new(DateTime.Now.Year, DateTime.Now.Month, 1);
@@ -31,11 +35,32 @@
     protected override async Task OnInitializedAsync()
     {
         Navigation.LocationChanged += OnLocationChanged;
-        await LoadCurrentUser();
+        await LoadCurrentUserFromClaims();
+        await LoadInstitutionProfile();
     }
 
-    // Loads the currently authenticated user's information
-    private async Task LoadCurrentUser()
+        private async Task LoadInstitutionProfile()
+        {
+            try
+            {
+                var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+                var userId = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+                if (!string.IsNullOrEmpty(userId))
+                {
+                    var profile = await InstitutionProfileService.GetProfileByUserIdAsync(userId);
+                    adminFirstName = profile?.AdminFirstName;
+                    adminLastName = profile?.AdminLastName;
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error loading institution profile: {ex.Message}");
+            }
+            StateHasChanged();
+        }
+
+    // Loads the currently authenticated user's information from claims only
+    private async Task LoadCurrentUserFromClaims()
     {
         try
         {
@@ -45,21 +70,9 @@
             if (user.Identity?.IsAuthenticated == true)
             {
                 currentUserEmail = user.Identity.Name ?? "";
-                
-                var identityUser = await UserManager.FindByEmailAsync(currentUserEmail);
-                
-                if (identityUser != null)
-                {
-                    currentUserName = user.FindFirst("DisplayName")?.Value 
-                                    ?? user.FindFirst("Name")?.Value 
-                                    ?? identityUser.UserName 
-                                    ?? currentUserEmail.Split('@')[0]; // Use email prefix as fallback
-                }
-                else
-                {
-                    // Fallback if the IdentityUser object is not found
-                    currentUserName = currentUserEmail.Split('@')[0];
-                }
+                currentUserName = user.FindFirst("DisplayName")?.Value
+                                ?? user.FindFirst("Name")?.Value
+                                ?? currentUserEmail.Split('@')[0];
             }
         }
         catch (Exception ex)
@@ -69,8 +82,6 @@
             currentUserName = "User";
             currentUserEmail = "";
         }
-        
-        // Notify the component to re-render with the updated state
         StateHasChanged();
     }
 
@@ -297,8 +308,8 @@
             <circle cx="12" cy="12" r="11" stroke="#222" stroke-width="2"/>
             <path d="M4 20c1.5-3 5.5-5 8-5s6.5 2 8 5" stroke="#222" stroke-width="2"/>
         </svg>
-        <div class="sidebar-profile-name">@currentUserName</div>
-        <div class="sidebar-profile-role">Institution</div>
+        <div class="sidebar-profile-name">@((adminFirstName ?? "Institution") + (string.IsNullOrWhiteSpace(adminLastName) ? "" : $" {adminLastName}"))</div>
+        <div class="sidebar-profile-role">Student</div>
         <button class="sidebar-profile-btn" @onclick="NavigateToInstitutionProfile" data-bs-dismiss="offcanvas">Profile</button>
     </div>
     

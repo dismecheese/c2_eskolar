@@ -1,496 +1,94 @@
 @page "/dashboard/student/scholarships-info/{ScholarshipId:int}"
 @attribute [Authorize(Roles = "Student")]
-@layout Layout.StudentDashLayout
+@layout Layout.InstitutionDashLayout
 
-@using Microsoft.AspNetCore.Components.Authorization
 @using Microsoft.EntityFrameworkCore
 @using c2_eskolar.Data
 @using c2_eskolar.Models
 @inject ApplicationDbContext DbContext
-@inject NavigationManager Navigation
-@inject AuthenticationStateProvider AuthenticationStateProvider
 
-<style>
-    .scholarship-hero {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        position: relative;
-        overflow: hidden;
-    }
-    
-    .scholarship-hero::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.1'%3E%3Ccircle cx='30' cy='30' r='4'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E") repeat;
-        opacity: 0.3;
-    }
-    
-    .scholarship-logo {
-        background: linear-gradient(135deg, #ffd89b 0%, #19547b 100%);
-        border: 4px solid rgba(255,255,255,0.2);
-        backdrop-filter: blur(10px);
-    }
-    
-    .info-card {
-        border: none;
-        box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
-        transition: all 0.15s ease-in-out;
-    }
-    
-    .info-card:hover {
-        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
-        transform: translateY(-2px);
-    }
-    
-    .badge-status {
-        font-size: 0.9rem;
-        padding: 0.5rem 1rem;
-    }
-    
-    .timeline-item {
-        border-left: 3px solid #e9ecef;
-        padding-left: 1.5rem;
-        margin-left: 1rem;
-        position: relative;
-    }
-    
-    .timeline-item::before {
-        content: '';
-        position: absolute;
-        left: -8px;
-        top: 0;
-        width: 12px;
-        height: 12px;
-        border-radius: 50%;
-        background: #007bff;
-    }
-    
-    .btn-apply {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        border: none;
-        font-weight: 600;
-        letter-spacing: 0.5px;
-        text-transform: uppercase;
-        transition: all 0.3s ease;
-    }
-    
-    .btn-apply:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
-    }
-    
-    .feature-icon {
-        width: 48px;
-        height: 48px;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        border-radius: 12px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin-bottom: 1rem;
-    }
-</style>
+@code {
+    [Parameter] public int ScholarshipId { get; set; }
+    private Scholarship? scholarship;
+    private List<StudentProfile> studentApplicants = new();
 
-@if (!string.IsNullOrEmpty(errorMessage))
-{
-    <div class="container-fluid px-4">
-        <div class="alert alert-danger text-center">@errorMessage</div>
-        <div class="text-center">
-            <a href="/dashboard/student/scholarships" class="btn btn-outline-primary">
-                <i class="fas fa-arrow-left me-2"></i>Back to Scholarships
-            </a>
-        </div>
-    </div>
+    protected override async Task OnInitializedAsync()
+    {
+        scholarship = await DbContext.Scholarships
+            .Include(s => s.Institution)
+            .Include(s => s.Benefactor)
+            .Include(s => s.Applications)
+                .ThenInclude(a => a.Student)
+            .FirstOrDefaultAsync(s => s.ScholarshipId == ScholarshipId);
+    }
 }
-else if (isLoading)
+
+@if (scholarship == null)
 {
-    <div class="d-flex justify-content-center align-items-center" style="min-height: 400px;">
-        <div class="text-center">
-            <div class="spinner-border text-primary mb-3" role="status" style="width: 3rem; height: 3rem;">
-                <span class="visually-hidden">Loading...</span>
-            </div>
-            <h5 class="text-muted">Loading scholarship details...</h5>
-        </div>
-    </div>
-}
-else if (scholarship == null)
-{
-    <div class="container-fluid px-4">
-        <div class="row justify-content-center">
-            <div class="col-md-6">
-                <div class="card border-danger">
-                    <div class="card-body text-center py-5">
-                        <i class="fas fa-exclamation-triangle text-danger mb-3" style="font-size: 3rem;"></i>
-                        <h4 class="text-danger mb-2">Scholarship Not Found</h4>
-                        <p class="text-muted mb-4">The scholarship you're looking for doesn't exist or has been removed.</p>
-                        <a href="/dashboard/student/scholarships" class="btn btn-outline-primary">
-                            <i class="fas fa-arrow-left me-2"></i>Back to Scholarships
-                        </a>
-                    </div>
-                </div>
-            </div>
-        </div>
+    <div class="text-center my-5">
+        <div class="spinner-border text-primary" role="status"></div>
+        <p>Loading scholarship details...</p>
     </div>
 }
 else
 {
-    <!-- Hero Section -->
-    <!-- 🔲 Outer Wrapper with Right Margin -->
-    <div class="container-fluid px-4 me-lg-5"> <!-- Adds right margin for sidebar space -->
-        <!-- 🎓 Scholarship Banner -->
-        <div class="scholarship-hero text-white mb-4 position-relative">
-            <div class="container-fluid px-0 py-5 position-relative" style="z-index: 2;">
-                <div class="row align-items-center">
-                    <div class="col-auto">
-                        <div class="scholarship-logo rounded-circle d-flex align-items-center justify-content-center" 
-                            style="width: 100px; height: 100px;">
-                            <i class="fas fa-graduation-cap fa-2x text-white"></i>
-                        </div>
-                    </div>
-                    <div class="col">
-                        <h1 class="display-5 fw-bold mb-2">@scholarship.Title</h1>
-                        <p class="lead mb-3 opacity-75">
-                            <i class="fas fa-university me-2"></i>
-                            @(!string.IsNullOrEmpty(scholarship.Institution?.InstitutionName)
-                                ? scholarship.Institution.InstitutionName
-                                : scholarship.Benefactor?.OrganizationName ?? "Unknown Provider")
-                        </p>
-                        <span class="badge @(scholarship.IsActive ? "bg-success" : "bg-danger") badge-status">
-                            <i class="fas fa-@(scholarship.IsActive ? "check-circle" : "times-circle") me-2"></i>
-                            @(scholarship.IsActive ? "Active" : "Inactive")
-                        </span>
-                    </div>
-                </div>
-            </div>
+    <!-- 🔷 Banner -->
+    <div class="scholarship-banner text-white mb-4 me-lg-5"
+         style="background: linear-gradient(135deg, #004085, #007bff); padding: 40px; border-radius: 8px; display: flex; align-items: center; margin-right: 40px;">
+        <img src="https://via.placeholder.com/80x80.png?text=🎓" alt="Scholarship Logo"
+             style="width: 80px; height: 80px; border-radius: 50%; background-color: white; padding: 10px; margin-right: 20px;" />
+        <div>
+            <h1 class="mb-1" style="font-size: 2rem;">@scholarship.Title</h1>
+            <p class="mb-0" style="opacity: 0.9;">
+                @(!string.IsNullOrEmpty(scholarship.Institution?.InstitutionName)
+                    ? scholarship.Institution.InstitutionName
+                    : scholarship.Benefactor?.OrganizationName ?? "Unknown Provider")
+            </p>
         </div>
     </div>
 
-
+    <!-- 🔄 Main content with 2-column layout -->
     <div class="container-fluid px-4">
-        @if (!string.IsNullOrWhiteSpace(successMessage))
-        {
-            <div class="alert alert-success alert-dismissible fade show mb-4" role="alert">
-                <i class="fas fa-check-circle me-2"></i>
-                @successMessage
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-        }
+        <div class="row">
+            <!-- 📄 Scholarship Info (Left Column) -->
+            <div class="col-lg-8 mb-5">
+                <h2 class="fw-bold mb-4">@scholarship.Title</h2>
 
-        <div class="row g-4">
-            <!-- Main Content -->
-            <div class="col-lg-8">
-                <!-- Quick Stats -->
-                <div class="row g-3 mb-4">
-                    <div class="col-md-3">
-                        <div class="card info-card h-100 text-center">
-                            <div class="card-body py-3">
-                                <div class="feature-icon mx-auto">
-                                    <i class="fas fa-calendar-alt"></i>
-                                </div>
-                                <h6 class="text-muted mb-1">Deadline</h6>
-                                <p class="fw-bold mb-0">@scholarship.ApplicationDeadline.ToString("MMM dd")</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="card info-card h-100 text-center">
-                            <div class="card-body py-3">
-                                <div class="feature-icon mx-auto">
-                                    <i class="fas fa-users"></i>
-                                </div>
-                                <h6 class="text-muted mb-1">Slots</h6>
-                                <p class="fw-bold mb-0">@scholarship.SlotsAvailable</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="card info-card h-100 text-center">
-                            <div class="card-body py-3">
-                                <div class="feature-icon mx-auto">
-                                    <i class="fas fa-star"></i>
-                                </div>
-                                <h6 class="text-muted mb-1">Min GPA</h6>
-                                <p class="fw-bold mb-0">@scholarship.MinimumGPA</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-3">
-                        <div class="card info-card h-100 text-center">
-                            <div class="card-body py-3">
-                                <div class="feature-icon mx-auto">
-                                    <i class="fas fa-tag"></i>
-                                </div>
-                                <h6 class="text-muted mb-1">Type</h6>
-                                <p class="fw-bold mb-0">@scholarship.ScholarshipType</p>
-                            </div>
-                        </div>
-                    </div>
+                <div class="mb-3"><strong>Provider:</strong>
+                    @(!string.IsNullOrEmpty(scholarship.Institution?.InstitutionName)
+                        ? scholarship.Institution.InstitutionName
+                        : scholarship.Benefactor?.OrganizationName ?? "Unknown")
                 </div>
 
-                <!-- Description -->
-                <div class="card info-card mb-4">
-                    <div class="card-header bg-white border-bottom">
-                        <h5 class="mb-0">
-                            <i class="fas fa-info-circle text-primary me-2"></i>
-                            About This Scholarship
-                        </h5>
-                    </div>
-                    <div class="card-body">
-                        @if (!string.IsNullOrWhiteSpace(scholarship.Description))
-                        {
-                            <p class="text-muted mb-0">@scholarship.Description</p>
-                        }
-                        else
-                        {
-                            <p class="text-muted mb-0">No description available for this scholarship.</p>
-                        }
-                    </div>
-                </div>
+                @if (!string.IsNullOrWhiteSpace(scholarship.Description))
+                {
+                    <div class="mb-3"><strong>Description:</strong><p>@scholarship.Description</p></div>
+                }
 
-                <!-- Benefits & Requirements -->
-                <div class="row g-4 mb-4">
-                    <div class="col-md-6">
-                        <div class="card info-card h-100">
-                            <div class="card-header bg-success bg-opacity-10 border-success">
-                                <h6 class="mb-0 text-success">
-                                    <i class="fas fa-gift me-2"></i>Benefits
-                                </h6>
-                            </div>
-                            <div class="card-body">
-                                <p class="mb-0">@scholarship.Benefits</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="card info-card h-100">
-                            <div class="card-header bg-warning bg-opacity-10 border-warning">
-                                <h6 class="mb-0 text-warning">
-                                    <i class="fas fa-list-check me-2"></i>Requirements
-                                </h6>
-                            </div>
-                            <div class="card-body">
-                                <p class="mb-0">@scholarship.Requirements</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Eligibility Criteria -->
-                <div class="card info-card mb-4">
-                    <div class="card-header bg-white border-bottom">
-                        <h5 class="mb-0">
-                            <i class="fas fa-user-check text-primary me-2"></i>
-                            Eligibility Criteria
-                        </h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="row g-3">
-                            <div class="col-md-6">
-                                <div class="timeline-item">
-                                    <h6 class="fw-bold text-primary mb-1">Course Required</h6>
-                                    <p class="text-muted mb-0">@scholarship.RequiredCourse</p>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="timeline-item">
-                                    <h6 class="fw-bold text-primary mb-1">Year Level</h6>
-                                    <p class="text-muted mb-0">@scholarship.RequiredYearLevel</p>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="timeline-item">
-                                    <h6 class="fw-bold text-primary mb-1">University</h6>
-                                    <p class="text-muted mb-0">@scholarship.RequiredUniversity</p>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="timeline-item">
-                                    <h6 class="fw-bold text-primary mb-1">Minimum GPA</h6>
-                                    <p class="text-muted mb-0">@scholarship.MinimumGPA</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                <div class="mb-3"><strong>Benefits:</strong> <p>@scholarship.Benefits</p></div>
+                <div class="mb-3"><strong>Requirements:</strong> <p>@scholarship.Requirements</p></div>
+                <div class="mb-3"><strong>Application Deadline:</strong> @scholarship.ApplicationDeadline.ToString("MMMM dd, yyyy")</div>
+                <div class="mb-3"><strong>Slots Available:</strong> @scholarship.SlotsAvailable</div>
+                <div class="mb-3"><strong>Minimum GPA:</strong> @scholarship.MinimumGPA</div>
+                <div class="mb-3"><strong>Required Course:</strong> @scholarship.RequiredCourse</div>
+                <div class="mb-3"><strong>Required Year Level:</strong> @scholarship.RequiredYearLevel</div>
+                <div class="mb-3"><strong>Required University:</strong> @scholarship.RequiredUniversity</div>
 
                 @if (!string.IsNullOrWhiteSpace(scholarship.ExternalApplicationUrl))
                 {
-                    <div class="alert alert-info">
-                        <h6 class="alert-heading">
-                            <i class="fas fa-external-link-alt me-2"></i>External Application
-                        </h6>
-                        <p class="mb-2">This scholarship requires external application:</p>
-                        <a href="@scholarship.ExternalApplicationUrl" target="_blank" class="btn btn-outline-info btn-sm">
-                            <i class="fas fa-external-link-alt me-2"></i>Visit External Site
-                        </a>
+                    <div class="mb-3">
+                        <strong>Apply Externally:</strong>
+                        <a href="@scholarship.ExternalApplicationUrl" target="_blank">@scholarship.ExternalApplicationUrl</a>
                     </div>
                 }
-            </div>
 
-            <!-- Sidebar -->
-            <div class="col-lg-4">
-                <!-- Application Card -->
-                <div class="card info-card mb-4 border-primary">
-                    <div class="card-header bg-primary text-white">
-                        <h5 class="mb-0">
-                            <i class="fas fa-paper-plane me-2"></i>
-                            Ready to Apply?
-                        </h5>
-                    </div>
-                    <div class="card-body text-center">
-                        <div class="mb-3">
-                            <i class="fas fa-clock text-muted me-2"></i>
-                            <span class="text-muted">Deadline: @scholarship.ApplicationDeadline.ToString("MMMM dd, yyyy")</span>
-                        </div>
-                        
-                        @if (hasApplied)
-                        {
-                            <div class="alert alert-success mb-3">
-                                <i class="fas fa-check-circle me-2"></i>
-                                Application Submitted!
-                            </div>
-                            <button class="btn btn-success btn-lg w-100" disabled>
-                                <i class="fas fa-check me-2"></i>
-                                Already Applied
-                            </button>
-                        }
-                        else
-                        {
-                            <button class="btn btn-apply btn-primary btn-lg w-100 mb-3"
-                                    @onclick="Apply" disabled="@(isSubmitting)">
-                                @if (isSubmitting)
-                                {
-                                    <span class="spinner-border spinner-border-sm me-2" role="status"></span>
-                                    @("Submitting...")
-                                }
-                                else
-                                {
-                                    <i class="fas fa-paper-plane me-2"></i>
-                                    @("Apply Now")
-                                }
-                            </button>
-                        }
-
-                        <div class="small text-muted">
-                            <i class="fas fa-info-circle me-1"></i>
-                            Make sure your profile is complete before applying
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Quick Info -->
-                <div class="card info-card">
-                    <div class="card-header bg-white border-bottom">
-                        <h6 class="mb-0">
-                            <i class="fas fa-info text-primary me-2"></i>
-                            Quick Information
-                        </h6>
-                    </div>
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-center mb-2">
-                            <span class="text-muted">Status</span>
-                            <span class="badge @(scholarship.IsActive ? "bg-success" : "bg-danger")">
-                                @(scholarship.IsActive ? "Active" : "Inactive")
-                            </span>
-                        </div>
-                        <div class="d-flex justify-content-between align-items-center mb-2">
-                            <span class="text-muted">Slots Available</span>
-                            <span class="fw-bold">@scholarship.SlotsAvailable</span>
-                        </div>
-                        <div class="d-flex justify-content-between align-items-center mb-2">
-                            <span class="text-muted">Application Type</span>
-                            <span class="fw-bold">@scholarship.ScholarshipType</span>
-                        </div>
-                        <hr>
-                        <div class="text-center">
-                            <a href="/dashboard/student/scholarships" class="btn btn-outline-secondary">
-                                <i class="fas fa-arrow-left me-2"></i>Back to Scholarships
-                            </a>
-                        </div>
-                    </div>
-                </div>
+                <div class="mb-4"><strong>Status:</strong> @(scholarship.IsActive ? "🟢 Active" : "🔴 Inactive")</div>
+                @if (scholarship.IsActive)
+                {
+                    <a class="btn btn-primary me-2" href="/dashboard/student/apply/@scholarship.ScholarshipId">Apply</a>
+                }
+                <a class="btn btn-secondary" href="/dashboard/student/scholarships">⬅ Back to List</a>
             </div>
         </div>
     </div>
-}
-
-@code {
-    [Parameter] public int ScholarshipId { get; set; }
-
-    private Scholarship? scholarship;
-    private c2_eskolar.Models.StudentProfile? currentStudent;
-    private bool hasApplied = false;
-    private bool isLoading = true;
-    private bool isSubmitting = false;
-    private string? successMessage;
-    private string? errorMessage;
-
-    protected override async Task OnInitializedAsync()
-    {
-        try
-        {
-            var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
-            var user = authState.User;
-            var userId = user.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-
-            if (string.IsNullOrEmpty(userId))
-            {
-                Navigation.NavigateTo("/login");
-                return;
-            }
-
-            currentStudent = await DbContext.StudentProfiles
-                .FirstOrDefaultAsync(s => s.UserId == userId);
-
-            scholarship = await DbContext.Scholarships
-                .Include(s => s.Institution)
-                .Include(s => s.Benefactor)
-                .Include(s => s.Applications)
-                .FirstOrDefaultAsync(s => s.ScholarshipId == ScholarshipId);
-
-            if (scholarship != null && currentStudent != null)
-            {
-                hasApplied = scholarship.Applications
-                    .Any(a => a.StudentProfileId == currentStudent.StudentProfileId);
-            }
-        }
-        catch (Exception ex)
-        {
-            errorMessage = $"Failed to load scholarship details: {ex.Message}";
-            Console.WriteLine($"ERROR: {errorMessage}");
-        }
-        finally
-        {
-            isLoading = false;
-        }
-    }
-
-    private async Task Apply()
-    {
-        if (scholarship == null || currentStudent == null || hasApplied)
-            return;
-
-        isSubmitting = true;
-
-        var application = new ScholarshipApplication
-        {
-            ScholarshipId = scholarship.ScholarshipId,
-            StudentProfileId = currentStudent.StudentProfileId,
-            ApplicationDate = DateTime.Now
-        };
-
-        DbContext.ScholarshipApplications.Add(application);
-        await DbContext.SaveChangesAsync();
-
-        hasApplied = true;
-        successMessage = "✅ You have successfully applied for this scholarship!";
-        isSubmitting = false;
-
-        // Navigate to the application details page
-        Navigation.NavigateTo($"/dashboard/student/applications/{application.ScholarshipApplicationId}");
-    }
 }
