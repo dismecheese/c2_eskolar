@@ -90,7 +90,7 @@ builder.Services.AddScoped<InstitutionProfileService>();
     app.UseAntiforgery();
     app.MapStaticAssets();
     app.MapControllers();
-    app.MapRazorComponents<App>()
+    app.MapRazorComponents<c2_eskolar.Components.App>()
         .AddInteractiveServerRenderMode();
 
     // Move seeding logic to async method and await before app.Run
