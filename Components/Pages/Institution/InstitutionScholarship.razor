@@ -12,18 +12,29 @@
 
 <div class="container my-5" style="margin-right: 80px;">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2 class="fw-bold mb-0">Scholarships</h2>
-        <button class="btn btn-primary" @onclick="AddScholarship">➕ Add Scholarship</button>
+        <div>
+            <h2 class="fw-bold mb-0">
+                <i class="bi bi-mortarboard-fill text-primary me-2"></i> Scholarships
+            </h2>
+            <p class="text-muted mb-0">View and manage your posted scholarships below.</p>
+        </div>
+        <button class="btn btn-lg btn-success shadow-sm px-4 py-2" @onclick="AddScholarship">
+            <i class="bi bi-plus-circle me-2"></i> Add Scholarship
+        </button>
     </div>
 
     @if (scholarships is null)
     {
-        <div class="text-center">Loading...</div>
+        <div class="d-flex justify-content-center align-items-center" style="height: 200px;">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>
     }
     else if (!scholarships.Any())
     {
-        <div class="alert alert-light text-center">
-            No scholarships posted yet.
+        <div class="alert alert-info text-center py-4">
+            <i class="bi bi-emoji-frown me-2"></i> No scholarships posted yet.
         </div>
     }
     else
@@ -32,22 +43,31 @@
             @foreach (var scholarship in scholarships)
             {
                 <div class="col-md-6 col-lg-4">
-                    <div class="card shadow-sm h-100 clickable-card"
+                    <div class="card shadow-sm h-100 clickable-card border-0"
                          @onclick="() => ViewScholarship(scholarship.ScholarshipId)"
-                         style="cursor: pointer;">
+                         style="cursor: pointer; transition: box-shadow 0.2s;">
                         <div class="card-body d-flex flex-column">
-                            <h5 class="card-title">@scholarship.Title</h5>
-                            <p class="card-text text-muted mb-4">
-                                @(!string.IsNullOrEmpty(scholarship.Institution?.InstitutionName)
+                            <div class="d-flex align-items-center mb-2">
+                                <i class="bi bi-award text-warning me-2 fs-4"></i>
+                                <h5 class="card-title mb-0">@scholarship.Title</h5>
+                            </div>
+                            <p class="card-text text-muted mb-2">
+                                <span class="badge bg-primary me-1">@(!string.IsNullOrEmpty(scholarship.Institution?.InstitutionName)
                                     ? scholarship.Institution.InstitutionName
-                                    : scholarship.Benefactor?.OrganizationName ?? "Unknown Provider")
+                                    : scholarship.Benefactor?.OrganizationName ?? "Unknown Provider")</span>
                             </p>
-
-                            <div class="mt-auto d-flex justify-content-end">
-                                <button class="btn btn-sm btn-outline-danger"
+                            <div class="mb-2">
+                                <span class="badge bg-success">@scholarship.CreatedAt.ToString("MMM dd, yyyy")</span>
+                                <span class="badge bg-secondary ms-1">@((scholarship.IsInternal ? "Internal" : "External"))</span>
+                            </div>
+                            <div class="mt-auto d-flex justify-content-between align-items-center">
+                                <span class="badge @(scholarship.IsActive ? "bg-success" : "bg-danger")">
+                                    @(scholarship.IsActive ? "Active" : "Inactive")
+                                </span>
+                                <button class="btn btn-sm btn-outline-danger ms-2"
                                         @onclick:stopPropagation="true"
-                                        @onclick="() => DeleteScholarship(scholarship.ScholarshipId)">
-                                    🗑 Delete
+                                        @onclick="async (e) => await DeleteScholarship(scholarship.ScholarshipId)">
+                                    <i class="bi bi-trash"></i> Delete
                                 </button>
                             </div>
                         </div>

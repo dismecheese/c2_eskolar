@@ -98,7 +98,10 @@ else
             <button type="submit" class="btn btn-primary" disabled="@isSubmitting">
                 @(isSubmitting ? "Saving..." : "Save Review")
             </button>
-            <a href="/dashboard/institution/applications" class="btn btn-secondary ms-2">Back</a>
+            @if (application.Scholarship != null)
+            {
+                <a href="/dashboard/institution/scholarships-info/@application.Scholarship.ScholarshipId" class="btn btn-secondary ms-2">Back</a>
+            }
 
             @if (!string.IsNullOrEmpty(successMessage))
             {

@@ -91,7 +91,11 @@ namespace c2_eskolar.Migrations
                         .Annotation("SqlServer:Identity", "1, 1"),
                     UserId = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     AdminFirstName = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
+                    AdminMiddleName = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
                     AdminLastName = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
+                    Sex = table.Column<string>(type: "nvarchar(10)", maxLength: 10, nullable: true),
+                    Nationality = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
+                    BirthDate = table.Column<DateTime>(type: "datetime2", nullable: true),
                     AdminPosition = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
                     OrganizationName = table.Column<string>(type: "nvarchar(150)", maxLength: 150, nullable: false),
                     OrganizationType = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
@@ -121,6 +125,7 @@ namespace c2_eskolar.Migrations
                         .Annotation("SqlServer:Identity", "1, 1"),
                     UserId = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     AdminFirstName = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
+                    AdminMiddleName = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
                     AdminLastName = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
                     AdminPosition = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
                     InstitutionName = table.Column<string>(type: "nvarchar(150)", maxLength: 150, nullable: false),
@@ -147,6 +152,19 @@ namespace c2_eskolar.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "ScholarshipTypes",
+                columns: table => new
+                {
+                    ScholarshipTypeId = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    TypeName = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_ScholarshipTypes", x => x.ScholarshipTypeId);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "StudentProfiles",
                 columns: table => new
                 {
@@ -154,10 +172,14 @@ namespace c2_eskolar.Migrations
                         .Annotation("SqlServer:Identity", "1, 1"),
                     UserId = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     FirstName = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
+                    MiddleName = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
                     LastName = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
+                    Sex = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: true),
+                    Nationality = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
+                    PermanentAddress = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: true),
+                    Email = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
+                    MobileNumber = table.Column<string>(type: "nvarchar(15)", maxLength: 15, nullable: true),
                     BirthDate = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    Address = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: true),
-                    ContactNumber = table.Column<string>(type: "nvarchar(15)", maxLength: 15, nullable: true),
                     UniversityName = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
                     YearLevel = table.Column<int>(type: "int", nullable: true),
                     Course = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
@@ -221,8 +243,8 @@ namespace c2_eskolar.Migrations
                 name: "AspNetUserLogins",
                 columns: table => new
                 {
-                    LoginProvider = table.Column<string>(type: "nvarchar(128)", maxLength: 128, nullable: false),
-                    ProviderKey = table.Column<string>(type: "nvarchar(128)", maxLength: 128, nullable: false),
+                    LoginProvider = table.Column<string>(type: "nvarchar(450)", nullable: false),
+                    ProviderKey = table.Column<string>(type: "nvarchar(450)", nullable: false),
                     ProviderDisplayName = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     UserId = table.Column<string>(type: "nvarchar(450)", nullable: false)
                 },
@@ -266,8 +288,8 @@ namespace c2_eskolar.Migrations
                 columns: table => new
                 {
                     UserId = table.Column<string>(type: "nvarchar(450)", nullable: false),
-                    LoginProvider = table.Column<string>(type: "nvarchar(128)", maxLength: 128, nullable: false),
-                    Name = table.Column<string>(type: "nvarchar(128)", maxLength: 128, nullable: false),
+                    LoginProvider = table.Column<string>(type: "nvarchar(450)", nullable: false),
+                    Name = table.Column<string>(type: "nvarchar(450)", nullable: false),
                     Value = table.Column<string>(type: "nvarchar(max)", nullable: true)
                 },
                 constraints: table =>
@@ -293,7 +315,6 @@ namespace c2_eskolar.Migrations
                     MonetaryValue = table.Column<decimal>(type: "decimal(18,2)", nullable: true),
                     ApplicationDeadline = table.Column<DateTime>(type: "datetime2", nullable: false),
                     Requirements = table.Column<string>(type: "nvarchar(3000)", maxLength: 3000, nullable: true),
-                    ScholarshipType = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
                     SlotsAvailable = table.Column<int>(type: "int", nullable: true),
                     MinimumGPA = table.Column<decimal>(type: "decimal(18,2)", nullable: true),
                     RequiredCourse = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
@@ -305,7 +326,8 @@ namespace c2_eskolar.Migrations
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
                     UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
                     BenefactorProfileId = table.Column<int>(type: "int", nullable: true),
-                    InstitutionProfileId = table.Column<int>(type: "int", nullable: true)
+                    InstitutionProfileId = table.Column<int>(type: "int", nullable: true),
+                    ScholarshipTypeId = table.Column<int>(type: "int", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -320,6 +342,11 @@ namespace c2_eskolar.Migrations
                         column: x => x.InstitutionProfileId,
                         principalTable: "InstitutionProfiles",
                         principalColumn: "InstitutionProfileId");
+                    table.ForeignKey(
+                        name: "FK_Scholarships_ScholarshipTypes_ScholarshipTypeId",
+                        column: x => x.ScholarshipTypeId,
+                        principalTable: "ScholarshipTypes",
+                        principalColumn: "ScholarshipTypeId");
                 });
 
             migrationBuilder.CreateTable(
@@ -337,6 +364,7 @@ namespace c2_eskolar.Migrations
                     PersonalStatement = table.Column<string>(type: "nvarchar(2000)", maxLength: 2000, nullable: true),
                     UploadedDocuments = table.Column<string>(type: "nvarchar(1000)", maxLength: 1000, nullable: true),
                     Status = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
+                    ApplicationReference = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
                     ReviewNotes = table.Column<string>(type: "nvarchar(1000)", maxLength: 1000, nullable: true),
                     ReviewDate = table.Column<DateTime>(type: "datetime2", nullable: true),
                     ReviewedBy = table.Column<string>(type: "nvarchar(max)", nullable: true),
@@ -418,6 +446,11 @@ namespace c2_eskolar.Migrations
                 name: "IX_Scholarships_InstitutionProfileId",
                 table: "Scholarships",
                 column: "InstitutionProfileId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Scholarships_ScholarshipTypeId",
+                table: "Scholarships",
+                column: "ScholarshipTypeId");
         }
 
         /// <inheritdoc />
@@ -461,6 +494,9 @@ namespace c2_eskolar.Migrations
 
             migrationBuilder.DropTable(
                 name: "InstitutionProfiles");
+
+            migrationBuilder.DropTable(
+                name: "ScholarshipTypes");
         }
     }
 }

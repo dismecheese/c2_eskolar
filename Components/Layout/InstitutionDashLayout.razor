@@ -19,7 +19,6 @@
     
     // Stores the display name of the currently signed in user
     private string currentUserName = "Loading...";
-    
     // Stores the email of the currently signed in user
     private string currentUserEmail = "";
 
@@ -36,8 +35,8 @@
     protected override async Task OnInitializedAsync()
     {
         Navigation.LocationChanged += OnLocationChanged;
-        await LoadCurrentUser();
-            await LoadInstitutionProfile();
+        await LoadCurrentUserFromClaims();
+        await LoadInstitutionProfile();
     }
 
         private async Task LoadInstitutionProfile()
@@ -60,8 +59,8 @@
             StateHasChanged();
         }
 
-    // Loads the currently authenticated user's information
-    private async Task LoadCurrentUser()
+    // Loads the currently authenticated user's information from claims only
+    private async Task LoadCurrentUserFromClaims()
     {
         try
         {
@@ -71,21 +70,9 @@
             if (user.Identity?.IsAuthenticated == true)
             {
                 currentUserEmail = user.Identity.Name ?? "";
-                
-                var identityUser = await UserManager.FindByEmailAsync(currentUserEmail);
-                
-                if (identityUser != null)
-                {
-                    currentUserName = user.FindFirst("DisplayName")?.Value 
-                                    ?? user.FindFirst("Name")?.Value 
-                                    ?? identityUser.UserName 
-                                    ?? currentUserEmail.Split('@')[0]; // Use email prefix as fallback
-                }
-                else
-                {
-                    // Fallback if the IdentityUser object is not found
-                    currentUserName = currentUserEmail.Split('@')[0];
-                }
+                currentUserName = user.FindFirst("DisplayName")?.Value
+                                ?? user.FindFirst("Name")?.Value
+                                ?? currentUserEmail.Split('@')[0];
             }
         }
         catch (Exception ex)
@@ -95,8 +82,6 @@
             currentUserName = "User";
             currentUserEmail = "";
         }
-        
-        // Notify the component to re-render with the updated state
         StateHasChanged();
     }
 

@@ -76,7 +76,6 @@ else
                 <div class="mb-3"><strong>Benefits:</strong> <p>@scholarship.Benefits</p></div>
                 <div class="mb-3"><strong>Requirements:</strong> <p>@scholarship.Requirements</p></div>
                 <div class="mb-3"><strong>Application Deadline:</strong> @scholarship.ApplicationDeadline.ToString("MMMM dd, yyyy")</div>
-                <div class="mb-3"><strong>Scholarship Type:</strong> @scholarship.ScholarshipType</div>
                 <div class="mb-3"><strong>Slots Available:</strong> @scholarship.SlotsAvailable</div>
                 <div class="mb-3"><strong>Minimum GPA:</strong> @scholarship.MinimumGPA</div>
                 <div class="mb-3"><strong>Required Course:</strong> @scholarship.RequiredCourse</div>
@@ -92,7 +91,7 @@ else
                 }
 
                 <div class="mb-4"><strong>Status:</strong> @(scholarship.IsActive ? "🟢 Active" : "🔴 Inactive")</div>
-
+                
                 <a class="btn btn-secondary" href="/dashboard/institution/scholarships">⬅ Back to List</a>
             </div>
 
