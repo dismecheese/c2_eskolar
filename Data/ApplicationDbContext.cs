@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 namespace c2_eskolar.Data
 {
     // APPLICATION DATABASE CONTEXT
-    public class ApplicationDbContext : IdentityDbContext<IdentityUser>
+    public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     {
         // Constructor: passes DbContext options to the base class
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options)
@@ -21,6 +21,7 @@ namespace c2_eskolar.Data
         public DbSet<Scholarship> Scholarships { get; set; }
         public DbSet<ScholarshipApplication> ScholarshipApplications { get; set; }
         public DbSet<Announcement> Announcements { get; set; }
+        public DbSet<PasswordReset> PasswordResets { get; set; }
         public DbSet<ScholarshipType> ScholarshipTypes { get; set; }
         public DbSet<VerificationDocument> VerificationDocuments { get; set; }
         public DbSet<RecentlyViewedScholarship> RecentlyViewedScholarships { get; set; }
