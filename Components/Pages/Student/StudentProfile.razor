@@ -9,16 +9,32 @@
 @using Microsoft.AspNetCore.Identity
 
 @code {
+    private bool _isInitRunning = false;
     protected override async Task OnInitializedAsync()
     {
+        if (_isInitRunning) return;
+        _isInitRunning = true;
         isLoading = true;
-        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
-        var user = await UserManager.GetUserAsync(authState.User);
-        if (user != null)
+        try
         {
-            await LoadExtendedProfileData(user.Id);
+            var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+            var userId = authState.User?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (!string.IsNullOrWhiteSpace(userId))
+            {
+                await LoadExtendedProfileData(userId);
+            }
+            else
+            {
+                ProfileErrorMessage = "Unable to determine user ID from authentication state.";
+            }
+        }
+        catch (Exception ex)
+        {
+            ProfileErrorMessage = $"Error loading profile: {ex.Message}";
+            Console.WriteLine($"Error in OnInitializedAsync: {ex.Message}");
         }
         isLoading = false;
+        _isInitRunning = false;
     }
     private bool IsEditMode = false;
     private bool isLoading = true;
@@ -77,10 +93,10 @@
         {
             isLoading = true;
             var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
-            var user = await UserManager.GetUserAsync(authState.User);
-            if (user != null)
+            var userId = authState.User?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (!string.IsNullOrWhiteSpace(userId))
             {
-                await LoadExtendedProfileData(user.Id);
+                await LoadExtendedProfileData(userId);
             }
             isLoading = false;
         }
@@ -94,65 +110,79 @@
         ProfileErrorMessage = "";
         try
         {
+            // Step 1: Get userId from claims
             var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
-            var user = await UserManager.GetUserAsync(authState.User);
-            if (user != null)
+            var userId = authState.User?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrWhiteSpace(userId))
             {
-                var studentProfile = await StudentProfileService.GetProfileByUserIdAsync(user.Id);
-                if (studentProfile == null)
-                {
-                    studentProfile = new Models.StudentProfile {
-                        UserId = user.Id,
-                        FirstName = FirstName,
-                        LastName = LastName
-                    };
-                }
-                studentProfile.FirstName = FirstName;
-                studentProfile.MiddleName = MiddleName;
-                studentProfile.LastName = LastName;
-                studentProfile.Sex = Sex;
-                studentProfile.Nationality = Nationality;
-                studentProfile.PermanentAddress = PermanentAddress;
-                studentProfile.BirthDate = BirthDate;
-                studentProfile.MobileNumber = Phone;
-                studentProfile.Email = user.Email ?? Email;
-                studentProfile.UniversityName = University;
-                studentProfile.StudentNumber = StudentNumber;
-                studentProfile.Course = Program;
-                var yearLevelInt = ParseYearLevel(YearLevel);
-                studentProfile.YearLevel = yearLevelInt;
-                studentProfile.VerificationStatus = Status;
-                if (UploadedProfileImage != null)
-                {
-                    if (UploadedProfileImage.Size > 5 * 1024 * 1024)
-                    {
-                        ProfileErrorMessage = "Profile image exceeds the 5MB size limit. Please choose a smaller file.";
-                        StateHasChanged();
-                        isLoading = false;
-                        return;
-                    }
-                    var fileName = $"profile_{Guid.NewGuid()}{Path.GetExtension(UploadedProfileImage.Name)}";
-                    var dirPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/images/profiles");
-                    if (!Directory.Exists(dirPath))
-                    {
-                        Directory.CreateDirectory(dirPath);
-                    }
-                    var savePath = Path.Combine(dirPath, fileName);
-                    await using var stream = File.Create(savePath);
-                    await UploadedProfileImage.OpenReadStream(5 * 1024 * 1024).CopyToAsync(stream);
-                    studentProfile.ProfilePicture = $"/images/profiles/{fileName}";
-                    ProfilePicture = studentProfile.ProfilePicture;
-                }
-                else if (!string.IsNullOrWhiteSpace(ProfilePicture))
-                {
-                    studentProfile.ProfilePicture = ProfilePicture;
-                }
-                await StudentProfileService.SaveProfileAsync(studentProfile, user.Email);
-                IsEditMode = false;
-                _previewProfilePicture = null;
-                UploadedProfileImage = null;
-                Console.WriteLine("Student profile updated successfully!");
+                ProfileErrorMessage = "User not found.";
+                isLoading = false;
+                return;
             }
+
+            // Step 2: Get or create student profile
+            var studentProfile = await StudentProfileService.GetProfileByUserIdAsync(userId);
+            if (studentProfile == null)
+            {
+                studentProfile = new Models.StudentProfile {
+                    UserId = userId,
+                    FirstName = FirstName,
+                    LastName = LastName
+                };
+            }
+
+            // Step 3: Update fields
+            studentProfile.FirstName = FirstName;
+            studentProfile.MiddleName = MiddleName;
+            studentProfile.LastName = LastName;
+            studentProfile.Sex = Sex;
+            studentProfile.Nationality = Nationality;
+            studentProfile.PermanentAddress = PermanentAddress;
+            studentProfile.BirthDate = BirthDate;
+            studentProfile.MobileNumber = Phone;
+            studentProfile.Email = Email;
+            studentProfile.UniversityName = University;
+            studentProfile.StudentNumber = StudentNumber;
+            studentProfile.Course = Program;
+            var yearLevelInt = ParseYearLevel(YearLevel);
+            studentProfile.YearLevel = yearLevelInt;
+            studentProfile.VerificationStatus = Status;
+
+            // Step 4: Handle file upload (wait for all DB ops to finish first)
+            if (UploadedProfileImage != null)
+            {
+                if (UploadedProfileImage.Size > 5 * 1024 * 1024)
+                {
+                    ProfileErrorMessage = "Profile image exceeds the 5MB size limit. Please choose a smaller file.";
+                    StateHasChanged();
+                    isLoading = false;
+                    return;
+                }
+                var fileName = $"profile_{Guid.NewGuid()}{Path.GetExtension(UploadedProfileImage.Name)}";
+                var dirPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/images/profiles");
+                if (!Directory.Exists(dirPath))
+                {
+                    Directory.CreateDirectory(dirPath);
+                }
+                var savePath = Path.Combine(dirPath, fileName);
+                await using (var stream = File.Create(savePath))
+                {
+                    await UploadedProfileImage.OpenReadStream(5 * 1024 * 1024).CopyToAsync(stream);
+                }
+                studentProfile.ProfilePicture = $"/images/profiles/{fileName}";
+                ProfilePicture = studentProfile.ProfilePicture;
+            }
+            else if (!string.IsNullOrWhiteSpace(ProfilePicture))
+            {
+                studentProfile.ProfilePicture = ProfilePicture;
+            }
+
+            // Step 5: Save profile (wait for all file IO to finish first)
+            await StudentProfileService.SaveProfileAsync(studentProfile, studentProfile.Email);
+            IsEditMode = false;
+            _previewProfilePicture = null;
+            UploadedProfileImage = null;
+            Console.WriteLine("Student profile updated successfully!");
         }
         catch (Exception ex)
         {
@@ -168,8 +198,6 @@
         try
         {
             var studentProfile = await StudentProfileService.GetProfileByUserIdAsync(userId);
-            var identityUser = await UserManager.FindByIdAsync(userId);
-            var identityEmail = identityUser?.Email ?? Email;
             if (studentProfile != null)
             {
                 FirstName = studentProfile.FirstName ?? "";
@@ -180,7 +208,7 @@
                 PermanentAddress = studentProfile.PermanentAddress ?? "";
                 BirthDate = studentProfile.BirthDate ?? DateTime.Now;
                 Phone = studentProfile.MobileNumber ?? "";
-                Email = identityEmail;
+                Email = studentProfile.Email ?? Email;
                 FullName = $"{FirstName} {LastName}".Trim();
                 University = studentProfile.UniversityName ?? "";
                 StudentNumber = studentProfile.StudentNumber ?? "";
