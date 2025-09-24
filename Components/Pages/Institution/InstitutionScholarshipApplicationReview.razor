@@ -1,0 +1,185 @@
+@page "/dashboard/institution/applications/review/{ApplicationId:int}"
+@attribute [Authorize(Roles = "Institution")]
+@layout Layout.InstitutionDashLayout
+
+@using c2_eskolar.Data
+@using c2_eskolar.Models
+@using Microsoft.EntityFrameworkCore
+@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.AspNetCore.Identity
+@using System.Security.Claims
+
+@inject ApplicationDbContext DbContext
+@inject AuthenticationStateProvider AuthProvider
+@inject UserManager<IdentityUser> UserManager
+@inject NavigationManager Navigation
+
+<PageTitle>Review Application</PageTitle>
+
+<h3>Review Scholarship Application</h3>
+
+@if (isLoading)
+{
+    <p>Loading...</p>
+}
+else if (application == null)
+{
+    <div class="alert alert-danger">Application not found.</div>
+}
+else
+{
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-header bg-primary text-white fw-bold">Application Info</div>
+        <div class="card-body">
+            <h4 class="mb-2">@application.Scholarship?.Title</h4>
+            <div class="mb-2"><span class="text-muted">Reference:</span> <strong>@($"APP-{application.ScholarshipApplicationId:D6}")</strong></div>
+            <div class="mb-2"><span class="text-muted">Application Date:</span> @application.ApplicationDate.ToString("MMMM dd, yyyy")</div>
+            <div class="mb-2"><span class="text-muted">Status:</span> <span class="fw-semibold">@application.Status</span></div>
+        </div>
+    </div>
+
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-header bg-info text-white fw-bold">Applicant Info</div>
+        <div class="card-body">
+            <div class="mb-2"><span class="text-muted">Applicant:</span> <strong>@application.Student?.FirstName @application.Student?.LastName</strong></div>
+        </div>
+    </div>
+
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-header bg-success text-white fw-bold">Documents & Statement</div>
+        <div class="card-body">
+            @if (application.IsExternalApplication)
+            {
+                <div class="mb-3">
+                    <strong>External Application:</strong>
+                    <p>
+                        <a href="@application.ExternalApplicationUrl" target="_blank">@application.ExternalApplicationUrl</a>
+                    </p>
+                    <p><strong>Confirmed Applied:</strong> @(application.HasAppliedExternally ? "Yes" : "No")</p>
+                </div>
+            }
+            else
+            {
+                <div class="mb-3">
+                    <strong>Personal Statement</strong>
+                    <p>@application.PersonalStatement</p>
+                </div>
+
+                @if (!string.IsNullOrEmpty(application.UploadedDocuments))
+                {
+                    <div class="mb-3">
+                        <strong>Supporting Documents:</strong>
+                        <ul>
+                            @{
+                                var documents = application.UploadedDocuments.Split(',');
+                            }
+                            @foreach (var doc in documents)
+                            {
+                                <li>
+                                    <a href="@doc.Trim()" target="_blank">@doc.Trim()</a>
+                                    <span class="text-muted">(Document)</span>
+                                </li>
+                            }
+                        </ul>
+                    </div>
+                }
+            }
+        </div>
+    </div>
+
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-header bg-warning text-dark fw-bold">Review</div>
+        <div class="card-body">
+            <EditForm Model="application" OnValidSubmit="HandleReview">
+                <DataAnnotationsValidator />
+                <ValidationSummary />
+
+                <div class="mb-3">
+                    <label for="ReviewNotes" class="form-label">Review Notes</label>
+                    <InputTextArea id="ReviewNotes" class="form-control"
+                                   @bind-Value="application.ReviewNotes" rows="4"
+                                   placeholder="Add feedback or notes about this application" />
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Decision</label>
+                    <InputSelect @bind-Value="application.Status" class="form-select">
+                        <option value="Under Review">Under Review</option>
+                        <option value="Approved">Approved</option>
+                        <option value="Rejected">Rejected</option>
+                    </InputSelect>
+                </div>
+
+                <button type="submit" class="btn btn-primary" disabled="@isSubmitting">
+                    @(isSubmitting ? "Saving..." : "Save Review")
+                </button>
+                @if (application.Scholarship != null)
+                {
+                    <a href="/dashboard/institution/scholarships-info/@application.Scholarship.ScholarshipId" class="btn btn-secondary ms-2">Back</a>
+                }
+
+                @if (!string.IsNullOrEmpty(successMessage))
+                {
+                    <div class="alert alert-success mt-3">@successMessage</div>
+                }
+
+                @if (!string.IsNullOrEmpty(errorMessage))
+                {
+                    <div class="alert alert-danger mt-3">@errorMessage</div>
+                }
+            </EditForm>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public int ApplicationId { get; set; }
+
+    private ScholarshipApplication? application;
+    private bool isLoading = true;
+    private bool isSubmitting = false;
+    private string? successMessage;
+    private string? errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        application = await DbContext.ScholarshipApplications
+            .Include(a => a.Student)
+            .Include(a => a.Scholarship)
+            .FirstOrDefaultAsync(a => a.ScholarshipApplicationId == ApplicationId);
+
+        isLoading = false;
+    }
+
+    private async Task HandleReview()
+    {
+        if (application == null)
+            return;
+
+        try
+        {
+            isSubmitting = true;
+            errorMessage = null;
+
+            var authState = await AuthProvider.GetAuthenticationStateAsync();
+            var user = authState.User;
+            var reviewerId = user.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            application.ReviewDate = DateTime.Now;
+            application.ReviewedBy = reviewerId;
+
+            DbContext.ScholarshipApplications.Update(application);
+            await DbContext.SaveChangesAsync();
+
+            successMessage = "✅ Review saved successfully.";
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"❌ Failed to save review: {ex.Message}";
+        }
+        finally
+        {
+            isSubmitting = false;
+        }
+    }
+}

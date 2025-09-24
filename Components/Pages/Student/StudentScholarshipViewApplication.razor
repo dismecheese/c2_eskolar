@@ -1,0 +1,168 @@
+@page "/dashboard/student/applications"
+@layout Layout.StudentDashLayout
+
+@using c2_eskolar.Data
+@using c2_eskolar.Models
+@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.EntityFrameworkCore
+
+@inject ApplicationDbContext DbContext
+@inject AuthenticationStateProvider AuthProvider
+@inject NavigationManager Navigation
+
+<PageTitle>My Applications</PageTitle>
+
+<div class="dashboard-center-container">
+	<h2 style="margin-bottom: 24px;">My Scholarship Applications</h2>
+
+	@if (isLoading)
+	{
+		<div style="text-align:center; margin: 48px 0;">
+			<div class="spinner-border text-primary" role="status">
+				<span class="visually-hidden">Loading...</span>
+			</div>
+			<div style="margin-top: 16px; color: #888;">Loading applications...</div>
+		</div>
+	}
+	else if (!string.IsNullOrEmpty(errorMessage))
+	{
+		<div class="alert alert-danger" style="max-width: 600px; margin: 32px auto;">@errorMessage</div>
+	}
+	else
+	{
+		<div style="background: #fff; border-radius: 12px; box-shadow: 0 2px 8px #0001; padding: 32px; max-width: 1100px; margin: 0 auto;">
+			<table class="table" style="width: 100%;">
+				<thead>
+					<tr style="background: #f8fafc;">
+						<th style="padding: 12px 16px;">Scholarship</th>
+						<th style="padding: 12px 16px;">Provider</th>
+						<th style="padding: 12px 16px;">Date Applied</th>
+						<th style="padding: 12px 16px;">Status</th>
+						<th style="padding: 12px 16px;"></th>
+						<th style="padding: 12px 16px;"></th>
+					</tr>
+				</thead>
+				<tbody>
+					@if (applications != null)
+					{
+						@foreach (var app in applications)
+						{
+							<tr style="border-bottom: 1px solid #f1f1f1;">
+								<td style="padding: 12px 16px; font-weight: 500;">@app.ScholarshipTitle</td>
+								<td style="padding: 12px 16px;">@app.Provider</td>
+								<td style="padding: 12px 16px;">@app.DateApplied.ToString("MMM dd, yyyy")</td>
+								<td style="padding: 12px 16px;">
+									<span class="badge @GetStatusClass(app.Status)">@app.Status</span>
+								</td>
+								<td style="padding: 12px 16px;">
+									<button class="btn btn-sm btn-outline-primary" @onclick="() => ViewApplication(app.ApplicationId)">View</button>
+								</td>
+								<td style="padding: 12px 16px;">
+									<button class="btn btn-sm btn-outline-info" @onclick="() => ViewSummary(app.ApplicationId)">View Summary</button>
+								</td>
+							</tr>
+						}
+					}
+				</tbody>
+			</table>
+			@if (applications == null || !applications.Any())
+			{
+				<div style="text-align:center; color:#888; margin-top:32px;">You have not applied to any scholarships yet.</div>
+			}
+		</div>
+	}
+</div>
+
+@code {
+	private List<ApplicationViewModel>? applications;
+	private bool isLoading = true;
+	private string? errorMessage;
+
+	protected override async Task OnInitializedAsync()
+	{
+		try
+		{
+			var authState = await AuthProvider.GetAuthenticationStateAsync();
+			var user = authState.User;
+			var userId = user.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+			if (string.IsNullOrEmpty(userId))
+			{
+				errorMessage = "User not authenticated.";
+				isLoading = false;
+				return;
+			}
+
+			// Find the student's profile
+			var studentProfile = await DbContext.StudentProfiles.FirstOrDefaultAsync(sp => sp.UserId == userId);
+			if (studentProfile == null)
+			{
+				errorMessage = "Student profile not found.";
+				isLoading = false;
+				return;
+			}
+
+			int studentId = studentProfile.StudentProfileId;
+
+			// Load all applications for this student, including scholarship and provider info
+			var appEntities = await DbContext.ScholarshipApplications
+				.Where(a => a.StudentProfileId == studentId)
+				.Include(a => a.Scholarship)
+				.ThenInclude(s => s.Institution)
+				.Include(a => a.Scholarship)
+				.ThenInclude(s => s.Benefactor)
+				.OrderByDescending(a => a.ApplicationDate)
+				.ToListAsync();
+
+			applications = appEntities.Select(a => new ApplicationViewModel
+			{
+				ApplicationId = a.ScholarshipApplicationId,
+				ScholarshipTitle = a.Scholarship?.Title ?? "(No Title)",
+				Provider = (a.Scholarship != null && a.Scholarship.Institution != null && !string.IsNullOrEmpty(a.Scholarship.Institution.InstitutionName))
+					? a.Scholarship.Institution.InstitutionName
+					: (a.Scholarship != null && a.Scholarship.Benefactor != null && !string.IsNullOrEmpty(a.Scholarship.Benefactor.OrganizationName)
+						? a.Scholarship.Benefactor.OrganizationName
+						: "Unknown Provider"),
+				DateApplied = a.ApplicationDate,
+				Status = a.Status ?? "Pending"
+			}).ToList();
+		}
+		catch (Exception ex)
+		{
+			errorMessage = $"Error loading applications: {ex.Message}";
+		}
+		finally
+		{
+			isLoading = false;
+		}
+	}
+
+	private void ViewApplication(int applicationId)
+	{
+		Navigation.NavigateTo($"/dashboard/student/applications/{applicationId}");
+	}
+
+	private void ViewSummary(int applicationId)
+	{
+		Navigation.NavigateTo($"/dashboard/student/applications/{applicationId}/summary");
+	}
+
+	private string GetStatusClass(string status)
+	{
+		return status switch
+		{
+			"Pending" => "bg-warning text-dark",
+			"Approved" => "bg-success",
+			"Rejected" => "bg-danger",
+			_ => "bg-secondary"
+		};
+	}
+
+	private class ApplicationViewModel
+	{
+		public int ApplicationId { get; set; }
+		public string ScholarshipTitle { get; set; } = string.Empty;
+		public string Provider { get; set; } = string.Empty;
+		public DateTime DateApplied { get; set; }
+		public string Status { get; set; } = string.Empty;
+	}
+}

@@ -1,0 +1,158 @@
+@page "/dashboard/student/applications/{ApplicationId:int}/summary"
+@layout Layout.StudentDashLayout
+
+@using c2_eskolar.Data
+@using c2_eskolar.Models
+@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.EntityFrameworkCore
+
+@inject IDbContextFactory<ApplicationDbContext> DbContextFactory
+@inject AuthenticationStateProvider AuthProvider
+@inject NavigationManager Navigation
+
+@attribute [Authorize(Roles = "Student")]
+
+<PageTitle>Application Summary</PageTitle>
+
+<div class="dashboard-center-container">
+    <h2 style="margin-bottom: 24px;">Application Summary</h2>
+    @if (isLoading)
+    {
+        <div>Loading...</div>
+    }
+    else if (!string.IsNullOrEmpty(errorMessage))
+    {
+        <div class="alert alert-danger">@errorMessage</div>
+    }
+    else if (application == null)
+    {
+        <div class="alert alert-warning">Application not found.</div>
+    }
+    else
+    {
+        <div style="background: #fff; border-radius: 12px; box-shadow: 0 2px 8px #0001; padding: 32px; max-width: 700px; margin: 0 auto;">
+            <dl class="row">
+                <dt class="col-sm-4">Scholarship</dt>
+                <dd class="col-sm-8">@application.Scholarship?.Title ?? "(No Title)"</dd>
+
+                <dt class="col-sm-4">Provider</dt>
+                <dd class="col-sm-8">
+                    @if (application.Scholarship?.Institution != null && !string.IsNullOrEmpty(application.Scholarship.Institution.InstitutionName))
+                    {
+                        @application.Scholarship.Institution.InstitutionName
+                    }
+                    else if (application.Scholarship?.Benefactor != null && !string.IsNullOrEmpty(application.Scholarship.Benefactor.OrganizationName))
+                    {
+                        @application.Scholarship.Benefactor.OrganizationName
+                    }
+                    else
+                    {
+                        <span>Unknown Provider</span>
+                    }
+                </dd>
+
+                <dt class="col-sm-4">Date Applied</dt>
+                <dd class="col-sm-8">@application.ApplicationDate.ToString("MMM dd, yyyy")</dd>
+
+                <dt class="col-sm-4">Status</dt>
+                <dd class="col-sm-8">
+                    <span class="badge @GetStatusClass(application.Status)">@application.Status ?? "Pending"</span>
+                </dd>
+
+                <dt class="col-sm-4">Personal Statement</dt>
+                <dd class="col-sm-8">@application.PersonalStatement</dd>
+
+                <dt class="col-sm-4">Uploaded Documents</dt>
+                <dd class="col-sm-8">
+                    @if (!string.IsNullOrEmpty(application.UploadedDocuments))
+                    {
+                        var files = application.UploadedDocuments.Split(',', System.StringSplitOptions.RemoveEmptyEntries);
+                        <ul>
+                        @foreach (var file in files)
+                        {
+                            <li><a href="@file" target="_blank">@System.IO.Path.GetFileName(file)</a></li>
+                        }
+                        </ul>
+                    }
+                    else
+                    {
+                        <span>No documents uploaded.</span>
+                    }
+                </dd>
+            </dl>
+            <div class="mt-4">
+                <button class="btn btn-secondary" @onclick="GoBack">Back to Applications</button>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public int ApplicationId { get; set; }
+
+    private ScholarshipApplication? application;
+    private bool isLoading = true;
+    private string? errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var authState = await AuthProvider.GetAuthenticationStateAsync();
+            var user = authState.User;
+            var userId = user.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userId))
+            {
+                errorMessage = "User not authenticated.";
+                isLoading = false;
+                return;
+            }
+
+            using var db = DbContextFactory.CreateDbContext();
+
+            // Find the student's profile
+            var studentProfile = await db.StudentProfiles.FirstOrDefaultAsync(sp => sp.UserId == userId);
+            if (studentProfile == null)
+            {
+                errorMessage = "Student profile not found.";
+                isLoading = false;
+                return;
+            }
+
+            int studentId = studentProfile.StudentProfileId;
+
+            // Load the application and related scholarship/provider
+            application = await db.ScholarshipApplications
+                .Where(a => a.ScholarshipApplicationId == ApplicationId && a.StudentProfileId == studentId)
+                .Include(a => a.Scholarship)
+                    .ThenInclude(s => s.Institution)
+                .Include(a => a.Scholarship)
+                    .ThenInclude(s => s.Benefactor)
+                .FirstOrDefaultAsync();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error loading application: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private void GoBack()
+    {
+        Navigation.NavigateTo("/dashboard/student/applications");
+    }
+
+    private string GetStatusClass(string? status)
+    {
+        return status switch
+        {
+            "Pending" => "bg-warning text-dark",
+            "Approved" => "bg-success",
+            "Rejected" => "bg-danger",
+            _ => "bg-secondary"
+        };
+    }
+}
