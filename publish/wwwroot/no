@@ -1,0 +1,513 @@
+/* =======================
+   i cleaned app.css and these are the currently unused
+   ======================= */
+
+.dashboard-outer-content {
+    min-height: 100vh;
+    background: transparent;
+    width: 100%;
+    padding: 0;
+    margin: 0;
+}
+
+.dashboard-profile-absolute-wrapper {
+    width: 1000px;
+    max-width: 100%;
+    margin: 0 auto;
+    position: relative;
+    height: 0;
+}
+
+/* Main dashboard content area */
+.dashboard-main-content {
+    position: relative;
+    margin-left: 80px; /* for left sidebar */
+    margin-right: 380px; /* for right sidebar space */
+    padding: 40px 24px 40px 24px;
+    background: #fff;
+    min-height: 100vh;
+    width: auto;
+    box-shadow: none;
+    border-radius: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+}
+
+.dashboard-right-sidebar {
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: 370px;
+    max-width: 100vw;
+    height: 100vh;
+    background: #fff;
+    box-shadow: -2px 0 16px rgba(0,0,0,0.10);
+    z-index: 2100;
+    display: flex;
+    flex-direction: column;
+    padding: 32px 24px 24px 24px;
+    animation: slideInRight 0.25s;
+    overflow-y: auto;
+    align-items: center;
+}
+
+.dashboard-right-sidebar.custom-sidebar {
+    border-top-right-radius: 32px;
+    background: #f5f6fa;
+    box-shadow: -2px 0 24px rgba(0,0,0,0.10);
+    width: 370px;
+    padding: 40px 32px 32px 32px;
+    min-width: 320px;
+    max-width: 100vw;
+    right: 0;
+    top: 0;
+    z-index: 200;
+    overflow-y: auto;
+    transition: right 0.3s;
+}
+
+.close-sidebar {
+    position: absolute;
+    top: 18px;
+    right: 18px;
+    background: none;
+    border: none;
+    font-size: 2rem;
+    color: #222;
+    cursor: pointer;
+    z-index: 2200;
+}
+
+.dashboard-sidebar-popout {
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 80px;
+    height: 100vh;
+    background: #fff;
+    box-shadow: 2px 0 12px rgba(0,0,0,0.08);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    z-index: 100;
+}
+
+.sidebar-popout-img {
+    margin: 24px 0 32px 0;
+    display: flex;
+    justify-content: center;
+}
+.sidebar-popout-img img {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+
+.sidebar-popout-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    width: 100%;
+    align-items: center;
+}
+
+.sidebar-popout-link {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    color: #222;
+    text-decoration: none;
+    font-size: 12px;
+    padding: 8px 0;
+    width: 100%;
+    transition: background 0.2s;
+}
+.sidebar-popout-link.active,
+.sidebar-popout-link:hover {
+    background: #ffe066;
+    color: #222;
+    border-radius: 8px;
+}
+
+.sidebar-popout-icon {
+    font-size: 20px;
+    margin-bottom: 4px;
+}
+
+/* Sidebar overlay */
+.right-sidebar-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.15);
+    z-index: 2000;
+}
+
+.dashboard-tab.active {
+    color: #222; /* black text for active tab */
+    background: #ffd600;
+    box-shadow: 0 6px 12px rgba(0,0,0,0.13);
+}
+
+.scholarship-card-img {
+    width: 48px;
+    height: 48px;
+    background: #eee;
+    border-radius: 8px;
+    margin-bottom: 8px;
+}
+
+.partners-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 32px;
+    justify-items: center;
+    margin-bottom: 32px;
+}
+
+.partner-card {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.10);
+    padding: 24px 16px 18px 16px;
+    display: flex;
+    flex-direction: column; /* or row */
+    align-items: center;
+    min-width: 210px;
+    min-height: 110px;
+    transition: box-shadow 0.2s;
+}
+
+/* Dashboard Bookmarks Section*/
+
+.dashboard-bookmarks-page {
+    padding: 36px 0 0 0;
+    max-width: 1100px;
+    margin: 0 auto;
+}
+
+.dashboard-bookmarks-searchbar {
+    width: 100%;
+    max-width: 480px;
+    margin: 0 auto 18px auto;
+    position: relative;
+}
+
+.bookmarks-search-input {
+    width: 100%;
+    padding: 13px 44px 13px 16px;
+    border: 1.5px solid #e0e0e0;
+    border-radius: 8px;
+    font-size: 1.08rem;
+    background: #fff;
+    outline: none;
+}
+
+
+.dashboard-bookmarks-tabs-row {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 24px;
+    margin-bottom: 18px;
+    flex-wrap: wrap;
+}
+
+.bookmarks-tabs {
+    display: flex;
+    gap: 2px;
+}
+.bookmarks-tab {
+    background: #f5f6fa;
+    border: none;
+    padding: 7px 22px;
+    border-radius: 6px 6px 0 0;
+    font-weight: 700;
+    color: #222;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background 0.18s, color 0.18s;
+    border-bottom: 2px solid transparent;
+}
+.bookmarks-tab.active,
+.bookmarks-tab:focus {
+    background: #1560d4;
+    color: #fff;
+    border-bottom: 2px solid #1560d4;
+}
+.bookmarks-filters {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.bookmarks-filter-select {
+    padding: 7px 16px;
+    border-radius: 6px;
+    border: 1.5px solid #e0e0e0;
+    font-size: 1rem;
+    background: #fff;
+}
+.bookmarks-clear-filter {
+    background: none;
+    border: none;
+    color: #1560d4;
+    font-weight: 600;
+    margin-left: 6px;
+    cursor: pointer;
+    font-size: 1rem;
+}
+
+.bookmarks-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 32px;
+    justify-items: center;
+    margin-bottom: 32px;
+}
+
+.bookmark-card {
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 4px 18px 0 rgba(0,0,0,0.08);
+    padding: 18px 24px;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    min-width: 0;
+    min-height: 90px;
+    max-width: 340px;
+    width: 100%;
+    margin: 0 auto;
+    transition: box-shadow 0.18s, transform 0.18s;
+    position: relative;
+}
+.bookmark-card:hover {
+    box-shadow: 0 8px 32px rgba(0,0,0,0.13);
+    transform: translateY(-2px) scale(1.02);
+}
+.bookmark-card-img {
+    width: 64px;
+    height: 64px;
+    background: #f5f6fa;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 22px;
+    flex-shrink: 0;
+}
+.bookmark-card-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    min-width: 0;
+}
+.bookmark-card-title-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    gap: 8px;
+}
+.bookmark-card-title {
+    font-weight: 700;
+    color: #222;
+    font-size: 1.13rem;
+    text-align: left;
+    flex: 1;
+    word-break: break-word;
+}
+.bookmark-star {
+    margin-left: 8px;
+    display: flex;
+    align-items: center;
+}
+.bookmark-card-status {
+    font-size: 0.98rem;
+    color: #888;
+    margin-top: 6px;
+}
+
+.bookmarks-empty-message {
+    margin: 60px auto 0 auto;
+    text-align: center;
+    color: #222;
+    font-size: 1.13rem;
+    line-height: 1.7;
+    max-width: 400px;
+}
+
+@media (max-width: 1100px) {
+    .bookmarks-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+@media (max-width: 700px) {
+    .bookmarks-grid {
+        grid-template-columns: 1fr;
+    }
+    .dashboard-bookmarks-page {
+        padding: 18px 0 0 0;
+    }
+    .bookmark-card {
+        max-width: 98vw;
+    }
+}
+
+
+
+/* Dashboard Partners Section */
+
+.dashboard-partners-page {
+    padding: 40px 0 0 0;
+    text-align: center;
+    max-width: 1100px;
+    margin: 0 auto;
+}
+
+.dashboard-partners-searchbar {
+    width: 100%;
+    max-width: 480px;
+    margin: 0 auto 18px auto;
+    position: relative;
+}
+.partners-search-input {
+    width: 100%;
+    padding: 13px 44px 13px 16px;
+    border: 1.5px solid #e0e0e0;
+    border-radius: 8px;
+    font-size: 1.08rem;
+    background: #fff;
+    outline: none;
+}
+
+
+.dashboard-partners-tabs-row {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 24px;
+    margin-bottom: 18px;
+    flex-wrap: wrap;
+}
+
+.partners-tabs {
+    display: flex;
+    gap: 2px;
+}
+.partners-tab {
+    background: #f5f6fa;
+    border: none;
+    padding: 7px 22px;
+    border-radius: 6px 6px 0 0;
+    font-weight: 700;
+    color: #222;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background 0.18s, color 0.18s;
+    border-bottom: 2px solid transparent;
+}
+.partners-tab.active,
+.partners-tab:focus {
+    background: #1560d4;
+    color: #fff;
+    border-bottom: 2px solid #1560d4;
+}
+.partners-filter-select {
+    padding: 7px 16px;
+    border-radius: 6px;
+    border: 1.5px solid #e0e0e0;
+    font-size: 1rem;
+    background: #fff;
+    margin-left: 18px;
+}
+
+.scholarship-row-title span {
+    font-size: 1.1em;
+    font-weight: 400;
+    margin-left: 4px;
+    color: #222;
+    vertical-align: middle;
+}
+
+/* =======================
+   CUSTOM NOTIFICATIONS
+   ======================= */
+
+.custom-notification-list {
+    max-height: 200px;
+}
+
+
+
+
+.custom-close {
+    position: absolute;
+    top: 24px;
+    right: 24px;
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    z-index: 10;
+}
+
+.custom-profile {
+    margin-top: 32px;
+    margin-bottom: 32px;
+}
+
+.custom-profile-name {
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin-top: 18px;
+    color: #222;
+}
+
+.custom-profile-role {
+    color: #888;
+    font-size: 1.05rem;
+    margin-bottom: 16px;
+}
+
+.custom-profile-btn {
+    background: #444;
+    color: #fff;
+    border: none;
+    border-radius: 18px;
+    padding: 8px 32px;
+    font-size: 1.05rem;
+    cursor: pointer;
+    margin-top: 8px;
+}
+
+.custom-calendar .calendar-box {
+    background: #fff;
+    padding: 18px;
+    border-radius: 16px;
+    margin: 24px 0;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    text-align: center;
+}
+
+.calendar-placeholder {
+    font-size: 14px;
+    color: #888;
+    margin-top: 8px;
+}
+
+.custom-notifications-header {
+    font-weight: 700;
+    margin-bottom: 10px;
+    font-size: 1.08rem;
+    color: #222;
+}
+
+@media (max-width: 600px) {
+    .dashboard-right-sidebar {
+        width: 100vw;
+        padding: 24px 8px;
+    }
+}

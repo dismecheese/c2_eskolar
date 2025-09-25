@@ -8,7 +8,7 @@ namespace c2_eskolar.Models
     public class User
     {
     [Key]
-    public int UserId { get; set; }
+    public string UserId { get; set; } = string.Empty;
         [Required]
         [StringLength(255)]
         public string Email { get; set; } = "";

@@ -18,7 +18,7 @@
 
     public class Student
     {
-        public int Id { get; set; }
+    public Guid Id { get; set; }
         public string Name { get; set; } = "";
         public string Email { get; set; } = "";
         public string Status { get; set; } = "";
@@ -162,9 +162,9 @@
                     <div class="card border-0 shadow-sm mb-3">
                         <div class="card-header bg-white border-0 p-0">
                             <h2 class="accordion-header" id="heading@(student.Id)">
-                                <button class="accordion-button @(student.Id == 1 ? "" : "collapsed") fw-semibold border-0 rounded" 
+                                <button class="accordion-button @(student.Id == Guid.Empty ? "" : "collapsed") fw-semibold border-0 rounded"
                                         type="button" data-bs-toggle="collapse" data-bs-target="#collapse@(student.Id)" 
-                                        aria-expanded="@(student.Id == 1 ? "true" : "false")" aria-controls="collapse@(student.Id)"
+                                        aria-expanded="@(student.Id == Guid.Empty ? "true" : "false")" aria-controls="collapse@(student.Id)"
                                         style="background: linear-gradient(135deg, #f8fbff 0%, #e8f4fd 100%); border-left: 4px solid #1976d2;">
                                     <div class="d-flex justify-content-between align-items-center w-100 me-3">
                                         <div class="d-flex align-items-center">
@@ -195,7 +195,7 @@
                                 </button>
                             </h2>
                         </div>
-                        <div id="collapse@(student.Id)" class="accordion-collapse collapse @(student.Id == 1 ? "show" : "")" 
+                        <div id="collapse@(student.Id)" class="accordion-collapse collapse @(student.Id == Guid.Empty ? "show" : "")"
                              aria-labelledby="heading@(student.Id)" data-bs-parent="#scholarsAccordion">
                             <div class="card-body bg-light">
                                 <!-- Student Details -->

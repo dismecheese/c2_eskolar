@@ -8,11 +8,9 @@ namespace c2_eskolar.Models
     {
         [Key]
         public int AnnouncementRecipientId { get; set; }
-    [ForeignKey("Announcement")]
-    public int AnnouncementId { get; set; }
-    public virtual Announcement Announcement { get; set; } = null!;
-    [ForeignKey("User")]
-    public required string UserId { get; set; } // Links to IdentityUser
-    public virtual User User { get; set; } = null!;
+        public int AnnouncementId { get; set; }
+        public Announcement Announcement { get; set; } = null!;
+        public string UserId { get; set; } = string.Empty;
+        public User User { get; set; } = null!;
     }
 }

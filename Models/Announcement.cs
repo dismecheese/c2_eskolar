@@ -58,11 +58,9 @@ namespace c2_eskolar.Models
         // Criteria for targeting specific audience (e.g., JSON array of course/department)
         public string? TargetAudience { get; set; } // JSON array of specific criteria
 
-        // MEDIA
-
-        // Optional image associated with the announcement
-        [StringLength(500)]
-        public string? ImageUrl { get; set; }
+    // MEDIA
+    // Multiple images/photos associated with the announcement
+    public ICollection<Photo> Photos { get; set; } = new List<Photo>();
 
         // Optional attachment link (e.g., PDF, document)
         [StringLength(500)]

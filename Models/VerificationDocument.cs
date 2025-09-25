@@ -9,7 +9,7 @@ namespace c2_eskolar.Models
     {
         [Key]
         public int DocumentId { get; set; }
-    public required string UserId { get; set; } // Links to IdentityUser
+    public string UserId { get; set; } = string.Empty;
     public IdentityUser? User { get; set; } // Navigation property for EF Core
         [StringLength(100)]
         public string? DocumentType { get; set; }

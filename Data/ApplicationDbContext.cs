@@ -15,7 +15,6 @@ namespace c2_eskolar.Data
         }
 
     // DbSets for your eSkolar models
-    // Remove CustomUsers and CustomRoles, use IdentityUser and IdentityRole
     public DbSet<StudentProfile> StudentProfiles { get; set; }
     public DbSet<BenefactorProfile> BenefactorProfiles { get; set; }
     public DbSet<InstitutionProfile> InstitutionProfiles { get; set; }
@@ -29,10 +28,33 @@ namespace c2_eskolar.Data
     public DbSet<InstitutionBenefactorPartnership> InstitutionBenefactorPartnerships { get; set; }
     public DbSet<InstitutionAdminProfile> InstitutionAdminProfiles { get; set; }
     public DbSet<BenefactorAdminProfile> BenefactorAdminProfiles { get; set; }
+    public DbSet<Document> Documents { get; set; }
+    public DbSet<Photo> Photos { get; set; }
 
         // MODEL CONFIGURATION & RELATIONSHIPS
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
+        // Document relationship
+        modelBuilder.Entity<Document>()
+            .HasOne(d => d.ScholarshipApplication)
+            .WithMany(sa => sa.Documents)
+            .HasForeignKey(d => d.ScholarshipApplicationId);
+
+        // Photo relationships
+        modelBuilder.Entity<Photo>()
+            .HasOne(p => p.Scholarship)
+            .WithMany(s => s.Photos)
+            .HasForeignKey(p => p.ScholarshipId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<Photo>()
+            .HasOne(p => p.Announcement)
+            .WithMany(a => a.Photos)
+            .HasForeignKey(p => p.AnnouncementId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        // Call base method to apply Identity model configurations
+        base.OnModelCreating(modelBuilder);
             base.OnModelCreating(modelBuilder);
 
             // Configure profile relationships with IdentityUser

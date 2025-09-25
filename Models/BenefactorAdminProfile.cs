@@ -8,7 +8,7 @@ namespace c2_eskolar.Models
     {
         [Key]
         public int BenefactorAdminProfileId { get; set; }
-    public required string UserId { get; set; } // Links to IdentityUser
+    public string UserId { get; set; } = string.Empty;
         [StringLength(255)]
         public string? FullName { get; set; }
         public DateTime? BirthDate { get; set; }

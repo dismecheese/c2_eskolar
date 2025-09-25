@@ -8,12 +8,8 @@ namespace c2_eskolar.Models
     public class ScholarshipApplication
     {
         public int ScholarshipApplicationId { get; set; }
-
-        // FOREIGN KEYS
-    [ForeignKey("Student")]
-    public int StudentProfileId { get; set; }
-    [ForeignKey("Scholarship")]
-    public int ScholarshipId { get; set; }
+        public Guid StudentProfileId { get; set; }
+        public int ScholarshipId { get; set; }
 
         // APPLICATION TYPE MANAGEMENT
         public bool IsExternalApplication { get; set; } // true = external link, false = internal form
@@ -36,7 +32,7 @@ namespace c2_eskolar.Models
         // APPLICATION STATUS (mainly for internal applications)
         [StringLength(50)]
         public string Status { get; set; } = "Submitted"; // "Submitted", "Under Review", "Approved", "Rejected", "External"
-        
+
         // Unique reference for the application (added for error fix)
         [StringLength(100)]
         public string? ApplicationReference { get; set; }
@@ -53,7 +49,8 @@ namespace c2_eskolar.Models
         public DateTime? UpdatedAt { get; set; }
 
         // NAVIGATION PROPERTIES
-    public virtual StudentProfile Student { get; set; } = null!;
-    public virtual Scholarship Scholarship { get; set; } = null!;
+        public StudentProfile Student { get; set; } = null!;
+        public Scholarship Scholarship { get; set; } = null!;
+        public ICollection<Document> Documents { get; set; } = new List<Document>();
     }
 }

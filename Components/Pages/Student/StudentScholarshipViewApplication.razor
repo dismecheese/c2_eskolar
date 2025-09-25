@@ -105,7 +105,7 @@
 						return;
 					}
 
-					int studentId = studentProfile.StudentProfileId;
+					Guid studentId = studentProfile.StudentProfileId;
 
 					// Load all applications for this student, including scholarship and provider info
 					var appEntities = await db.ScholarshipApplications

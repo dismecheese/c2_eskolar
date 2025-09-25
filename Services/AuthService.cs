@@ -108,11 +108,13 @@ namespace c2_eskolar.Services
         // Create corresponding profile entry (Student, Benefactor, or Institution)
         private async Task CreateUserProfileAsync(string identityUserId, RegisterViewModel model)
         {
+
             switch (model.UserRole)
             {
                 case UserRole.Student:
                     _context.StudentProfiles.Add(new StudentProfile
                     {
+                        StudentProfileId = Guid.NewGuid(),
                         UserId = identityUserId,
                         FirstName = model.FirstName,
                         MiddleName = model.MiddleName,
@@ -129,6 +131,7 @@ namespace c2_eskolar.Services
                 case UserRole.Benefactor:
                     _context.BenefactorProfiles.Add(new BenefactorProfile
                     {
+                        BenefactorProfileId = Guid.NewGuid(),
                         UserId = identityUserId,
                         AdminFirstName = model.FirstName,
                         AdminLastName = model.LastName,
@@ -139,6 +142,7 @@ namespace c2_eskolar.Services
                 case UserRole.Institution:
                     _context.InstitutionProfiles.Add(new InstitutionProfile
                     {
+                        InstitutionProfileId = Guid.NewGuid(),
                         UserId = identityUserId,
                         AdminFirstName = model.FirstName,
                         AdminLastName = model.LastName,

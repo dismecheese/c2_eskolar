@@ -117,6 +117,7 @@
             if (studentProfile == null)
             {
                 studentProfile = new Models.StudentProfile {
+                    StudentProfileId = Guid.NewGuid(),
                     UserId = userId,
                     FirstName = FirstName,
                     LastName = LastName

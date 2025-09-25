@@ -157,7 +157,7 @@
                 return;
             }
 
-            int studentId = studentProfile.StudentProfileId;
+            Guid studentId = studentProfile.StudentProfileId;
 
             // Load the application and related scholarship/provider
             application = await db.ScholarshipApplications
