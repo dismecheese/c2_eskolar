@@ -9,8 +9,8 @@ namespace c2_eskolar.Models
         public int ReviewId { get; set; }
         public int ApplicationId { get; set; }
         public ScholarshipApplication Application { get; set; } = null!;
-        public int ReviewerUserId { get; set; }
-        public User Reviewer { get; set; } = null!;
+    public int ReviewerUserId { get; set; }
+    public User Reviewer { get; set; } = null!;
         public int Score { get; set; }
         public string? Comments { get; set; }
         public DateTime? ReviewDate { get; set; }

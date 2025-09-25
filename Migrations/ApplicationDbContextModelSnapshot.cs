@@ -17,7 +17,7 @@ namespace c2_eskolar.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "9.0.8")
+                .HasAnnotation("ProductVersion", "9.0.9")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
@@ -310,6 +310,96 @@ namespace c2_eskolar.Migrations
                     b.HasIndex("StudentProfileId");
 
                     b.ToTable("AspNetUsers", (string)null);
+                });
+
+            modelBuilder.Entity("c2_eskolar.Models.Benefactor", b =>
+                {
+                    b.Property<int>("BenefactorId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("BenefactorId"));
+
+                    b.Property<string>("Address")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<string>("ContactNumber")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Email")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<string>("Logo")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.HasKey("BenefactorId");
+
+                    b.ToTable("Benefactor");
+                });
+
+            modelBuilder.Entity("c2_eskolar.Models.BenefactorAdminProfile", b =>
+                {
+                    b.Property<int>("BenefactorAdminProfileId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("BenefactorAdminProfileId"));
+
+                    b.Property<string>("Address")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<int>("BenefactorId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("BirthDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ContactNumber")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("FullName")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<string>("Position")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("ProfilePicture")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("UserId1")
+                        .HasColumnType("int");
+
+                    b.HasKey("BenefactorAdminProfileId");
+
+                    b.HasIndex("BenefactorId");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("UserId1")
+                        .IsUnique()
+                        .HasFilter("[UserId1] IS NOT NULL");
+
+                    b.ToTable("BenefactorAdminProfiles");
                 });
 
             modelBuilder.Entity("c2_eskolar.Models.BenefactorProfile", b =>
@@ -664,6 +754,50 @@ namespace c2_eskolar.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("PasswordResets");
+                });
+
+            modelBuilder.Entity("c2_eskolar.Models.RecentlyViewedScholarship", b =>
+                {
+                    b.Property<int>("ViewId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ViewId"));
+
+                    b.Property<int>("ScholarshipId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("StudentId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("ViewedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("ViewId");
+
+                    b.HasIndex("ScholarshipId");
+
+                    b.HasIndex("StudentId");
+
+                    b.ToTable("RecentlyViewedScholarships");
+                });
+
+            modelBuilder.Entity("c2_eskolar.Models.Role", b =>
+                {
+                    b.Property<int>("RoleId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("RoleId"));
+
+                    b.Property<string>("RoleName")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.HasKey("RoleId");
+
+                    b.ToTable("Role");
                 });
 
             modelBuilder.Entity("c2_eskolar.Models.Scholarship", b =>
@@ -1062,6 +1196,90 @@ namespace c2_eskolar.Migrations
                         .HasForeignKey("StudentProfileId");
 
                     b.Navigation("StudentProfile");
+                });
+
+            modelBuilder.Entity("c2_eskolar.Models.BenefactorAdminProfile", b =>
+                {
+                    b.HasOne("c2_eskolar.Models.Benefactor", "Benefactor")
+                        .WithMany("AdminProfiles")
+                        .HasForeignKey("BenefactorId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("c2_eskolar.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("c2_eskolar.Models.User", null)
+                        .WithOne("BenefactorAdminProfile")
+                        .HasForeignKey("c2_eskolar.Models.BenefactorAdminProfile", "UserId1");
+
+                    b.Navigation("Benefactor");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("c2_eskolar.Models.InstitutionAdminProfile", b =>
+                {
+                    b.HasOne("c2_eskolar.Models.Institution", "Institution")
+                        .WithMany("AdminProfiles")
+                        .HasForeignKey("InstitutionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("c2_eskolar.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("c2_eskolar.Models.User", null)
+                        .WithOne("InstitutionAdminProfile")
+                        .HasForeignKey("c2_eskolar.Models.InstitutionAdminProfile", "UserId1");
+
+                    b.Navigation("Institution");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("c2_eskolar.Models.InstitutionBenefactorPartnership", b =>
+                {
+                    b.HasOne("c2_eskolar.Models.Benefactor", "Benefactor")
+                        .WithMany("Partnerships")
+                        .HasForeignKey("BenefactorId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("c2_eskolar.Models.Institution", "Institution")
+                        .WithMany("Partnerships")
+                        .HasForeignKey("InstitutionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Benefactor");
+
+                    b.Navigation("Institution");
+                });
+
+            modelBuilder.Entity("c2_eskolar.Models.RecentlyViewedScholarship", b =>
+                {
+                    b.HasOne("c2_eskolar.Models.Scholarship", "Scholarship")
+                        .WithMany()
+                        .HasForeignKey("ScholarshipId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("c2_eskolar.Models.User", "Student")
+                        .WithMany()
+                        .HasForeignKey("StudentId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Scholarship");
+
+                    b.Navigation("Student");
                 });
 
             modelBuilder.Entity("c2_eskolar.Models.Scholarship", b =>

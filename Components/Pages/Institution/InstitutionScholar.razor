@@ -35,7 +35,7 @@
         students = new List<Student>();
         foreach (var profile in profiles)
         {
-            var docs = await VerificationDocumentService.GetDocumentsByUserIdAsync(profile.UserId);
+            var docs = await VerificationDocumentService.GetDocumentsByUserIdAsync(int.Parse(profile.UserId));
             var mappedDocs = docs.Select(d => new StudentDocument
             {
                 Name = d.DocumentType ?? "Document",
@@ -170,7 +170,7 @@
                                         <div class="d-flex align-items-center">
                                             <div class="me-3">
                                                 <div class="bg-primary rounded-circle d-flex align-items-center justify-content-center text-white fw-bold" style="width: 45px; height: 45px;">
-                                                    @student.Name.Substring(0, 1)
+                                                    @(string.IsNullOrWhiteSpace(student.Name) ? "?" : student.Name.Substring(0, 1))
                                                 </div>
                                             </div>
                                             <div>
@@ -252,9 +252,14 @@
                                                     </div>
                                                     <div class="mt-3">
                                                         <div class="progress" style="height: 8px;">
-                                                            <div class="progress-bar bg-success" style="width: @(double.Parse(student.GPA) / 4.0 * 100)%"></div>
+                                                            @{
+                                                                double gpaValue = 0.0;
+                                                                var gpaParsed = double.TryParse(student.GPA, out gpaValue);
+                                                                var percent = gpaParsed ? (gpaValue / 4.0 * 100) : 0;
+                                                            }
+                                                            <div class="progress-bar bg-success" style="width: @percent%"></div>
                                                         </div>
-                                                        <small class="text-muted">Performance Rating: Excellent</small>
+                                                        <small class="text-muted">Performance Rating: @(gpaParsed ? "Excellent" : "N/A")</small>
                                                     </div>
                                                 </div>
                                             </div>
@@ -286,7 +291,8 @@
                                                         </tr>
                                                     </thead>
                                                     <tbody>
-                                                        @foreach (var doc in student.Documents.OrderByDescending(d => DateTime.Parse(d.DateUploaded)))
+                                                        @foreach (var doc in student.Documents.OrderByDescending(d =>
+    DateTime.TryParse(d.DateUploaded, out var dt) ? dt : DateTime.MinValue))
                                                         {
                                                             <tr class="border-bottom">
                                                                 <td class="border-0">

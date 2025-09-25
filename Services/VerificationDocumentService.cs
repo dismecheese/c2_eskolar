@@ -16,7 +16,7 @@ namespace c2_eskolar.Services
             _contextFactory = contextFactory;
         }
 
-        public async Task<List<VerificationDocument>> GetDocumentsByUserIdAsync(string userId)
+        public async Task<List<VerificationDocument>> GetDocumentsByUserIdAsync(int userId)
         {
             await using var context = _contextFactory.CreateDbContext();
             return await context.VerificationDocuments
