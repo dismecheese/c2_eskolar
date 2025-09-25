@@ -5,8 +5,8 @@ namespace c2_eskolar.Models
     // STUDENT PROFILE MODEL
     public class StudentProfile
     {
-        public int StudentProfileId { get; set; }
-        public required string UserId { get; set; } // Links to Identity User
+    public int StudentProfileId { get; set; }
+    public required string UserId { get; set; } // Links to IdentityUser
 
         // Basic Information
     [Required]

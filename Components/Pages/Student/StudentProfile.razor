@@ -3,7 +3,7 @@
 @attribute [Authorize(Roles = "Student")]
 @layout Layout.StudentDashLayout
 @inject AuthenticationStateProvider AuthenticationStateProvider
-@inject UserManager<ApplicationUser> UserManager
+@inject UserManager<IdentityUser> UserManager
 @inject Services.StudentProfileService StudentProfileService
 @using Microsoft.AspNetCore.Components.Authorization
 @using Microsoft.AspNetCore.Identity

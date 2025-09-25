@@ -12,7 +12,7 @@ namespace c2_eskolar.Models
     public int AnnouncementId { get; set; }
     public virtual Announcement Announcement { get; set; } = null!;
     [ForeignKey("User")]
-    public int UserId { get; set; }
+    public required string UserId { get; set; } // Links to IdentityUser
     public virtual User User { get; set; } = null!;
     }
 }

@@ -32,7 +32,7 @@ builder.Services.AddDbContextFactory<ApplicationDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
     // Add ASP.NET Core Identity
-    builder.Services.AddDefaultIdentity<ApplicationUser>(options =>
+    builder.Services.AddDefaultIdentity<IdentityUser>(options =>
         {
             // Password requirements
             options.Password.RequireDigit = true;
@@ -103,7 +103,7 @@ builder.Services.AddScoped<VerificationDocumentService>();
         {
             using var scope = app.Services.CreateScope();
             var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
-            var userManager = scope.ServiceProvider.GetRequiredService<UserManager<ApplicationUser>>();
+            var userManager = scope.ServiceProvider.GetRequiredService<UserManager<IdentityUser>>();
             string[] roles = { "Student", "Benefactor", "Institution" };
             foreach (var role in roles)
             {
@@ -117,7 +117,7 @@ builder.Services.AddScoped<VerificationDocumentService>();
             var existingUser = await userManager.FindByEmailAsync(testEmail);
             if (existingUser == null)
             {
-                var testUser = new ApplicationUser
+                var testUser = new IdentityUser
                 {
                     UserName = testEmail,
                     Email = testEmail,
@@ -138,7 +138,7 @@ builder.Services.AddScoped<VerificationDocumentService>();
             var existingBenefactor = await userManager.FindByEmailAsync(benefactorEmail);
             if (existingBenefactor == null)
             {
-                var benefactorUser = new ApplicationUser
+                var benefactorUser = new IdentityUser
                 {
                     UserName = benefactorEmail,
                     Email = benefactorEmail,
@@ -159,7 +159,7 @@ builder.Services.AddScoped<VerificationDocumentService>();
             var existingInstitution = await userManager.FindByEmailAsync(institutionEmail);
             if (existingInstitution == null)
             {
-                var institutionUser = new ApplicationUser
+                var institutionUser = new IdentityUser
                 {
                     UserName = institutionEmail,
                     Email = institutionEmail,

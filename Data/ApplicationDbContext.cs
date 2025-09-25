@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 namespace c2_eskolar.Data
 {
     // APPLICATION DATABASE CONTEXT
-    public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
+    public class ApplicationDbContext : IdentityDbContext<IdentityUser>
     {
         // Constructor: passes DbContext options to the base class
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options)
@@ -15,6 +15,7 @@ namespace c2_eskolar.Data
         }
 
     // DbSets for your eSkolar models
+    // Remove CustomUsers and CustomRoles, use IdentityUser and IdentityRole
     public DbSet<StudentProfile> StudentProfiles { get; set; }
     public DbSet<BenefactorProfile> BenefactorProfiles { get; set; }
     public DbSet<InstitutionProfile> InstitutionProfiles { get; set; }
@@ -34,10 +35,42 @@ namespace c2_eskolar.Data
         {
             base.OnModelCreating(modelBuilder);
 
-            // VerificationDocument: User 1-to-many
+            // Configure profile relationships with IdentityUser
+            modelBuilder.Entity<StudentProfile>()
+                .HasOne<IdentityUser>()
+                .WithOne()
+                .HasForeignKey<StudentProfile>(sp => sp.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<BenefactorProfile>()
+                .HasOne<IdentityUser>()
+                .WithMany()
+                .HasForeignKey(bp => bp.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<InstitutionProfile>()
+                .HasOne<IdentityUser>()
+                .WithMany()
+                .HasForeignKey(ip => ip.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Configure decimal properties for SQL Server
+            modelBuilder.Entity<StudentProfile>()
+                .Property(s => s.GPA)
+                .HasPrecision(18, 2);
+
+            modelBuilder.Entity<Scholarship>()
+                .Property(s => s.MinimumGPA)
+                .HasPrecision(18, 2);
+
+            modelBuilder.Entity<Scholarship>()
+                .Property(s => s.MonetaryValue)
+                .HasPrecision(18, 2);
+
+            // VerificationDocument: IdentityUser 1-to-many (explicit navigation property)
             modelBuilder.Entity<VerificationDocument>()
                 .HasOne(v => v.User)
-                .WithMany(u => u.VerificationDocuments)
+                .WithMany()
                 .HasForeignKey(v => v.UserId);
 
             // RecentlyViewedScholarship: Student (User) 1-to-many, Scholarship 1-to-many
@@ -62,21 +95,13 @@ namespace c2_eskolar.Data
                 .WithMany(b => b.Partnerships)
                 .HasForeignKey(p => p.BenefactorId);
 
-            // InstitutionAdminProfile: User 1-to-many, Institution 1-to-many
-            modelBuilder.Entity<InstitutionAdminProfile>()
-                .HasOne(a => a.User)
-                .WithMany()
-                .HasForeignKey(a => a.UserId);
+            // InstitutionAdminProfile: Institution 1-to-many
             modelBuilder.Entity<InstitutionAdminProfile>()
                 .HasOne(a => a.Institution)
                 .WithMany(i => i.AdminProfiles)
                 .HasForeignKey(a => a.InstitutionId);
 
-            // BenefactorAdminProfile: User 1-to-many, Benefactor 1-to-many
-            modelBuilder.Entity<BenefactorAdminProfile>()
-                .HasOne(a => a.User)
-                .WithMany()
-                .HasForeignKey(a => a.UserId);
+            // BenefactorAdminProfile: Benefactor 1-to-many
             modelBuilder.Entity<BenefactorAdminProfile>()
                 .HasOne(a => a.Benefactor)
                 .WithMany(b => b.AdminProfiles)

@@ -8,9 +8,7 @@ namespace c2_eskolar.Models
     {
         [Key]
         public int InstitutionAdminProfileId { get; set; }
-    public int UserId { get; set; }
-    [ForeignKey("UserId")]
-    public User User { get; set; } = null!;
+    public required string UserId { get; set; } // Links to IdentityUser
         [StringLength(255)]
         public string? FullName { get; set; }
         public DateTime? BirthDate { get; set; }

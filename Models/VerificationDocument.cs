@@ -1,6 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using System;
 using System.ComponentModel.DataAnnotations.Schema;
+using Microsoft.AspNetCore.Identity;
 
 namespace c2_eskolar.Models
 {
@@ -8,8 +9,8 @@ namespace c2_eskolar.Models
     {
         [Key]
         public int DocumentId { get; set; }
-    public int UserId { get; set; }
-    public User User { get; set; } = null!;
+    public required string UserId { get; set; } // Links to IdentityUser
+    public IdentityUser? User { get; set; } // Navigation property for EF Core
         [StringLength(100)]
         public string? DocumentType { get; set; }
         [StringLength(255)]

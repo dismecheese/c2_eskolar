@@ -35,7 +35,7 @@
         students = new List<Student>();
         foreach (var profile in profiles)
         {
-            var docs = await VerificationDocumentService.GetDocumentsByUserIdAsync(int.Parse(profile.UserId));
+            var docs = await VerificationDocumentService.GetDocumentsByUserIdAsync(profile.UserId);
             var mappedDocs = docs.Select(d => new StudentDocument
             {
                 Name = d.DocumentType ?? "Document",

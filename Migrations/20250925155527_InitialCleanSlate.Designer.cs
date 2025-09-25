@@ -12,8 +12,8 @@ using c2_eskolar.Data;
 namespace c2_eskolar.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20250925115424_InitialClean")]
-    partial class InitialClean
+    [Migration("20250925155527_InitialCleanSlate")]
+    partial class InitialCleanSlate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -75,6 +75,71 @@ namespace c2_eskolar.Migrations
                     b.HasIndex("RoleId");
 
                     b.ToTable("AspNetRoleClaims", (string)null);
+                });
+
+            modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUser", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<int>("AccessFailedCount")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ConcurrencyStamp")
+                        .IsConcurrencyToken()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Email")
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<bool>("EmailConfirmed")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("LockoutEnabled")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTimeOffset?>("LockoutEnd")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("NormalizedEmail")
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<string>("NormalizedUserName")
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<string>("PasswordHash")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("PhoneNumber")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("PhoneNumberConfirmed")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("SecurityStamp")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("TwoFactorEnabled")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("UserName")
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("NormalizedEmail")
+                        .HasDatabaseName("EmailIndex");
+
+                    b.HasIndex("NormalizedUserName")
+                        .IsUnique()
+                        .HasDatabaseName("UserNameIndex")
+                        .HasFilter("[NormalizedUserName] IS NOT NULL");
+
+                    b.ToTable("AspNetUsers", (string)null);
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserClaim<string>", b =>
@@ -245,76 +310,6 @@ namespace c2_eskolar.Migrations
                     b.ToTable("Announcements");
                 });
 
-            modelBuilder.Entity("c2_eskolar.Models.ApplicationUser", b =>
-                {
-                    b.Property<string>("Id")
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<int>("AccessFailedCount")
-                        .HasColumnType("int");
-
-                    b.Property<string>("ConcurrencyStamp")
-                        .IsConcurrencyToken()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Email")
-                        .HasMaxLength(256)
-                        .HasColumnType("nvarchar(256)");
-
-                    b.Property<bool>("EmailConfirmed")
-                        .HasColumnType("bit");
-
-                    b.Property<bool>("LockoutEnabled")
-                        .HasColumnType("bit");
-
-                    b.Property<DateTimeOffset?>("LockoutEnd")
-                        .HasColumnType("datetimeoffset");
-
-                    b.Property<string>("NormalizedEmail")
-                        .HasMaxLength(256)
-                        .HasColumnType("nvarchar(256)");
-
-                    b.Property<string>("NormalizedUserName")
-                        .HasMaxLength(256)
-                        .HasColumnType("nvarchar(256)");
-
-                    b.Property<string>("PasswordHash")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("PhoneNumber")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<bool>("PhoneNumberConfirmed")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("SecurityStamp")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int?>("StudentProfileId")
-                        .HasColumnType("int");
-
-                    b.Property<bool>("TwoFactorEnabled")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("UserName")
-                        .HasMaxLength(256)
-                        .HasColumnType("nvarchar(256)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("NormalizedEmail")
-                        .HasDatabaseName("EmailIndex");
-
-                    b.HasIndex("NormalizedUserName")
-                        .IsUnique()
-                        .HasDatabaseName("UserNameIndex")
-                        .HasFilter("[NormalizedUserName] IS NOT NULL");
-
-                    b.HasIndex("StudentProfileId");
-
-                    b.ToTable("AspNetUsers", (string)null);
-                });
-
             modelBuilder.Entity("c2_eskolar.Models.Benefactor", b =>
                 {
                     b.Property<int>("BenefactorId")
@@ -388,20 +383,11 @@ namespace c2_eskolar.Migrations
 
                     b.Property<string>("UserId")
                         .IsRequired()
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<string>("UserId1")
-                        .HasColumnType("nvarchar(450)");
+                        .HasColumnType("nvarchar(max)");
 
                     b.HasKey("BenefactorAdminProfileId");
 
                     b.HasIndex("BenefactorId");
-
-                    b.HasIndex("UserId");
-
-                    b.HasIndex("UserId1")
-                        .IsUnique()
-                        .HasFilter("[UserId1] IS NOT NULL");
 
                     b.ToTable("BenefactorAdminProfiles");
                 });
@@ -487,7 +473,7 @@ namespace c2_eskolar.Migrations
 
                     b.Property<string>("UserId")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("nvarchar(450)");
 
                     b.Property<DateTime?>("VerificationDate")
                         .HasColumnType("datetime2");
@@ -500,6 +486,8 @@ namespace c2_eskolar.Migrations
                         .HasColumnType("nvarchar(100)");
 
                     b.HasKey("BenefactorProfileId");
+
+                    b.HasIndex("UserId");
 
                     b.ToTable("BenefactorProfiles");
                 });
@@ -577,20 +565,11 @@ namespace c2_eskolar.Migrations
 
                     b.Property<string>("UserId")
                         .IsRequired()
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<string>("UserId1")
-                        .HasColumnType("nvarchar(450)");
+                        .HasColumnType("nvarchar(max)");
 
                     b.HasKey("InstitutionAdminProfileId");
 
                     b.HasIndex("InstitutionId");
-
-                    b.HasIndex("UserId");
-
-                    b.HasIndex("UserId1")
-                        .IsUnique()
-                        .HasFilter("[UserId1] IS NOT NULL");
 
                     b.ToTable("InstitutionAdminProfiles");
                 });
@@ -705,7 +684,7 @@ namespace c2_eskolar.Migrations
 
                     b.Property<string>("UserId")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("nvarchar(450)");
 
                     b.Property<DateTime?>("VerificationDate")
                         .HasColumnType("datetime2");
@@ -718,6 +697,8 @@ namespace c2_eskolar.Migrations
                         .HasColumnType("nvarchar(100)");
 
                     b.HasKey("InstitutionProfileId");
+
+                    b.HasIndex("UserId");
 
                     b.ToTable("InstitutionProfiles");
                 });
@@ -772,9 +753,8 @@ namespace c2_eskolar.Migrations
                     b.Property<int>("ScholarshipId")
                         .HasColumnType("int");
 
-                    b.Property<string>("StudentId")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(450)");
+                    b.Property<int>("StudentId")
+                        .HasColumnType("int");
 
                     b.Property<DateTime?>("ViewedAt")
                         .HasColumnType("datetime2");
@@ -846,9 +826,11 @@ namespace c2_eskolar.Migrations
                         .HasColumnType("bit");
 
                     b.Property<decimal?>("MinimumGPA")
+                        .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<decimal?>("MonetaryValue")
+                        .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<string>("RequiredCourse")
@@ -1006,6 +988,7 @@ namespace c2_eskolar.Migrations
                         .HasColumnType("nvarchar(50)");
 
                     b.Property<decimal?>("GPA")
+                        .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<bool>("IsVerified")
@@ -1074,8 +1057,14 @@ namespace c2_eskolar.Migrations
 
             modelBuilder.Entity("c2_eskolar.Models.User", b =>
                 {
-                    b.Property<string>("UserId")
-                        .HasColumnType("nvarchar(450)");
+                    b.Property<int>("UserId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("UserId"));
+
+                    b.Property<int?>("BenefactorAdminProfileId")
+                        .HasColumnType("int");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
@@ -1084,6 +1073,9 @@ namespace c2_eskolar.Migrations
                         .IsRequired()
                         .HasMaxLength(255)
                         .HasColumnType("nvarchar(255)");
+
+                    b.Property<int?>("InstitutionAdminProfileId")
+                        .HasColumnType("int");
 
                     b.Property<bool>("IsVerified")
                         .HasColumnType("bit");
@@ -1096,9 +1088,18 @@ namespace c2_eskolar.Migrations
                     b.Property<int>("RoleId")
                         .HasColumnType("int");
 
+                    b.Property<int?>("StudentProfileId")
+                        .HasColumnType("int");
+
                     b.HasKey("UserId");
 
+                    b.HasIndex("BenefactorAdminProfileId");
+
+                    b.HasIndex("InstitutionAdminProfileId");
+
                     b.HasIndex("RoleId");
+
+                    b.HasIndex("StudentProfileId");
 
                     b.ToTable("User");
                 });
@@ -1133,9 +1134,14 @@ namespace c2_eskolar.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(450)");
 
+                    b.Property<int?>("UserId1")
+                        .HasColumnType("int");
+
                     b.HasKey("DocumentId");
 
                     b.HasIndex("UserId");
+
+                    b.HasIndex("UserId1");
 
                     b.ToTable("VerificationDocuments");
                 });
@@ -1151,7 +1157,7 @@ namespace c2_eskolar.Migrations
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserClaim<string>", b =>
                 {
-                    b.HasOne("c2_eskolar.Models.ApplicationUser", null)
+                    b.HasOne("Microsoft.AspNetCore.Identity.IdentityUser", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -1160,7 +1166,7 @@ namespace c2_eskolar.Migrations
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserLogin<string>", b =>
                 {
-                    b.HasOne("c2_eskolar.Models.ApplicationUser", null)
+                    b.HasOne("Microsoft.AspNetCore.Identity.IdentityUser", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -1175,7 +1181,7 @@ namespace c2_eskolar.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("c2_eskolar.Models.ApplicationUser", null)
+                    b.HasOne("Microsoft.AspNetCore.Identity.IdentityUser", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -1184,20 +1190,11 @@ namespace c2_eskolar.Migrations
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityUserToken<string>", b =>
                 {
-                    b.HasOne("c2_eskolar.Models.ApplicationUser", null)
+                    b.HasOne("Microsoft.AspNetCore.Identity.IdentityUser", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-                });
-
-            modelBuilder.Entity("c2_eskolar.Models.ApplicationUser", b =>
-                {
-                    b.HasOne("c2_eskolar.Models.StudentProfile", "StudentProfile")
-                        .WithMany()
-                        .HasForeignKey("StudentProfileId");
-
-                    b.Navigation("StudentProfile");
                 });
 
             modelBuilder.Entity("c2_eskolar.Models.BenefactorAdminProfile", b =>
@@ -1208,19 +1205,16 @@ namespace c2_eskolar.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("c2_eskolar.Models.User", "User")
+                    b.Navigation("Benefactor");
+                });
+
+            modelBuilder.Entity("c2_eskolar.Models.BenefactorProfile", b =>
+                {
+                    b.HasOne("Microsoft.AspNetCore.Identity.IdentityUser", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.HasOne("c2_eskolar.Models.User", null)
-                        .WithOne("BenefactorAdminProfile")
-                        .HasForeignKey("c2_eskolar.Models.BenefactorAdminProfile", "UserId1");
-
-                    b.Navigation("Benefactor");
-
-                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("c2_eskolar.Models.InstitutionAdminProfile", b =>
@@ -1231,19 +1225,7 @@ namespace c2_eskolar.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("c2_eskolar.Models.User", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("c2_eskolar.Models.User", null)
-                        .WithOne("InstitutionAdminProfile")
-                        .HasForeignKey("c2_eskolar.Models.InstitutionAdminProfile", "UserId1");
-
                     b.Navigation("Institution");
-
-                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("c2_eskolar.Models.InstitutionBenefactorPartnership", b =>
@@ -1263,6 +1245,15 @@ namespace c2_eskolar.Migrations
                     b.Navigation("Benefactor");
 
                     b.Navigation("Institution");
+                });
+
+            modelBuilder.Entity("c2_eskolar.Models.InstitutionProfile", b =>
+                {
+                    b.HasOne("Microsoft.AspNetCore.Identity.IdentityUser", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("c2_eskolar.Models.RecentlyViewedScholarship", b =>
@@ -1324,8 +1315,8 @@ namespace c2_eskolar.Migrations
 
             modelBuilder.Entity("c2_eskolar.Models.StudentProfile", b =>
                 {
-                    b.HasOne("c2_eskolar.Models.User", null)
-                        .WithOne("StudentProfile")
+                    b.HasOne("Microsoft.AspNetCore.Identity.IdentityUser", null)
+                        .WithOne()
                         .HasForeignKey("c2_eskolar.Models.StudentProfile", "UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -1333,24 +1324,44 @@ namespace c2_eskolar.Migrations
 
             modelBuilder.Entity("c2_eskolar.Models.User", b =>
                 {
+                    b.HasOne("c2_eskolar.Models.BenefactorAdminProfile", "BenefactorAdminProfile")
+                        .WithMany()
+                        .HasForeignKey("BenefactorAdminProfileId");
+
+                    b.HasOne("c2_eskolar.Models.InstitutionAdminProfile", "InstitutionAdminProfile")
+                        .WithMany()
+                        .HasForeignKey("InstitutionAdminProfileId");
+
                     b.HasOne("c2_eskolar.Models.Role", "Role")
                         .WithMany("Users")
                         .HasForeignKey("RoleId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("c2_eskolar.Models.StudentProfile", "StudentProfile")
+                        .WithMany()
+                        .HasForeignKey("StudentProfileId");
+
+                    b.Navigation("BenefactorAdminProfile");
+
+                    b.Navigation("InstitutionAdminProfile");
+
                     b.Navigation("Role");
+
+                    b.Navigation("StudentProfile");
                 });
 
             modelBuilder.Entity("c2_eskolar.Models.VerificationDocument", b =>
                 {
-                    b.HasOne("c2_eskolar.Models.User", "User")
-                        .WithMany("VerificationDocuments")
+                    b.HasOne("Microsoft.AspNetCore.Identity.IdentityUser", null)
+                        .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("User");
+                    b.HasOne("c2_eskolar.Models.User", null)
+                        .WithMany("VerificationDocuments")
+                        .HasForeignKey("UserId1");
                 });
 
             modelBuilder.Entity("c2_eskolar.Models.Benefactor", b =>
@@ -1399,12 +1410,6 @@ namespace c2_eskolar.Migrations
 
             modelBuilder.Entity("c2_eskolar.Models.User", b =>
                 {
-                    b.Navigation("BenefactorAdminProfile");
-
-                    b.Navigation("InstitutionAdminProfile");
-
-                    b.Navigation("StudentProfile");
-
                     b.Navigation("VerificationDocuments");
                 });
 #pragma warning restore 612, 618
