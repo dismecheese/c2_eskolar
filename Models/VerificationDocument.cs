@@ -8,8 +8,7 @@ namespace c2_eskolar.Models
     {
         [Key]
         public int DocumentId { get; set; }
-    public int UserId { get; set; }
-    [ForeignKey("UserId")]
+        public string UserId { get; set; } = string.Empty;
     public User User { get; set; } = null!;
         [StringLength(100)]
         public string? DocumentType { get; set; }

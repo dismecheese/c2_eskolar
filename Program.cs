@@ -71,6 +71,7 @@ builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<StudentProfileService>();
 builder.Services.AddScoped<BenefactorProfileService>();
 builder.Services.AddScoped<InstitutionProfileService>();
+builder.Services.AddScoped<VerificationDocumentService>();
 
     var app = builder.Build();
 

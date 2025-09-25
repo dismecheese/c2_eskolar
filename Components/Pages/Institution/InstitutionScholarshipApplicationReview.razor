@@ -1,0 +1,214 @@
+
+@page "/dashboard/institution/applications/review/{ApplicationId:int}"
+@attribute [Authorize(Roles = "Institution")]
+@layout Layout.InstitutionDashLayout
+
+@using c2_eskolar.Data
+@using c2_eskolar.Models
+@using Microsoft.EntityFrameworkCore
+@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.AspNetCore.Identity
+@using System.Security.Claims
+
+@inject ApplicationDbContext DbContext
+@inject AuthenticationStateProvider AuthProvider
+@inject UserManager<IdentityUser> UserManager
+@inject NavigationManager Navigation
+
+<PageTitle>Review Application</PageTitle>
+
+<h3>Review Scholarship Application</h3>
+
+@if (isLoading)
+{
+    <div class="d-flex align-items-center my-5 justify-content-center">
+        <div class="spinner-border text-primary me-3" role="status" aria-label="Loading"></div>
+        <span>Loading application details...</span>
+    </div>
+}
+else if (errorMessage != null)
+{
+    <div class="alert alert-danger">@errorMessage</div>
+}
+else if (application == null)
+{
+    <div class="alert alert-warning">Application not found.</div>
+}
+else
+{
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-header bg-primary text-white fw-bold">Application Info</div>
+        <div class="card-body">
+            <h4 class="mb-2">@application.Scholarship?.Title ?? "(No Title)"</h4>
+            <div class="mb-2"><span class="text-muted">Reference:</span> <strong>@($"APP-{application.ScholarshipApplicationId:D6}")</strong></div>
+            <div class="mb-2"><span class="text-muted">Application Date:</span> @application.ApplicationDate.ToString("MMMM dd, yyyy")</div>
+            <div class="mb-2"><span class="text-muted">Status:</span> <span class="fw-semibold">@application.Status</span></div>
+        </div>
+    </div>
+
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-header bg-info text-white fw-bold">Applicant Info</div>
+        <div class="card-body">
+            <div class="mb-2"><span class="text-muted">Applicant:</span> <strong>@(application.Student != null ? $"{application.Student.FirstName} {application.Student.LastName}" : "-")</strong></div>
+        </div>
+    </div>
+
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-header bg-success text-white fw-bold">Documents & Statement</div>
+        <div class="card-body">
+            @if (application.IsExternalApplication)
+            {
+                <div class="mb-3">
+                    <strong>External Application:</strong>
+                    <p>
+                        @if (!string.IsNullOrWhiteSpace(application.ExternalApplicationUrl))
+                        {
+                            <a href="@application.ExternalApplicationUrl" target="_blank" rel="noopener noreferrer">@application.ExternalApplicationUrl</a>
+                        }
+                        else
+                        {
+                            <span class="text-muted">No URL provided</span>
+                        }
+                    </p>
+                    <p><strong>Confirmed Applied:</strong> @(application.HasAppliedExternally ? "Yes" : "No")</p>
+                </div>
+            }
+            else
+            {
+                <div class="mb-3">
+                    <strong>Personal Statement</strong>
+                    <p>@(!string.IsNullOrWhiteSpace(application.PersonalStatement) ? application.PersonalStatement : "No statement provided.")</p>
+                </div>
+
+                @if (!string.IsNullOrEmpty(application.UploadedDocuments))
+                {
+                    <div class="mb-3">
+                        <strong>Supporting Documents:</strong>
+                        <ul>
+                            @foreach (var doc in application.UploadedDocuments.Split(',', StringSplitOptions.RemoveEmptyEntries))
+                            {
+                                var trimmed = doc.Trim();
+                                if (!string.IsNullOrWhiteSpace(trimmed))
+                                {
+                                    <li>
+                                        <a href="@trimmed" target="_blank" rel="noopener noreferrer">@trimmed</a>
+                                        <span class="text-muted">(Document)</span>
+                                    </li>
+                                }
+                            }
+                        </ul>
+                    </div>
+                }
+            }
+        </div>
+    </div>
+
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-header bg-warning text-dark fw-bold">Review</div>
+        <div class="card-body">
+            <EditForm Model="application" OnValidSubmit="HandleReview">
+                <DataAnnotationsValidator />
+                <ValidationSummary />
+
+                <div class="mb-3">
+                    <label for="ReviewNotes" class="form-label">Review Notes</label>
+                    <InputTextArea id="ReviewNotes" class="form-control"
+                                   @bind-Value="application.ReviewNotes" rows="4"
+                                   placeholder="Add feedback or notes about this application" aria-label="Review Notes" />
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label" for="DecisionSelect">Decision</label>
+                    <InputSelect id="DecisionSelect" @bind-Value="application.Status" class="form-select" aria-label="Decision">
+                        <option value="Under Review">Under Review</option>
+                        <option value="Approved">Approved</option>
+                        <option value="Rejected">Rejected</option>
+                    </InputSelect>
+                </div>
+
+                <button type="submit" class="btn btn-primary" disabled="@isSubmitting" aria-busy="@isSubmitting">
+                    @if (isSubmitting)
+                    {
+                        <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                        <text>Saving...</text>
+                    }
+                    else
+                    {
+                        <span>Save Review</span>
+                    }
+                </button>
+                @if (application.Scholarship != null)
+                {
+                    <NavLink href="@($"/dashboard/institution/scholarships-info/{application.Scholarship.ScholarshipId}")" class="btn btn-secondary ms-2">Back</NavLink>
+                }
+
+                @if (!string.IsNullOrEmpty(successMessage))
+                {
+                    <div class="alert alert-success mt-3" role="alert">@successMessage</div>
+                }
+            </EditForm>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public int ApplicationId { get; set; }
+
+    private ScholarshipApplication? application;
+    private bool isLoading = true;
+    private bool isSubmitting = false;
+    private string? successMessage;
+    private string? errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            application = await DbContext.ScholarshipApplications
+                .Include(a => a.Student)
+                .Include(a => a.Scholarship)
+                .FirstOrDefaultAsync(a => a.ScholarshipApplicationId == ApplicationId)
+                .ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Failed to load application: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task HandleReview()
+    {
+        if (application == null)
+            return;
+
+        try
+        {
+            isSubmitting = true;
+            errorMessage = null;
+
+            var authState = await AuthProvider.GetAuthenticationStateAsync().ConfigureAwait(false);
+            var user = authState.User;
+            var reviewerId = user.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            application.ReviewDate = DateTime.Now;
+            application.ReviewedBy = reviewerId;
+
+            DbContext.ScholarshipApplications.Update(application);
+            await DbContext.SaveChangesAsync().ConfigureAwait(false);
+
+            successMessage = "✅ Review saved successfully.";
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"❌ Failed to save review: {ex.Message}";
+        }
+        finally
+        {
+            isSubmitting = false;
+        }
+    }
+}

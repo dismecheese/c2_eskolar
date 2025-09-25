@@ -14,20 +14,20 @@ namespace c2_eskolar.Data
         {
         }
 
-        // DbSets for your eSkolar models
-        public DbSet<StudentProfile> StudentProfiles { get; set; }
-        public DbSet<BenefactorProfile> BenefactorProfiles { get; set; }
-        public DbSet<InstitutionProfile> InstitutionProfiles { get; set; }
-        public DbSet<Scholarship> Scholarships { get; set; }
-        public DbSet<ScholarshipApplication> ScholarshipApplications { get; set; }
-        public DbSet<Announcement> Announcements { get; set; }
-        public DbSet<PasswordReset> PasswordResets { get; set; }
-        public DbSet<ScholarshipType> ScholarshipTypes { get; set; }
-        public DbSet<VerificationDocument> VerificationDocuments { get; set; }
-        public DbSet<RecentlyViewedScholarship> RecentlyViewedScholarships { get; set; }
-        public DbSet<InstitutionBenefactorPartnership> InstitutionBenefactorPartnerships { get; set; }
-        public DbSet<InstitutionAdminProfile> InstitutionAdminProfiles { get; set; }
-        public DbSet<BenefactorAdminProfile> BenefactorAdminProfiles { get; set; }
+    // DbSets for your eSkolar models
+    public DbSet<StudentProfile> StudentProfiles { get; set; }
+    public DbSet<BenefactorProfile> BenefactorProfiles { get; set; }
+    public DbSet<InstitutionProfile> InstitutionProfiles { get; set; }
+    public DbSet<Scholarship> Scholarships { get; set; }
+    public DbSet<ScholarshipApplication> ScholarshipApplications { get; set; }
+    public DbSet<Announcement> Announcements { get; set; }
+    public DbSet<PasswordReset> PasswordResets { get; set; }
+    public DbSet<ScholarshipType> ScholarshipTypes { get; set; }
+    public DbSet<VerificationDocument> VerificationDocuments { get; set; }
+    public DbSet<RecentlyViewedScholarship> RecentlyViewedScholarships { get; set; }
+    public DbSet<InstitutionBenefactorPartnership> InstitutionBenefactorPartnerships { get; set; }
+    public DbSet<InstitutionAdminProfile> InstitutionAdminProfiles { get; set; }
+    public DbSet<BenefactorAdminProfile> BenefactorAdminProfiles { get; set; }
 
         // MODEL CONFIGURATION & RELATIONSHIPS
         protected override void OnModelCreating(ModelBuilder modelBuilder)
