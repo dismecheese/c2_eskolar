@@ -13,6 +13,7 @@
 @inject InstitutionProfileService InstitutionProfileService
 @inject AuthenticationStateProvider AuthStateProvider
 @inject ApplicationDbContext DbContext
+@inject IJSRuntime JS
 
 <style>
     .text-decoration-none {
@@ -77,7 +78,7 @@
                         {
                             <div class="col-md-6 col-lg-4">
                                 <div class="card shadow-sm h-100 clickable-card border-0"
-                                     @onclick="() => ViewScholarship(scholarship.ScholarshipId)"
+                                     @onclick="async () => await ViewScholarshipAsync(scholarship.ScholarshipId)"
                                      style="cursor: pointer; transition: box-shadow 0.2s;">
                                     <div class="card-body d-flex flex-column">
                                         <div class="d-flex align-items-center mb-2">
@@ -126,7 +127,7 @@
                     {
                         <div>
                             <div class="card shadow-sm h-100 clickable-card border-0"
-                                 @onclick="() => ViewScholarship(scholarship.ScholarshipId)"
+                                 @onclick="async () => await ViewScholarshipAsync(scholarship.ScholarshipId)"
                                  style="cursor: pointer; transition: box-shadow 0.2s;">
                                 <div class="card-body d-flex flex-column">
                                     <div class="d-flex align-items-center mb-2">
@@ -165,7 +166,7 @@
                     {
                         <div>
                             <div class="card shadow-sm h-100 clickable-card border-0"
-                                 @onclick="() => ViewScholarship(scholarship.ScholarshipId)"
+                                 @onclick="async () => await ViewScholarshipAsync(scholarship.ScholarshipId)"
                                  style="cursor: pointer; transition: box-shadow 0.2s;">
                                 <div class="card-body d-flex flex-column">
                                     <div class="d-flex align-items-center mb-2">
@@ -209,7 +210,7 @@
                     {
                         <div>
                             <div class="card shadow-sm h-100 clickable-card border-0"
-                                 @onclick="() => ViewScholarship(scholarship.ScholarshipId)"
+                                 @onclick="async () => await ViewScholarshipAsync(scholarship.ScholarshipId)"
                                  style="cursor: pointer; transition: box-shadow 0.2s;">
                                 <div class="card-body d-flex flex-column">
                                     <div class="d-flex align-items-center mb-2">
@@ -248,22 +249,29 @@
         <!-- Recently Viewed Scholarships Tab (separate layout) -->
         <div class="scholarship-section">
             <div style="display: flex; justify-content: flex-end; align-items: center; margin-bottom: 8px;">
-                <button class="clear-link" style="background:none;border:none;color:#bbb;font-weight:500;font-size:16px;">Clear</button>
+                <button class="clear-link" style="background:none;border:none;color:#bbb;font-weight:500;font-size:16px;" @onclick="async () => await ClearRecentlyViewedAsync()">Clear</button>
             </div>
             <div class="scholarship-cards" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 32px;">
-                @for (int i = 0; i < 9; i++)
+                @if (recentlyViewedScholarships.Count == 0)
                 {
-                    <div class="scholarship-card" style="position:relative;">
-                        <span style="position:absolute;top:10px;right:16px;font-size:18px;color:#bbb;cursor:pointer;">&times;</span>
-                        <div class="scholarship-card-img" style="display:flex;align-items:center;justify-content:center;">
-                            <svg width="60" height="60" viewBox="0 0 60 60">
-                                <rect x="5" y="5" width="50" height="50" fill="#eee" stroke="#bbb" stroke-width="2"/>
-                                <line x1="15" y1="15" x2="45" y2="45" stroke="#bbb" stroke-width="2"/>
-                                <line x1="15" y1="45" x2="45" y2="15" stroke="#bbb" stroke-width="2"/>
-                            </svg>
+                    <div style="grid-column: 1 / span 3; text-align: center; color: #bbb; font-size: 1.1rem;">No recently viewed scholarships.</div>
+                }
+                else
+                {
+                    @foreach (var scholarship in recentlyViewedScholarships)
+                    {
+                        <div class="scholarship-card" style="position:relative;">
+                            <span style="position:absolute;top:10px;right:16px;font-size:18px;color:#bbb;cursor:pointer;" @onclick="async () => await RemoveRecentlyViewedAsync(scholarship.ScholarshipId)">&times;</span>
+                            <div class="scholarship-card-img" style="display:flex;align-items:center;justify-content:center;">
+                                <i class="bi bi-award text-warning fs-4"></i>
+                            </div>
+                            <div class="scholarship-card-title" style="text-align:center;">@scholarship.Title</div>
+                            <div style="text-align:center;font-size:0.95rem;color:#888;">@(!string.IsNullOrEmpty(scholarship.Institution?.InstitutionName)
+                                ? scholarship.Institution.InstitutionName
+                                : scholarship.Benefactor?.OrganizationName ?? "Unknown Provider")</div>
+                            <div style="text-align:center;font-size:0.9rem;color:#aaa;">@scholarship.CreatedAt.ToString("MMM dd, yyyy")</div>
                         </div>
-                        <div class="scholarship-card-title" style="text-align:center;">Scholarship Name</div>
-                    </div>
+                    }
                 }
             </div>
         </div>
@@ -312,7 +320,9 @@
     private c2_eskolar.Models.InstitutionProfile? profile;
 
 
+
     private List<Scholarship> scholarships = new();
+    private List<Scholarship> recentlyViewedScholarships = new();
 
 
     protected override async Task OnInitializedAsync()
@@ -336,6 +346,21 @@
             .Include(s => s.Benefactor)
             .OrderByDescending(s => s.CreatedAt)
             .ToListAsync();
+
+        // Load recently viewed scholarship IDs from local storage (JS interop)
+        try
+        {
+            var idsJson = await JS.InvokeAsync<string>("localStorage.getItem", "recentlyViewedScholarshipIds");
+            if (!string.IsNullOrEmpty(idsJson))
+            {
+                var ids = System.Text.Json.JsonSerializer.Deserialize<List<int>>(idsJson);
+                if (ids != null)
+                {
+                    recentlyViewedScholarships = scholarships.Where(s => ids.Contains(s.ScholarshipId)).OrderByDescending(s => ids.IndexOf(s.ScholarshipId)).ToList();
+                }
+            }
+        }
+        catch { }
     }
 
     private void SetTab(int tab)
@@ -361,9 +386,10 @@
         showScholarshipList = false;
     }
 
-    private void ClearRecentlyViewed()
+    private async Task ClearRecentlyViewedAsync()
     {
-        // Add logic to clear recently viewed scholarships if needed
+        recentlyViewedScholarships.Clear();
+        await JS.InvokeVoidAsync("localStorage.removeItem", "recentlyViewedScholarshipIds");
     }
 
     private void CloseProfilePopout()
@@ -373,9 +399,29 @@
     }
 
 
-    private void ViewScholarship(int scholarshipId)
+
+    private async Task ViewScholarshipAsync(int scholarshipId)
     {
-        Navigation.NavigateTo($"/dashboard/institution/scholarships-info/{scholarshipId}");
+        var scholarship = scholarships.FirstOrDefault(s => s.ScholarshipId == scholarshipId);
+        if (scholarship != null)
+        {
+            recentlyViewedScholarships.RemoveAll(s => s.ScholarshipId == scholarshipId);
+            recentlyViewedScholarships.Insert(0, scholarship);
+            if (recentlyViewedScholarships.Count > 9)
+                recentlyViewedScholarships = recentlyViewedScholarships.Take(9).ToList();
+
+            // Save IDs to local storage
+            var ids = recentlyViewedScholarships.Select(s => s.ScholarshipId).ToList();
+            await JS.InvokeVoidAsync("localStorage.setItem", "recentlyViewedScholarshipIds", System.Text.Json.JsonSerializer.Serialize(ids));
+        }
+        Navigation.NavigateTo($"/dashboard/student/scholarships-info/{scholarshipId}");
+    }
+
+    private async Task RemoveRecentlyViewedAsync(int scholarshipId)
+    {
+        recentlyViewedScholarships.RemoveAll(s => s.ScholarshipId == scholarshipId);
+        var ids = recentlyViewedScholarships.Select(s => s.ScholarshipId).ToList();
+        await JS.InvokeVoidAsync("localStorage.setItem", "recentlyViewedScholarshipIds", System.Text.Json.JsonSerializer.Serialize(ids));
     }
 
     // Stub for deleting a scholarship (replace with delete logic)

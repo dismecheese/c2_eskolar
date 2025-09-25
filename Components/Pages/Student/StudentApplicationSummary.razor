@@ -14,77 +14,115 @@
 
 <PageTitle>Application Summary</PageTitle>
 
-<div class="dashboard-center-container">
-    <h2 style="margin-bottom: 24px;">Application Summary</h2>
-    @if (isLoading)
-    {
-        <div>Loading...</div>
-    }
-    else if (!string.IsNullOrEmpty(errorMessage))
-    {
-        <div class="alert alert-danger">@errorMessage</div>
-    }
-    else if (application == null)
-    {
-        <div class="alert alert-warning">Application not found.</div>
-    }
-    else
-    {
-        <div style="background: #fff; border-radius: 12px; box-shadow: 0 2px 8px #0001; padding: 32px; max-width: 700px; margin: 0 auto;">
-            <dl class="row">
-                <dt class="col-sm-4">Scholarship</dt>
-                <dd class="col-sm-8">@application.Scholarship?.Title ?? "(No Title)"</dd>
 
-                <dt class="col-sm-4">Provider</dt>
-                <dd class="col-sm-8">
-                    @if (application.Scholarship?.Institution != null && !string.IsNullOrEmpty(application.Scholarship.Institution.InstitutionName))
-                    {
-                        @application.Scholarship.Institution.InstitutionName
-                    }
-                    else if (application.Scholarship?.Benefactor != null && !string.IsNullOrEmpty(application.Scholarship.Benefactor.OrganizationName))
-                    {
-                        @application.Scholarship.Benefactor.OrganizationName
-                    }
-                    else
-                    {
-                        <span>Unknown Provider</span>
-                    }
-                </dd>
 
-                <dt class="col-sm-4">Date Applied</dt>
-                <dd class="col-sm-8">@application.ApplicationDate.ToString("MMM dd, yyyy")</dd>
+<div class="container-fluid py-5" style="background: linear-gradient(135deg, #f8fafc 60%, #e9ecef 100%); min-height: 100vh; margin-top: 40px;">
+    <div class="container px-2 px-md-4">
+        <div class="row justify-content-center">
+            <div class="col-12 col-md-10 col-lg-8">
+                <div class="d-flex align-items-center justify-content-between mb-4" style="gap: 1rem; margin-top: 32px;">
+                    <h2 class="fw-bold mb-0" style="letter-spacing: 0.5px;">Application Summary</h2>
+                    <div style="min-width: 120px; text-align: right;">
+                        <!-- Profile button space -->
+                        <span class="d-inline-block" style="width: 48px; height: 48px; background: #e9ecef; border-radius: 50%;"></span>
+                    </div>
+                </div>
+                @if (isLoading)
+                {
+                    <div class="text-center my-5 py-5"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div></div>
+                }
+                else if (!string.IsNullOrEmpty(errorMessage))
+                {
+                    <div class="alert alert-danger">@errorMessage</div>
+                }
+                else if (application == null)
+                {
+                    <div class="alert alert-warning">Application not found.</div>
+                }
+                else
+                {
+                    <div class="card shadow-sm border-0 mx-auto mb-5" style="border-radius: 18px; max-width: 700px; background: #fff; margin-top: 24px;">
+                        <div class="card-body p-4 p-md-5" style="margin-bottom: 8px;">
+                            <dl class="row mb-0" style="margin-bottom: 0;">
+                                <dt class="col-sm-4 text-muted small" style="margin-bottom: 0.5rem;">Scholarship</dt>
+                                <dd class="col-sm-8 fw-semibold fs-5 mb-3" style="margin-bottom: 1.25rem;">@application.Scholarship?.Title ?? "(No Title)"</dd>
 
-                <dt class="col-sm-4">Status</dt>
-                <dd class="col-sm-8">
-                    <span class="badge @GetStatusClass(application.Status)">@application.Status ?? "Pending"</span>
-                </dd>
+                                <dt class="col-sm-4 text-muted small" style="margin-bottom: 0.5rem;">Provider</dt>
+                                <dd class="col-sm-8 mb-3" style="margin-bottom: 1.25rem;">
+                                    <span class="fw-semibold">
+                                    @if (application.Scholarship?.Institution != null && !string.IsNullOrEmpty(application.Scholarship.Institution.InstitutionName))
+                                    {
+                                        @application.Scholarship.Institution.InstitutionName
+                                    }
+                                    else if (application.Scholarship?.Benefactor != null && !string.IsNullOrEmpty(application.Scholarship.Benefactor.OrganizationName))
+                                    {
+                                        @application.Scholarship.Benefactor.OrganizationName
+                                    }
+                                    else
+                                    {
+                                        <span>Unknown Provider</span>
+                                    }
+                                    </span>
+                                </dd>
 
-                <dt class="col-sm-4">Personal Statement</dt>
-                <dd class="col-sm-8">@application.PersonalStatement</dd>
+                                <dt class="col-sm-4 text-muted small" style="margin-bottom: 0.5rem;">Date Applied</dt>
+                                <dd class="col-sm-8 mb-3" style="margin-bottom: 1.25rem;">@application.ApplicationDate.ToString("MMM dd, yyyy")</dd>
 
-                <dt class="col-sm-4">Uploaded Documents</dt>
-                <dd class="col-sm-8">
-                    @if (!string.IsNullOrEmpty(application.UploadedDocuments))
-                    {
-                        var files = application.UploadedDocuments.Split(',', System.StringSplitOptions.RemoveEmptyEntries);
-                        <ul>
-                        @foreach (var file in files)
-                        {
-                            <li><a href="@file" target="_blank">@System.IO.Path.GetFileName(file)</a></li>
-                        }
-                        </ul>
-                    }
-                    else
-                    {
-                        <span>No documents uploaded.</span>
-                    }
-                </dd>
-            </dl>
-            <div class="mt-4">
-                <button class="btn btn-secondary" @onclick="GoBack">Back to Applications</button>
+                                @if (application.Status == "Rejected")
+                                {
+                                    <dt class="col-sm-4 text-muted small" style="margin-bottom: 0.5rem;">Status</dt>
+                                    <dd class="col-sm-8 mb-3" style="margin-bottom: 1.25rem;">
+                                        <span class="badge px-3 py-2 fs-6 @GetStatusClass(application.Status)" style="font-size: 1rem; letter-spacing: 0.5px;">
+                                            Rejected
+                                        </span>
+                                    </dd>
+                                }
+
+                                @if (!string.IsNullOrEmpty(application.ReviewNotes))
+                                {
+                                    <dt class="col-sm-4 text-muted small" style="margin-bottom: 0.5rem;">Institution Review</dt>
+                                    <dd class="col-sm-8 mb-3" style="margin-bottom: 1.25rem;">@application.ReviewNotes</dd>
+                                }
+
+                                <dt class="col-sm-4 text-muted small" style="margin-bottom: 0.5rem;">Personal Statement</dt>
+                                <dd class="col-sm-8 mb-3" style="white-space: pre-line; margin-bottom: 1.25rem;">@application.PersonalStatement</dd>
+
+                                <dt class="col-sm-4 text-muted small" style="margin-bottom: 0.5rem;">Uploaded Documents</dt>
+                                <dd class="col-sm-8" style="margin-bottom: 1.25rem;">
+                                    @if (!string.IsNullOrEmpty(application.UploadedDocuments))
+                                    {
+                                        var files = application.UploadedDocuments.Split(',', System.StringSplitOptions.RemoveEmptyEntries);
+                                        <ul class="list-unstyled mb-0">
+                                        @foreach (var file in files)
+                                        {
+                                            var fileName = System.IO.Path.GetFileName(file);
+                                            var displayName = fileName.Contains('_') ? fileName.Substring(fileName.IndexOf('_') + 1) : fileName;
+                                            <li class="mb-1">
+                                                <a href="@file" target="_blank" class="text-decoration-none text-primary" style="transition: color 0.2s;">
+                                                    <i class="bi bi-paperclip me-1"></i>@displayName
+                                                </a>
+                                            </li>
+                                        }
+                                        </ul>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">No documents uploaded.</span>
+                                    }
+                                </dd>
+                            </dl>
+                            <hr class="my-4" />
+                            <div class="d-flex justify-content-end" style="margin-top: 16px;">
+                                <button class="btn btn-outline-secondary px-4 py-2" @onclick="GoBack">
+                                    <i class="bi bi-arrow-left me-2"></i>Back to Applications
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                }
             </div>
         </div>
-    }
+    </div>
 </div>
 
 @code {

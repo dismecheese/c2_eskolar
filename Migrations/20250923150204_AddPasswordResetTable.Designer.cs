@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using c2_eskolar.Data;
 
@@ -11,9 +12,11 @@ using c2_eskolar.Data;
 namespace c2_eskolar.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250923150204_AddPasswordResetTable")]
+    partial class AddPasswordResetTable
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -334,16 +337,9 @@ namespace c2_eskolar.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
-                    b.Property<string>("AdminMiddleName")
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
                     b.Property<string>("AdminPosition")
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
-
-                    b.Property<DateTime?>("BirthDate")
-                        .HasColumnType("datetime2");
 
                     b.Property<string>("ContactEmail")
                         .HasMaxLength(100)
@@ -371,10 +367,6 @@ namespace c2_eskolar.Migrations
                         .HasMaxLength(2000)
                         .HasColumnType("nvarchar(2000)");
 
-                    b.Property<string>("Nationality")
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
                     b.Property<string>("OrganizationName")
                         .IsRequired()
                         .HasMaxLength(150)
@@ -383,10 +375,6 @@ namespace c2_eskolar.Migrations
                     b.Property<string>("OrganizationType")
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
-
-                    b.Property<string>("Sex")
-                        .HasMaxLength(10)
-                        .HasColumnType("nvarchar(10)");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2");
@@ -433,10 +421,6 @@ namespace c2_eskolar.Migrations
 
                     b.Property<string>("AdminLastName")
                         .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<string>("AdminMiddleName")
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
@@ -606,8 +590,9 @@ namespace c2_eskolar.Migrations
                         .HasMaxLength(3000)
                         .HasColumnType("nvarchar(3000)");
 
-                    b.Property<int?>("ScholarshipTypeId")
-                        .HasColumnType("int");
+                    b.Property<string>("ScholarshipType")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
 
                     b.Property<int?>("SlotsAvailable")
                         .HasColumnType("int");
@@ -625,8 +610,6 @@ namespace c2_eskolar.Migrations
                     b.HasIndex("BenefactorProfileId");
 
                     b.HasIndex("InstitutionProfileId");
-
-                    b.HasIndex("ScholarshipTypeId");
 
                     b.ToTable("Scholarships");
                 });
@@ -700,24 +683,6 @@ namespace c2_eskolar.Migrations
                     b.ToTable("ScholarshipApplications");
                 });
 
-            modelBuilder.Entity("c2_eskolar.Models.ScholarshipType", b =>
-                {
-                    b.Property<int>("ScholarshipTypeId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ScholarshipTypeId"));
-
-                    b.Property<string>("TypeName")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.HasKey("ScholarshipTypeId");
-
-                    b.ToTable("ScholarshipTypes");
-                });
-
             modelBuilder.Entity("c2_eskolar.Models.StudentProfile", b =>
                 {
                     b.Property<int>("StudentProfileId")
@@ -726,8 +691,16 @@ namespace c2_eskolar.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("StudentProfileId"));
 
+                    b.Property<string>("Address")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
                     b.Property<DateTime?>("BirthDate")
                         .HasColumnType("datetime2");
+
+                    b.Property<string>("ContactNumber")
+                        .HasMaxLength(15)
+                        .HasColumnType("nvarchar(15)");
 
                     b.Property<string>("Course")
                         .HasMaxLength(100)
@@ -735,10 +708,6 @@ namespace c2_eskolar.Migrations
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
-
-                    b.Property<string>("Email")
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
 
                     b.Property<string>("FirstName")
                         .IsRequired()
@@ -756,29 +725,9 @@ namespace c2_eskolar.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
-                    b.Property<string>("MiddleName")
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<string>("MobileNumber")
-                        .HasMaxLength(15)
-                        .HasColumnType("nvarchar(15)");
-
-                    b.Property<string>("Nationality")
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<string>("PermanentAddress")
-                        .HasMaxLength(255)
-                        .HasColumnType("nvarchar(255)");
-
                     b.Property<string>("ProfilePicture")
                         .HasMaxLength(255)
                         .HasColumnType("nvarchar(255)");
-
-                    b.Property<string>("Sex")
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)");
 
                     b.Property<string>("StudentNumber")
                         .HasMaxLength(50)
@@ -879,10 +828,6 @@ namespace c2_eskolar.Migrations
                         .WithMany("ManagedScholarships")
                         .HasForeignKey("InstitutionProfileId");
 
-                    b.HasOne("c2_eskolar.Models.ScholarshipType", null)
-                        .WithMany("Scholarships")
-                        .HasForeignKey("ScholarshipTypeId");
-
                     b.Navigation("Benefactor");
 
                     b.Navigation("Institution");
@@ -920,11 +865,6 @@ namespace c2_eskolar.Migrations
             modelBuilder.Entity("c2_eskolar.Models.Scholarship", b =>
                 {
                     b.Navigation("Applications");
-                });
-
-            modelBuilder.Entity("c2_eskolar.Models.ScholarshipType", b =>
-                {
-                    b.Navigation("Scholarships");
                 });
 
             modelBuilder.Entity("c2_eskolar.Models.StudentProfile", b =>

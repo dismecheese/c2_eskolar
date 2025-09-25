@@ -328,7 +328,7 @@ else
                                             Application ID: @application.ScholarshipApplicationId<br />
                                             @application.Student?.FirstName @application.Student?.LastName
                                         </span>
-                                        <a class="btn btn-sm btn-outline-primary" href="/dashboard/institution/applications/review/@application.ScholarshipApplicationId">View</a>
+                                        <NavLink class="btn btn-sm btn-outline-primary" href="@($"/dashboard/institution/applications/review/{application.ScholarshipApplicationId}")">View</NavLink>
                                     </li>
                                 }
                             </ul>

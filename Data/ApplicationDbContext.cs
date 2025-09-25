@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 namespace c2_eskolar.Data
 {
     // APPLICATION DATABASE CONTEXT
-    public class ApplicationDbContext : IdentityDbContext<IdentityUser>
+    public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     {
         // Constructor: passes DbContext options to the base class
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options)
@@ -15,13 +15,16 @@ namespace c2_eskolar.Data
         }
 
         // DbSets for your eSkolar models
-    public DbSet<StudentProfile> StudentProfiles { get; set; }
-    public DbSet<BenefactorProfile> BenefactorProfiles { get; set; }
-    public DbSet<InstitutionProfile> InstitutionProfiles { get; set; }
-    public DbSet<Scholarship> Scholarships { get; set; }
-    public DbSet<ScholarshipApplication> ScholarshipApplications { get; set; }
-    public DbSet<Announcement> Announcements { get; set; }
-    public DbSet<ScholarshipType> ScholarshipTypes { get; set; }
+
+public DbSet<StudentProfile> StudentProfiles { get; set; }
+public DbSet<BenefactorProfile> BenefactorProfiles { get; set; }
+public DbSet<InstitutionProfile> InstitutionProfiles { get; set; }
+public DbSet<Scholarship> Scholarships { get; set; }
+public DbSet<ScholarshipApplication> ScholarshipApplications { get; set; }
+public DbSet<Announcement> Announcements { get; set; }
+public DbSet<PasswordReset> PasswordResets { get; set; }
+public DbSet<ScholarshipType> ScholarshipTypes { get; set; }
+public DbSet<VerificationDocument> VerificationDocuments { get; set; }
 
         // MODEL CONFIGURATION & RELATIONSHIPS
         protected override void OnModelCreating(ModelBuilder modelBuilder)

@@ -13,7 +13,7 @@
 
 @inject ApplicationDbContext DbContext
 @inject AuthenticationStateProvider AuthProvider
-@inject UserManager<IdentityUser> UserManager
+@inject UserManager<ApplicationUser> UserManager
 @inject NavigationManager Navigation
 @inject Blazored.LocalStorage.ILocalStorageService LocalStorage
 
@@ -140,7 +140,7 @@
                                     <div class="mt-2">
                                         @if (application.ScholarshipApplicationId > 0)
                                         {
-                                            <a href="/dashboard/student/applications/@application.ScholarshipApplicationId" class="btn btn-sm btn-outline-success">
+                                            <a href="@($"/dashboard/student/applications/{application.ScholarshipApplicationId}")" class="btn btn-sm btn-outline-success">
                                                 <i class="fas fa-eye me-1"></i>View Application
                                             </a>
                                         }
