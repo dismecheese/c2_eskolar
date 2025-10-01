@@ -3,7 +3,7 @@
 @attribute [Authorize(Roles = "Student")]
 @layout Layout.StudentDashLayout
 @inject AuthenticationStateProvider AuthenticationStateProvider
-@inject UserManager<ApplicationUser> UserManager
+@inject UserManager<IdentityUser> UserManager
 @inject Services.StudentProfileService StudentProfileService
 @using Microsoft.AspNetCore.Components.Authorization
 @using Microsoft.AspNetCore.Identity
@@ -238,7 +238,8 @@
 }
 
 
-<div class="container-fluid p-5" style="padding-left: 80px; padding-right: 120px;">
+
+<div class="container-fluid p-5 student-profile-bg">
     @if (!string.IsNullOrWhiteSpace(ProfileErrorMessage))
     {
         <div class="alert alert-danger" role="alert">
@@ -248,14 +249,14 @@
     <div class="row mb-4">
         <div class="col-12">
             <div class="d-flex justify-content-between align-items-center">
-                <h2 class="mb-0">My Profile</h2>
+                <h2 class="mb-0 profile-title">My Profile</h2>
                 <div class="d-flex gap-2">
-                    <button class="btn btn-primary" @onclick="ToggleEditModeAsync" disabled="@(isLoading)">
+                    <button class="btn btn-primary profile-btn" @onclick="ToggleEditModeAsync" disabled="@(isLoading)">
                         <i class="fas fa-edit me-2"></i>@(IsEditMode ? "Cancel" : "Edit Profile")
                     </button>
                     @if (IsEditMode)
                     {
-                        <button class="btn btn-success" @onclick="SaveProfile" disabled="@(isLoading)">
+                        <button class="btn btn-success profile-btn" @onclick="SaveProfile" disabled="@(isLoading)">
                             <i class="fas fa-save me-2"></i>Save Changes
                         </button>
                     }
@@ -266,55 +267,55 @@
     <div class="row">
         <!-- Profile Summary (Left Column) -->
         <div class="col-lg-4 mb-4">
-            <div class="card shadow-sm mb-4">
+            <div class="card profile-card mb-4">
                 <div class="card-body text-center">
                     <div class="position-relative d-inline-block mb-3">
-                        <img src="@PreviewProfilePicture" class="rounded-circle profile-image" alt="Profile Picture" width="120" height="120" />
+                        <img src="@PreviewProfilePicture" class="rounded-circle profile-image shadow" alt="Profile Picture" width="120" height="120" />
                         @if (IsEditMode)
                         {
-                            <label class="btn btn-sm btn-primary position-absolute bottom-0 end-0 rounded-circle" style="width: 30px; height: 30px;">
+                            <label class="btn btn-sm btn-primary position-absolute bottom-0 end-0 rounded-circle profile-img-btn">
                                 <i class="fas fa-camera"></i>
                                 <InputFile OnChange="OnProfileImageChange" accept="image/*" style="display:none;" />
                             </label>
                         }
                     </div>
-                    <h4 class="card-title mb-1">@FullName</h4>
+                    <h4 class="card-title mb-1 profile-name">@FullName</h4>
                     <div class="text-muted mb-2">@Email</div>
                     <div class="d-flex flex-column align-items-center gap-2">
-                        <span class="badge bg-success">@Status</span>
-                        <span class="badge bg-secondary">@YearLevel</span>
+                        <span class="badge profile-badge-status">@Status</span>
+                        <span class="badge profile-badge-year">@YearLevel</span>
                     </div>
                 </div>
             </div>
-            <div class="card shadow-sm">
+            <div class="card profile-card">
                 <div class="card-header bg-white">
-                    <h6 class="mb-0"><i class="fas fa-check-circle me-2"></i>Verification</h6>
+                    <h6 class="mb-0 profile-verification-title"><i class="fas fa-check-circle me-2"></i>Verification</h6>
                 </div>
                 <div class="card-body">
                     <div class="verification-item d-flex justify-content-between align-items-center">
                         <span>Email</span>
-                        <i class="fas fa-@(EmailVerified ? "check-circle text-success" : "clock text-warning")"></i>
+                        <i class="fas fa-@(EmailVerified ? "check-circle profile-icon-verified" : "clock profile-icon-pending")"></i>
                     </div>
                     <div class="verification-item d-flex justify-content-between align-items-center">
                         <span>Phone</span>
-                        <i class="fas fa-@(PhoneVerified ? "check-circle text-success" : "clock text-warning")"></i>
+                        <i class="fas fa-@(PhoneVerified ? "check-circle profile-icon-verified" : "clock profile-icon-pending")"></i>
                     </div>
                     <div class="verification-item d-flex justify-content-between align-items-center">
                         <span>Student ID</span>
-                        <i class="fas fa-@(StudentIdVerified ? "check-circle text-success" : "clock text-warning")"></i>
+                        <i class="fas fa-@(StudentIdVerified ? "check-circle profile-icon-verified" : "clock profile-icon-pending")"></i>
                     </div>
                     <div class="verification-item d-flex justify-content-between align-items-center">
                         <span>Academic Records</span>
-                        <i class="fas fa-@(AcademicRecordsVerified ? "check-circle text-success" : "clock text-warning")"></i>
+                        <i class="fas fa-@(AcademicRecordsVerified ? "check-circle profile-icon-verified" : "clock profile-icon-pending")"></i>
                     </div>
                 </div>
             </div>
         </div>
         <!-- Profile Details (Right Column) -->
         <div class="col-lg-8">
-            <div class="card shadow-sm mb-4">
+            <div class="card profile-card mb-4">
                 <div class="card-header bg-white">
-                    <h5 class="mb-0"><i class="fas fa-user me-2"></i>Personal Information</h5>
+                    <h5 class="mb-0 profile-section-title"><i class="fas fa-user me-2"></i>Personal Information</h5>
                 </div>
                 <div class="card-body">
                     @if (IsEditMode)
@@ -405,9 +406,9 @@
                     }
                 </div>
             </div>
-            <div class="card shadow-sm">
+            <div class="card profile-card">
                 <div class="card-header bg-white">
-                    <h5 class="mb-0"><i class="fas fa-graduation-cap me-2"></i>Educational Information</h5>
+                    <h5 class="mb-0 profile-section-title"><i class="fas fa-graduation-cap me-2"></i>Educational Information</h5>
                 </div>
                 <div class="card-body">
                     @if (IsEditMode)
@@ -481,12 +482,68 @@
 </div>
 
 <style>
+    .student-profile-bg {
+        background: linear-gradient(120deg, #f6f8fc 0%, #eaf1fb 100%);
+        min-height: 100vh;
+    }
+    .profile-title {
+        color: #1560d4;
+        font-weight: 700;
+        letter-spacing: 1px;
+    }
+    .profile-card {
+        border-radius: 18px;
+        box-shadow: 0 2px 12px rgba(21,96,212,0.08), 0 1.5px 6px rgba(0,0,0,0.04);
+        border: none;
+    }
+    .profile-name {
+        color: #1560d4;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+    }
+    .profile-badge-status {
+        background-color: #1560d4;
+        color: #fff;
+        font-weight: 500;
+        border-radius: 8px;
+        padding: 0.4em 1em;
+        font-size: 1em;
+    }
+    .profile-badge-year {
+        background-color: #eaf1fb;
+        color: #1560d4;
+        font-weight: 500;
+        border-radius: 8px;
+        padding: 0.4em 1em;
+        font-size: 1em;
+    }
+    .profile-img-btn {
+        background-color: #1560d4;
+        color: #fff;
+        border: none;
+        box-shadow: 0 2px 8px rgba(21,96,212,0.12);
+    }
+    .profile-verification-title {
+        color: #1560d4 !important;
+        font-weight: 600;
+    }
+    .profile-icon-verified {
+        color: #198754 !important;
+        font-size: 1.2em;
+    }
+    .profile-icon-pending {
+        color: #ffc107 !important;
+        font-size: 1.2em;
+    }
+    .profile-section-title {
+        color: #1560d4 !important;
+        font-weight: 600;
+    }
     .form-check-input:checked {
         background-color: #198754;
         border-color: #198754;
     }
 </style>
-        }
 
 
         
