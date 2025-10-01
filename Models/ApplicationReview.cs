@@ -10,7 +10,7 @@ namespace c2_eskolar.Models
         public int ApplicationId { get; set; }
         public ScholarshipApplication Application { get; set; } = null!;
     public int ReviewerUserId { get; set; }
-    public User Reviewer { get; set; } = null!;
+    // Removed navigation property to custom User. Use IdentityUser if needed.
         public int Score { get; set; }
         public string? Comments { get; set; }
         public DateTime? ReviewDate { get; set; }

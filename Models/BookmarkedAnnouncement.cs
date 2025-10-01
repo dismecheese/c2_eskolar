@@ -8,7 +8,7 @@ namespace c2_eskolar.Models
         [Key]
         public int BookmarkId { get; set; }
     public required string UserId { get; set; } // Links to IdentityUser
-    public User User { get; set; } = null!;
+    // Removed navigation property to custom User to prevent UserId1 shadow property
         public int AnnouncementId { get; set; }
         public Announcement Announcement { get; set; } = null!;
         public DateTime? CreatedAt { get; set; }

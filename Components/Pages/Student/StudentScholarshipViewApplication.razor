@@ -148,7 +148,7 @@
 		}
 	}
 
-	private void ViewSummary(int applicationId)
+	private void ViewSummary(Guid applicationId)
 	{
 		Navigation.NavigateTo($"/dashboard/student/applications/{applicationId}/summary");
 	}
@@ -166,7 +166,7 @@
 
 	private class ApplicationViewModel
 	{
-		public int ApplicationId { get; set; }
+		public Guid ApplicationId { get; set; }
 		public string ScholarshipTitle { get; set; } = string.Empty;
 		public string Provider { get; set; } = string.Empty;
 		public DateTime DateApplied { get; set; }

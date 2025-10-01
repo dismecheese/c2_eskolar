@@ -14,7 +14,7 @@ namespace c2_eskolar.Models
     public virtual Scholarship Scholarship { get; set; } = null!;
     [ForeignKey("Student")]
     public int StudentId { get; set; }
-    public virtual User Student { get; set; } = null!;
+    // Removed navigation property to custom User. Use IdentityUser if needed.
         public DateTime? AwardedDate { get; set; }
         [StringLength(50)]
         public string? Status { get; set; }

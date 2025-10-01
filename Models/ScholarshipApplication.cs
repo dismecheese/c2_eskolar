@@ -7,9 +7,9 @@ namespace c2_eskolar.Models
     // Represents a student's application for a scholarship
     public class ScholarshipApplication
     {
-        public int ScholarshipApplicationId { get; set; }
+    public Guid ScholarshipApplicationId { get; set; }
         public Guid StudentProfileId { get; set; }
-        public int ScholarshipId { get; set; }
+    public int ScholarshipId { get; set; }
 
         // APPLICATION TYPE MANAGEMENT
         public bool IsExternalApplication { get; set; } // true = external link, false = internal form

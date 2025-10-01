@@ -64,6 +64,8 @@ namespace c2_eskolar.Data
                 .HasForeignKey<StudentProfile>(sp => sp.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
 
+            // All custom User mappings removed. Only IdentityUser is used.
+
             modelBuilder.Entity<BenefactorProfile>()
                 .HasOne<IdentityUser>()
                 .WithMany()
@@ -89,18 +91,9 @@ namespace c2_eskolar.Data
                 .Property(s => s.MonetaryValue)
                 .HasPrecision(18, 2);
 
-            // VerificationDocument: IdentityUser 1-to-many (explicit navigation property)
-            modelBuilder.Entity<VerificationDocument>()
-                .HasOne(v => v.User)
-                .WithMany()
-                .HasForeignKey(v => v.UserId);
+            // VerificationDocument: removed navigation property to prevent UserId1 shadow property
 
-            // RecentlyViewedScholarship: Student (User) 1-to-many, Scholarship 1-to-many
-            modelBuilder.Entity<RecentlyViewedScholarship>()
-                .HasOne(r => r.Student)
-                .WithMany()
-                .HasForeignKey(r => r.StudentId)
-                .OnDelete(DeleteBehavior.Restrict);
+            // RecentlyViewedScholarship: Scholarship 1-to-many only
             modelBuilder.Entity<RecentlyViewedScholarship>()
                 .HasOne(r => r.Scholarship)
                 .WithMany()

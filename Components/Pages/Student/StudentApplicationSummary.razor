@@ -1,4 +1,4 @@
-@page "/dashboard/student/applications/{ApplicationId:int}/summary"
+@page "/dashboard/student/applications/{ApplicationId:guid}/summary"
 @layout Layout.StudentDashLayout
 
 @using c2_eskolar.Data
@@ -126,7 +126,7 @@
 </div>
 
 @code {
-    [Parameter] public int ApplicationId { get; set; }
+    [Parameter] public Guid ApplicationId { get; set; }
 
     private ScholarshipApplication? application;
     private bool isLoading = true;

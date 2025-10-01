@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace c2_eskolar.Migrations
 {
     /// <inheritdoc />
-    public partial class InitialCleanSlate : Migration
+    public partial class InitialCreate : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -15,8 +15,7 @@ namespace c2_eskolar.Migrations
                 name: "Announcements",
                 columns: table => new
                 {
-                    AnnouncementId = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
+                    AnnouncementId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     Title = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
                     Content = table.Column<string>(type: "nvarchar(max)", maxLength: 5000, nullable: false),
                     Summary = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
@@ -28,7 +27,6 @@ namespace c2_eskolar.Migrations
                     Priority = table.Column<int>(type: "int", nullable: false),
                     IsPublic = table.Column<bool>(type: "bit", nullable: false),
                     TargetAudience = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    ImageUrl = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
                     AttachmentUrl = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
                     IsActive = table.Column<bool>(type: "bit", nullable: false),
                     IsPinned = table.Column<bool>(type: "bit", nullable: false),
@@ -140,19 +138,6 @@ namespace c2_eskolar.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "Role",
-                columns: table => new
-                {
-                    RoleId = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    RoleName = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_Role", x => x.RoleId);
-                });
-
-            migrationBuilder.CreateTable(
                 name: "ScholarshipTypes",
                 columns: table => new
                 {
@@ -163,6 +148,24 @@ namespace c2_eskolar.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_ScholarshipTypes", x => x.ScholarshipTypeId);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "VerificationDocuments",
+                columns: table => new
+                {
+                    DocumentId = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    UserId = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    DocumentType = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
+                    FilePath = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: true),
+                    OCRExtractedData = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    UploadedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    Status = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_VerificationDocuments", x => x.DocumentId);
                 });
 
             migrationBuilder.CreateTable(
@@ -275,8 +278,7 @@ namespace c2_eskolar.Migrations
                 name: "BenefactorProfiles",
                 columns: table => new
                 {
-                    BenefactorProfileId = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
+                    BenefactorProfileId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     UserId = table.Column<string>(type: "nvarchar(450)", nullable: false),
                     AdminFirstName = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
                     AdminMiddleName = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
@@ -315,8 +317,7 @@ namespace c2_eskolar.Migrations
                 name: "InstitutionProfiles",
                 columns: table => new
                 {
-                    InstitutionProfileId = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
+                    InstitutionProfileId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     UserId = table.Column<string>(type: "nvarchar(450)", nullable: false),
                     AdminFirstName = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
                     AdminMiddleName = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
@@ -355,8 +356,7 @@ namespace c2_eskolar.Migrations
                 name: "StudentProfiles",
                 columns: table => new
                 {
-                    StudentProfileId = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
+                    StudentProfileId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     UserId = table.Column<string>(type: "nvarchar(450)", nullable: false),
                     FirstName = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
                     MiddleName = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
@@ -423,10 +423,7 @@ namespace c2_eskolar.Migrations
                     InstitutionAdminProfileId = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
                     UserId = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    FullName = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: true),
-                    BirthDate = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    Address = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: true),
-                    ContactNumber = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
+                    ContactNumber = table.Column<string>(type: "nvarchar(max)", nullable: true),
                     InstitutionId = table.Column<int>(type: "int", nullable: false),
                     Position = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
                     ProfilePicture = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: true)
@@ -492,8 +489,8 @@ namespace c2_eskolar.Migrations
                     ExternalApplicationUrl = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
                     UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    BenefactorProfileId = table.Column<int>(type: "int", nullable: true),
-                    InstitutionProfileId = table.Column<int>(type: "int", nullable: true),
+                    BenefactorProfileId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    InstitutionProfileId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
                     ScholarshipTypeId = table.Column<int>(type: "int", nullable: true)
                 },
                 constraints: table =>
@@ -517,53 +514,60 @@ namespace c2_eskolar.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "User",
+                name: "Photos",
                 columns: table => new
                 {
-                    UserId = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    Email = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: false),
-                    PasswordHash = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: false),
-                    RoleId = table.Column<int>(type: "int", nullable: false),
-                    IsVerified = table.Column<bool>(type: "bit", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    StudentProfileId = table.Column<int>(type: "int", nullable: true),
-                    InstitutionAdminProfileId = table.Column<int>(type: "int", nullable: true),
-                    BenefactorAdminProfileId = table.Column<int>(type: "int", nullable: true)
+                    PhotoId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    ScholarshipId = table.Column<int>(type: "int", nullable: true),
+                    AnnouncementId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    Url = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Caption = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    UploadedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_User", x => x.UserId);
+                    table.PrimaryKey("PK_Photos", x => x.PhotoId);
                     table.ForeignKey(
-                        name: "FK_User_BenefactorAdminProfiles_BenefactorAdminProfileId",
-                        column: x => x.BenefactorAdminProfileId,
-                        principalTable: "BenefactorAdminProfiles",
-                        principalColumn: "BenefactorAdminProfileId");
-                    table.ForeignKey(
-                        name: "FK_User_InstitutionAdminProfiles_InstitutionAdminProfileId",
-                        column: x => x.InstitutionAdminProfileId,
-                        principalTable: "InstitutionAdminProfiles",
-                        principalColumn: "InstitutionAdminProfileId");
-                    table.ForeignKey(
-                        name: "FK_User_Role_RoleId",
-                        column: x => x.RoleId,
-                        principalTable: "Role",
-                        principalColumn: "RoleId",
+                        name: "FK_Photos_Announcements_AnnouncementId",
+                        column: x => x.AnnouncementId,
+                        principalTable: "Announcements",
+                        principalColumn: "AnnouncementId",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_User_StudentProfiles_StudentProfileId",
-                        column: x => x.StudentProfileId,
-                        principalTable: "StudentProfiles",
-                        principalColumn: "StudentProfileId");
+                        name: "FK_Photos_Scholarships_ScholarshipId",
+                        column: x => x.ScholarshipId,
+                        principalTable: "Scholarships",
+                        principalColumn: "ScholarshipId",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "RecentlyViewedScholarships",
+                columns: table => new
+                {
+                    ViewId = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    StudentId = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    ScholarshipId = table.Column<int>(type: "int", nullable: false),
+                    ViewedAt = table.Column<DateTime>(type: "datetime2", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_RecentlyViewedScholarships", x => x.ViewId);
+                    table.ForeignKey(
+                        name: "FK_RecentlyViewedScholarships_Scholarships_ScholarshipId",
+                        column: x => x.ScholarshipId,
+                        principalTable: "Scholarships",
+                        principalColumn: "ScholarshipId",
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
                 name: "ScholarshipApplications",
                 columns: table => new
                 {
-                    ScholarshipApplicationId = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    StudentProfileId = table.Column<int>(type: "int", nullable: false),
+                    ScholarshipApplicationId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    StudentProfileId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     ScholarshipId = table.Column<int>(type: "int", nullable: false),
                     IsExternalApplication = table.Column<bool>(type: "bit", nullable: false),
                     ExternalApplicationUrl = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
@@ -597,60 +601,25 @@ namespace c2_eskolar.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "RecentlyViewedScholarships",
+                name: "Documents",
                 columns: table => new
                 {
-                    ViewId = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    StudentId = table.Column<int>(type: "int", nullable: false),
-                    ScholarshipId = table.Column<int>(type: "int", nullable: false),
-                    ViewedAt = table.Column<DateTime>(type: "datetime2", nullable: true)
+                    DocumentId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    ScholarshipApplicationId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    FileName = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    FilePath = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    DocumentType = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    UploadedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_RecentlyViewedScholarships", x => x.ViewId);
+                    table.PrimaryKey("PK_Documents", x => x.DocumentId);
                     table.ForeignKey(
-                        name: "FK_RecentlyViewedScholarships_Scholarships_ScholarshipId",
-                        column: x => x.ScholarshipId,
-                        principalTable: "Scholarships",
-                        principalColumn: "ScholarshipId",
-                        onDelete: ReferentialAction.Restrict);
-                    table.ForeignKey(
-                        name: "FK_RecentlyViewedScholarships_User_StudentId",
-                        column: x => x.StudentId,
-                        principalTable: "User",
-                        principalColumn: "UserId",
-                        onDelete: ReferentialAction.Restrict);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "VerificationDocuments",
-                columns: table => new
-                {
-                    DocumentId = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    UserId = table.Column<string>(type: "nvarchar(450)", nullable: false),
-                    DocumentType = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
-                    FilePath = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: true),
-                    OCRExtractedData = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    UploadedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    Status = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
-                    UserId1 = table.Column<int>(type: "int", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_VerificationDocuments", x => x.DocumentId);
-                    table.ForeignKey(
-                        name: "FK_VerificationDocuments_AspNetUsers_UserId",
-                        column: x => x.UserId,
-                        principalTable: "AspNetUsers",
-                        principalColumn: "Id",
+                        name: "FK_Documents_ScholarshipApplications_ScholarshipApplicationId",
+                        column: x => x.ScholarshipApplicationId,
+                        principalTable: "ScholarshipApplications",
+                        principalColumn: "ScholarshipApplicationId",
                         onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_VerificationDocuments_User_UserId1",
-                        column: x => x.UserId1,
-                        principalTable: "User",
-                        principalColumn: "UserId");
                 });
 
             migrationBuilder.CreateIndex(
@@ -703,6 +672,11 @@ namespace c2_eskolar.Migrations
                 column: "UserId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_Documents_ScholarshipApplicationId",
+                table: "Documents",
+                column: "ScholarshipApplicationId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_InstitutionAdminProfiles_InstitutionId",
                 table: "InstitutionAdminProfiles",
                 column: "InstitutionId");
@@ -723,14 +697,19 @@ namespace c2_eskolar.Migrations
                 column: "UserId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_RecentlyViewedScholarships_ScholarshipId",
-                table: "RecentlyViewedScholarships",
+                name: "IX_Photos_AnnouncementId",
+                table: "Photos",
+                column: "AnnouncementId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Photos_ScholarshipId",
+                table: "Photos",
                 column: "ScholarshipId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_RecentlyViewedScholarships_StudentId",
+                name: "IX_RecentlyViewedScholarships_ScholarshipId",
                 table: "RecentlyViewedScholarships",
-                column: "StudentId");
+                column: "ScholarshipId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_ScholarshipApplications_ScholarshipId",
@@ -762,44 +741,11 @@ namespace c2_eskolar.Migrations
                 table: "StudentProfiles",
                 column: "UserId",
                 unique: true);
-
-            migrationBuilder.CreateIndex(
-                name: "IX_User_BenefactorAdminProfileId",
-                table: "User",
-                column: "BenefactorAdminProfileId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_User_InstitutionAdminProfileId",
-                table: "User",
-                column: "InstitutionAdminProfileId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_User_RoleId",
-                table: "User",
-                column: "RoleId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_User_StudentProfileId",
-                table: "User",
-                column: "StudentProfileId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_VerificationDocuments_UserId",
-                table: "VerificationDocuments",
-                column: "UserId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_VerificationDocuments_UserId1",
-                table: "VerificationDocuments",
-                column: "UserId1");
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropTable(
-                name: "Announcements");
-
             migrationBuilder.DropTable(
                 name: "AspNetRoleClaims");
 
@@ -816,16 +762,25 @@ namespace c2_eskolar.Migrations
                 name: "AspNetUserTokens");
 
             migrationBuilder.DropTable(
+                name: "BenefactorAdminProfiles");
+
+            migrationBuilder.DropTable(
+                name: "Documents");
+
+            migrationBuilder.DropTable(
+                name: "InstitutionAdminProfiles");
+
+            migrationBuilder.DropTable(
                 name: "InstitutionBenefactorPartnerships");
 
             migrationBuilder.DropTable(
                 name: "PasswordResets");
 
             migrationBuilder.DropTable(
-                name: "RecentlyViewedScholarships");
+                name: "Photos");
 
             migrationBuilder.DropTable(
-                name: "ScholarshipApplications");
+                name: "RecentlyViewedScholarships");
 
             migrationBuilder.DropTable(
                 name: "VerificationDocuments");
@@ -834,10 +789,22 @@ namespace c2_eskolar.Migrations
                 name: "AspNetRoles");
 
             migrationBuilder.DropTable(
+                name: "ScholarshipApplications");
+
+            migrationBuilder.DropTable(
+                name: "Benefactor");
+
+            migrationBuilder.DropTable(
+                name: "Institution");
+
+            migrationBuilder.DropTable(
+                name: "Announcements");
+
+            migrationBuilder.DropTable(
                 name: "Scholarships");
 
             migrationBuilder.DropTable(
-                name: "User");
+                name: "StudentProfiles");
 
             migrationBuilder.DropTable(
                 name: "BenefactorProfiles");
@@ -847,24 +814,6 @@ namespace c2_eskolar.Migrations
 
             migrationBuilder.DropTable(
                 name: "ScholarshipTypes");
-
-            migrationBuilder.DropTable(
-                name: "BenefactorAdminProfiles");
-
-            migrationBuilder.DropTable(
-                name: "InstitutionAdminProfiles");
-
-            migrationBuilder.DropTable(
-                name: "Role");
-
-            migrationBuilder.DropTable(
-                name: "StudentProfiles");
-
-            migrationBuilder.DropTable(
-                name: "Benefactor");
-
-            migrationBuilder.DropTable(
-                name: "Institution");
 
             migrationBuilder.DropTable(
                 name: "AspNetUsers");

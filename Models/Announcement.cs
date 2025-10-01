@@ -6,8 +6,8 @@ namespace c2_eskolar.Models
     // Represents announcements posted by institutions or benefactors
     public class Announcement
     {
-        // Primary key for the announcement
-        public int AnnouncementId { get; set; }
+    // Primary key for the announcement
+    public Guid AnnouncementId { get; set; }
 
          // Title of the announcement (required, max 200 characters)
         [Required]
@@ -74,8 +74,8 @@ namespace c2_eskolar.Models
         // Whether the announcement is pinned to the top
         public bool IsPinned { get; set; } = false;
 
-        // Creation timestamp
-        public DateTime CreatedAt { get; set; } = DateTime.Now;
+    // Creation timestamp
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
         // Last updated timestamp (nullable)
         public DateTime? UpdatedAt { get; set; }

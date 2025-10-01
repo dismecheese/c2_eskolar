@@ -20,9 +20,6 @@ namespace c2_eskolar.Models
     public virtual Role Role { get; set; } = null!;
         public bool IsVerified { get; set; } = false;
         public DateTime CreatedAt { get; set; } = DateTime.Now;
-    public virtual StudentProfile? StudentProfile { get; set; }
-    public virtual InstitutionAdminProfile? InstitutionAdminProfile { get; set; }
-    public virtual BenefactorAdminProfile? BenefactorAdminProfile { get; set; }
-    public virtual ICollection<VerificationDocument> VerificationDocuments { get; set; } = new List<VerificationDocument>();
+    // Removed navigation properties to prevent UserId1 shadow property
     }
 }

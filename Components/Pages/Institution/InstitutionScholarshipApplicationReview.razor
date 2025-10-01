@@ -1,7 +1,19 @@
-
-@page "/dashboard/institution/applications/review/{ApplicationId:int}"
+@page "/dashboard/institution/applications/review/{ApplicationId:guid}"
 @attribute [Authorize(Roles = "Institution")]
 @layout Layout.InstitutionDashLayout
+    [Parameter] public Guid ApplicationId { get; set; }
+    private ScholarshipApplication? application;
+    private bool isLoading = true;
+            <div class="mb-2"><span class="text-muted">Reference:</span> <strong>@application.ScholarshipApplicationId.ToString()</strong></div>
+            <div class="mb-2"><span class="text-muted">Application Date:</span> @application.ApplicationDate.ToString("MMMM dd, yyyy")</div>
+            <div class="mb-2"><span class="text-muted">Status:</span> <span class="fw-semibold">@application.Status</span></div>
+                application = await DbContext.ScholarshipApplications
+                    .Include(a => a.Student)
+                    .Include(a => a.Scholarship)
+        .FirstOrDefaultAsync(a => a.ScholarshipApplicationId == ApplicationId)
+        .ConfigureAwait(false);
+    }
+
 
 @using c2_eskolar.Data
 @using c2_eskolar.Models
@@ -40,7 +52,7 @@ else
         <div class="card-header bg-primary text-white fw-bold">Application Info</div>
         <div class="card-body">
             <h4 class="mb-2">@application.Scholarship?.Title ?? "(No Title)"</h4>
-            <div class="mb-2"><span class="text-muted">Reference:</span> <strong>@($"APP-{application.ScholarshipApplicationId:D6}")</strong></div>
+            <div class="mb-2"><span class="text-muted">Reference:</span> <strong>@(application?.ScholarshipApplicationId.ToString())</strong></div>
             <div class="mb-2"><span class="text-muted">Application Date:</span> @application.ApplicationDate.ToString("MMMM dd, yyyy")</div>
             <div class="mb-2"><span class="text-muted">Status:</span> <span class="fw-semibold">@application.Status</span></div>
         </div>
@@ -152,7 +164,7 @@ else
 }
 
 @code {
-    [Parameter] public int ApplicationId { get; set; }
+    [Parameter] public Guid ApplicationId { get; set; }
 
     private ScholarshipApplication? application;
     private bool isLoading = true;

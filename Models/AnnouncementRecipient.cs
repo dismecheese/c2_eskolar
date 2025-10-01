@@ -11,6 +11,6 @@ namespace c2_eskolar.Models
         public int AnnouncementId { get; set; }
         public Announcement Announcement { get; set; } = null!;
         public string UserId { get; set; } = string.Empty;
-        public User User { get; set; } = null!;
+    // Removed navigation property to custom User. Use IdentityUser if needed.
     }
 }

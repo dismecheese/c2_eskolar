@@ -9,7 +9,7 @@ namespace c2_eskolar.Models
         [Key]
         public int ViewId { get; set; }
     public string StudentId { get; set; } = string.Empty;
-    public User Student { get; set; } = null!;
+    // Removed navigation property to custom User. Use IdentityUser if needed.
     public int ScholarshipId { get; set; }
     public Scholarship Scholarship { get; set; } = null!;
         public DateTime? ViewedAt { get; set; }

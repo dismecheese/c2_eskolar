@@ -272,7 +272,7 @@
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">@(editingAnnouncement?.AnnouncementId > 0 ? "Edit" : "Create") Announcement</h5>
+                    <h5 class="modal-title">@(editingAnnouncement?.AnnouncementId != Guid.Empty ? "Edit" : "Create") Announcement</h5>
                     <button type="button" class="btn-close" @onclick="HideModal"></button>
                 </div>
                 <div class="modal-body">
@@ -347,7 +347,7 @@
                                 {
                                     <span class="spinner-border spinner-border-sm me-2"></span>
                                 }
-                                @(editingAnnouncement?.AnnouncementId > 0 ? "Update" : "Create")
+                                @(editingAnnouncement?.AnnouncementId != Guid.Empty ? "Update" : "Create")
                             </button>
                         </div>
                     </EditForm>
@@ -378,7 +378,7 @@
     private bool isLoading = false;
     private bool showModal = false;
     private bool isLoadingModal = false;
-    private HashSet<int> expandedAnnouncements = new HashSet<int>();
+    private HashSet<Guid> expandedAnnouncements = new HashSet<Guid>();
     
     // Statistics
     private int institutionCount = 0;
@@ -550,7 +550,7 @@
         isLoadingModal = true;
         try
         {
-            if (editingAnnouncement.AnnouncementId > 0)
+            if (editingAnnouncement.AnnouncementId != Guid.Empty)
             {
                 await AnnouncementService.UpdateAnnouncementAsync(editingAnnouncement.AnnouncementId, editingAnnouncement);
             }
@@ -572,7 +572,7 @@
         }
     }
 
-    private async Task TogglePin(int announcementId)
+    private async Task TogglePin(Guid announcementId)
     {
         try
         {
@@ -585,7 +585,7 @@
         }
     }
 
-    private async Task DeleteAnnouncement(int announcementId)
+    private async Task DeleteAnnouncement(Guid announcementId)
     {
         try
         {
@@ -600,7 +600,7 @@
         }
     }
 
-    private async Task IncrementView(int announcementId)
+    private async Task IncrementView(Guid announcementId)
     {
         try
         {
@@ -632,12 +632,12 @@
         };
     }
 
-    private bool IsAnnouncementExpanded(int announcementId)
+    private bool IsAnnouncementExpanded(Guid announcementId)
     {
         return expandedAnnouncements.Contains(announcementId);
     }
 
-    private void ToggleAnnouncementExpansion(int announcementId)
+    private void ToggleAnnouncementExpansion(Guid announcementId)
     {
         if (expandedAnnouncements.Contains(announcementId))
         {
