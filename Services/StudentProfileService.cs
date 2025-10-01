@@ -13,7 +13,14 @@ namespace c2_eskolar.Services
             _contextFactory = contextFactory;
         }
 
-        public async Task<StudentProfile?> GetProfileByUserIdAsync(string userId)
+
+        public async Task<List<StudentProfile>> GetAllProfilesAsync()
+        {
+            await using var context = _contextFactory.CreateDbContext();
+            return await context.StudentProfiles.ToListAsync();
+        }
+
+    public async Task<StudentProfile?> GetProfileByUserIdAsync(string userId)
         {
             await using var context = _contextFactory.CreateDbContext();
             return await context.StudentProfiles.FirstOrDefaultAsync(sp => sp.UserId == userId);

@@ -1,0 +1,1891 @@
+@import '_content/Blazor.Bootstrap/Blazor.Bootstrap.7t9tbfaemk.bundle.scp.css';
+
+/* _content/c2_eskolar/Components/Layout/BenefactorDashLayout.razor.rz.scp.css */
+/* Main content area beside the sidebar */
+.main-content[b-hfarsopu8j] {
+    margin-left: 260px; /* Leaves space for the sidebar */
+    transition: margin-left 0.2s; /* Smooth slide effect when sidebar toggles */
+    position: relative;
+    z-index: 1;
+    background: #f5f6fa; 
+    min-height: 100vh; 
+    padding: 0 24px; 
+}
+
+/* Sidebar links (menu items) */
+.sidebar-link[b-hfarsopu8j] {
+    color: #fff !important;
+    border-radius: 6px;
+    padding: 0.55rem 0.9rem;
+    transition: background 0.18s, color 0.18s; /* Smooth hover effects */
+    font-size: 1.07rem;
+    font-weight: 500;
+}
+
+/* Hover & active state for sidebar links */
+.sidebar-link:hover[b-hfarsopu8j], .sidebar-link.active[b-hfarsopu8j] {
+    background: rgba(255,255,255,0.18); /* Semi-transparent highlight */
+    color: #ffe066 !important;
+    /* text-decoration: none; */
+}
+
+/* Icons inside sidebar nav links */
+.sidebar .nav-link i[b-hfarsopu8j] {
+    font-size: 1.15rem;
+}
+
+/* Sidebar container */
+.sidebar[b-hfarsopu8j] {
+    position: fixed; /* Always stays on the left side */
+    top: 0;
+    left: 0;
+    height: 100vh;
+    min-height: 100vh;
+    width: 260px;
+    z-index: 1200;
+    /* add background and padding if needed */
+}
+
+/* Brand/logo text inside sidebar */
+.eskolar-brand[b-hfarsopu8j] {
+    letter-spacing: 1px;
+    font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+    color: #fff;
+    font-weight: bold;
+    font-size: 1.5rem;
+    text-align: center;
+    margin-top: 8px;
+}
+
+/* Space below brand area */
+.sidebar-brand-container[b-hfarsopu8j] {
+    margin-bottom: 32px; 
+}
+
+.eskolar-logo-img[b-hfarsopu8j] {
+    width: 120px;
+    height: auto;
+    transition: filter 0.2s;
+}
+
+.eskolar-logo:hover .eskolar-logo-img[b-hfarsopu8j] {
+    content: url('/images/main/eSkolar-Yellow.svg');
+    filter: drop-shadow(0 0 6px #ffe066);
+}
+
+/* Responsive styles for smaller screens */
+@media (max-width: 900px) {
+    .help-box[b-hfarsopu8j] {
+        width: 100vw !important;
+        left: 0 !important;
+    }
+    .sidebar[b-hfarsopu8j] {
+        width: 100vw !important;
+        min-width: 0;
+        left: 0;
+    }
+    .main-content[b-hfarsopu8j] {
+        margin-left: 0;
+        padding: 0 8px;
+    }
+}
+/* _content/c2_eskolar/Components/Layout/InstitutionDashLayout.razor.rz.scp.css */
+/* Main content area beside the sidebar */
+.main-content[b-i2uupxpxwm] {
+    margin-left: 260px;
+    transition: margin-left 0.2s;
+    position: relative;
+    z-index: 1;
+    background: #f5f6fa; 
+    min-height: 100vh; 
+    padding: 0 24px;   
+}
+
+/* Sidebar links (menu items) */
+.sidebar-link[b-i2uupxpxwm] {
+    color: #fff !important;
+    border-radius: 6px;
+    padding: 0.55rem 0.9rem;
+    transition: background 0.18s, color 0.18s;
+    font-size: 1.07rem;
+    font-weight: 500;
+}
+
+/* Hover & active state for sidebar links */
+.sidebar-link:hover[b-i2uupxpxwm], .sidebar-link.active[b-i2uupxpxwm] {
+    background: rgba(255,255,255,0.18);
+    color: #ffe066 !important;
+    text-decoration: none;
+}
+
+/* Icons inside sidebar nav links */
+.sidebar .nav-link i[b-i2uupxpxwm] {
+    font-size: 1.15rem;
+}
+
+/* Sidebar container */
+.sidebar[b-i2uupxpxwm] {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    min-height: 100vh;
+    width: 260px;
+    z-index: 1200;
+}
+
+/* Brand/logo text inside sidebar */
+.eskolar-brand[b-i2uupxpxwm] {
+    letter-spacing: 1px;
+    font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+    color: #fff;
+    font-weight: bold;
+    font-size: 1.5rem;
+    text-align: center;
+    margin-top: 8px;
+}
+
+/* Space below brand area */
+.sidebar-brand-container[b-i2uupxpxwm] {
+    margin-bottom: 34px; 
+}
+
+.eskolar-logo-img[b-i2uupxpxwm] {
+    width: 120px;
+    height: auto;
+    transition: filter 0.2s;
+}
+
+.eskolar-logo:hover .eskolar-logo-img[b-i2uupxpxwm] {
+    content: url('/images/main/eSkolar-Yellow.svg');
+    filter: drop-shadow(0 0 6px #ffe066);
+}
+
+/* Responsive styles for smaller screens */
+@media (max-width: 900px) {
+    .help-box[b-i2uupxpxwm] {
+        width: 100vw !important;
+        left: 0 !important;
+    }
+    .sidebar[b-i2uupxpxwm] {
+        width: 100vw !important;
+        min-width: 0;
+        left: 0;
+    }
+    .main-content[b-i2uupxpxwm] {
+        margin-left: 0;
+        padding: 0 8px;
+    }
+}
+/* _content/c2_eskolar/Components/Layout/LandingLayout.razor.rz.scp.css */
+/* Landing Page Layout */
+.landing-page[b-fb81ado5rg] {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Header Styles */
+.landing-header[b-fb81ado5rg] {
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    background: #014BAD;
+    backdrop-filter: blur(10px);
+    box-shadow: 0 2px 20px rgba(0,0,0,0.1);
+}
+
+.navbar[b-fb81ado5rg] {
+    padding: 1rem 0;
+}
+
+/* Navbar Container */
+.nav-container[b-fb81ado5rg] {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 1rem;
+    display: flex;
+    justify-content: flex-start; 
+    align-items: center;
+}
+
+/* Brand Section */
+.nav-brand[b-fb81ado5rg] {
+    display: flex;
+    align-items: center; 
+}
+
+.brand-logo[b-fb81ado5rg] {
+    font-size: 2rem;
+    margin-left: 0.5rem;
+}
+
+.brand-text[b-fb81ado5rg] {
+    color: #ffd700;
+    text-align: left;
+    font-weight: bold;
+    font-size: 1.5rem;
+    margin-left: 0.5rem;
+}
+
+/* Navbar Links */
+.nav-links-right[b-fb81ado5rg] {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+}
+
+.nav-link[b-fb81ado5rg] {
+    color: white;
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.3s ease;
+    margin-right: 1rem;
+}
+
+.nav-link:hover[b-fb81ado5rg] {
+    color: #ffd700;
+}
+
+/* eSkolar Logo */
+.eskolar-logo[b-fb81ado5rg] {
+    display: block;
+    position: relative;
+    width: 140px;
+    height: 50px;
+    margin-left: 24px;
+    box-sizing: border-box;
+}
+
+.eskolar-logo-img[b-fb81ado5rg],
+.eskolar-logo-img-hover[b-fb81ado5rg] {
+    width: 120px;
+    height: auto;
+    transition: filter 0.2s, opacity 0.2s;
+    display: block;
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+}
+.eskolar-logo-img-hover[b-fb81ado5rg] {
+    opacity: 0;
+    pointer-events: none;
+}
+.eskolar-logo:hover .eskolar-logo-img[b-fb81ado5rg] {
+    opacity: 0;
+}
+.eskolar-logo:hover .eskolar-logo-img-hover[b-fb81ado5rg] {
+    opacity: 1;
+    filter: drop-shadow(0 0 6px #ffe066);
+}
+
+/* Main Content */
+.landing-main[b-fb81ado5rg] {
+    flex: 1;
+}
+
+/* Footer Styles */
+.landing-footer[b-fb81ado5rg] {
+    margin-top: auto;
+}
+
+.footer-container-custom[b-fb81ado5rg] {
+    background: #223167;
+    color: #fff;
+    padding: 32px 0 0 0;
+    font-family: inherit;
+}
+
+.footer-main-row[b-fb81ado5rg] {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 0 40px 24px 40px;
+}
+.footer-follow[b-fb81ado5rg] {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    padding-left: 50px;
+    padding-bottom: 20px;
+}
+.footer-contact[b-fb81ado5rg] {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    padding-right: 50px;
+}
+
+/* Footer Headings */
+.footer-follow strong[b-fb81ado5rg],
+.footer-contact strong[b-fb81ado5rg] {
+    font-size: .9rem; 
+    font-weight: 600;
+}
+
+/* Social Icons */
+.footer-social-icons[b-fb81ado5rg] {
+    display: flex;
+    gap: 18px;
+    margin-top: 8px;
+}
+.footer-social-icons a[b-fb81ado5rg] {
+    color: #fff;
+    font-size: 1.4rem;
+    border: 1.5px solid #fff;
+    border-radius: 50%;
+    width: 38px;
+    height: 38px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s, color 0.2s;
+    text-decoration: none;
+}
+.footer-social-icons a:hover[b-fb81ado5rg] {
+    background: #fff;
+    color: #23336a;
+    text-decoration: none;
+}
+
+/* Footer Divider */
+.footer-divider[b-fb81ado5rg] {
+    border-left: 2px solid #3a4a7a;
+    height: 70px;
+    margin: 0px 40px 0px 700px;
+}
+
+/* Contact Email */
+.footer-contact-email[b-fb81ado5rg] {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    margin-top: 8px;
+    margin-right: 50px;
+    font-size: .80rem;
+}
+.footer-contact-email i[b-fb81ado5rg] {
+    font-size: 1rem;
+    margin-top: 4px;
+}
+
+/* Footer Bottom */
+.footer-bottom-row[b-fb81ado5rg] {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    padding: 18px 40px 12px 40px;
+    font-size: .8rem;
+    gap: 5px;
+}
+.footer-copyright[b-fb81ado5rg] {
+    align-items: center;
+    text-align: center;
+    padding: 0;
+    font-size: .8rem;
+    margin-top: 8px;
+}
+
+/* Footer Links */
+.footer-links[b-fb81ado5rg] {
+    display: flex;
+    gap: 0;
+    justify-content: center;
+    margin-bottom: 0;
+    align-items: center;
+}
+.footer-links a[b-fb81ado5rg] {
+    color: #fff;
+    text-decoration: none;
+    font-size: 0.85rem;
+    font-weight: 400;
+    padding: 0 16px;
+    position: relative;
+    transition: color 0.2s ease;
+}
+.footer-links a:not(:last-child)[b-fb81ado5rg]::after {
+    content: '|';
+    position: absolute;
+    right: 0;
+    color: rgba(255, 255, 255, 0.5);
+    font-weight: 300;
+}
+.footer-links a:hover[b-fb81ado5rg] {
+    color: #ffd700;
+    text-decoration: none;
+}
+
+/* Modal Close Button Styling */
+.modal-header .btn-close[b-fb81ado5rg] {
+    font-size: 0.875rem;
+    width: 1.2em;
+    height: 1.2em;
+    padding: 0.25em;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .nav-container[b-fb81ado5rg] {
+        flex-direction: column;
+        gap: 1rem;
+    }
+    
+    .nav-links-right[b-fb81ado5rg] {
+        display: flex;
+        gap: 1rem;
+        align-items: center;
+        /* Remove margin-left: auto; */
+    }
+    
+    .footer-main-row[b-fb81ado5rg], .footer-bottom-row[b-fb81ado5rg] {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 18px;
+        padding: 0 16px 16px 16px;
+    }
+    .footer-divider[b-fb81ado5rg] {
+        display: none;
+    }
+}
+/* _content/c2_eskolar/Components/Layout/StudentDashLayout.razor.rz.scp.css */
+/* Main content area beside the sidebar */
+.main-content[b-4iixbxgps0] {
+    margin-left: 260px;
+    transition: margin-left 0.2s;
+    position: relative;
+    z-index: 1;
+    background: #f5f6fa; 
+    min-height: 100vh; 
+    padding: 0 24px;   
+}
+
+/* Sidebar links (menu items) */
+.sidebar-link[b-4iixbxgps0] {
+    color: #fff !important;
+    border-radius: 6px;
+    padding: 0.55rem 0.9rem;
+    transition: background 0.18s, color 0.18s;
+    font-size: 1.07rem;
+    font-weight: 500;
+}
+
+/* Hover & active state for sidebar links */
+.sidebar-link:hover[b-4iixbxgps0], .sidebar-link.active[b-4iixbxgps0] {
+    background: rgba(255,255,255,0.18);
+    color: #ffe066 !important;
+    text-decoration: none;
+}
+
+/* Icons inside sidebar nav links */
+.sidebar .nav-link i[b-4iixbxgps0] {
+    font-size: 1.15rem;
+}
+
+/* Sidebar container */
+.sidebar[b-4iixbxgps0] {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    min-height: 100vh;
+    width: 260px;
+    z-index: 1200;
+}
+
+/* Brand/logo text inside sidebar */
+.eskolar-brand[b-4iixbxgps0] {
+    letter-spacing: 1px;
+    font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+    color: #000000;
+    font-weight: bold;
+    font-size: 1.5rem;
+    text-align: center;
+    margin-top: 8px;
+}
+
+/* Space below brand area */
+.sidebar-brand-container[b-4iixbxgps0] {
+    margin-bottom: 34px; 
+}
+
+.eskolar-logo-img[b-4iixbxgps0] {
+    width: 120px;
+    height: auto;
+    transition: filter 0.2s;
+}
+
+.eskolar-logo:hover .eskolar-logo-img[b-4iixbxgps0] {
+    content: url('/images/main/eSkolar-Yellow.svg');
+    filter: drop-shadow(0 0 6px #ffe066);
+}
+
+/* Responsive styles for smaller screens */
+@media (max-width: 900px) {
+    .help-box[b-4iixbxgps0] {
+        width: 100vw !important;
+        left: 0 !important;
+    }
+    .sidebar[b-4iixbxgps0] {
+        width: 100vw !important;
+        min-width: 0;
+        left: 0;
+    }
+    .main-content[b-4iixbxgps0] {
+        margin-left: 0;
+        padding: 0 8px;
+    }
+}
+/* _content/c2_eskolar/Components/Pages/Authentication/Faqs.razor.rz.scp.css */
+/* FAQs Section */
+
+/* Container for FAQ section */
+.faq-container[b-ylnada46xz] {
+    display: flex;
+    align-items: flex-start;
+    justify-content: flex-start;
+    max-width: 1400px;
+    margin: 60px auto 0 auto;
+    padding: 0 32px;
+    gap: 64px;
+}
+
+/* Left column with title and contact info */
+.faq-left[b-ylnada46xz] {
+    flex: 1 1 40%;
+    min-width: 320px;
+    max-width: 480px;
+}
+
+/* FAQ section main title */
+.faq-title[b-ylnada46xz] {
+    font-size: 3rem;
+    font-weight: 800;
+    margin-bottom: 32px;
+    line-height: 1.1;
+}
+
+/* Short description under the title */
+.faq-desc[b-ylnada46xz] {
+    color: #555;
+    font-size: 1.1rem;
+    margin-bottom: 32px;
+}
+
+/* Block holding contact label, text, and image */
+.faq-contact-block[b-ylnada46xz] {
+    margin-top: 32px;
+}
+
+/* Gray small label before contact message */
+.faq-contact-label[b-ylnada46xz] {
+    color: #888;
+    font-size: 1rem;
+    margin-bottom: 4px;
+}
+
+/* Contact message text */
+.faq-contact-desc[b-ylnada46xz] {
+    font-size: 1.25rem;
+    font-weight: 500;
+    margin-bottom: 16px;
+}
+
+/* Contact image (logo/chat icon) */
+.faq-contact-img[b-ylnada46xz] {
+    width: 90px;
+    height: 90px;
+    margin-top: 8px;
+    border-radius: 18px;
+    box-shadow: 0 2px 12px 0 rgba(0,0,0,0.04);
+}
+
+/* Right column containing accordion */
+.faq-right[b-ylnada46xz] {
+    flex: 1 1 60%;
+    min-width: 340px;
+    max-width: 700px;
+}
+
+/* Accordion item styles */
+.faq-accordion .accordion-item[b-ylnada46xz] {
+    border: none;
+    border-bottom: 1px solid #e0e0e0;
+    border-radius: 0 !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    margin-bottom: 0;
+}
+
+/* Remove bottom border for last item */
+.faq-accordion .accordion-item:last-child[b-ylnada46xz] {
+    border-bottom: none;
+}
+
+/* Accordion header (button container) */
+.faq-accordion .accordion-header[b-ylnada46xz] {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+}
+
+/* Accordion button (FAQ question) */
+.faq-accordion .accordion-button[b-ylnada46xz] {
+    background: transparent !important;
+    box-shadow: none !important;
+    border: none !important;
+    padding: 28px 0 28px 0 !important;
+    font-size: 1.18rem;
+    font-weight: 700;
+    color: #181818;
+    text-align: left;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    transition: background 0.2s;
+    gap: 12px;
+}
+
+/* Active accordion button (opened) */
+.faq-accordion .accordion-button:not(.collapsed)[b-ylnada46xz] {
+    background: transparent !important;
+    color: #181818;
+}
+
+/* Remove blue outline when focused */
+.faq-accordion .accordion-button:focus[b-ylnada46xz] {
+    box-shadow: none !important;
+}
+
+/* Hide Bootstrap’s default chevron */
+.faq-accordion .accordion-button[b-ylnada46xz]::after {
+    display: none; 
+}
+
+/* Custom chevron (SVG) wrapper */
+.faq-accordion .faq-v-icon[b-ylnada46xz] {
+    margin-left: 18px;
+    display: flex;
+    align-items: center;
+    font-size: 2rem;
+    transition: transform 0.3s cubic-bezier(0.4,0,0.2,1);
+}
+
+/* Rotate chevron when open */
+.faq-accordion .accordion-button:not(.collapsed) .faq-v-icon[b-ylnada46xz] {
+    transform: rotate(180deg);
+}
+
+/* Accordion answer text */
+.faq-accordion .accordion-body[b-ylnada46xz] {
+    background: transparent !important;
+    padding: 0 0 24px 0 !important;
+    font-size: 1.05rem;
+    color: #222;
+    line-height: 1.6;
+    margin: 0;
+}
+/* _content/c2_eskolar/Components/Pages/Authentication/Forgotpassword.razor.rz.scp.css */
+/* Center the card vertically */
+.forgot-container[b-5qboo55pin] {
+    min-height: 80vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* Limit card width */
+.forgot-card[b-5qboo55pin] {
+    max-width: 400px;
+    width: 100%;
+}
+/* _content/c2_eskolar/Components/Pages/Authentication/Home.razor.rz.scp.css */
+/* Hero section wrapper */
+.hero-section[b-oecun02nxy] {
+    width: 100%;
+    min-height: 80vh;
+    padding: 1rem 1rem;
+    background: #fff;
+    color: #222;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start; 
+    justify-content: center;
+}
+
+/* Logo container */
+.hero-logo[b-oecun02nxy] {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    margin-bottom: 0.5rem; 
+}
+
+/* Hero logo image */
+.hero-logo img[b-oecun02nxy] {
+    max-width: 600px;    
+    height: auto;
+    display: block;
+    margin: 0 auto 1rem auto;
+    transition: transform 0.3s ease, filter 0.3s ease;
+    cursor: pointer;
+}
+
+/* Logo hover effect */
+.hero-logo img:hover[b-oecun02nxy] {
+    transform: scale(1.05) rotate(2deg);
+    filter: drop-shadow(0 10px 20px rgba(0,0,0,0.15));
+}
+
+/* Text/content beside logo */
+.hero-content[b-oecun02nxy] {
+    width: 950px;            
+    margin-left: 90px;         
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    text-align: left;
+    margin-top: 0rem; 
+    margin-bottom: 3rem;
+}
+
+/* Main hero title */
+.hero-title[b-oecun02nxy] {
+    font-size: 4rem;
+    font-weight: 700;   
+    margin-bottom: 1.5rem;
+    line-height: 1.1;
+    color: #111;
+    text-align: left;
+    font-family: 'Inter', 'Helvetica Neue', Helvetica, Arial, sans-serif; 
+}
+
+/* Subtitle under title */
+.hero-subtitle[b-oecun02nxy] {
+    font-size: 1.35rem;
+    margin-bottom: 2.5rem;
+    color: #444;
+    font-weight: 700;    
+    opacity: 1;
+    text-align: left;
+    font-family: 'Inter', 'Helvetica Neue', Helvetica, Arial, sans-serif; 
+}
+
+/* Button container */
+.hero-buttons[b-oecun02nxy] {
+    display: flex;
+    gap: 1rem;
+}
+
+/* Generic button styles */
+.hero-buttons .btn[b-oecun02nxy] {
+    padding: 10px 28px;
+    font-weight: 500;
+    border-radius: 8px;
+    font-size: 1rem;
+    box-shadow: none;
+}
+
+/* Primary button style */
+.hero-buttons .btn-primary[b-oecun02nxy] {
+    background: #1666c1;
+    color: #fff;
+    border: none;
+}
+
+/* Primary button hover */
+.hero-buttons .btn-primary:hover[b-oecun02nxy] {
+    background: #004ea2;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+    .hero-section[b-oecun02nxy] {
+        padding: 2rem 1rem;
+        min-height: 60vh;
+    }
+    .hero-content[b-oecun02nxy] {
+        align-items: flex-start;
+    }
+    .hero-title[b-oecun02nxy] {
+        font-size: 2rem;
+    }
+    .hero-logo img[b-oecun02nxy] {
+        max-width: 120px;
+    }
+}
+
+/* Features section wrapper */
+.features-section[b-oecun02nxy] {
+    position: relative;
+    padding: 5rem 0;
+    background: linear-gradient(180deg, #0157C8 20%, #223167 100%);
+    z-index: 1;
+    overflow: hidden;
+}
+
+/* Background SVG overlay */
+.features-section[b-oecun02nxy]::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: url('/images/main/LineBackground.svg') center center no-repeat;
+    background-size: 110% auto;
+    opacity: 0.5; /* Adjust this value for SVG transparency */
+    z-index: 0;
+    pointer-events: none;
+    animation: subtleFloat-b-oecun02nxy 8s ease-in-out infinite;
+}
+
+/* Subtle floating animation for svg */
+@keyframes subtleFloat-b-oecun02nxy {
+    0%, 100% {
+        transform: translateY(0) scale(1);
+        opacity: 0.5;
+    }
+    50% {
+        transform: translateY(-3px) scale(1.005);
+        opacity: 0.6;
+    }
+}
+
+/* Section title styling */
+.section-title[b-oecun02nxy] {
+    text-align: center;
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+    color: #eeeeee;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+/* Grid layout for features */
+.features-grid[b-oecun02nxy] {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 2rem;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+/* First feature card */
+.feature-card1[b-oecun02nxy] {
+    background: rgba(255, 255, 255, 0.1); 
+    padding: 1rem;
+    border-radius: 15px;
+    text-align: center;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+    transition: transform 0.3s ease, box-shadow 0.3s ease, background 0.3s ease;
+    cursor: pointer;
+}
+
+/* Hover effect for card1 */
+.feature-card1:hover[b-oecun02nxy] {
+    transform: translateY(-8px) scale(1.02);
+    box-shadow: 0 15px 40px rgba(0,0,0,0.2);
+    background: rgba(255, 255, 255, 0.15);
+}
+
+/* Second feature card */
+.feature-card2[b-oecun02nxy] {
+    background: rgba(255, 255, 255, 0.1); 
+    padding: 1rem;
+    border-radius: 15px;
+    text-align: center;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+    transition: transform 0.3s ease, box-shadow 0.3s ease, background 0.3s ease;
+    cursor: pointer;
+}
+
+/* Hover effect for card2 */
+.feature-card2:hover[b-oecun02nxy] {
+    transform: translateY(-8px) scale(1.02);
+    box-shadow: 0 15px 40px rgba(0,0,0,0.2);
+    background: rgba(255, 255, 255, 0.15);
+}
+
+/* Icon inside feature cards */
+.feature-icon[b-oecun02nxy] {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    transition: transform 0.3s ease;
+}
+
+/* Icon hover animation */
+.feature-card2:hover .feature-icon[b-oecun02nxy] {
+    transform: scale(1.1) rotate(5deg);
+}
+
+/* Card1 paragraph text */
+.feature-card1 p[b-oecun02nxy] {
+    color: #f2f2f2;
+    line-height: 1.6;
+}
+
+/* Card2 paragraph text */
+.feature-card2 p[b-oecun02nxy] {
+    color: #f2f2f2;
+    line-height: 1.6;
+}
+
+.container2[b-oecun02nxy] {
+    margin-top: 4rem; /* Adds space above container2 */
+}
+
+/* Generic container wrapper */
+.container[b-oecun02nxy] {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 1rem;
+}
+/* _content/c2_eskolar/Components/Pages/Authentication/Login.razor.rz.scp.css */
+/* Error message box styling */
+.login-error[b-c6bo0ob1pu] {
+    color: red;
+    margin-bottom: 10px;
+    padding: 8px;
+    background: #ffebee;
+    border-radius: 4px;
+}
+
+/* Success message box styling */
+.login-success[b-c6bo0ob1pu] {
+    color: green;
+    margin-bottom: 10px;
+    padding: 8px;
+    background: #e8f5e8;
+    border-radius: 4px;
+}
+
+/* Checkbox + label wrapper */
+.login-checkbox-label[b-c6bo0ob1pu] {
+    display: flex;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+/* Space between checkbox and label text */
+.login-checkbox-label input[type="checkbox"][b-c6bo0ob1pu] {
+    margin-right: 8px;
+}
+
+/* Centered login container */
+.login-container[b-c6bo0ob1pu] {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 80vh;
+    padding: 1rem 0;
+    margin: 2rem 0;
+}
+
+/* Main login card layout */
+.login-card[b-c6bo0ob1pu] {
+    display: flex;
+    width: 900px;
+    background: transparent;
+    border-radius: 20px;
+    box-shadow: none;
+    overflow: visible;
+}
+
+/* Left section with gradient */
+.login-left[b-c6bo0ob1pu] {
+    flex: 1;
+    background: linear-gradient(135deg, #1670e3 0%, #182b4d 100%);
+    color: #fff;
+    padding: 48px 36px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    border-radius: 20px 0 0 20px;
+    box-shadow: 0 4px 18px rgba(0,0,0,0.08);
+}
+
+/* Left section heading */
+.login-left h2[b-c6bo0ob1pu] {
+    font-size: 2.2rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+    color: #fff;
+}
+
+/* Logo image styling */
+.login-logo[b-c6bo0ob1pu] {
+    width: 250px;
+    height: auto;
+    margin-bottom: 2rem;
+}
+
+/* Right section (form) */
+.login-right[b-c6bo0ob1pu] {
+    flex: 1;
+    padding: 48px 36px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    background: #fff;
+    border-radius: 0 20px 20px 0;
+    box-shadow: 0 4px 18px rgba(0,0,0,0.08);
+}
+
+/* Right section heading */
+.login-right h3[b-c6bo0ob1pu] {
+    font-size: 1.3rem;
+    font-weight: 700;
+    margin-bottom: 1.5rem;
+    text-align: center;
+    color: #222;
+}
+
+/* Input fields */
+.login-input[b-c6bo0ob1pu] {
+    width: 100%;
+    padding: 0.8rem 1rem;
+    margin-bottom: 1rem;
+    border: 1.5px solid #d1d5db;
+    border-radius: 7px;
+    font-size: 1rem;
+    outline: none;
+    transition: border 0.2s;
+    background: #f9f9f9;
+}
+
+/* Input focus effect */
+.login-input:focus[b-c6bo0ob1pu] {
+    border-color: #1670e3;
+    background: #fff;
+}
+
+/* Login button */
+.login-btn[b-c6bo0ob1pu] {
+    width: 100%;
+    padding: 0.7rem 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+    border-radius: 7px;
+    margin-bottom: 0.5rem;
+    background: #1670e3;
+    border: none;
+    color: #fff;
+    transition: background 0.2s;
+    text-align: center;
+}
+
+/* Button hover effect */
+.login-btn:hover[b-c6bo0ob1pu] {
+    background: #125bb5;
+}
+
+/* Forgot password wrapper */
+.forgot-password[b-c6bo0ob1pu] {
+    text-align: right;
+    margin-bottom: 1.5rem;
+}
+
+/* Forgot password link */
+.forgot-link[b-c6bo0ob1pu] {
+    color: #3b82f6;
+    text-decoration: none;
+    font-size: 0.9rem;
+}
+
+/* Forgot link hover effect */
+.forgot-link:hover[b-c6bo0ob1pu] {
+    text-decoration: underline;
+}
+/* _content/c2_eskolar/Components/Pages/Authentication/Partners.razor.rz.scp.css */
+/* 'Contact us' link in footer */
+.partner-contact-link[b-7fy654rmb5] {
+    color: inherit;
+    text-decoration: none;
+}
+
+/* Partner logo image */
+.partner-logo-img[b-7fy654rmb5] {
+    width: 60px;
+    height: 60px;
+    object-fit: contain;
+    display: block;
+}
+
+/* Placeholder rectangle (SVG fallback) */
+.partner-logo-rect[b-7fy654rmb5] {
+    fill: #E0E0E0;
+}
+
+/* Placeholder text (SVG fallback) */
+.partner-logo-text[b-7fy654rmb5] {
+    font-family: Arial, sans-serif;
+    font-size: 8px;
+    text-anchor: middle;
+    fill: #666;
+}
+
+/* Partners page container */
+.partners-page[b-7fy654rmb5] {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 40px 16px 0 16px;
+    text-align: center;
+}
+
+/* Main title */
+.partners-title[b-7fy654rmb5] {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    margin: 32px 0 8px 0;
+    letter-spacing: -1px;
+}
+
+/* Subtitle text */
+.partners-subtitle[b-7fy654rmb5] {
+    font-size: 1.15rem;
+    color: #444;
+    margin-bottom: 2.5rem;
+}
+
+/* Grid layout for partner cards */
+.partners-grid[b-7fy654rmb5] {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 32px 24px;
+    justify-items: center;
+    margin-bottom: 2.5rem;
+}
+
+/* Logo container box */
+.partner-logo[b-7fy654rmb5] {
+    width: 64px;
+    height: 64px;
+    background: #f5f6fa;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 22px;
+    flex-shrink: 0;
+    margin-bottom: 10px;
+}
+
+/* Partner card container */
+.partner-card[b-7fy654rmb5] {
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 4px 18px 0 rgba(0,0,0,0.08);
+    padding: 18px 24px;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    min-width: 0;
+    min-height: 90px;
+    max-width: 340px;
+    width: 100%;
+    margin: 0 auto;
+    transition: box-shadow 0.18s, transform 0.18s;
+}
+
+/* Partner card hover effect */
+.partner-card:hover[b-7fy654rmb5] {
+    box-shadow: 0 8px 32px rgba(0,0,0,0.13);
+    transform: translateY(-2px) scale(1.02);
+}
+
+/* Partner name text */
+.partner-name[b-7fy654rmb5] {
+    font-weight: 700;
+    color: #222;
+    font-size: 1.13rem;
+    text-align: left;
+    flex: 1;
+    word-break: break-word;
+}
+
+/* Footer text */
+.partners-footer[b-7fy654rmb5] {
+    margin-top: 18px;
+    font-size: 1rem;
+    color: #222;
+    padding-bottom: 20px;
+}
+
+/* Bold text in footer */
+.partners-footer b[b-7fy654rmb5] {
+    font-weight: 600;
+}
+
+/* Footer link */
+.partners-footer b a[b-7fy654rmb5] {
+    cursor: pointer;
+    transition: transform 0.3s ease, color 0.3s ease;
+    display: inline-block;
+}
+
+/* Footer link hover effect */
+.partners-footer b a:hover[b-7fy654rmb5] {
+    transform: scale(1.1);
+    color: #1666c1 !important;
+    text-decoration: none;
+}
+
+/* Responsive breakpoints */
+
+/* 4 → 3 columns */
+@media (max-width: 1100px) {
+    .partners-grid[b-7fy654rmb5] {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+/* 3 → 2 columns + narrower cards */
+@media (max-width: 1000px) {
+    .partners-grid[b-7fy654rmb5] {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    .partner-card[b-7fy654rmb5] {
+        width: 90%;
+    }
+}
+
+/* Keep 2 columns on smaller screens */
+@media (max-width: 800px) {
+    .partners-grid[b-7fy654rmb5] {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+/* Single column grid + smaller card width */
+@media (max-width: 700px) {
+    .partners-grid[b-7fy654rmb5] {
+        grid-template-columns: 1fr;
+    }
+    .dashboard-partners-page[b-7fy654rmb5] {
+        padding: 18px 0 0 0;
+    }
+    .partner-card[b-7fy654rmb5] {
+        max-width: 98vw;
+    }
+}
+
+/* Single column grid + reduced padding */
+@media (max-width: 600px) {
+    .partners-grid[b-7fy654rmb5] {
+        grid-template-columns: 1fr;
+    }
+    .partners-page[b-7fy654rmb5] {
+        padding: 0 8px 24px 8px;
+    }
+}
+
+/* Smallest screens → full-width cards */
+@media (max-width: 500px) {
+    .partners-grid[b-7fy654rmb5] {
+        grid-template-columns: 1fr;
+    }
+    .partner-card[b-7fy654rmb5] {
+        min-width: 0;
+        width: 100%;
+    }
+}
+/* _content/c2_eskolar/Components/Pages/Authentication/Signup.razor.rz.scp.css */
+/* Error message box */
+.signup-error[b-c3icz7e5oa] {
+    color: red;
+    margin-bottom: 10px;
+    padding: 8px;
+    background: #ffebee;
+    border-radius: 4px;
+}
+
+/* Success message box */
+.signup-success[b-c3icz7e5oa] {
+    color: green;
+    margin-bottom: 10px;
+    padding: 8px;
+    background: #e8f5e8;
+    border-radius: 4px;
+}
+
+/* Signup container (centered layout) */
+.signup-container[b-c3icz7e5oa] {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 80vh;
+    padding: 1rem 0;          /* Add vertical padding */
+    margin: 2rem 0;           /* Add vertical margin */
+}
+
+/* Signup card wrapper */
+.signup-card[b-c3icz7e5oa] {
+    display: flex;
+    width: 900px;
+    background: transparent;
+    border-radius: 20px;
+    box-shadow: none;
+    overflow: visible;
+}
+
+/* Left section with gradient */
+.signup-left[b-c3icz7e5oa] {
+    flex: 1;
+    background: linear-gradient(135deg, #1670e3 0%, #182b4d 100%);
+    color: #fff;
+    padding: 48px 36px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    border-radius: 20px 0 0 20px;
+    box-shadow: 0 4px 18px rgba(0,0,0,0.08);
+}
+
+/* Heading inside left section */
+.signup-left h2[b-c3icz7e5oa] {
+    font-size: 2.2rem;
+    font-weight: 700;
+    margin-bottom: 2.5rem;
+    text-align: center;
+}
+
+/* Label above role options */
+.role-label[b-c3icz7e5oa] {
+    font-size: 1.2rem;
+    margin-bottom: 1.5rem;
+    text-align: center;
+    font-weight: 500;
+}
+
+/* Role options container */
+.role-options[b-c3icz7e5oa] {
+    display: flex;
+    flex-direction: column;
+    gap: 1.2rem;
+    align-items: center;
+}
+
+
+/* Individual role option card */
+.role-option[b-c3icz7e5oa] {
+    background: #fff;
+    color: #222;
+    border-radius: 10px;
+    padding: 0.7rem 2.5rem;
+    display: flex;
+    align-items: center;
+    font-size: 1.15rem;
+    font-weight: 500;
+    box-shadow: 0 2px 8px rgba(30,58,138,0.07);
+    cursor: pointer;
+    min-width: 240px;
+    border: 2px solid transparent;
+    transition: border 0.2s;
+}
+
+/* Radio button styling */
+.role-option input[type="radio"][b-c3icz7e5oa] {
+    accent-color: #1670e3;
+    margin-right: 1rem;
+    width: 1.2em;
+    height: 1.2em;
+}
+
+/* Highlight selected role */
+.role-option:has(input[type="radio"]:checked)[b-c3icz7e5oa] {
+    border: 2px solid #1670e3;
+}
+
+/* Right section with form */
+.signup-right[b-c3icz7e5oa] {
+    flex: 1;
+    padding: 48px 36px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    background: #fff;
+    border-radius: 0 20px 20px 0;
+    box-shadow: 0 4px 18px rgba(0,0,0,0.08);
+}
+
+/* Heading inside right section */
+.signup-right h3[b-c3icz7e5oa] {
+    font-size: 1.3rem;
+    font-weight: 700;
+    margin-bottom: 1.5rem;
+    text-align: center;
+    color: #222;
+}
+
+/* Input fields */
+.signup-input[b-c3icz7e5oa] {
+    width: 100%;
+    padding: 0.8rem 1rem;
+    margin-bottom: 1rem;
+    border: 1.5px solid #d1d5db;
+    border-radius: 7px;
+    font-size: 1rem;
+    outline: none;
+    transition: border 0.2s;
+    background: #f9f9f9;
+}
+
+/* Input focus effect */
+.signup-input:focus[b-c3icz7e5oa] {
+    border-color: #1670e3;
+    background: #fff;
+}
+
+/* Extra padding for password wrapper */
+.password-wrapper .signup-input[b-c3icz7e5oa] {
+    padding-right: 45px !important;
+}
+
+/* Inputs with space for icon */
+.signup-input[type="password"][b-c3icz7e5oa], .signup-input[type="text"][b-c3icz7e5oa] {
+    padding-right: 48px; /* space for the icon */
+}
+
+/* Terms and conditions label */
+.terms-label[b-c3icz7e5oa] {
+    display: flex;
+    align-items: center;
+    justify-content: center;    /* Centers horizontally */
+    font-size: 0.98rem;
+    color: #444;
+    margin-bottom: 1.2rem;
+    gap: 0.5rem;
+}
+
+/* Signup button */
+.signup-btn[b-c3icz7e5oa] {
+    width: 100%;
+    padding: 0.7rem 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+    border-radius: 7px;
+    margin-bottom: 0.5rem;        /* Reduced from 1.2rem to 0.8rem */
+    background: #1670e3;
+    border: none;
+    color: #fff;
+    transition: background 0.2s;
+}
+
+/* Signup button hover effect */
+.signup-btn:hover[b-c3icz7e5oa] {
+    background: #125bb5;
+}
+
+/* Divider line with text */
+.divider[b-c3icz7e5oa] {
+    display: flex;
+    align-items: center;
+    text-align: center;
+    margin: 0.5rem 0;             /* Reduced from 1.2rem to 0.8rem */
+    color: #888;
+    font-size: 1rem;
+}
+
+/* Divider line style */
+.divider[b-c3icz7e5oa]::before,
+.divider[b-c3icz7e5oa]::after {
+    content: '';
+    flex: 1;
+    border-bottom: 1.5px solid #e5e7eb;
+    margin: 0 0.7em;
+}
+
+/* signup button for other email */
+.btn-google[b-c3icz7e5oa] {
+    width: 100%;
+    background: #1670e3;
+    color: #fff;
+    border: none;
+    font-weight: 600;
+    border-radius: 7px;
+    padding: 0.7rem 0;
+    font-size: 1.1rem;
+    transition: background 0.2s, color 0.2s;
+    margin-top: 0.1rem;           /* Reduced from 0.5rem to 0.2rem */
+}
+/* hover effect */
+.btn-google:hover[b-c3icz7e5oa] {
+    background: #125bb5;
+    color: #fff;
+}
+/* _content/c2_eskolar/Components/Pages/Benefactor/BenefactorAnnouncement.razor.rz.scp.css */
+.announcement-container[b-kw0zki8wn6] {
+    padding: 2rem;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.header-section[b-kw0zki8wn6] {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.page-title[b-kw0zki8wn6] {
+    color: #2c3e50;
+    font-weight: 600;
+    margin: 0;
+    font-size: 2rem;
+}
+
+.loading-spinner[b-kw0zki8wn6] {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 200px;
+}
+
+.announcements-grid[b-kw0zki8wn6] {
+    display: grid;
+    gap: 1.5rem;
+    grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+}
+
+.announcement-card[b-kw0zki8wn6] {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    border: 1px solid #e1e5e9;
+    transition: all 0.3s ease;
+    overflow: hidden;
+}
+
+.announcement-card:hover[b-kw0zki8wn6] {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+}
+
+.announcement-card.pinned[b-kw0zki8wn6] {
+    border-left: 4px solid #ffc107;
+    background: linear-gradient(135deg, #fff9e6 0%, #ffffff 100%);
+}
+
+.card-header[b-kw0zki8wn6] {
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid #e9ecef;
+    background: #f8f9fa;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.announcement-meta[b-kw0zki8wn6] {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.date-created[b-kw0zki8wn6] {
+    font-size: 0.875rem;
+    color: #6c757d;
+    font-weight: 500;
+}
+
+.action-buttons[b-kw0zki8wn6] {
+    display: flex;
+    gap: 0.25rem;
+}
+
+.action-buttons .btn[b-kw0zki8wn6] {
+    padding: 0.25rem 0.5rem;
+    border-radius: 6px;
+}
+
+.card-body[b-kw0zki8wn6] {
+    padding: 1.25rem;
+}
+
+.announcement-title[b-kw0zki8wn6] {
+    color: #2c3e50;
+    font-weight: 600;
+    margin-bottom: 0.75rem;
+    font-size: 1.25rem;
+    line-height: 1.4;
+}
+
+.announcement-content[b-kw0zki8wn6] {
+    color: #495057;
+    margin-bottom: 1rem;
+    line-height: 1.6;
+    display: -webkit-box;
+    -webkit-line-clamp: 4;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.empty-state[b-kw0zki8wn6] {
+    text-align: center;
+    padding: 4rem 2rem;
+    color: #6c757d;
+}
+
+.empty-icon[b-kw0zki8wn6] {
+    font-size: 4rem;
+    color: #dee2e6;
+    margin-bottom: 1.5rem;
+}
+
+.empty-state h3[b-kw0zki8wn6] {
+    color: #495057;
+    margin-bottom: 1rem;
+}
+
+.empty-state p[b-kw0zki8wn6] {
+    font-size: 1.1rem;
+    margin-bottom: 2rem;
+}
+
+/* Modal Styles */
+.modal-content[b-kw0zki8wn6] {
+    border: none;
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+
+.modal-header[b-kw0zki8wn6] {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 12px 12px 0 0;
+    border-bottom: none;
+}
+
+.modal-title[b-kw0zki8wn6] {
+    font-weight: 600;
+}
+
+.btn-close[b-kw0zki8wn6] {
+    filter: brightness(0) invert(1);
+}
+
+.modal-body[b-kw0zki8wn6] {
+    padding: 2rem;
+}
+
+.form-label[b-kw0zki8wn6] {
+    font-weight: 600;
+    color: #495057;
+    margin-bottom: 0.5rem;
+}
+
+.form-control[b-kw0zki8wn6], .form-select[b-kw0zki8wn6] {
+    border-radius: 8px;
+    border: 1px solid #ced4da;
+    padding: 0.75rem;
+    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.form-control:focus[b-kw0zki8wn6], .form-select:focus[b-kw0zki8wn6] {
+    border-color: #667eea;
+    box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+}
+
+.form-check-input:checked[b-kw0zki8wn6] {
+    background-color: #667eea;
+    border-color: #667eea;
+}
+
+.modal-footer[b-kw0zki8wn6] {
+    padding: 1.5rem 2rem;
+    border-top: 1px solid #e9ecef;
+}
+
+/* Badge Styles */
+.badge[b-kw0zki8wn6] {
+    font-size: 0.75rem;
+    font-weight: 500;
+    padding: 0.375rem 0.75rem;
+    border-radius: 6px;
+}
+
+.badge.bg-warning[b-kw0zki8wn6] {
+    color: #856404 !important;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .announcement-container[b-kw0zki8wn6] {
+        padding: 1rem;
+    }
+    
+    .header-section[b-kw0zki8wn6] {
+        flex-direction: column;
+        align-items: stretch;
+        text-align: center;
+    }
+    
+    .page-title[b-kw0zki8wn6] {
+        font-size: 1.75rem;
+    }
+    
+    .announcements-grid[b-kw0zki8wn6] {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+    
+    .card-header[b-kw0zki8wn6] {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 1rem;
+    }
+    
+    .announcement-meta[b-kw0zki8wn6] {
+        justify-content: center;
+    }
+    
+    .action-buttons[b-kw0zki8wn6] {
+        justify-content: center;
+    }
+    
+    .modal-dialog[b-kw0zki8wn6] {
+        margin: 1rem;
+    }
+    
+    .modal-body[b-kw0zki8wn6] {
+        padding: 1.5rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .announcement-container[b-kw0zki8wn6] {
+        padding: 0.75rem;
+    }
+    
+    .page-title[b-kw0zki8wn6] {
+        font-size: 1.5rem;
+    }
+    
+    .empty-state[b-kw0zki8wn6] {
+        padding: 2rem 1rem;
+    }
+    
+    .empty-icon[b-kw0zki8wn6] {
+        font-size: 3rem;
+    }
+    
+    .modal-body[b-kw0zki8wn6] {
+        padding: 1rem;
+    }
+    
+    .modal-footer[b-kw0zki8wn6] {
+        padding: 1rem;
+    }
+}
+
+/* Animation for loading */
+@keyframes fadeIn-b-kw0zki8wn6 {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.announcement-card[b-kw0zki8wn6] {
+    animation: fadeIn-b-kw0zki8wn6 0.5s ease-out;
+}
+
+/* Print styles */
+@media print {
+    .header-section button[b-kw0zki8wn6],
+    .action-buttons[b-kw0zki8wn6],
+    .modal[b-kw0zki8wn6] {
+        display: none !important;
+    }
+    
+    .announcement-card[b-kw0zki8wn6] {
+        box-shadow: none;
+        border: 1px solid #000;
+        margin-bottom: 1rem;
+        break-inside: avoid;
+    }
+}
+
+.cursor-pointer[b-kw0zki8wn6] {
+    cursor: pointer;
+}
+
+.announcement-details[b-kw0zki8wn6] {
+    animation: fadeIn-b-kw0zki8wn6 0.3s ease-in-out;
+}
+
+@keyframes fadeIn-b-kw0zki8wn6 {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+/* _content/c2_eskolar/Components/Pages/Student/StudentAbout.razor.rz.scp.css */
+.about-main-card[b-7iwse8e2t9] {
+    background-color: rgba(1, 75, 173, 0.85);
+    max-width: 700px;
+}
+
+.about-main-text[b-7iwse8e2t9] {
+    color: #fff;
+    text-align: justify;
+    width: 100%;
+    max-width: 600px;
+}
+
+.about-section-card[b-7iwse8e2t9] {
+    background-color: rgba(1, 75, 173, 0.85);
+}
+
+.about-section-icon[b-7iwse8e2t9] {
+    color: #fff;
+}
+
+.about-section-title[b-7iwse8e2t9] {
+    color: #fff;
+}
+
+.about-section-desc[b-7iwse8e2t9] {
+    color: #fff;
+    text-align: justify;
+}
+
+.about-main-card.rounded[b-7iwse8e2t9],
+.about-section-card.rounded[b-7iwse8e2t9] {
+    background-color: rgba(1, 75, 173, 0.85) !important;
+    color: #fff !important;
+    border: none !important;
+}
+
+.about-main-text[b-7iwse8e2t9],
+.about-section-title[b-7iwse8e2t9],
+.about-section-desc[b-7iwse8e2t9],
+.about-section-icon[b-7iwse8e2t9] {
+    color: #fff !important;
+    text-align: justify;
+}
+/* _content/c2_eskolar/Components/Pages/Student/StudentProfile.razor.rz.scp.css */
+.profile-upload-label[b-jieismjfy3] {
+    z-index: 2;
+}
+.profile-upload-icon[b-jieismjfy3] {
+    box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+    font-size: 1.2rem;
+    transition: background 0.2s;
+}
+.profile-upload-label:hover .profile-upload-icon[b-jieismjfy3] {
+    background: #0d6efd;
+}
+/* _content/c2_eskolar/Components/Pages/Student/StudentScholarships.razor.rz.scp.css */
+.search-icon[b-5pz4amlq0i] {
+    position: absolute;
+    right: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    pointer-events: none;
+}

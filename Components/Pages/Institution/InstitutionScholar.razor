@@ -2,6 +2,10 @@
 @attribute [Authorize(Roles = "Institution")] 
 @layout Layout.InstitutionDashLayout
 
+
+@inject c2_eskolar.Services.StudentProfileService StudentProfileService
+@inject c2_eskolar.Services.VerificationDocumentService VerificationDocumentService
+
 @code {
     public class StudentDocument
     {
@@ -14,7 +18,7 @@
 
     public class Student
     {
-        public int Id { get; set; }
+    public Guid Id { get; set; }
         public string Name { get; set; } = "";
         public string Email { get; set; } = "";
         public string Status { get; set; } = "";
@@ -23,69 +27,36 @@
         public List<StudentDocument> Documents { get; set; } = new List<StudentDocument>();
     }
 
-    private List<Student> students = new List<Student>
+    private List<Student> students = new List<Student>();
+
+    protected override async Task OnInitializedAsync()
     {
-        new Student 
-        { 
-            Id = 1, 
-            Name = "John Doe", 
-            Email = "john.doe@email.com", 
-            Status = "Active", 
-            GPA = "3.8", 
-            Year = "3rd Year",
-            Documents = new List<StudentDocument>
+        var profiles = await StudentProfileService.GetAllProfilesAsync();
+        students = new List<Student>();
+        foreach (var profile in profiles)
+        {
+            var docs = await VerificationDocumentService.GetDocumentsByUserIdAsync(profile.UserId);
+            var mappedDocs = docs.Select(d => new StudentDocument
             {
-                new StudentDocument { Name = "Transcript", DateUploaded = "01/15/2025", Status = "Approved", StatusClass = "text-success", FileType = "PDF" },
-                new StudentDocument { Name = "Essay", DateUploaded = "01/10/2025", Status = "Approved", StatusClass = "text-success", FileType = "DOCX" },
-                new StudentDocument { Name = "Recommendation Letter", DateUploaded = "01/08/2025", Status = "Pending Review", StatusClass = "text-warning", FileType = "PDF" }
-            }
-        },
-        new Student 
-        { 
-            Id = 2, 
-            Name = "Jane Smith", 
-            Email = "jane.smith@email.com", 
-            Status = "Active", 
-            GPA = "3.9", 
-            Year = "2nd Year",
-            Documents = new List<StudentDocument>
+                Name = d.DocumentType ?? "Document",
+                DateUploaded = d.UploadedAt?.ToString("MM/dd/yyyy") ?? "",
+                Status = d.Status ?? "Pending",
+                StatusClass = d.Status == "Approved" ? "text-success" : d.Status == "Pending" ? "text-warning" : d.Status == "Needs Revision" ? "text-danger" : "text-info",
+                FileType = d.FilePath?.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase) == true ? "PDF" : d.FilePath?.EndsWith(".docx", StringComparison.OrdinalIgnoreCase) == true ? "DOCX" : "Other"
+            }).ToList();
+
+            students.Add(new Student
             {
-                new StudentDocument { Name = "Academic Transcript", DateUploaded = "02/01/2025", Status = "Approved", StatusClass = "text-success", FileType = "PDF" },
-                new StudentDocument { Name = "Personal Statement", DateUploaded = "01/28/2025", Status = "Approved", StatusClass = "text-success", FileType = "DOCX" },
-                new StudentDocument { Name = "Financial Aid Form", DateUploaded = "01/25/2025", Status = "Needs Revision", StatusClass = "text-danger", FileType = "PDF" }
-            }
-        },
-        new Student 
-        { 
-            Id = 3, 
-            Name = "Michael Johnson", 
-            Email = "m.johnson@email.com", 
-            Status = "Probation", 
-            GPA = "3.2", 
-            Year = "4th Year",
-            Documents = new List<StudentDocument>
-            {
-                new StudentDocument { Name = "Grade Report", DateUploaded = "03/01/2025", Status = "Under Review", StatusClass = "text-info", FileType = "PDF" },
-                new StudentDocument { Name = "Community Service Record", DateUploaded = "02/28/2025", Status = "Approved", StatusClass = "text-success", FileType = "PDF" }
-            }
-        },
-        new Student 
-        { 
-            Id = 4, 
-            Name = "Sarah Williams", 
-            Email = "sarah.w@email.com", 
-            Status = "Active", 
-            GPA = "4.0", 
-            Year = "1st Year",
-            Documents = new List<StudentDocument>
-            {
-                new StudentDocument { Name = "High School Transcript", DateUploaded = "06/15/2025", Status = "Approved", StatusClass = "text-success", FileType = "PDF" },
-                new StudentDocument { Name = "Acceptance Letter", DateUploaded = "06/10/2025", Status = "Approved", StatusClass = "text-success", FileType = "PDF" },
-                new StudentDocument { Name = "Scholarship Essay", DateUploaded = "06/05/2025", Status = "Approved", StatusClass = "text-success", FileType = "DOCX" },
-                new StudentDocument { Name = "Reference Letter", DateUploaded = "06/01/2025", Status = "Pending Review", StatusClass = "text-warning", FileType = "PDF" }
-            }
+                Id = profile.StudentProfileId,
+                Name = profile.FullName,
+                Email = profile.Email ?? "",
+                Status = profile.VerificationStatus ?? "Pending",
+                GPA = profile.GPA?.ToString("0.0") ?? "N/A",
+                Year = profile.YearLevel.HasValue ? $"{profile.YearLevel} Year" : "N/A",
+                Documents = mappedDocs
+            });
         }
-    };
+    }
 }
 
 <div class="container-fluid py-4" style="background: linear-gradient(135deg, #f8fbff 0%, #e3f2fd 100%); min-height: 100vh;">
@@ -191,15 +162,15 @@
                     <div class="card border-0 shadow-sm mb-3">
                         <div class="card-header bg-white border-0 p-0">
                             <h2 class="accordion-header" id="heading@(student.Id)">
-                                <button class="accordion-button @(student.Id == 1 ? "" : "collapsed") fw-semibold border-0 rounded" 
+                                <button class="accordion-button @(student.Id == Guid.Empty ? "" : "collapsed") fw-semibold border-0 rounded"
                                         type="button" data-bs-toggle="collapse" data-bs-target="#collapse@(student.Id)" 
-                                        aria-expanded="@(student.Id == 1 ? "true" : "false")" aria-controls="collapse@(student.Id)"
+                                        aria-expanded="@(student.Id == Guid.Empty ? "true" : "false")" aria-controls="collapse@(student.Id)"
                                         style="background: linear-gradient(135deg, #f8fbff 0%, #e8f4fd 100%); border-left: 4px solid #1976d2;">
                                     <div class="d-flex justify-content-between align-items-center w-100 me-3">
                                         <div class="d-flex align-items-center">
                                             <div class="me-3">
                                                 <div class="bg-primary rounded-circle d-flex align-items-center justify-content-center text-white fw-bold" style="width: 45px; height: 45px;">
-                                                    @student.Name.Substring(0, 1)
+                                                    @(string.IsNullOrWhiteSpace(student.Name) ? "?" : student.Name.Substring(0, 1))
                                                 </div>
                                             </div>
                                             <div>
@@ -224,7 +195,7 @@
                                 </button>
                             </h2>
                         </div>
-                        <div id="collapse@(student.Id)" class="accordion-collapse collapse @(student.Id == 1 ? "show" : "")" 
+                        <div id="collapse@(student.Id)" class="accordion-collapse collapse @(student.Id == Guid.Empty ? "show" : "")"
                              aria-labelledby="heading@(student.Id)" data-bs-parent="#scholarsAccordion">
                             <div class="card-body bg-light">
                                 <!-- Student Details -->
@@ -281,9 +252,14 @@
                                                     </div>
                                                     <div class="mt-3">
                                                         <div class="progress" style="height: 8px;">
-                                                            <div class="progress-bar bg-success" style="width: @(double.Parse(student.GPA) / 4.0 * 100)%"></div>
+                                                            @{
+                                                                double gpaValue = 0.0;
+                                                                var gpaParsed = double.TryParse(student.GPA, out gpaValue);
+                                                                var percent = gpaParsed ? (gpaValue / 4.0 * 100) : 0;
+                                                            }
+                                                            <div class="progress-bar bg-success" style="width: @percent%"></div>
                                                         </div>
-                                                        <small class="text-muted">Performance Rating: Excellent</small>
+                                                        <small class="text-muted">Performance Rating: @(gpaParsed ? "Excellent" : "N/A")</small>
                                                     </div>
                                                 </div>
                                             </div>
@@ -315,7 +291,8 @@
                                                         </tr>
                                                     </thead>
                                                     <tbody>
-                                                        @foreach (var doc in student.Documents.OrderByDescending(d => DateTime.Parse(d.DateUploaded)))
+                                                        @foreach (var doc in student.Documents.OrderByDescending(d =>
+    DateTime.TryParse(d.DateUploaded, out var dt) ? dt : DateTime.MinValue))
                                                         {
                                                             <tr class="border-bottom">
                                                                 <td class="border-0">

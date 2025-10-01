@@ -39,28 +39,20 @@
     private bool IsEditMode = false;
     private bool isLoading = true;
     private string FullName = "";
-    private string Username = "";
     private string Email = "";
     private string Phone = "";
-    private string Location = "";
     private string University = "";
+    private string YearLevel = "1st Year";
     private string StudentNumber = "";
     private string Program = "";
-    private string YearLevel = "1st Year";
     private string Status = "Active";
-    private string Role = "Student";
-    private string Bio = "";
     private DateTime CreatedDate = DateTime.Now;
     private string ProfilePicture = "https://via.placeholder.com/120";
     private bool EmailVerified = false;
     private bool PhoneVerified = false;
     private bool StudentIdVerified = false;
     private bool AcademicRecordsVerified = false;
-    private bool IsTwoFactorEnabled = false;
     private DateTime LastLogin = DateTime.Now;
-    private int ScholarshipsReceived = 0;
-    private int Applications = 0;
-    private string GPA = "0.00";
     private string FirstName = "";
     private string MiddleName = "";
     private string LastName = "";
@@ -125,6 +117,7 @@
             if (studentProfile == null)
             {
                 studentProfile = new Models.StudentProfile {
+                    StudentProfileId = Guid.NewGuid(),
                     UserId = userId,
                     FirstName = FirstName,
                     LastName = LastName

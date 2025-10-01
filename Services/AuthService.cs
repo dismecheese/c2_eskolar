@@ -10,15 +10,15 @@ namespace c2_eskolar.Services
     public class AuthService
     {
     // ASP.NET Identity managers for user operations and login handling
-    private readonly UserManager<ApplicationUser> _userManager;
-    private readonly SignInManager<ApplicationUser> _signInManager;
+    private readonly UserManager<IdentityUser> _userManager;
+    private readonly SignInManager<IdentityUser> _signInManager;
 
         // Database context for saving related user profile info
         private readonly ApplicationDbContext _context;
 
         // Constructor injects dependencies (DI for Identity + DbContext)
-    public AuthService(UserManager<ApplicationUser> userManager,
-               SignInManager<ApplicationUser> signInManager,
+    public AuthService(UserManager<IdentityUser> userManager,
+               SignInManager<IdentityUser> signInManager,
                            ApplicationDbContext context)
         {
             _userManager = userManager;
@@ -29,8 +29,8 @@ namespace c2_eskolar.Services
         // Register a new user and create profile based on selected role
         public async Task<IdentityResult> RegisterAsync(RegisterViewModel model)
         {
-            // Create new ApplicationUser object from registration info
-            var user = new ApplicationUser
+            // Create new IdentityUser object from registration info
+            var user = new IdentityUser
             {
                 UserName = model.Email,
                 Email = model.Email
@@ -106,14 +106,16 @@ namespace c2_eskolar.Services
         }
 
         // Create corresponding profile entry (Student, Benefactor, or Institution)
-        private async Task CreateUserProfileAsync(string userId, RegisterViewModel model)
+        private async Task CreateUserProfileAsync(string identityUserId, RegisterViewModel model)
         {
+
             switch (model.UserRole)
             {
                 case UserRole.Student:
                     _context.StudentProfiles.Add(new StudentProfile
                     {
-                        UserId = userId,
+                        StudentProfileId = Guid.NewGuid(),
+                        UserId = identityUserId,
                         FirstName = model.FirstName,
                         MiddleName = model.MiddleName,
                         LastName = model.LastName,
@@ -129,7 +131,8 @@ namespace c2_eskolar.Services
                 case UserRole.Benefactor:
                     _context.BenefactorProfiles.Add(new BenefactorProfile
                     {
-                        UserId = userId,
+                        BenefactorProfileId = Guid.NewGuid(),
+                        UserId = identityUserId,
                         AdminFirstName = model.FirstName,
                         AdminLastName = model.LastName,
                         OrganizationName = "To be updated"
@@ -139,7 +142,8 @@ namespace c2_eskolar.Services
                 case UserRole.Institution:
                     _context.InstitutionProfiles.Add(new InstitutionProfile
                     {
-                        UserId = userId,
+                        InstitutionProfileId = Guid.NewGuid(),
+                        UserId = identityUserId,
                         AdminFirstName = model.FirstName,
                         AdminLastName = model.LastName,
                         InstitutionName = "To be updated"
@@ -149,6 +153,18 @@ namespace c2_eskolar.Services
 
             // Commit profile changes to database
             await _context.SaveChangesAsync();
+        }
+        
+        // Helper method to get role ID based on UserRole enum
+        private int GetRoleId(UserRole userRole)
+        {
+            return userRole switch
+            {
+                UserRole.Student => 1,
+                UserRole.Benefactor => 2,
+                UserRole.Institution => 3,
+                _ => 1 // Default to Student
+            };
         }
     }
 }

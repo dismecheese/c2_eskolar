@@ -6,8 +6,8 @@ namespace c2_eskolar.Models
     // Represents announcements posted by institutions or benefactors
     public class Announcement
     {
-        // Primary key for the announcement
-        public int AnnouncementId { get; set; }
+    // Primary key for the announcement
+    public Guid AnnouncementId { get; set; }
 
          // Title of the announcement (required, max 200 characters)
         [Required]
@@ -58,11 +58,9 @@ namespace c2_eskolar.Models
         // Criteria for targeting specific audience (e.g., JSON array of course/department)
         public string? TargetAudience { get; set; } // JSON array of specific criteria
 
-        // MEDIA
-
-        // Optional image associated with the announcement
-        [StringLength(500)]
-        public string? ImageUrl { get; set; }
+    // MEDIA
+    // Multiple images/photos associated with the announcement
+    public ICollection<Photo> Photos { get; set; } = new List<Photo>();
 
         // Optional attachment link (e.g., PDF, document)
         [StringLength(500)]
@@ -76,8 +74,8 @@ namespace c2_eskolar.Models
         // Whether the announcement is pinned to the top
         public bool IsPinned { get; set; } = false;
 
-        // Creation timestamp
-        public DateTime CreatedAt { get; set; } = DateTime.Now;
+    // Creation timestamp
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
         // Last updated timestamp (nullable)
         public DateTime? UpdatedAt { get; set; }

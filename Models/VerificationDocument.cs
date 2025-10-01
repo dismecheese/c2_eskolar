@@ -1,5 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using System;
+using System.ComponentModel.DataAnnotations.Schema;
+using Microsoft.AspNetCore.Identity;
 
 namespace c2_eskolar.Models
 {
@@ -7,8 +9,8 @@ namespace c2_eskolar.Models
     {
         [Key]
         public int DocumentId { get; set; }
-        public int UserId { get; set; }
-        public User User { get; set; } = null!;
+    public string UserId { get; set; } = string.Empty;
+    // Removed navigation property to IdentityUser to prevent UserId1 shadow property
         [StringLength(100)]
         public string? DocumentType { get; set; }
         [StringLength(255)]

@@ -5,8 +5,9 @@ namespace c2_eskolar.Models
     // INSTITUTION PROFILE MODEL
     public class InstitutionProfile
     {
-        public int InstitutionProfileId { get; set; }
-        public required string UserId { get; set; } // Links to Identity User (admin account)
+    [Key]
+    public Guid InstitutionProfileId { get; set; }
+    public required string UserId { get; set; } // Links to IdentityUser
 
         // Admin Information (person managing this institution's account)
     [Required]

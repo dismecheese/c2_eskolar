@@ -1,6 +1,6 @@
 @page "/dashboard/student/scholarships/"
 @attribute [Authorize(Roles = "Student")]
-@layout Layout.InstitutionDashLayout
+@layout Layout.StudentDashLayout
 
 @using Microsoft.EntityFrameworkCore
 @using c2_eskolar.Data
@@ -18,6 +18,9 @@
             </h2>
             <p class="text-muted mb-0">View and manage your posted scholarships below.</p>
         </div>
+        <button class="btn btn-outline-primary" style="min-width: 220px;" @onclick="ViewApplicationSummary">
+            <i class="bi bi-list-ul me-1"></i> View Application Summary
+        </button>
     </div>
 
     @if (scholarships is null)
@@ -85,5 +88,10 @@
     private void ViewScholarship(int id)
     {
         Navigation.NavigateTo($"/dashboard/student/scholarships-info/{id}");
+    }
+
+    private void ViewApplicationSummary()
+    {
+        Navigation.NavigateTo("/dashboard/student/applications");
     }
 }

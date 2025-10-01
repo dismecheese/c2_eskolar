@@ -14,97 +14,133 @@
 <PageTitle>Post Scholarship</PageTitle>
 
 <div class="container my-5" style="max-width: 700px;">
-    <h2 class="fw-bold mb-4">Post a New Scholarship</h2>
+    
+    <h2 class="fw-bold mb-4" style="font-size:2.2rem;">Post a New Scholarship</h2>
 
     @if (isSubmitted)
     {
-        <div class="alert alert-success mb-4">
-            ✅ Scholarship posted successfully! Redirecting...
+        <div class="alert alert-success mb-4" role="alert" aria-live="polite">
+            <span aria-hidden="true">✅</span> Scholarship posted successfully! Redirecting...
         </div>
     }
 
     @if (!string.IsNullOrEmpty(errorMessage))
     {
-        <div class="alert alert-danger mb-4">
-            ❌ @errorMessage
+        <div class="alert alert-danger mb-4" role="alert" aria-live="assertive">
+            <span aria-hidden="true">❌</span> <span class="visually-hidden">Error:</span> @errorMessage
         </div>
     }
 
     <EditForm Model="@scholarship" OnValidSubmit="HandleSubmit">
-        <DataAnnotationsValidator />
-        <ValidationSummary />
+    <DataAnnotationsValidator />
 
-        <!-- Form Fields -->
+        <!-- Categorized Form Fields in Card Boxes -->
+        <div class="row g-4">
+            <!-- Basic Info -->
+            <div class="col-12">
+                <div class="card shadow-sm border-0 mb-3">
+                    <div class="card-header-custom bg-primary text-white fw-bold">Basic Information</div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <label for="title" class="form-label fw-semibold" style="font-size:1.1rem;">Title</label>
+                                <InputText id="title" class="form-control" @bind-Value="scholarship.Title" aria-required="true" aria-label="Scholarship Title" placeholder="e.g. Academic Excellence Scholarship" />
+                                <ValidationMessage For="@(() => scholarship.Title)" class="text-danger small ms-1" />
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <label for="benefits" class="form-label fw-semibold">Benefits</label>
+                                <InputText id="benefits" class="form-control" @bind-Value="scholarship.Benefits" aria-label="Benefits" placeholder="e.g. Full tuition, stipend, books" />
+                                <ValidationMessage For="@(() => scholarship.Benefits)" class="text-danger small ms-1" />
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <label for="deadline" class="form-label fw-semibold">Application Deadline</label>
+                                <InputDate id="deadline" class="form-control" @bind-Value="scholarship.ApplicationDeadline" aria-required="true" aria-label="Application Deadline" placeholder="Select deadline" />
+                                <ValidationMessage For="@(() => scholarship.ApplicationDeadline)" class="text-danger small ms-1" />
+                            </div>
+                            <div class="col-12">
+                                <label for="description" class="form-label fw-semibold">Description</label>
+                                <InputTextArea id="description" class="form-control" rows="3" @bind-Value="scholarship.Description" aria-label="Description" placeholder="Describe the scholarship, its purpose, and any special notes..." />
+                                <ValidationMessage For="@(() => scholarship.Description)" class="text-danger small ms-1" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
-        <div class="mb-3">
-            <label class="form-label">Title</label>
-            <InputText class="form-control" @bind-Value="scholarship.Title" />
-            <ValidationMessage For="@(() => scholarship.Title)" />
+            <!-- Requirements -->
+            <div class="col-12">
+                <div class="card shadow-sm border-0 mb-3">
+                    <div class="card-header-custom bg-success text-white fw-bold">Requirements</div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <label for="requirements" class="form-label fw-semibold">Requirements</label>
+                                <InputTextArea id="requirements" class="form-control" rows="2" @bind-Value="scholarship.Requirements" aria-label="Requirements" placeholder="e.g. Must be a full-time student, leadership experience, etc." />
+                                <ValidationMessage For="@(() => scholarship.Requirements)" class="text-danger small ms-1" />
+                            </div>
+                            <div class="col-12 col-md-4">
+                                <label for="slots" class="form-label fw-semibold">Slots Available</label>
+                                <InputNumber id="slots" class="form-control" @bind-Value="scholarship.SlotsAvailable" aria-label="Slots Available" placeholder="e.g. 10" />
+                                <ValidationMessage For="@(() => scholarship.SlotsAvailable)" class="text-danger small ms-1" />
+                            </div>
+                            <div class="col-12 col-md-4">
+                                <label for="gpa" class="form-label fw-semibold">Minimum GPA</label>
+                                <InputNumber id="gpa" class="form-control" @bind-Value="scholarship.MinimumGPA" step="0.01" aria-label="Minimum GPA" placeholder="e.g. 3.50" />
+                                <ValidationMessage For="@(() => scholarship.MinimumGPA)" class="text-danger small ms-1" />
+                            </div>
+                            <div class="col-12 col-md-4">
+                                <label for="yearlevel" class="form-label fw-semibold">Required Year Level</label>
+                                <InputNumber id="yearlevel" class="form-control" @bind-Value="scholarship.RequiredYearLevel" aria-label="Required Year Level" placeholder="e.g. 2 (for 2nd year)" />
+                                <ValidationMessage For="@(() => scholarship.RequiredYearLevel)" class="text-danger small ms-1" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Eligibility -->
+            <div class="col-12">
+                <div class="card shadow-sm border-0 mb-3">
+                    <div class="card-header-custom bg-info text-white fw-bold">Eligibility</div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-12 col-md-6">
+                                <label for="course" class="form-label fw-semibold">Required Course</label>
+                                <InputText id="course" class="form-control" @bind-Value="scholarship.RequiredCourse" aria-label="Required Course" placeholder="e.g. BS Computer Science" />
+                                <ValidationMessage For="@(() => scholarship.RequiredCourse)" class="text-danger small ms-1" />
+                            </div>
+                            <div class="col-12 col-md-6">
+                                <label for="university" class="form-label fw-semibold">Required University</label>
+                                <InputText id="university" class="form-control" @bind-Value="scholarship.RequiredUniversity" aria-label="Required University" placeholder="e.g. University of the Philippines" />
+                                <ValidationMessage For="@(() => scholarship.RequiredUniversity)" class="text-danger small ms-1" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Settings -->
+            <div class="col-12">
+                <div class="card shadow-sm border-0 mb-3">
+                    <div class="card-header-custom bg-warning text-dark fw-bold">Settings</div>
+                    <div class="card-body">
+                        <div class="row g-3 align-items-center">
+                            <div class="col-12">
+                                <label for="externalurl" class="form-label fw-semibold">External Application URL <span class="text-muted">(optional)</span></label>
+                                <InputText id="externalurl" class="form-control" @bind-Value="scholarship.ExternalApplicationUrl" aria-label="External Application URL" placeholder="e.g. https://apply.example.com" />
+                                <ValidationMessage For="@(() => scholarship.ExternalApplicationUrl)" class="text-danger small ms-1" />
+                            </div>
+                            <!-- Removed Active and Internal Scholarship checkboxes as requested -->
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
 
-        <div class="mb-3">
-            <label class="form-label">Benefits</label>
-            <InputText class="form-control" @bind-Value="scholarship.Benefits" />
-            <ValidationMessage For="@(() => scholarship.Benefits)" />
-        </div>
-
-        <div class="mb-3">
-            <label class="form-label">Description</label>
-            <InputTextArea class="form-control" rows="3" @bind-Value="scholarship.Description" />
-        </div>
-
-        <div class="mb-3">
-            <label class="form-label">Application Deadline</label>
-            <InputDate class="form-control" @bind-Value="scholarship.ApplicationDeadline" />
-            <ValidationMessage For="@(() => scholarship.ApplicationDeadline)" />
-        </div>
-
-        <div class="mb-3">
-            <label class="form-label">Requirements</label>
-            <InputTextArea class="form-control" rows="2" @bind-Value="scholarship.Requirements" />
-        </div>
-        
-        <div class="mb-3">
-            <label class="form-label">Slots Available</label>
-            <InputNumber class="form-control" @bind-Value="scholarship.SlotsAvailable" />
-        </div>
-
-        <div class="mb-3">
-            <label class="form-label">Minimum GPA</label>
-            <InputNumber class="form-control" @bind-Value="scholarship.MinimumGPA" step="0.01" />
-        </div>
-
-        <div class="mb-3">
-            <label class="form-label">Required Course</label>
-            <InputText class="form-control" @bind-Value="scholarship.RequiredCourse" />
-        </div>
-
-        <div class="mb-3">
-            <label class="form-label">Required Year Level</label>
-            <InputNumber class="form-control" @bind-Value="scholarship.RequiredYearLevel" />
-        </div>
-
-        <div class="mb-3">
-            <label class="form-label">Required University</label>
-            <InputText class="form-control" @bind-Value="scholarship.RequiredUniversity" />
-        </div>
-
-        <div class="mb-3">
-            <label class="form-label">External Application URL (optional)</label>
-            <InputText class="form-control" @bind-Value="scholarship.ExternalApplicationUrl" />
-        </div>
-
-        <div class="form-check mb-3">
-            <InputCheckbox class="form-check-input" @bind-Value="scholarship.IsInternal" />
-            <label class="form-check-label">This is an internal scholarship</label>
-        </div>
-
-        <div class="form-check mb-4">
-            <InputCheckbox class="form-check-input" @bind-Value="scholarship.IsActive" />
-            <label class="form-check-label">Active</label>
-        </div>
-
-        <button type="submit" class="btn btn-primary">Post Scholarship</button>
+        <button type="submit" class="btn btn-primary btn-lg mt-4" style="min-width:180px;outline:2px solid transparent;outline-offset:2px;">
+            <span class="visually-hidden">Submit scholarship form</span>
+            Post Scholarship
+        </button>
     </EditForm>
 </div>
 
@@ -146,9 +182,12 @@
                 return;
             }
 
+
             // ✅ Assign foreign key and timestamps
             scholarship.InstitutionProfileId = institution.InstitutionProfileId;
             scholarship.CreatedAt = DateTime.Now;
+            // ✅ Always mark as internal for Institution users
+            scholarship.IsInternal = true;
 
             // ✅ Save to database
             DbContext.Scholarships.Add(scholarship);

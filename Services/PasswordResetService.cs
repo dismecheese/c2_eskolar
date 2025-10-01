@@ -18,13 +18,13 @@ namespace c2_eskolar.Services
     public class PasswordResetService : IPasswordResetService
     {
         private readonly ApplicationDbContext _context;
-        private readonly UserManager<ApplicationUser> _userManager;
+    private readonly UserManager<IdentityUser> _userManager;
         private readonly IEmailService _emailService;
         private readonly ILogger<PasswordResetService> _logger;
 
         public PasswordResetService(
             ApplicationDbContext context,
-            UserManager<ApplicationUser> userManager,
+            UserManager<IdentityUser> userManager,
             IEmailService emailService,
             ILogger<PasswordResetService> logger)
         {

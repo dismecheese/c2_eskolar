@@ -5,8 +5,9 @@ namespace c2_eskolar.Models
     // BENEFACTOR PROFILE MODEL
     public class BenefactorProfile
     {
-        public int BenefactorProfileId { get; set; }
-        public required string UserId { get; set; } // Links to Identity User (admin account)
+    [Key]
+    public Guid BenefactorProfileId { get; set; }
+    public required string UserId { get; set; } // Links to IdentityUser
 
         // Admin Information (person managing this organization's account)
         [Required]

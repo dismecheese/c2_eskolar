@@ -5,6 +5,7 @@ namespace c2_eskolar.Models
     // Represents a scholarship opportunity offered by benefactors or institutions
     public class Scholarship
     {
+        public ICollection<Photo> Photos { get; set; } = new List<Photo>();
         public int ScholarshipId { get; set; }
 
         // BASIC INFORMATION
@@ -62,8 +63,8 @@ namespace c2_eskolar.Models
         public DateTime? UpdatedAt { get; set; }
 
         // FOREIGN KEYS - Who created/manages the scholarship
-        public int? BenefactorProfileId { get; set; } // For external scholarships
-        public int? InstitutionProfileId { get; set; } // For institutional scholarships
+    public Guid? BenefactorProfileId { get; set; } // For external scholarships
+    public Guid? InstitutionProfileId { get; set; } // For institutional scholarships
 
         // NAVIGATION PROPERTIES
         public BenefactorProfile? Benefactor { get; set; }

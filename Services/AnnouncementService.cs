@@ -111,7 +111,7 @@ namespace c2_eskolar.Services
         }
 
         // Get single announcement
-        public async Task<Announcement?> GetAnnouncementByIdAsync(int id)
+        public async Task<Announcement?> GetAnnouncementByIdAsync(Guid id)
         {
             return await _context.Announcements.FindAsync(id);
         }
@@ -127,7 +127,7 @@ namespace c2_eskolar.Services
         }
 
         // Update announcement
-        public async Task<Announcement?> UpdateAnnouncementAsync(int id, Announcement updatedAnnouncement)
+        public async Task<Announcement?> UpdateAnnouncementAsync(Guid id, Announcement updatedAnnouncement)
         {
             var announcement = await _context.Announcements.FindAsync(id);
             if (announcement == null) return null;
@@ -144,7 +144,7 @@ namespace c2_eskolar.Services
             announcement.PublishDate = updatedAnnouncement.PublishDate;
             announcement.ExpiryDate = updatedAnnouncement.ExpiryDate;
             announcement.Tags = updatedAnnouncement.Tags;
-            announcement.UpdatedAt = DateTime.Now;
+            announcement.UpdatedAt = DateTime.UtcNow;
 
             await _context.SaveChangesAsync();
             return announcement;
@@ -176,7 +176,7 @@ namespace c2_eskolar.Services
         // DELETE
          
         // Delete announcement if it belongs to given author
-        public async Task<bool> DeleteAnnouncementAsync(int id, string authorId)
+        public async Task<bool> DeleteAnnouncementAsync(Guid id, string authorId)
         {
             var announcement = await _context.Announcements
                 .FirstOrDefaultAsync(a => a.AnnouncementId == id && a.AuthorId == authorId);
@@ -189,7 +189,7 @@ namespace c2_eskolar.Services
         }
 
         // Delete announcement by ID only (admin override) (overload with just ID)
-        public async Task<bool> DeleteAnnouncementAsync(int id)
+        public async Task<bool> DeleteAnnouncementAsync(Guid id)
         {
             var announcement = await _context.Announcements.FindAsync(id);
             if (announcement == null) return false;
@@ -202,7 +202,7 @@ namespace c2_eskolar.Services
         // MANAGEMENT / HELPERS
 
         // Toggle pin status (pinned items always appear at top)
-        public async Task<bool> TogglePinAsync(int id, string authorId)
+        public async Task<bool> TogglePinAsync(Guid id, string authorId)
         {
             var announcement = await _context.Announcements
                 .FirstOrDefaultAsync(a => a.AnnouncementId == id && a.AuthorId == authorId);
@@ -210,13 +210,13 @@ namespace c2_eskolar.Services
             if (announcement == null) return false;
 
             announcement.IsPinned = !announcement.IsPinned;
-            announcement.UpdatedAt = DateTime.Now;
+            announcement.UpdatedAt = DateTime.UtcNow;
             await _context.SaveChangesAsync();
             return true;
         }
 
         // Increment view count (tracks how many times announcement viewed)
-        public async Task IncrementViewCountAsync(int id)
+        public async Task IncrementViewCountAsync(Guid id)
         {
             var announcement = await _context.Announcements.FindAsync(id);
             if (announcement != null)
@@ -227,14 +227,14 @@ namespace c2_eskolar.Services
         }
 
         // Check if a user is the author (authorization helper)
-        public async Task<bool> CanUserManageAnnouncementAsync(int announcementId, string userId)
+        public async Task<bool> CanUserManageAnnouncementAsync(Guid announcementId, string userId)
         {
             return await _context.Announcements
                 .AnyAsync(a => a.AnnouncementId == announcementId && a.AuthorId == userId);
         }
 
         // Toggle active/inactive status (used for archiving instead of hard delete)
-        public async Task<bool> ToggleActiveAsync(int id, string authorId)
+        public async Task<bool> ToggleActiveAsync(Guid id, string authorId)
         {
             var announcement = await _context.Announcements
                 .FirstOrDefaultAsync(a => a.AnnouncementId == id && a.AuthorId == authorId);
@@ -242,7 +242,7 @@ namespace c2_eskolar.Services
             if (announcement == null) return false;
 
             announcement.IsActive = !announcement.IsActive;
-            announcement.UpdatedAt = DateTime.Now;
+            announcement.UpdatedAt = DateTime.UtcNow;
             await _context.SaveChangesAsync();
             return true;
         }
