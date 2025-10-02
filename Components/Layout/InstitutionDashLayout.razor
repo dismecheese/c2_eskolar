@@ -64,6 +64,7 @@
     private bool ShowChatbot = false;
     private void OpenChatbot() => ShowChatbot = true;
     private void CloseChatbot() => ShowChatbot = false;
+    private void MinimizeChatbot() => ShowChatbot = false;
     public void Dispose() { }
 }
 
@@ -200,7 +201,7 @@
 
     @if (ShowChatbot)
     {
-        <ChatBot CloseChatbot="CloseChatbot" />
+        <ChatBot CloseChatbot="CloseChatbot" MinimizeChatbot="MinimizeChatbot" />
     }
 
 </div>

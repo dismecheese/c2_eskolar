@@ -168,6 +168,12 @@
         ShowChatbot = false;
         StateHasChanged();
     }
+
+    private void MinimizeChatbot()
+    {
+        ShowChatbot = false;
+        StateHasChanged();
+    }
 }
 
 <!-- MAIN LAYOUT UI STRUCTURE   -->
@@ -309,7 +315,7 @@
 <!-- Floating Chatbot Window -->
 @if (ShowChatbot)
 {
-    <ChatBot CloseChatbot="CloseChatbot" />
+    <ChatBot CloseChatbot="CloseChatbot" MinimizeChatbot="MinimizeChatbot" />
 }
 
 <!-- JavaScript helper to close Bootstrap offcanvas programmatically -->

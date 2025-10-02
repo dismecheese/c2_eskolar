@@ -35,29 +35,46 @@ namespace c2_eskolar.Services
         }
 
         // New method: includes the user's profile summary in the prompt
-        public async Task<string> GetChatCompletionWithProfileAsync(string userMessage, IdentityUser user)
+        public async Task<string> GetChatCompletionWithProfileAsync(string userMessage, IdentityUser user, bool isFirstMessage = false)
         {
             var profileSummary = await _profileSummaryService.GetProfileSummaryAsync(user);
+            var firstName = await _profileSummaryService.GetUserFirstNameAsync(user);
+            
+            // Create a personalized greeting only for the first message
+            string greeting = "";
+            if (isFirstMessage)
+            {
+                greeting = !string.IsNullOrEmpty(firstName) 
+                    ? $"Hello {firstName}! How can I help you today?\n\n"
+                    : "Hello! How can I help you today?\n\n";
+            }
+
             string systemPrompt = profileSummary != null
-                ? $"You are an AI assistant for a scholarship platform. This is a demo/test environment and the user has explicitly consented to you using their profile data to answer questions. If the user asks about their name, email, university, or any profile detail, always answer using the facts below. Do not say you don't know.\n\nFor example, if asked 'What is my full name?' answer with the value from the profile. You are allowed to answer questions about the user's profile because the user has provided this information and given consent."
-                : "You are an AI assistant for a scholarship platform. Answer questions as best you can.";
+                ? $"You are an AI assistant for eSkolar, a scholarship platform. You are helping a {profileSummary.Role.ToLower()}. " +
+                  (isFirstMessage ? $"Start your response with: '{greeting.Trim()}'\n\n" : "") +
+                  $"You have access to the user's profile information and should use it to answer their questions. " +
+                  $"When they ask about their personal information (like 'what is my name?', 'what is my GPA?', 'what course am I taking?'), " +
+                  $"answer using the specific data from their profile below. Be conversational and helpful.\n\n" +
+                  $"If they ask about scholarships or need help finding scholarships, acknowledge that you can help them search for scholarships " +
+                  $"that match their profile (this feature is being enhanced).\n\n" +
+                  $"Always be friendly, professional, and specific when referencing their profile data."
+                : (isFirstMessage 
+                    ? $"You are an AI assistant for eSkolar, a scholarship platform. Start your response with: '{greeting.Trim()}' " +
+                      $"I don't have access to your profile information yet, but I'm here to help with general questions about scholarships and the platform."
+                    : "You are an AI assistant for eSkolar, a scholarship platform. Answer questions as best you can.");
 
             var messages = new List<ChatRequestMessage>
             {
                 new ChatRequestSystemMessage(systemPrompt)
             };
+
             if (profileSummary != null)
             {
-                // Format as Q&A pairs
-                var lines = profileSummary.Summary.Split('\n');
-                var qna = string.Join("\n", lines
-                    .Where(l => l.Contains(":"))
-                    .Select(l => {
-                        var parts = l.Split(':', 2);
-                        return $"Q: What is my {parts[0].Trim().ToLower()}?\nA: {parts[1].Trim()}";
-                    }));
-                messages.Add(new ChatRequestUserMessage($"Here is my profile information in Q&A format:\n{qna}"));
+                // Create a more natural profile context
+                var profileContext = $"User Profile Information:\n{profileSummary.Summary}";
+                messages.Add(new ChatRequestSystemMessage(profileContext));
             }
+            
             messages.Add(new ChatRequestUserMessage(userMessage));
 
             var chatOptions = new ChatCompletionsOptions()

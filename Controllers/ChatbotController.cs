@@ -31,13 +31,14 @@ namespace c2_eskolar.Controllers
                 return Unauthorized();
             if (string.IsNullOrWhiteSpace(request?.Message))
                 return BadRequest("Message is required.");
-            var aiResponse = await _openAIService.GetChatCompletionWithProfileAsync(request.Message, user);
+            var aiResponse = await _openAIService.GetChatCompletionWithProfileAsync(request.Message, user, request.IsFirstMessage);
             return Ok(new { response = aiResponse });
         }
 
         public class ChatRequestDto
         {
             public string? Message { get; set; }
+            public bool IsFirstMessage { get; set; } = false;
         }
 
         [HttpGet("start-message")]
@@ -48,15 +49,21 @@ namespace c2_eskolar.Controllers
             if (user == null)
                 return Unauthorized();
 
+            var firstName = await _profileSummaryService.GetUserFirstNameAsync(user);
             var roles = await _userManager.GetRolesAsync(user);
-            string message = "Welcome! How can I help you today?";
+            
+            string greeting = !string.IsNullOrEmpty(firstName) 
+                ? $"Hello {firstName}! " 
+                : "Hello! ";
+            
+            string message = greeting + "How can I help you today?";
 
             if (roles.Contains("Student"))
-                message = "Hi student! Ask me about scholarships, your applications, or how to get started.";
+                message = greeting + "I can help you find scholarships that match your profile, answer questions about your applications, or provide guidance on the platform. What would you like to know?";
             else if (roles.Contains("Benefactor"))
-                message = "Hello benefactor! I can help you manage your scholarships, view applicants, or answer your questions.";
+                message = greeting + "I can help you manage your scholarships, review applicants, or answer questions about the platform. How can I assist you?";
             else if (roles.Contains("Institution"))
-                message = "Welcome institution admin! Ask me about your managed scholarships, partnerships, or platform guidance.";
+                message = greeting + "I can help you with your managed scholarships, partnerships, or provide platform guidance. What do you need help with?";
 
             return Ok(new { message });
         }
