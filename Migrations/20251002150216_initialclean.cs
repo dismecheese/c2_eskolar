@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace c2_eskolar.Migrations
 {
     /// <inheritdoc />
-    public partial class InitialCreate : Migration
+    public partial class initialclean : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -573,6 +573,10 @@ namespace c2_eskolar.Migrations
                     ExternalApplicationUrl = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
                     ExternalApplicationDate = table.Column<DateTime>(type: "datetime2", nullable: true),
                     HasAppliedExternally = table.Column<bool>(type: "bit", nullable: false),
+                    StudentId = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
+                    GWA = table.Column<double>(type: "float", nullable: true),
+                    FirstSemesterGrades = table.Column<string>(type: "nvarchar(1000)", maxLength: 1000, nullable: true),
+                    SecondSemesterGrades = table.Column<string>(type: "nvarchar(1000)", maxLength: 1000, nullable: true),
                     PersonalStatement = table.Column<string>(type: "nvarchar(2000)", maxLength: 2000, nullable: true),
                     UploadedDocuments = table.Column<string>(type: "nvarchar(1000)", maxLength: 1000, nullable: true),
                     Status = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),

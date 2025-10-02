@@ -1,10 +1,11 @@
-@page "/dashboard/institution/scholarships-info/{ScholarshipId:int}"
-@attribute [Authorize(Roles = "Institution")]
-@layout Layout.InstitutionDashLayout
+@page "/dashboard/benefactor/scholarships-info/{ScholarshipId:int}"
+@attribute [Authorize(Roles = "Benefactor")]
+@layout Layout.BenefactorDashLayout
 
 @using Microsoft.EntityFrameworkCore
 @using c2_eskolar.Data
 @using c2_eskolar.Models
+@using Microsoft.AspNetCore.Components.Forms
 @inject ApplicationDbContext DbContext
 
 @code {
@@ -13,10 +14,16 @@
     private List<ScholarshipApplication> studentApplicants = new();
     private bool isEditMode = false;
 
-    private Scholarship editableScholarship = new Scholarship { Title = string.Empty, Benefits = string.Empty, ApplicationDeadline = DateTime.Now };
+    private Scholarship editableScholarship = new Scholarship 
+    { 
+        Title = string.Empty, 
+        Benefits = string.Empty, 
+        ApplicationDeadline = DateTime.Now.AddMonths(3) // Set a reasonable default deadline
+    };
     private string? errorMessage;
     private string? successMessage;
     private bool showStudentList = false;
+    private bool isSaving = false;
 
     protected override async Task OnInitializedAsync()
     {
@@ -41,9 +48,9 @@
             editableScholarship = new Scholarship
             {
                 ScholarshipId = scholarship.ScholarshipId,
-                Title = scholarship.Title,
+                Title = scholarship.Title ?? string.Empty,
                 Description = scholarship.Description,
-                Benefits = scholarship.Benefits,
+                Benefits = scholarship.Benefits ?? string.Empty,
                 IsActive = scholarship.IsActive,
                 Requirements = scholarship.Requirements,
                 ApplicationDeadline = scholarship.ApplicationDeadline,
@@ -52,7 +59,10 @@
                 RequiredCourse = scholarship.RequiredCourse,
                 RequiredYearLevel = scholarship.RequiredYearLevel,
                 RequiredUniversity = scholarship.RequiredUniversity,
-                ExternalApplicationUrl = scholarship.ExternalApplicationUrl
+                ExternalApplicationUrl = scholarship.ExternalApplicationUrl,
+                // Copy foreign keys to maintain relationships
+                BenefactorProfileId = scholarship.BenefactorProfileId,
+                InstitutionProfileId = scholarship.InstitutionProfileId
             };
         }
     }
@@ -75,9 +85,9 @@
             editableScholarship = new Scholarship
             {
                 ScholarshipId = scholarship.ScholarshipId,
-                Title = scholarship.Title,
+                Title = scholarship.Title ?? string.Empty,
                 Description = scholarship.Description,
-                Benefits = scholarship.Benefits,
+                Benefits = scholarship.Benefits ?? string.Empty,
                 IsActive = scholarship.IsActive,
                 Requirements = scholarship.Requirements,
                 ApplicationDeadline = scholarship.ApplicationDeadline,
@@ -86,15 +96,35 @@
                 RequiredCourse = scholarship.RequiredCourse,
                 RequiredYearLevel = scholarship.RequiredYearLevel,
                 RequiredUniversity = scholarship.RequiredUniversity,
-                ExternalApplicationUrl = scholarship.ExternalApplicationUrl
+                ExternalApplicationUrl = scholarship.ExternalApplicationUrl,
+                // Copy foreign keys to maintain relationships
+                BenefactorProfileId = scholarship.BenefactorProfileId,
+                InstitutionProfileId = scholarship.InstitutionProfileId
             };
         }
     }
 
     private async Task SaveChangesAsync()
     {
+        isSaving = true;
         errorMessage = null;
         successMessage = null;
+
+        // Validate required fields
+        if (string.IsNullOrWhiteSpace(editableScholarship.Title))
+        {
+            errorMessage = "Title is required.";
+            isSaving = false;
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(editableScholarship.Benefits))
+        {
+            errorMessage = "Benefits field is required.";
+            isSaving = false;
+            return;
+        }
+
         try
         {
             var existing = await DbContext.Scholarships.FindAsync(editableScholarship.ScholarshipId);
@@ -103,28 +133,45 @@
                 errorMessage = "Scholarship not found.";
                 return;
             }
+
             // Update fields
-            existing.Title = editableScholarship.Title;
-            existing.Description = editableScholarship.Description;
-            existing.Benefits = editableScholarship.Benefits;
+            existing.Title = editableScholarship.Title.Trim();
+            existing.Description = string.IsNullOrWhiteSpace(editableScholarship.Description) ? null : editableScholarship.Description.Trim();
+            existing.Benefits = editableScholarship.Benefits.Trim();
             existing.IsActive = editableScholarship.IsActive;
-            existing.Requirements = editableScholarship.Requirements;
+            existing.Requirements = string.IsNullOrWhiteSpace(editableScholarship.Requirements) ? null : editableScholarship.Requirements.Trim();
             existing.ApplicationDeadline = editableScholarship.ApplicationDeadline;
             existing.SlotsAvailable = editableScholarship.SlotsAvailable;
             existing.MinimumGPA = editableScholarship.MinimumGPA;
-            existing.RequiredCourse = editableScholarship.RequiredCourse;
+            existing.RequiredCourse = string.IsNullOrWhiteSpace(editableScholarship.RequiredCourse) ? null : editableScholarship.RequiredCourse.Trim();
             existing.RequiredYearLevel = editableScholarship.RequiredYearLevel;
-            existing.RequiredUniversity = editableScholarship.RequiredUniversity;
-            existing.ExternalApplicationUrl = editableScholarship.ExternalApplicationUrl;
+            existing.RequiredUniversity = string.IsNullOrWhiteSpace(editableScholarship.RequiredUniversity) ? null : editableScholarship.RequiredUniversity.Trim();
+            existing.ExternalApplicationUrl = string.IsNullOrWhiteSpace(editableScholarship.ExternalApplicationUrl) ? null : editableScholarship.ExternalApplicationUrl.Trim();
             existing.UpdatedAt = DateTime.Now;
-            await DbContext.SaveChangesAsync();
-            successMessage = "Scholarship updated successfully.";
-            isEditMode = false;
-            await LoadScholarship();
+
+            // Save changes
+            var changes = await DbContext.SaveChangesAsync();
+            
+            if (changes > 0)
+            {
+                successMessage = "Scholarship updated successfully.";
+                isEditMode = false;
+                await LoadScholarship(); // Reload to reflect changes
+            }
+            else
+            {
+                errorMessage = "No changes were made to the scholarship.";
+            }
         }
         catch (Exception ex)
         {
             errorMessage = $"Error saving changes: {ex.Message}";
+            // Log the full exception for debugging
+            Console.WriteLine($"SaveChangesAsync Exception: {ex}");
+        }
+        finally
+        {
+            isSaving = false;
         }
     }
 }
@@ -188,7 +235,7 @@ else
 
                 <EditForm Model="editableScholarship" OnValidSubmit="SaveChangesAsync" class="mb-3">
                     <DataAnnotationsValidator />
-                    <ValidationSummary />
+                    <ValidationSummary class="alert alert-danger" />
                     <!-- Basic Information -->
                     <div class="card shadow-sm border-0 mb-2 animate__animated animate__fadeIn" style="padding: 0.75rem 1rem;">
                         <div class="card-header bg-primary text-white fw-bold py-2 px-3" style="font-size: 1rem;">Basic Information</div>
@@ -201,16 +248,19 @@ else
                             @if (isEditMode)
                             {
                                 <div class="mb-2">
-                                    <strong>Title:</strong>
+                                    <strong>Title: <span class="text-danger">*</span></strong>
                                     <InputText class="form-control form-control-sm" @bind-Value="editableScholarship.Title" />
+                                    <ValidationMessage For="@(() => editableScholarship.Title)" class="text-danger small" />
                                 </div>
                                 <div class="mb-2">
                                     <strong>Description:</strong>
                                     <InputTextArea class="form-control form-control-sm" @bind-Value="editableScholarship.Description" />
+                                    <ValidationMessage For="@(() => editableScholarship.Description)" class="text-danger small" />
                                 </div>
                                 <div class="mb-2">
-                                    <strong>Benefits:</strong>
+                                    <strong>Benefits: <span class="text-danger">*</span></strong>
                                     <InputTextArea class="form-control form-control-sm" @bind-Value="editableScholarship.Benefits" />
+                                    <ValidationMessage For="@(() => editableScholarship.Benefits)" class="text-danger small" />
                                 </div>
                                 <div class="mb-2">
                                     <strong>Status:</strong>
@@ -239,18 +289,22 @@ else
                                 <div class="mb-2">
                                     <strong>Requirements:</strong>
                                     <InputTextArea class="form-control form-control-sm" @bind-Value="editableScholarship.Requirements" />
+                                    <ValidationMessage For="@(() => editableScholarship.Requirements)" class="text-danger small" />
                                 </div>
                                 <div class="mb-2">
-                                    <strong>Application Deadline:</strong>
+                                    <strong>Application Deadline: <span class="text-danger">*</span></strong>
                                     <InputDate class="form-control form-control-sm" @bind-Value="editableScholarship.ApplicationDeadline" />
+                                    <ValidationMessage For="@(() => editableScholarship.ApplicationDeadline)" class="text-danger small" />
                                 </div>
                                 <div class="mb-2">
                                     <strong>Slots Available:</strong>
                                     <InputNumber class="form-control form-control-sm" @bind-Value="editableScholarship.SlotsAvailable" />
+                                    <ValidationMessage For="@(() => editableScholarship.SlotsAvailable)" class="text-danger small" />
                                 </div>
                                 <div class="mb-2">
                                     <strong>Minimum GPA:</strong>
                                     <InputNumber class="form-control form-control-sm" @bind-Value="editableScholarship.MinimumGPA" />
+                                    <ValidationMessage For="@(() => editableScholarship.MinimumGPA)" class="text-danger small" />
                                 </div>
                             }
                             else
@@ -272,14 +326,17 @@ else
                                 <div class="mb-2">
                                     <strong>Required Course:</strong>
                                     <InputText class="form-control form-control-sm" @bind-Value="editableScholarship.RequiredCourse" />
+                                    <ValidationMessage For="@(() => editableScholarship.RequiredCourse)" class="text-danger small" />
                                 </div>
                                 <div class="mb-2">
                                     <strong>Required Year Level:</strong>
                                     <InputNumber class="form-control form-control-sm" @bind-Value="editableScholarship.RequiredYearLevel" />
+                                    <ValidationMessage For="@(() => editableScholarship.RequiredYearLevel)" class="text-danger small" />
                                 </div>
                                 <div class="mb-2">
                                     <strong>Required University:</strong>
                                     <InputText class="form-control form-control-sm" @bind-Value="editableScholarship.RequiredUniversity" />
+                                    <ValidationMessage For="@(() => editableScholarship.RequiredUniversity)" class="text-danger small" />
                                 </div>
                             }
                             else
@@ -299,7 +356,9 @@ else
                             {
                                 <div class="mb-2">
                                     <strong>Apply Externally:</strong>
-                                    <InputText class="form-control form-control-sm" @bind-Value="editableScholarship.ExternalApplicationUrl" />
+                                    <InputText class="form-control form-control-sm" @bind-Value="editableScholarship.ExternalApplicationUrl" placeholder="https://example.com/apply" />
+                                    <ValidationMessage For="@(() => editableScholarship.ExternalApplicationUrl)" class="text-danger small" />
+                                    <small class="form-text text-muted">Leave empty for internal applications only</small>
                                 </div>
                             }
                             else if (!string.IsNullOrWhiteSpace(scholarship.ExternalApplicationUrl))
@@ -314,12 +373,22 @@ else
 
                     @if (isEditMode)
                     {
-                        <button type="submit" class="btn btn-primary me-2 animate__animated animate__fadeIn btn-sm">Save</button>
-                        <button type="button" class="btn btn-secondary animate__animated animate__fadeIn btn-sm" @onclick="CancelEdit">Cancel</button>
+                        <button type="submit" class="btn btn-primary me-2 animate__animated animate__fadeIn btn-sm" disabled="@isSaving">
+                            @if (isSaving)
+                            {
+                                <span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>
+                                <span>Saving...</span>
+                            }
+                            else
+                            {
+                                <span>Save Changes</span>
+                            }
+                        </button>
+                        <button type="button" class="btn btn-secondary animate__animated animate__fadeIn btn-sm" @onclick="CancelEdit" disabled="@isSaving">Cancel</button>
                     }
                 </EditForm>
 
-                <a class="btn btn-secondary mt-2 animate__animated animate__fadeIn btn-sm" href="/dashboard/institution/scholarships">⬅ Back to List</a>
+                <a class="btn btn-secondary mt-2 animate__animated animate__fadeIn btn-sm" href="/dashboard/benefactor/scholarships">⬅ Back to List</a>
             </div>
 
             <!-- 👥 Student Applicants (Right Column, toggled by button) -->
@@ -358,7 +427,7 @@ else
                                             {
                                                 <li class="list-group-item d-flex justify-content-between align-items-center">
                                                     <span class="fw-semibold">@application.Student?.FirstName @application.Student?.LastName</span>
-                                                    <NavLink class="btn btn-sm btn-primary text-white" href="@($"/dashboard/institution/applications/review/{application.ScholarshipApplicationId}")">View</NavLink>
+                                                    <NavLink class="btn btn-sm btn-primary text-white" href="@($"/dashboard/benefactor/applications/review/{application.ScholarshipApplicationId}")">View</NavLink>
                                                 </li>
                                             }
                                         </ul>

@@ -22,12 +22,26 @@ namespace c2_eskolar.Models
         public DateTime? ExternalApplicationDate { get; set; } // When student clicked "Apply Now"
         public bool HasAppliedExternally { get; set; } = false; // Student confirms they applied
 
-        // INTERNAL APPLICATIONS (managed by institution)
-        [StringLength(2000)]
-        public string? PersonalStatement { get; set; } // Why they deserve the scholarship
 
-        [StringLength(1000)]
-        public string? UploadedDocuments { get; set; } // JSON or comma-separated file paths
+    // STUDENT INFORMATION
+    [StringLength(50)]
+    public string? StudentId { get; set; } // Student's school ID
+
+    [Range(1.00, 5.00, ErrorMessage = "GWA must be between 1.00 and 5.00")]
+    public double? GWA { get; set; } // General Weighted Average
+
+    [StringLength(1000)]
+    public string? FirstSemesterGrades { get; set; } // 1st semester grades (text or JSON)
+
+    [StringLength(1000)]
+    public string? SecondSemesterGrades { get; set; } // 2nd semester grades (text or JSON)
+
+    // INTERNAL APPLICATIONS (managed by institution)
+    [StringLength(2000)]
+    public string? PersonalStatement { get; set; } // Why they deserve the scholarship
+
+    [StringLength(1000)]
+    public string? UploadedDocuments { get; set; } // JSON or comma-separated file paths
 
         // APPLICATION STATUS (mainly for internal applications)
         [StringLength(50)]

@@ -911,6 +911,13 @@ namespace c2_eskolar.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
 
+                    b.Property<string>("FirstSemesterGrades")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<double?>("GWA")
+                        .HasColumnType("float");
+
                     b.Property<bool>("HasAppliedExternally")
                         .HasColumnType("bit");
 
@@ -934,8 +941,16 @@ namespace c2_eskolar.Migrations
                     b.Property<int>("ScholarshipId")
                         .HasColumnType("int");
 
+                    b.Property<string>("SecondSemesterGrades")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
                     b.Property<string>("Status")
                         .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("StudentId")
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 

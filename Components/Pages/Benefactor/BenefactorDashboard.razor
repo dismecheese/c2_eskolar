@@ -1,144 +1,845 @@
 @page "/dashboard/benefactor"
-@attribute [Authorize(Roles = "Benefactor")]
+@attribute [Authorize(Roles = "Benefactor")] 
 @layout Layout.BenefactorDashLayout
+
+@using c2_eskolar.Models
+@using Microsoft.AspNetCore.WebUtilities
+@using Microsoft.EntityFrameworkCore
+@using c2_eskolar.Components.Pages
+
+
+@using c2_eskolar.Data
 @inject NavigationManager Navigation
 @inject BenefactorProfileService BenefactorProfileService
 @inject AuthenticationStateProvider AuthStateProvider
-
-<PageTitle>Benefactors Dashboard</PageTitle>
+@inject ApplicationDbContext DbContext
 
 <style>
     .text-decoration-none {
         text-decoration: none !important;
     }
+    
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 24px;
+        margin-bottom: 32px;
+    }
+    
+    .stat-card {
+        background: linear-gradient(135deg, #fff 0%, #f8fafc 100%);
+        border-radius: 16px;
+        padding: 24px;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+        border: 1px solid rgba(0,0,0,0.05);
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .stat-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(135deg, #10b981, #059669);
+    }
+    
+    .stat-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+    }
+    
+    .stat-card-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 16px;
+    }
+    
+    .stat-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+        color: #fff;
+    }
+    
+    .stat-icon.scholarships { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+    .stat-icon.applications { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
+    .stat-icon.pending { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
+    .stat-icon.active { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); }
+    
+    .stat-value {
+        font-size: 2.5rem;
+        font-weight: 700;
+        color: #1a202c;
+        margin: 0;
+        line-height: 1;
+    }
+    
+    .stat-label {
+        font-size: 0.875rem;
+        color: #64748b;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-top: 4px;
+    }
+    
+    .stat-change {
+        font-size: 0.875rem;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        margin-top: 8px;
+    }
+    
+    .stat-change.positive { color: #10b981; }
+    .stat-change.negative { color: #ef4444; }
+    
+    .quick-actions {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 16px;
+        margin-bottom: 32px;
+    }
+    
+    .action-btn {
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        color: #fff;
+        border: none;
+        border-radius: 12px;
+        padding: 16px 20px;
+        font-weight: 600;
+        font-size: 1rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        text-decoration: none;
+    }
+    
+    .action-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 16px rgba(16, 185, 129, 0.3);
+        color: #fff;
+        text-decoration: none;
+        background: linear-gradient(135deg, #059669 0%, #047857 100%);
+    }
+    
+    .improved-card {
+        background: #fff;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        border: 1px solid rgba(0,0,0,0.05);
+        padding: 20px;
+        transition: all 0.3s ease;
+        height: auto;
+        min-height: 180px;
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .improved-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+    }
+    
+    .card-header {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+        margin-bottom: 12px;
+    }
+    
+    .card-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 8px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+        font-size: 18px;
+        flex-shrink: 0;
+    }
+    
+    .card-title {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: #1a202c;
+        margin: 0;
+        line-height: 1.3;
+    }
+    
+    .card-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-bottom: 12px;
+    }
+    
+    .card-badge {
+        padding: 4px 8px;
+        border-radius: 6px;
+        font-size: 0.75rem;
+        font-weight: 500;
+    }
+    
+    .card-badge.primary { background: #dbeafe; color: #1d4ed8; }
+    .card-badge.success { background: #dcfce7; color: #166534; }
+    .card-badge.secondary { background: #f1f5f9; color: #475569; }
+    .card-badge.danger { background: #fee2e2; color: #dc2626; }
+    
+    .card-actions {
+        margin-top: auto;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding-top: 12px;
+        border-top: 1px solid rgba(0,0,0,0.05);
+    }
+    
+    /* Responsive Design */
+    @@media (max-width: 768px) {
+        .stats-grid {
+            grid-template-columns: 1fr;
+            gap: 16px;
+        }
+        
+        .quick-actions {
+            grid-template-columns: 1fr;
+        }
+        
+        .dashboard-topbar {
+            flex-direction: column;
+            gap: 16px;
+            align-items: stretch;
+        }
+        
+        .university-input {
+            width: 100%;
+        }
+        
+        .dashboard-banner-centered {
+            padding: 20px;
+            flex-direction: column;
+            text-align: center;
+            min-height: auto;
+        }
+        
+        .banner-img {
+            position: static;
+            height: 120px;
+            margin-top: 16px;
+        }
+        
+        .banner-text h2 {
+            font-size: 1.75rem;
+        }
+        
+        .dashboard-tabs {
+            flex-direction: column;
+            gap: 12px;
+        }
+        
+        .dashboard-tab {
+            width: 100%;
+        }
+    }
+    
+    @@media (max-width: 480px) {
+        .stat-card {
+            padding: 16px;
+        }
+        
+        .stat-value {
+            font-size: 2rem;
+        }
+        
+        .card-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 8px;
+        }
+        
+        .card-icon {
+            align-self: flex-start;
+        }
+        
+        .card-actions {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 8px;
+        }
+    }
+    
+    /* Loading Animation */
+    @@keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.5; }
+    }
+    
+    .loading-pulse {
+        animation: pulse 2s infinite;
+    }
+    
+    /* Enhanced hover effects */
+    .dashboard-tab:not(.active):hover {
+        transform: translateY(-1px);
+        box-shadow: 0 6px 16px rgba(255, 214, 0, 0.25);
+    }
+    
+    .stat-card:hover .stat-icon {
+        transform: scale(1.1);
+    }
+    
+    .stat-icon {
+        transition: transform 0.3s ease;
+    }
 </style>
+
+<PageTitle>Benefactor Dashboard</PageTitle>
 
 <div class="dashboard-center-container">
     <!-- Top Bar -->
     <div class="dashboard-topbar">
-        <input class="university-input" type="text" placeholder="University Name:" />
+        <div style="position: relative; flex: 1; max-width: 500px;">
+            <i class="bi bi-search" style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: #64748b; z-index: 1;"></i>
+            <input class="university-input" type="text" placeholder="Search funded scholarships..." 
+                   @bind="searchQuery" @oninput="OnSearchInput" 
+                   style="padding-left: 45px; padding-right: @(string.IsNullOrWhiteSpace(searchQuery) ? "18px" : "45px");" />
+            @if (!string.IsNullOrWhiteSpace(searchQuery))
+            {
+                <button @onclick="ClearSearch" style="position: absolute; right: 16px; top: 50%; transform: translateY(-50%); background: none; border: none; color: #64748b; cursor: pointer; z-index: 1;">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            }
+        </div>
         <span class="dashboard-date">@DateTime.Now.ToString("dd MMM yyyy, ddd")</span>
     </div>
 
     <!-- Welcome Banner -->
     <div class="dashboard-banner-centered">
         <div class="banner-text">
-            <h2>Welcome, @(adminFirstName ?? "Benefactor")!</h2>
+            <h2>Welcome, @(profile?.AdminFirstName ?? "Benefactor")!</h2>
+            <p style="margin: 8px 0 0 0; color: #4a5568; font-size: 1.1rem;">
+                Here's your scholarship funding overview
+            </p>
         </div>
         <img src="images/eskolar_books.svg" alt="Books" class="banner-img" />
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-card-header">
+                <div class="stat-icon scholarships">
+                    <i class="bi bi-mortarboard"></i>
+                </div>
+            </div>
+            <div class="stat-value">@totalScholarships</div>
+            <div class="stat-label">Funded Scholarships</div>
+            <div class="stat-change positive">
+                <i class="bi bi-arrow-up"></i>
+                @(GetMonthlyIncrease("scholarships"))% this month
+            </div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-card-header">
+                <div class="stat-icon applications">
+                    <i class="bi bi-people"></i>
+                </div>
+            </div>
+            <div class="stat-value">@totalApplications</div>
+            <div class="stat-label">Students Helped</div>
+            <div class="stat-change positive">
+                <i class="bi bi-arrow-up"></i>
+                @(GetMonthlyIncrease("applications"))% this month
+            </div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-card-header">
+                <div class="stat-icon pending">
+                    <i class="bi bi-clock"></i>
+                </div>
+            </div>
+            <div class="stat-value">@pendingReviews</div>
+            <div class="stat-label">Pending Applications</div>
+            <div class="stat-change negative">
+                <i class="bi bi-arrow-down"></i>
+                @(GetMonthlyIncrease("pending"))% this month
+            </div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-card-header">
+                <div class="stat-icon active">
+                    <i class="bi bi-check-circle"></i>
+                </div>
+            </div>
+            <div class="stat-value">@activeScholarships</div>
+            <div class="stat-label">Active Funding</div>
+            <div class="stat-change positive">
+                <i class="bi bi-arrow-up"></i>
+                @(GetMonthlyIncrease("active"))% this month
+            </div>
+        </div>
     </div>
 
     <!-- Yellow Tabs -->
     <div class="dashboard-tabs">
         <button class="dashboard-tab @(activeTab == 0 ? "active" : "")" @onclick="() => SetTab(0)">Recently Viewed</button>
-        <a class="dashboard-tab text-decoration-none" href="/dashboard/institution/scholars">View Scholars</a>
+        <a class="dashboard-tab text-decoration-none" href="/dashboard/benefactor/scholars">View Recipients</a>
     </div>
 
     @if (showScholarshipList)
     {
-        <!-- Scholarship List Page (matches your screenshot) -->
-        <div style="background:#fff;padding:32px 0;">
+        <!-- Scholarship List Page -->
+        <div style="background:#fff;padding:32px 0;border-radius:12px;margin-bottom:24px;">
             <div style="max-width:1100px;margin:0 auto;">
-                <input type="text" placeholder="Search" style="width:400px;padding:12px 16px;border-radius:8px;border:1.5px solid #d1d5db;margin-bottom:24px;"/>
                 <div style="display:flex;gap:8px;margin-bottom:18px;">
-                    <button class="scholarship-list-tab @(scholarshipTab == 0 ? "active" : "")" @onclick="() => SetScholarshipTab(0)">Institutional</button>
-                    <button class="scholarship-list-tab @(scholarshipTab == 1 ? "active" : "")" @onclick="() => SetScholarshipTab(1)">Open</button>
-                    <button class="scholarship-list-tab @(scholarshipTab == 2 ? "active" : "")" @onclick="() => SetScholarshipTab(2)">All</button>
-                    <button class="scholarship-list-tab @(scholarshipTab == 3 ? "active" : "")" @onclick="() => SetScholarshipTab(3)">Recommended</button>
+                    <button class="dashboard-tab @(scholarshipTab == 0 ? "active" : "")" @onclick="() => SetScholarshipTab(0)">My Funded Scholarships</button>
+                    <button class="dashboard-tab @(scholarshipTab == 1 ? "active" : "")" @onclick="() => SetScholarshipTab(1)">Institutional Scholarships</button>
+                    <button class="dashboard-tab @(scholarshipTab == 2 ? "active" : "")" @onclick="() => SetScholarshipTab(2)">Open Scholarships</button>
+                    <button class="dashboard-tab @(scholarshipTab == 3 ? "active" : "")" @onclick="() => SetScholarshipTab(3)">All</button>
+                    <button class="dashboard-tab @(scholarshipTab == 4 ? "active" : "")" @onclick="() => SetScholarshipTab(4)">Active</button>
                 </div>
-                <div style="display:flex;gap:12px;justify-content:flex-end;margin-bottom:18px;">
-                    <select style="padding:6px 16px;border-radius:6px;border:1.5px solid #e0e0e0;">
-                        <option>Filter</option>
-                    </select>
-                    <select style="padding:6px 16px;border-radius:6px;border:1.5px solid #e0e0e0;">
-                        <option>Sort</option>
-                    </select>
+                <div style="display:flex;gap:12px;justify-content:space-between;align-items:center;margin-bottom:18px;flex-wrap:wrap;">
+                    <div style="display:flex;align-items:center;gap:8px;">
+                        <span style="color:#64748b;font-size:0.875rem;">
+                            Showing @GetFilteredScholarshipsForTab().Count of @scholarships.Count scholarships
+                        </span>
+                        @if (!string.IsNullOrWhiteSpace(searchQuery) || !string.IsNullOrWhiteSpace(statusFilter) || !string.IsNullOrWhiteSpace(typeFilter))
+                        {
+                            <button @onclick="ClearAllFilters" style="background:none;border:1px solid #e0e0e0;border-radius:6px;padding:4px 8px;color:#64748b;font-size:0.75rem;cursor:pointer;">
+                                <i class="bi bi-x"></i> Clear Filters
+                            </button>
+                        }
+                    </div>
+                    <div style="display:flex;gap:12px;flex-wrap:wrap;">
+                        <select @onchange="OnStatusFilterChanged" value="@statusFilter" style="padding:8px 16px;border-radius:8px;border:1.5px solid #e0e0e0;background:#fff;min-width:140px;">
+                            <option value="">All Status</option>
+                            <option value="active">Active Only</option>
+                            <option value="inactive">Inactive Only</option>
+                        </select>
+                        <select @onchange="OnTypeFilterChanged" value="@typeFilter" style="padding:8px 16px;border-radius:8px;border:1.5px solid #e0e0e0;background:#fff;min-width:140px;">
+                            <option value="">All Types</option>
+                            <option value="internal">Internal Only</option>
+                            <option value="external">External Only</option>
+                        </select>
+                        <select @onchange="OnSortChanged" value="@sortOption" style="padding:8px 16px;border-radius:8px;border:1.5px solid #e0e0e0;background:#fff;min-width:140px;">
+                            <option value="date-desc">Newest First</option>
+                            <option value="date-asc">Oldest First</option>
+                            <option value="title-asc">Title A-Z</option>
+                            <option value="title-desc">Title Z-A</option>
+                            <option value="applications-desc">Most Applications</option>
+                            <option value="applications-asc">Least Applications</option>
+                        </select>
+                    </div>
                 </div>
-                @if (scholarshipTab == 0)
+                
+                @if (scholarships is null)
                 {
-                    <div style="margin-top:100px;text-align:center;font-size:1.18rem;font-family:'Inter',sans-serif;">
-                        Institutional scholarships will be available here once your school joins our platform.<br />
-                        Suggest your school to join eSkolar!
+                    <div class="d-flex justify-content-center align-items-center" style="height: 200px;">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
+                }
+                else if (!GetFilteredScholarshipsForTab().Any())
+                {
+                    <div class="alert alert-info text-center py-4">
+                        <i class="bi bi-emoji-frown me-2"></i> 
+                        @if (scholarshipTab == 0)
+                        {
+                            <span>No scholarships funded yet.</span>
+                            <div class="mt-3">
+                                <a href="/dashboard/benefactor/scholarships/create" class="btn btn-success">
+                                    <i class="bi bi-plus-circle me-2"></i>Create Your First Scholarship
+                                </a>
+                            </div>
+                        }
+                        else if (scholarshipTab == 2)
+                        {
+                            <span>No open scholarships available.</span>
+                            <div class="mt-2">
+                                <small class="text-muted">Open scholarships from other benefactors will appear here.</small>
+                            </div>
+                        }
+                        else
+                        {
+                            <span>No scholarships found matching your criteria.</span>
+                        }
                     </div>
                 }
                 else
                 {
-                    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:32px;">
-                        @for (int i = 0; i < 9; i++)
+                    <div class="row g-4">
+                        @foreach (var scholarship in GetFilteredScholarshipsForTab())
                         {
-                            <a href="/dashboard/institution/scholarships-info" class="scholarship-card text-decoration-none" style="height:140px;cursor:pointer;display:block;">
-                                <div class="scholarship-card-img" style="width:70px;height:70px;margin-bottom:12px;background:#eee;display:flex;align-items:center;justify-content:center;">
-                                    <svg width="48" height="48" viewBox="0 0 48 48">
-                                        <rect x="4" y="4" width="40" height="40" fill="#fff" stroke="#bbb" stroke-width="2"/>
-                                        <line x1="14" y1="14" x2="34" y2="34" stroke="#bbb" stroke-width="2"/>
-                                        <line x1="14" y1="34" x2="34" y2="14" stroke="#bbb" stroke-width="2"/>
-                                    </svg>
+                            <div class="col-md-6 col-lg-4">
+                                <div class="card shadow-sm h-100 clickable-card border-0"
+                                     @onclick="() => ViewScholarship(scholarship.ScholarshipId)"
+                                     style="cursor: pointer; transition: box-shadow 0.2s;">
+                                    <div class="card-body d-flex flex-column">
+                                        <div class="d-flex align-items-center mb-2">
+                                            <i class="bi bi-award text-warning me-2 fs-4"></i>
+                                            <h5 class="card-title mb-0">@scholarship.Title</h5>
+                                        </div>
+                                        <p class="card-text text-muted mb-2">
+                                            <span class="badge bg-primary me-1">@(!string.IsNullOrEmpty(scholarship.Institution?.InstitutionName)
+                                                ? scholarship.Institution.InstitutionName
+                                                : scholarship.Benefactor?.OrganizationName ?? "Unknown Provider")</span>
+                                        </p>
+                                        <div class="mb-2">
+                                            <span class="badge bg-success">@scholarship.CreatedAt.ToString("MMM dd, yyyy")</span>
+                                            <span class="badge bg-secondary ms-1">@((scholarship.IsInternal ? "Internal" : "External"))</span>
+                                        </div>
+                                        <div class="mt-auto d-flex justify-content-between align-items-center">
+                                            <span class="badge @(scholarship.IsActive ? "bg-success" : "bg-danger")">
+                                                @(scholarship.IsActive ? "Active" : "Inactive")
+                                            </span>
+                                            <button class="btn btn-sm btn-outline-danger ms-2"
+                                                    @onclick:stopPropagation="true"
+                                                    @onclick="async (e) => await DeleteScholarship(scholarship.ScholarshipId)">
+                                                <i class="bi bi-trash"></i> Delete
+                                            </button>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div class="scholarship-card-title">Scholarship Name</div>
-                            </a>
+                            </div>
                         }
                     </div>
                 }
             </div>
             <div style="text-align:center;margin-top:32px;">
-                <button class="dashboard-tab" style="width:auto;padding:8px 32px;" @onclick="BackToDashboard">Back</button>
+                <button class="dashboard-tab" style="width:auto;padding:8px 32px;" @onclick="BackToDashboard">Back to Dashboard</button>
             </div>
         </div>
     }
     else if (activeTab == -1)
     {
-        <!-- Sectioned Layout (default view) -->
+        <!-- Main Dashboard Layout -->
         <div class="scholarship-section">
+            <!-- Recent Activity Section -->
             <div class="scholarship-row">
-                <div style="display: flex; align-items: center; margin-bottom: 8px;">
-                    <button class="scholarship-row-title scholarship-row-title-btn"
-                            @onclick="() => ShowScholarshipList(0)">
-                        Institutional Scholarships <span>&gt;</span>
-                    </button>
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+                    <h3 style="margin: 0; color: #1a202c; font-size: 1.25rem; font-weight: 600;">Recent Activity</h3>
                 </div>
-                <div class="scholarship-cards">
-                    @for (int i = 0; i < 3; i++)
+                <div style="background: #fff; border-radius: 12px; padding: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); margin-bottom: 32px;">
+                    @if (scholarships.Any())
                     {
-                        <a href="/dashboard/institution/scholarships-info" class="scholarship-card text-decoration-none">
-                            <div class="scholarship-card-img"></div>
-                            <div class="scholarship-card-title">Scholarship Name</div>
-                        </a>
+                        <div style="display: flex; flex-direction: column; gap: 12px;">
+                            @foreach (var scholarship in scholarships.Take(3))
+                            {
+                                <div style="display: flex; align-items: center; gap: 12px; padding: 12px; border-radius: 8px; background: #f8fafc;">
+                                    <div class="card-icon" style="width: 32px; height: 32px; font-size: 14px;">
+                                        <i class="bi bi-mortarboard"></i>
+                                    </div>
+                                    <div style="flex: 1;">
+                                        <p style="margin: 0; font-weight: 600; color: #1a202c;">@scholarship.Title</p>
+                                        <p style="margin: 0; font-size: 0.875rem; color: #64748b;">
+                                            @scholarship.Applications.Count applications • Updated @scholarship.CreatedAt.ToString("MMM dd")
+                                        </p>
+                                    </div>
+                                    <span class="card-badge @(scholarship.IsActive ? "success" : "danger")">
+                                        @(scholarship.IsActive ? "Active" : "Inactive")
+                                    </span>
+                                </div>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <div style="text-align: center; color: #64748b; padding: 20px;">
+                            <i class="bi bi-calendar2-event" style="font-size: 2rem; margin-bottom: 8px;"></i>
+                            <p>No recent activity. Create your first scholarship to get started!</p>
+                        </div>
                     }
                 </div>
             </div>
+
+            <!-- My Funded Scholarships Section -->
             <div class="scholarship-row">
-                <div style="display: flex; align-items: center; margin-bottom: 8px;">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
                     <button class="scholarship-row-title scholarship-row-title-btn"
-                            @onclick="() => ShowScholarshipList(1)">
-                        Open Scholarships <span>&gt;</span>
+                            @onclick="() => ShowScholarshipList(0)"
+                            style="background: none; border: none; padding: 0; color: #1a202c; font-size: 1.25rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px;">
+                        My Funded Scholarships 
+                        <i class="bi bi-arrow-right" style="font-size: 1rem;"></i>
                     </button>
+                    <span style="color: #64748b; font-size: 0.875rem;">@(scholarships?.Count(s => profile != null && s.BenefactorProfileId == profile.BenefactorProfileId) ?? 0) total</span>
                 </div>
-                <div class="scholarship-cards">
-                    @for (int i = 0; i < 3; i++)
-                    {
-                        <a href="/dashboard/institution/scholarships-info" class="scholarship-card text-decoration-none">
-                            <div class="scholarship-card-img"></div>
-                            <div class="scholarship-card-title">Scholarship Name</div>
-                        </a>
-                    }
-                </div>
+                @if (scholarships is null)
+                {
+                    <div class="d-flex justify-content-center align-items-center" style="height: 150px;">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
+                }
+                else if (!scholarships.Where(s => profile != null && s.BenefactorProfileId == profile.BenefactorProfileId).Any())
+                {
+                    <div class="alert alert-info text-center py-4">
+                        <i class="bi bi-heart me-2"></i>
+                        <span>No scholarships funded yet</span>
+                        <div class="mt-3">
+                            <button class="btn btn-success" @onclick="AddScholarship">
+                                <i class="bi bi-plus-circle me-2"></i>Fund Your First Scholarship
+                            </button>
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <div class="row g-3">
+                        @foreach (var scholarship in scholarships.Where(s => profile != null && s.BenefactorProfileId == profile.BenefactorProfileId).Take(3))
+                        {
+                            <div class="col-md-6 col-lg-4">
+                                <div class="card shadow-sm h-100 border-0"
+                                     @onclick="() => ViewScholarship(scholarship.ScholarshipId)"
+                                     style="cursor: pointer; transition: box-shadow 0.2s;">
+                                    <div class="card-body d-flex flex-column">
+                                        <div class="d-flex align-items-center mb-2">
+                                            <i class="bi bi-heart text-primary me-2 fs-5"></i>
+                                            <h6 class="card-title mb-0 text-truncate">@scholarship.Title</h6>
+                                        </div>
+                                        <div class="mb-2">
+                                            <span class="badge bg-success">@scholarship.CreatedAt.ToString("MMM dd")</span>
+                                            <span class="badge @(scholarship.IsActive ? "bg-success" : "bg-danger") ms-1">
+                                                @(scholarship.IsActive ? "Active" : "Inactive")
+                                            </span>
+                                        </div>
+                                        <div class="mt-auto">
+                                            <small class="text-muted">@scholarship.Applications.Count applications</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
             </div>
+            <!-- Partner Scholarships Section -->
             <div class="scholarship-row">
-                <div style="display: flex; align-items: center; margin-bottom: 8px;">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
                     <button class="scholarship-row-title scholarship-row-title-btn"
-                            @onclick="() => ShowScholarshipList(3)">
-                        Recommended Scholarships <span>&gt;</span>
+                            @onclick="() => ShowScholarshipList(1)"
+                            style="background: none; border: none; padding: 0; color: #1a202c; font-size: 1.25rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px;">
+                        Institutional Scholarships 
+                        <i class="bi bi-arrow-right" style="font-size: 1rem;"></i>
                     </button>
+                    <span style="color: #64748b; font-size: 0.875rem;">@(scholarships?.Count(s => s.IsInternal) ?? 0) total</span>
                 </div>
-                <div class="scholarship-cards">
-                    @for (int i = 0; i < 3; i++)
-                    {
-                        <a href="/dashboard/institution/scholarships-info" class="scholarship-card text-decoration-none">
-                            <div class="scholarship-card-img"></div>
-                            <div class="scholarship-card-title">Scholarship Name</div>
-                        </a>
-                    }
+                @if (scholarships is null)
+                {
+                    <div class="d-flex justify-content-center align-items-center" style="height: 150px;">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
+                }
+                else if (!scholarships.Where(s => s.IsInternal).Any())
+                {
+                    <div class="alert alert-secondary text-center py-4">
+                        <i class="bi bi-building me-2"></i>
+                        <span>No institutional scholarships available</span>
+                        <div class="mt-2">
+                            <small class="text-muted">Scholarships from educational institutions will appear here.</small>
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <div class="row g-3">
+                        @foreach (var scholarship in scholarships.Where(s => s.IsInternal).Take(3))
+                        {
+                            <div class="col-md-6 col-lg-4">
+                                <div class="card shadow-sm h-100 border-0"
+                                     @onclick="() => ViewScholarship(scholarship.ScholarshipId)"
+                                     style="cursor: pointer; transition: box-shadow 0.2s;">
+                                    <div class="card-body d-flex flex-column">
+                                        <div class="d-flex align-items-center mb-2">
+                                            <i class="bi bi-building text-success me-2 fs-5"></i>
+                                            <h6 class="card-title mb-0 text-truncate">@scholarship.Title</h6>
+                                        </div>
+                                        <p class="card-text text-muted mb-2 small">
+                                            <span class="badge bg-outline-primary">
+                                                @(scholarship.Institution?.InstitutionName ?? "Partner Institution")
+                                            </span>
+                                        </p>
+                                        <div class="mb-2">
+                                            <span class="badge bg-success">@scholarship.CreatedAt.ToString("MMM dd")</span>
+                                            <span class="badge @(scholarship.IsActive ? "bg-success" : "bg-danger") ms-1">
+                                                @(scholarship.IsActive ? "Active" : "Inactive")
+                                            </span>
+                                        </div>
+                                        <div class="mt-auto">
+                                            <small class="text-muted">@scholarship.Applications.Count applications</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+            
+            <!-- Open Scholarships Section -->
+            <div class="scholarship-row">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+                    <button class="scholarship-row-title scholarship-row-title-btn"
+                            @onclick="() => ShowScholarshipList(2)"
+                            style="background: none; border: none; padding: 0; color: #1a202c; font-size: 1.25rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px;">
+                        Open Scholarships 
+                        <i class="bi bi-arrow-right" style="font-size: 1rem;"></i>
+                    </button>
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <span style="color: #64748b; font-size: 0.875rem;">@(scholarships?.Count(s => !s.IsInternal && (profile == null || s.BenefactorProfileId != profile.BenefactorProfileId)) ?? 0) total</span>
+                        <button class="btn btn-sm btn-success" @onclick="AddScholarship">
+                            <i class="bi bi-plus-circle me-1"></i>Add
+                        </button>
+                    </div>
                 </div>
+                @if (scholarships is null)
+                {
+                    <div class="d-flex justify-content-center align-items-center" style="height: 150px;">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
+                }
+                else if (!scholarships.Where(s => !s.IsInternal && (profile == null || s.BenefactorProfileId != profile.BenefactorProfileId)).Any())
+                {
+                    <div class="alert alert-info text-center py-4">
+                        <i class="bi bi-globe me-2"></i>
+                        <span>No open scholarships available</span>
+                        <div class="mt-2">
+                            <small class="text-muted">Open scholarships from other benefactors will appear here.</small>
+                        </div>
+                        <div class="mt-3">
+                            <button class="btn btn-success" @onclick="AddScholarship">
+                                <i class="bi bi-plus-circle me-2"></i>Create Open Scholarship
+                            </button>
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <div class="row g-3">
+                        @foreach (var scholarship in scholarships.Where(s => !s.IsInternal && (profile == null || s.BenefactorProfileId != profile.BenefactorProfileId)).Take(3))
+                        {
+                            <div class="col-md-6 col-lg-4">
+                                <div class="card shadow-sm h-100 border-0"
+                                     @onclick="() => ViewScholarship(scholarship.ScholarshipId)"
+                                     style="cursor: pointer; transition: box-shadow 0.2s;">
+                                    <div class="card-body d-flex flex-column">
+                                        <div class="d-flex align-items-center mb-2">
+                                            <i class="bi bi-globe text-primary me-2 fs-5"></i>
+                                            <h6 class="card-title mb-0 text-truncate">@scholarship.Title</h6>
+                                        </div>
+                                        <p class="card-text text-muted mb-2 small">
+                                            <span class="badge bg-outline-success">
+                                                @(scholarship.Benefactor?.OrganizationName ?? "External Benefactor")
+                                            </span>
+                                        </p>
+                                        <div class="mb-2">
+                                            <span class="badge bg-success">@scholarship.CreatedAt.ToString("MMM dd")</span>
+                                            <span class="badge @(scholarship.IsActive ? "bg-success" : "bg-danger") ms-1">
+                                                @(scholarship.IsActive ? "Active" : "Inactive")
+                                            </span>
+                                        </div>
+                                        <div class="mt-auto">
+                                            <small class="text-muted">@scholarship.Applications.Count applications</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+            
+            <!-- Active Scholarships Section -->
+            <div class="scholarship-row">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+                    <button class="scholarship-row-title scholarship-row-title-btn"
+                            @onclick="() => ShowScholarshipList(4)"
+                            style="background: none; border: none; padding: 0; color: #1a202c; font-size: 1.25rem; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 8px;">
+                        Active Scholarships 
+                        <i class="bi bi-arrow-right" style="font-size: 1rem;"></i>
+                    </button>
+                    <span style="color: #64748b; font-size: 0.875rem;">@(scholarships?.Count(s => s.IsActive) ?? 0) active</span>
+                </div>
+                @if (scholarships is null)
+                {
+                    <div class="d-flex justify-content-center align-items-center" style="height: 150px;">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
+                }
+                else if (!scholarships.Where(s => s.IsActive).Any())
+                {
+                    <div class="alert alert-warning text-center py-4">
+                        <i class="bi bi-pause-circle me-2"></i>
+                        <span>No active scholarships</span>
+                        <div class="mt-2">
+                            <small class="text-muted">Activate some scholarships to see them here.</small>
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <div class="row g-3">
+                        @foreach (var scholarship in scholarships.Where(s => s.IsActive).Take(3))
+                        {
+                            <div class="col-md-6 col-lg-4">
+                                <div class="card shadow-sm h-100 border-0"
+                                     @onclick="() => ViewScholarship(scholarship.ScholarshipId)"
+                                     style="cursor: pointer; transition: box-shadow 0.2s;">
+                                    <div class="card-body d-flex flex-column">
+                                        <div class="d-flex align-items-center mb-2">
+                                            <i class="bi bi-check-circle text-info me-2 fs-5"></i>
+                                            <h6 class="card-title mb-0 text-truncate">@scholarship.Title</h6>
+                                        </div>
+                                        <p class="card-text text-muted mb-2 small">
+                                            <span class="badge bg-outline-primary">
+                                                @(!string.IsNullOrEmpty(scholarship.Institution?.InstitutionName)
+                                                    ? scholarship.Institution.InstitutionName
+                                                    : scholarship.Benefactor?.OrganizationName ?? "Provider")
+                                            </span>
+                                        </p>
+                                        <div class="mb-2">
+                                            <span class="badge bg-success">@scholarship.CreatedAt.ToString("MMM dd")</span>
+                                            <span class="badge bg-success ms-1">Active</span>
+                                            @if (scholarship.SlotsAvailable.HasValue)
+                                            {
+                                                <span class="badge bg-secondary ms-1">@scholarship.SlotsAvailable slots</span>
+                                            }
+                                        </div>
+                                        <div class="mt-auto">
+                                            <small class="text-muted">@scholarship.Applications.Count applications</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                }
             </div>
         </div>
     }
@@ -146,23 +847,9 @@
     {
         <!-- Recently Viewed Scholarships Tab (separate layout) -->
         <div class="scholarship-section">
-            <!-- Notifications Card -->
-            <div style="background:#fff;border-radius:16px;box-shadow:0 2px 8px rgba(0,0,0,0.04);padding:24px;width:800px;max-width:100%;align-self:center;margin:0 auto 24px auto;">
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-                    <h2 style="font-size:1.25rem;font-weight:600;">Notifications</h2>
-                    <button class="clear-link" style="background:none;border:none;color:#bbb;font-weight:500;font-size:16px;">Clear</button>
-                </div>
-                <!-- Example notification items -->
-                <div style="margin-bottom:16px;background:#fff;border-radius:12px;padding:18px 20px;box-shadow:0 1px 4px rgba(0,0,0,0.03);">
-                    <div style="font-weight:600;font-size:1.1rem;">Notif Title</div>
-                    <div style="color:#666;margin-top:4px;">Short Description Short Description Short Description</div>
-                </div>
-                <div style="margin-bottom:16px;background:#fff;border-radius:12px;padding:18px 20px;box-shadow:0 1px 4px rgba(0,0,0,0.03);">
-                    <div style="font-weight:600;font-size:1.1rem;">Notif Title</div>
-                    <div style="color:#666;margin-top:4px;">Short Description Short Description Short Description</div>
-                </div>
+            <div style="display: flex; justify-content: flex-end; align-items: center; margin-bottom: 8px;">
+                <button class="clear-link" style="background:none;border:none;color:#bbb;font-weight:500;font-size:16px;">Clear</button>
             </div>
-            <!-- Scholarship grid below -->
             <div class="scholarship-cards" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 32px;">
                 @for (int i = 0; i < 9; i++)
                 {
@@ -222,7 +909,22 @@
     private int activeTab = -1;
     private bool showScholarshipList = false;
     private int scholarshipTab = 0;
-    private string? adminFirstName;
+    private c2_eskolar.Models.BenefactorProfile? profile;
+    private string searchQuery = "";
+    private List<Scholarship> scholarships = new();
+    private List<Scholarship> filteredScholarships = new();
+    
+    // Filter and sort properties
+    private string statusFilter = "";
+    private string typeFilter = "";
+    private string sortOption = "date-desc";
+    
+    // Statistics properties
+    private int totalScholarships = 0;
+    private int totalApplications = 0;
+    private int pendingReviews = 0;
+    private int activeScholarships = 0;
+    private bool isLoading = true;
 
     protected override async Task OnInitializedAsync()
     {
@@ -237,9 +939,180 @@
         var userId = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
         if (userId != null)
         {
-            var profile = await BenefactorProfileService.GetProfileByUserIdAsync(userId);
-            adminFirstName = profile?.AdminFirstName;
+            profile = await BenefactorProfileService.GetProfileByUserIdAsync(userId);
         }
+        
+        await LoadDashboardData();
+        isLoading = false;
+        StateHasChanged();
+    }
+
+    private async Task LoadDashboardData()
+    {
+        try
+        {
+            // Load scholarships relevant to the current benefactor
+            var query = DbContext.Scholarships
+                .Include(s => s.Institution)
+                .Include(s => s.Benefactor)
+                .Include(s => s.Applications)
+                .AsQueryable();
+
+            // Filter scholarships: owned by this benefactor OR institutional scholarships OR open scholarships from others
+            if (profile != null)
+            {
+                query = query.Where(s => 
+                    s.BenefactorProfileId == profile.BenefactorProfileId || // Benefactor's own scholarships
+                    s.IsInternal == true || // Institutional scholarships (available to partner with)
+                    (!s.IsInternal && s.BenefactorProfileId != profile.BenefactorProfileId) // Open scholarships from other benefactors
+                );
+            }
+            else
+            {
+                // If no profile, show institutional and open scholarships
+                query = query.Where(s => s.IsInternal == true || !s.IsInternal);
+            }
+
+            scholarships = await query
+                .OrderByDescending(s => s.CreatedAt)
+                .ToListAsync();
+
+            filteredScholarships = scholarships;
+
+            // Calculate statistics
+            if (profile != null)
+            {
+                totalScholarships = scholarships.Count(s => s.BenefactorProfileId == profile.BenefactorProfileId);
+            }
+            else
+            {
+                totalScholarships = 0;
+            }
+            activeScholarships = scholarships.Count(s => s.IsActive);
+            totalApplications = scholarships.SelectMany(s => s.Applications).Count();
+            pendingReviews = scholarships.SelectMany(s => s.Applications).Count(); // Assuming all are pending for now
+        }
+        catch (Exception ex)
+        {
+            // Handle error - you might want to show a toast or error message
+            Console.WriteLine($"Error loading dashboard data: {ex.Message}");
+        }
+    }
+
+    private void OnSearchInput(ChangeEventArgs e)
+    {
+        searchQuery = e.Value?.ToString() ?? "";
+        FilterScholarships();
+    }
+
+    private void FilterScholarships()
+    {
+        var query = scholarships.AsQueryable();
+
+        // Apply search filter
+        if (!string.IsNullOrWhiteSpace(searchQuery))
+        {
+            query = query.Where(s => 
+                s.Title.Contains(searchQuery, StringComparison.OrdinalIgnoreCase) ||
+                (s.Description != null && s.Description.Contains(searchQuery, StringComparison.OrdinalIgnoreCase)) ||
+                (s.Institution != null && s.Institution.InstitutionName != null && s.Institution.InstitutionName.Contains(searchQuery, StringComparison.OrdinalIgnoreCase)) ||
+                (s.Benefactor != null && s.Benefactor.OrganizationName != null && s.Benefactor.OrganizationName.Contains(searchQuery, StringComparison.OrdinalIgnoreCase))
+            );
+        }
+
+        // Apply status filter
+        if (!string.IsNullOrWhiteSpace(statusFilter))
+        {
+            if (statusFilter == "active")
+                query = query.Where(s => s.IsActive);
+            else if (statusFilter == "inactive")
+                query = query.Where(s => !s.IsActive);
+        }
+
+        // Apply type filter
+        if (!string.IsNullOrWhiteSpace(typeFilter))
+        {
+            if (typeFilter == "internal")
+                query = query.Where(s => s.IsInternal);
+            else if (typeFilter == "external")
+                query = query.Where(s => !s.IsInternal);
+        }
+
+        // Apply sorting
+        query = sortOption switch
+        {
+            "date-asc" => query.OrderBy(s => s.CreatedAt),
+            "date-desc" => query.OrderByDescending(s => s.CreatedAt),
+            "title-asc" => query.OrderBy(s => s.Title),
+            "title-desc" => query.OrderByDescending(s => s.Title),
+            "applications-asc" => query.OrderBy(s => s.Applications.Count),
+            "applications-desc" => query.OrderByDescending(s => s.Applications.Count),
+            _ => query.OrderByDescending(s => s.CreatedAt)
+        };
+
+        filteredScholarships = query.ToList();
+        StateHasChanged();
+    }
+
+    private void OnStatusFilterChanged(ChangeEventArgs e)
+    {
+        statusFilter = e.Value?.ToString() ?? "";
+        FilterScholarships();
+    }
+
+    private void OnTypeFilterChanged(ChangeEventArgs e)
+    {
+        typeFilter = e.Value?.ToString() ?? "";
+        FilterScholarships();
+    }
+
+    private void OnSortChanged(ChangeEventArgs e)
+    {
+        sortOption = e.Value?.ToString() ?? "date-desc";
+        FilterScholarships();
+    }
+
+    private void ClearAllFilters()
+    {
+        searchQuery = "";
+        statusFilter = "";
+        typeFilter = "";
+        sortOption = "date-desc";
+        FilterScholarships();
+    }
+
+    private void ClearSearch()
+    {
+        searchQuery = "";
+        FilterScholarships();
+    }
+
+    private int GetMonthlyIncrease(string metric)
+    {
+        // Mock data for monthly increase percentages
+        return metric switch
+        {
+            "scholarships" => 12,
+            "applications" => 18,
+            "pending" => -5,
+            "active" => 8,
+            _ => 0
+        };
+    }
+
+    private List<Scholarship> GetFilteredScholarshipsForTab()
+    {
+        var baseScholarships = string.IsNullOrWhiteSpace(searchQuery) ? scholarships : filteredScholarships;
+        
+        return scholarshipTab switch
+        {
+            0 => baseScholarships.Where(s => profile != null && s.BenefactorProfileId == profile.BenefactorProfileId).ToList(), // My Funded Scholarships
+            1 => baseScholarships.Where(s => s.IsInternal).ToList(),   // Institutional Scholarships
+            2 => baseScholarships.Where(s => !s.IsInternal && (profile == null || s.BenefactorProfileId != profile.BenefactorProfileId)).ToList(), // Open Scholarships (external, not owned by current benefactor)
+            3 => baseScholarships.ToList(),                            // All
+            4 => baseScholarships.Where(s => s.IsActive).ToList(),     // Active
+            _ => baseScholarships.ToList()
+        };
     }
 
     private void SetTab(int tab)
@@ -253,21 +1126,26 @@
     {
         showScholarshipList = true;
         scholarshipTab = tab;
+        StateHasChanged();
     }
 
     private void SetScholarshipTab(int tab)
     {
         scholarshipTab = tab;
+        StateHasChanged();
     }
 
     private void BackToDashboard()
     {
         showScholarshipList = false;
+        activeTab = -1;
+        StateHasChanged();
     }
 
     private void ClearRecentlyViewed()
     {
         // Add logic to clear recently viewed scholarships if needed
+        StateHasChanged();
     }
 
     private void CloseProfilePopout()
@@ -275,5 +1153,34 @@
         // Add logic to close profile popout if needed
         StateHasChanged();
     }
-}
 
+    private void ViewScholarship(int scholarshipId)
+    {
+        Navigation.NavigateTo($"/dashboard/benefactor/scholarships-info/{scholarshipId}");
+    }
+
+    private void AddScholarship()
+    {
+        Navigation.NavigateTo("/dashboard/benefactor/scholarships/create");
+    }
+
+    private async Task DeleteScholarship(int scholarshipId)
+    {
+        try
+        {
+            var scholarship = await DbContext.Scholarships.FindAsync(scholarshipId);
+            if (scholarship != null)
+            {
+                DbContext.Scholarships.Remove(scholarship);
+                await DbContext.SaveChangesAsync();
+                await LoadDashboardData(); // Refresh the data
+                StateHasChanged();
+            }
+        }
+        catch (Exception ex)
+        {
+            // Handle error - you might want to show a toast or error message
+            Console.WriteLine($"Error deleting scholarship: {ex.Message}");
+        }
+    }
+}

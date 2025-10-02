@@ -6,11 +6,14 @@
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @inject UserManager<IdentityUser> UserManager
 @inject StudentProfileService StudentProfileService
+@inject ApplicationDbContext DbContext
 
 @using Microsoft.AspNetCore.Components.Web
 @using Microsoft.AspNetCore.Components.Authorization
 @using Microsoft.AspNetCore.Identity
+@using Microsoft.EntityFrameworkCore
 @using c2_eskolar.Components.UI
+@using c2_eskolar.Data
 
 @rendermode @(RenderMode.InteractiveServer)
 
@@ -30,6 +33,10 @@
     // Tracks the current month for the calendar component
     private DateTime currentMonth = new(DateTime.Now.Year, DateTime.Now.Month, 1);
     
+    // --- NOTIFICATION STATE ---
+    private List<NotificationItem> notifications = new();
+    private bool isLoadingNotifications = false;
+    
     // --- LIFECYCLE METHODS ---
 
     // Called when the layout initializes
@@ -37,7 +44,8 @@
     {
         Navigation.LocationChanged += OnLocationChanged;
         await LoadCurrentUser();
-            await LoadStudentProfile();
+        await LoadStudentProfile();
+        await LoadNotifications();
     }
 
         private async Task LoadStudentProfile()
@@ -59,6 +67,71 @@
             }
             StateHasChanged();
         }
+
+    // Loads notifications for the current student
+    private async Task LoadNotifications()
+    {
+        try
+        {
+            isLoadingNotifications = true;
+            var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+            var userId = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            
+            if (!string.IsNullOrEmpty(userId))
+            {
+                var studentProfile = await StudentProfileService.GetProfileByUserIdAsync(userId);
+                if (studentProfile != null)
+                {
+                    // Get recent scholarship application approvals
+                    var approvedApplications = await DbContext.ScholarshipApplications
+                        .Include(a => a.Scholarship)
+                        .Where(a => a.StudentProfileId == studentProfile.StudentProfileId && 
+                               a.Status == "Approved" && 
+                               a.UpdatedAt.HasValue && 
+                               a.UpdatedAt.Value >= DateTime.Now.AddDays(-30)) // Last 30 days
+                        .OrderByDescending(a => a.UpdatedAt)
+                        .Take(5)
+                        .ToListAsync();
+
+                    notifications = approvedApplications.Select(a => new NotificationItem
+                    {
+                        Title = "Scholarship Approved!",
+                        Description = $"Your application for {a.Scholarship?.Title ?? "scholarship"} has been approved.",
+                        CreatedAt = a.UpdatedAt ?? a.ApplicationDate,
+                        Type = "approval"
+                    }).ToList();
+
+                    // Add general notifications if none exist
+                    if (!notifications.Any())
+                    {
+                        notifications.Add(new NotificationItem
+                        {
+                            Title = "Welcome to eSkolar!",
+                            Description = "Complete your profile to get personalized scholarship recommendations.",
+                            CreatedAt = DateTime.Now,
+                            Type = "info"
+                        });
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading notifications: {ex.Message}");
+        }
+        finally
+        {
+            isLoadingNotifications = false;
+            StateHasChanged();
+        }
+    }
+
+    // Clears all notifications
+    private void ClearNotifications()
+    {
+        notifications.Clear();
+        StateHasChanged();
+    }
 
     // Loads the currently authenticated user's information
     private async Task LoadCurrentUser()
@@ -231,6 +304,16 @@
         public string Text { get; set; } = "";
         public bool IsUser { get; set; }
     }
+
+    // --- NOTIFICATION MODEL ---
+    // Defines a notification item
+    public class NotificationItem
+    {
+        public string Title { get; set; } = "";
+        public string Description { get; set; } = "";
+        public DateTime CreatedAt { get; set; }
+        public string Type { get; set; } = "info"; // "approval", "info", "warning", etc.
+    }
 }
 
 <!-- --- MAIN LAYOUT STRUCTURE --- -->
@@ -344,14 +427,43 @@
     <!-- Sidebar Notifications -->
     <div class="sidebar-notifications">
         <div class="sidebar-notifications-header">
-            Notifications <span style="float:right;cursor:pointer;">Clear</span>
+            Notifications 
+            @if (notifications.Any())
+            {
+                <span style="float:right;cursor:pointer;color:#007bff;" @onclick="ClearNotifications">Clear</span>
+            }
         </div>
         <div class="sidebar-notification-list">
-            @for (int i = 0; i < 3; i++)
+            @if (isLoadingNotifications)
             {
-                <div class="sidebar-notification">
-                    <div class="sidebar-notification-title">Notif Title</div>
-                    <div class="sidebar-notification-desc">Short Description Short Description Short Description</div>
+                <div class="text-center p-3">
+                    <div class="spinner-border spinner-border-sm" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+            }
+            else if (notifications.Any())
+            {
+                @foreach (var notification in notifications)
+                {
+                    <div class="sidebar-notification @(notification.Type == "approval" ? "approval-notification" : "")">
+                        <div class="sidebar-notification-title">
+                            @if (notification.Type == "approval")
+                            {
+                                <i class="fa fa-check-circle text-success me-1"></i>
+                            }
+                            @notification.Title
+                        </div>
+                        <div class="sidebar-notification-desc">@notification.Description</div>
+                        <div class="sidebar-notification-time">@notification.CreatedAt.ToString("MMM dd, yyyy")</div>
+                    </div>
+                }
+            }
+            else
+            {
+                <div class="text-center text-muted p-3">
+                    <i class="fa fa-bell-slash mb-2"></i><br />
+                    No notifications
                 </div>
             }
         </div>
@@ -410,6 +522,25 @@
         </div>
     </div>
 }
+
+<!-- Styles for notification enhancements -->
+<style>
+.approval-notification {
+    border-left: 3px solid #28a745 !important;
+    background-color: #f8fff9 !important;
+}
+
+.sidebar-notification-time {
+    font-size: 0.75rem;
+    color: #6c757d;
+    margin-top: 4px;
+}
+
+.sidebar-notification.approval-notification .sidebar-notification-title {
+    color: #28a745;
+    font-weight: 600;
+}
+</style>
 
 <!-- JavaScript helper to close Bootstrap offcanvas programmatically -->
 <script>
