@@ -17,30 +17,42 @@
             <h2>Welcome to eSkolar!</h2>
             <p class="role-label">Please select your role:</p>
 
-            <div class="role-options">
-                <!-- Student role -->
-                <label class="role-option">
-                    <input type="radio" name="role" value="@UserRole.Student" 
-                           @onchange="@(() => OnRoleChanged(UserRole.Student))" 
-                           checked="@(registerModel.UserRole == UserRole.Student)" />
-                    <span>Student</span>
-                </label>
+            <div class="role-options-wrapper">
+                <div class="role-options">
+                    <!-- Student role -->
+                    <label class="role-option">
+                        <input type="radio" name="role" value="@UserRole.Student" 
+                               @onchange="@(() => OnRoleChanged(UserRole.Student))" 
+                               checked="@(registerModel.UserRole == UserRole.Student)" />
+                        <span>Student</span>
+                    </label>
 
-                <!-- Institution role -->
-                <label class="role-option">
-                    <input type="radio" name="role" value="@UserRole.Institution" 
-                           @onchange="@(() => OnRoleChanged(UserRole.Institution))"
-                           checked="@(registerModel.UserRole == UserRole.Institution)" />
-                    <span>Institution</span>
-                </label>
+                    <!-- Institution role -->
+                    <label class="role-option">
+                        <input type="radio" name="role" value="@UserRole.Institution" 
+                               @onchange="@(() => OnRoleChanged(UserRole.Institution))"
+                               checked="@(registerModel.UserRole == UserRole.Institution)" />
+                        <span>Institution</span>
+                    </label>
 
-                <!-- Benefactor role -->
-                <label class="role-option">
-                    <input type="radio" name="role" value="@UserRole.Benefactor" 
-                           @onchange="@(() => OnRoleChanged(UserRole.Benefactor))"
-                           checked="@(registerModel.UserRole == UserRole.Benefactor)" />
-                    <span>Benefactor</span>
-                </label>
+                    <!-- Benefactor role -->
+                    <label class="role-option">
+                        <input type="radio" name="role" value="@UserRole.Benefactor" 
+                               @onchange="@(() => OnRoleChanged(UserRole.Benefactor))"
+                               checked="@(registerModel.UserRole == UserRole.Benefactor)" />
+                        <span>Benefactor</span>
+                    </label>
+                </div>
+
+                @if (registerModel.UserRole == UserRole.Institution || registerModel.UserRole == UserRole.Benefactor)
+                {
+                    <div class="institution-note">
+                        <span class="info-icon" aria-label="Info">
+                            <svg width="16" height="16" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" style="vertical-align: middle; margin-right: 5px;"><circle cx="10" cy="10" r="9" stroke="#fff" stroke-width="2" fill="none"/><rect x="9" y="8" width="2" height="6" rx="1" fill="#fff"/><rect x="9" y="5" width="2" height="2" rx="1" fill="#fff"/></svg>
+                        </span>
+                        <span>Only official organizational email addresses are eligible for registration.</span>
+                    </div>
+                }
             </div>
         </div>
 
