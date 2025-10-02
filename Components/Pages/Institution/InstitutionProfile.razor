@@ -6,19 +6,19 @@
 @using Microsoft.AspNetCore.Components.Authorization
 @using Microsoft.AspNetCore.Identity
 
-<div class="container-fluid p-5" style="padding-left: 80px; padding-right: 120px;">
+<div class="container-fluid p-5 institution-profile-bg">
     <!-- Header Section -->
     <div class="row mb-4">
         <div class="col-12">
             <div class="d-flex justify-content-between align-items-center">
-                <h2 class="mb-0">My Profile</h2>
+                <h2 class="mb-0 profile-title">My Profile</h2>
                 <div class="d-flex gap-2">
-                    <button class="btn btn-primary" @onclick="ToggleEditMode">
+                    <button class="btn btn-primary profile-btn" @onclick="ToggleEditMode">
                         <i class="fas fa-edit me-2"></i>@(IsEditMode ? "Cancel" : "Edit Profile")
                     </button>
                     @if (IsEditMode)
                     {
-                        <button class="btn btn-success" @onclick="SaveProfile">
+                        <button class="btn btn-success profile-btn" @onclick="SaveProfile">
                             <i class="fas fa-save me-2"></i>Save Changes
                         </button>
                     }
@@ -34,24 +34,46 @@
             <div class="card shadow-sm mb-4">
                 <div class="card-body text-center">
                     <div class="position-relative d-inline-block mb-3">
-                        <img src="@ProfilePicture" class="rounded-circle profile-image" alt="Profile Picture" width="120" height="120" />
+                        @if (IsEditMode && !string.IsNullOrWhiteSpace(_previewProfilePicture))
+                        {
+                            <img src="@_previewProfilePicture" class="profile-image shadow" alt="Profile Preview" width="120" height="120" />
+                        }
+                        else if (string.IsNullOrWhiteSpace(ProfilePicture) || ProfilePicture == "https://via.placeholder.com/120")
+                        {
+                            <!-- Blank SVG avatar (same as student profile) -->
+                            <svg width="120" height="120" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg" class="profile-image">
+                                <circle cx="60" cy="60" r="60" fill="#eaf1fb"/>
+                                <circle cx="60" cy="54" r="28" fill="#cfd8dc"/>
+                                <ellipse cx="60" cy="94" rx="36" ry="18" fill="#cfd8dc"/>
+                            </svg>
+                        }
+                        else
+                        {
+                            <img src="@ProfilePicture" class="profile-image shadow" alt="Profile Picture" width="120" height="120" />
+                        }
                         @if (IsEditMode)
                         {
-                            <button class="btn btn-sm btn-primary position-absolute bottom-0 end-0 rounded-circle" style="width: 30px; height: 30px;">
-                                <i class="fas fa-camera"></i>
-                            </button>
+                            <div class="d-flex flex-row justify-content-center gap-2 mt-2">
+                                <label class="btn btn-sm btn-primary rounded-circle profile-img-btn profile-upload-label">
+                                    <i class="fas fa-camera profile-upload-icon"></i>
+                                    <InputFile OnChange="OnProfileImageChange" accept="image/*" style="display:none;" />
+                                </label>
+                                <button class="btn btn-sm btn-danger rounded-circle profile-img-btn" type="button" title="Remove Profile Picture" @onclick="RemoveProfileImageAsync">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
                         }
                     </div>
-                    <h4 class="card-title mb-1">@FullName</h4>
-                    <p class="text-muted mb-2">@Role</p>
-                    <div class="mb-3">
-                        <span class="badge bg-@(Status == "Active" ? "success" : "secondary") fs-6">@Status</span>
+                    <h4 class="card-title mb-1 profile-name">@FullName</h4>
+                    <div class="text-muted mb-2">@Email</div>
+                    <div class="d-flex flex-column align-items-center gap-2">
+                        <span class="badge profile-badge-status @(Status == "Active" ? "profile-badge-active" : Status == "Pending" ? "profile-badge-pending" : Status == "On Leave" ? "profile-badge-onleave" : Status == "Graduated" ? "profile-badge-graduated" : "")">@Status</span>
                     </div>
-                    <div class="text-start">
-                        <p class="mb-2"><i class="fas fa-envelope text-primary me-2"></i>@Email</p>
-                        <p class="mb-2"><i class="fas fa-phone text-primary me-2"></i>@Phone</p>
-                        <p class="mb-2"><i class="fas fa-map-marker-alt text-primary me-2"></i>@Location</p>
-                        <p class="mb-0"><i class="fas fa-calendar text-primary me-2"></i>Member since @CreatedDate.ToString("MMM yyyy")</p>
+                    <div class="text-start mt-3">
+                        <div class="mb-2"><span class="profile-label-bold">Role:</span> <span>@Role</span></div>
+                        <div class="mb-2"><span class="profile-label-bold">Phone:</span> <span>@Phone</span></div>
+                        <div class="mb-2"><span class="profile-label-bold">Location:</span> <span>@Location</span></div>
+                        <div class="mb-0"><span class="profile-label-bold">Member since:</span> <span>@CreatedDate.ToString("MMM yyyy")</span></div>
                     </div>
                 </div>
             </div>
@@ -59,7 +81,7 @@
             <!-- Quick Stats -->
             <div class="card shadow-sm mb-4">
                 <div class="card-header bg-primary text-white">
-                    <h6 class="mb-0"><i class="fas fa-chart-bar me-2"></i>Academic Summary</h6>
+                    <h6 class="mb-0"><i class="fas fa-chart-bar profile-header-icon me-2"></i>Academic Summary</h6>
                 </div>
                 <div class="card-body">
                     <div class="row text-center">
@@ -87,25 +109,58 @@
 
             <!-- Verification Status -->
             <div class="card shadow-sm">
-                <div class="card-header bg-white">
-                    <h6 class="mb-0"><i class="fas fa-shield-check me-2"></i>Account Verification</h6>
+                <div class="card-header bg-white d-flex align-items-center">
+                    <span class="profile-verification-title">
+                        <span class="profile-verification-icon">
+                            <i class="fas fa-check-circle"></i>
+                        </span>
+                        Verification
+                    </span>
                 </div>
                 <div class="card-body">
                     <div class="verification-item d-flex justify-content-between align-items-center mb-2">
-                        <span>Email Verified</span>
-                        <i class="fas fa-@(EmailVerified ? "check-circle text-success" : "clock text-warning")"></i>
+                        <span class="profile-label-bold">Email</span>
+                        @if (EmailVerified)
+                        {
+                            <span><i class="fas fa-check-circle profile-icon-verified"></i></span>
+                        }
+                        else
+                        {
+                            <span><i class="fas fa-clock profile-icon-pending"></i></span>
+                        }
                     </div>
                     <div class="verification-item d-flex justify-content-between align-items-center mb-2">
-                        <span>Phone Verified</span>
-                        <i class="fas fa-@(PhoneVerified ? "check-circle text-success" : "clock text-warning")"></i>
+                        <span class="profile-label-bold">Phone</span>
+                        @if (PhoneVerified)
+                        {
+                            <span><i class="fas fa-check-circle profile-icon-verified"></i></span>
+                        }
+                        else
+                        {
+                            <span><i class="fas fa-clock profile-icon-pending"></i></span>
+                        }
                     </div>
                     <div class="verification-item d-flex justify-content-between align-items-center mb-2">
-                        <span>Student ID Verified</span>
-                        <i class="fas fa-@(StudentIdVerified ? "check-circle text-success" : "clock text-warning")"></i>
+                        <span class="profile-label-bold">Institution ID</span>
+                        @if (StudentIdVerified)
+                        {
+                            <span><i class="fas fa-check-circle profile-icon-verified"></i></span>
+                        }
+                        else
+                        {
+                            <span><i class="fas fa-clock profile-icon-pending"></i></span>
+                        }
                     </div>
                     <div class="verification-item d-flex justify-content-between align-items-center">
-                        <span>Academic Records</span>
-                        <i class="fas fa-@(AcademicRecordsVerified ? "check-circle text-success" : "clock text-warning")"></i>
+                        <span class="profile-label-bold">Accreditation</span>
+                        @if (AcademicRecordsVerified)
+                        {
+                            <span><i class="fas fa-check-circle profile-icon-verified"></i></span>
+                        }
+                        else
+                        {
+                            <span><i class="fas fa-clock profile-icon-pending"></i></span>
+                        }
                     </div>
                 </div>
             </div>
@@ -116,92 +171,92 @@
             <!-- Personal Information -->
             <div class="card shadow-sm mb-4">
                 <div class="card-header bg-white">
-                    <h5 class="mb-0"><i class="fas fa-user me-2"></i>Personal Information</h5>
+                    <h5 class="mb-0"><i class="fas fa-user profile-header-icon me-2"></i>Personal Information</h5>
                 </div>
                 <div class="card-body">
                     @if (IsEditMode)
                     {
-                        <div class="row">
-                            <div class="col-md-4 mb-3">
-                                <label class="form-label">First Name</label>
-                                <input type="text" class="form-control" @bind="AdminFirstName" />
+                        <div class="row mb-2">
+                            <div class="col-md-6 mb-3">
+                                <label class="profile-label-bold">First Name</label>
+                                <input class="form-control" @bind="AdminFirstName" />
                             </div>
-                            <div class="col-md-4 mb-3">
-                                <label class="form-label">Middle Name</label>
-                                <input type="text" class="form-control" @bind="AdminMiddleName" />
+                            <div class="col-md-6 mb-3">
+                                <label class="profile-label-bold">Middle Name</label>
+                                <input class="form-control" @bind="AdminMiddleName" />
                             </div>
-                            <div class="col-md-4 mb-3">
-                                <label class="form-label">Last Name</label>
-                                <input type="text" class="form-control" @bind="AdminLastName" />
+                            <div class="col-md-6 mb-3">
+                                <label class="profile-label-bold">Last Name</label>
+                                <input class="form-control" @bind="AdminLastName" />
                             </div>
-                            <div class="col-md-4 mb-3">
-                                <label class="form-label">Sex</label>
+                            <div class="col-md-6 mb-3">
+                                <label class="profile-label-bold">Sex</label>
                                 <select class="form-control" @bind="Sex">
                                     <option value="Male">Male</option>
                                     <option value="Female">Female</option>
                                     <option value="Other">Other</option>
                                 </select>
                             </div>
-                            <div class="col-md-4 mb-3">
-                                <label class="form-label">Nationality</label>
-                                <input type="text" class="form-control" @bind="Nationality" />
+                            <div class="col-md-6 mb-3">
+                                <label class="profile-label-bold">Nationality</label>
+                                <input class="form-control" @bind="Nationality" />
                             </div>
-                            <div class="col-md-4 mb-3">
-                                <label class="form-label">Date of Birth</label>
+                            <div class="col-md-6 mb-3">
+                                <label class="profile-label-bold">Birth Date</label>
                                 <input type="date" class="form-control" @bind="BirthDate" />
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label class="form-label">Mobile Number</label>
-                                <input type="tel" class="form-control" @bind="ContactNumber" />
+                                <label class="profile-label-bold">Contact Number</label>
+                                <input class="form-control" @bind="ContactNumber" />
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label class="form-label">Email Address</label>
-                                <input type="email" class="form-control" @bind="ContactEmail" readonly />
+                                <label class="profile-label-bold">Email</label>
+                                <input class="profile-email-readonly" value="@Email" readonly />
                             </div>
-                            <div class="col-12 mb-3">
-                                <label class="form-label">Permanent Address</label>
-                                <input type="text" class="form-control" @bind="Address" />
+                            <div class="col-md-12 mb-3">
+                                <label class="profile-label-bold">Address</label>
+                                <input class="form-control" @bind="Address" />
                             </div>
                         </div>
                     }
                     else
                     {
-                        <div class="row">
-                            <div class="col-md-4 mb-3">
-                                <h6 class="text-muted mb-1">First Name</h6>
-                                <p class="mb-0">@AdminFirstName</p>
-                            </div>
-                            <div class="col-md-4 mb-3">
-                                <h6 class="text-muted mb-1">Middle Name</h6>
-                                <p class="mb-0">@AdminMiddleName</p>
-                            </div>
-                            <div class="col-md-4 mb-3">
-                                <h6 class="text-muted mb-1">Last Name</h6>
-                                <p class="mb-0">@AdminLastName</p>
-                            </div>
-                            <div class="col-md-4 mb-3">
-                                <h6 class="text-muted mb-1">Sex</h6>
-                                <p class="mb-0">@Sex</p>
-                            </div>
-                            <div class="col-md-4 mb-3">
-                                <h6 class="text-muted mb-1">Nationality</h6>
-                                <p class="mb-0">@Nationality</p>
-                            </div>
-                            <div class="col-md-4 mb-3">
-                                <h6 class="text-muted mb-1">Date of Birth</h6>
-                                <p class="mb-0">@(BirthDate == default(DateTime) ? "" : BirthDate.ToString("yyyy-MM-dd"))</p>
+                        <div class="row mb-2">
+                            <div class="col-md-6 mb-3">
+                                <label class="profile-label-bold">First Name</label>
+                                <div>@AdminFirstName</div>
                             </div>
                             <div class="col-md-6 mb-3">
-                                <h6 class="text-muted mb-1">Mobile Number</h6>
-                                <p class="mb-0">@ContactNumber</p>
+                                <label class="profile-label-bold">Middle Name</label>
+                                <div>@AdminMiddleName</div>
                             </div>
                             <div class="col-md-6 mb-3">
-                                <h6 class="text-muted mb-1">Email Address</h6>
-                                <p class="mb-0">@ContactEmail</p>
+                                <label class="profile-label-bold">Last Name</label>
+                                <div>@AdminLastName</div>
                             </div>
-                            <div class="col-12 mb-3">
-                                <h6 class="text-muted mb-1">Permanent Address</h6>
-                                <p class="mb-0">@Address</p>
+                            <div class="col-md-6 mb-3">
+                                <label class="profile-label-bold">Sex</label>
+                                <div>@Sex</div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="profile-label-bold">Nationality</label>
+                                <div>@Nationality</div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="profile-label-bold">Birth Date</label>
+                                <div>@BirthDate.ToShortDateString()</div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="profile-label-bold">Contact Number</label>
+                                <div>@ContactNumber</div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="profile-label-bold">Email</label>
+                                <div>@Email</div>
+                            </div>
+                            <div class="col-md-12 mb-3">
+                                <label class="profile-label-bold">Address</label>
+                                <div>@Address</div>
                             </div>
                         </div>
                     }
@@ -211,7 +266,7 @@
             <!-- Recent Activity -->
             <div class="card shadow-sm mb-4">
                 <div class="card-header bg-white">
-                    <h5 class="mb-0"><i class="fas fa-history me-2"></i>Recent Activity</h5>
+                    <h5 class="mb-0"><i class="fas fa-history profile-header-icon me-2"></i>Recent Activity</h5>
                 </div>
                 <div class="card-body">
                     <div class="activity-timeline">
@@ -249,7 +304,7 @@
             <!-- Security Settings -->
             <div class="card shadow-sm">
                 <div class="card-header bg-white">
-                    <h5 class="mb-0"><i class="fas fa-lock me-2"></i>Security Settings</h5>
+                    <h5 class="mb-0"><i class="fas fa-lock profile-header-icon me-2"></i>Security Settings</h5>
                 </div>
                 <div class="card-body">
                     <div class="row">
@@ -280,43 +335,7 @@
     </div>
 </div>
 
-<style>
-    .profile-image {
-        object-fit: cover;
-        border: 4px solid #f8f9fa;
-        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-    }
-    
-    .stat-item {
-        padding: 0.5rem 0;
-    }
-    
-    .verification-item {
-        padding: 0.25rem 0;
-    }
-    
-    .activity-icon {
-        width: 40px;
-        height: 40px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        flex-shrink: 0;
-    }
-    
-    .activity-timeline {
-        position: relative;
-    }
-    
-    .card-header {
-        border-bottom: 1px solid #dee2e6;
-    }
-    
-    .form-check-input:checked {
-        background-color: #198754;
-        border-color: #198754;
-    }
-</style>
+<!-- Styles moved to InstitutionProfile.razor.css -->
 
 @code {
     // Edit mode state
@@ -344,6 +363,50 @@
     private string Status = "Active";
     private DateTime CreatedDate = DateTime.Now;
     private string ProfilePicture = "https://via.placeholder.com/120";
+
+    private IBrowserFile? UploadedProfileImage;
+    private string? _previewProfilePicture;
+    private string PreviewProfilePicture => _previewProfilePicture ?? ProfilePicture;
+
+    private async Task OnProfileImageChange(InputFileChangeEventArgs e)
+    {
+        UploadedProfileImage = e.File;
+        if (UploadedProfileImage != null)
+        {
+            if (UploadedProfileImage.Size > 5 * 1024 * 1024)
+            {
+                // Optionally show error message (not implemented here)
+                _previewProfilePicture = null;
+                UploadedProfileImage = null;
+                return;
+            }
+            using var ms = new MemoryStream();
+            await UploadedProfileImage.OpenReadStream(5 * 1024 * 1024).CopyToAsync(ms);
+            var base64 = Convert.ToBase64String(ms.ToArray());
+            var ext = Path.GetExtension(UploadedProfileImage.Name).ToLower();
+            var mime = ext == ".png" ? "image/png" : "image/jpeg";
+            _previewProfilePicture = $"data:{mime};base64,{base64}";
+        }
+    }
+
+    private async Task RemoveProfileImageAsync()
+    {
+        ProfilePicture = "https://via.placeholder.com/120";
+        _previewProfilePicture = null;
+        UploadedProfileImage = null;
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = await UserManager.GetUserAsync(authState.User);
+        if (user != null)
+        {
+            var profile = await InstitutionProfileService.GetProfileByUserIdAsync(user.Id);
+            if (profile != null)
+            {
+                profile.ProfilePicture = ProfilePicture;
+                await InstitutionProfileService.SaveProfileAsync(profile);
+            }
+        }
+        StateHasChanged();
+    }
 
     // Verification Status
     private bool EmailVerified = false;
@@ -426,6 +489,7 @@
                 ContactEmail = profile.ContactEmail ?? "";
                 Address = profile.Address ?? "";
                 FullName = profile.AdminFullName;
+                ProfilePicture = !string.IsNullOrWhiteSpace(profile.ProfilePicture) ? profile.ProfilePicture : "https://via.placeholder.com/120";
             }
         }
         catch (Exception ex)
@@ -475,8 +539,44 @@
                 profile.ContactEmail = ContactEmail;
                 profile.Address = Address;
                 profile.InstitutionName = University;
+                // Save uploaded profile image if present
+                if (UploadedProfileImage != null)
+                {
+                    if (UploadedProfileImage.Size > 5 * 1024 * 1024)
+                    {
+                        UploadedProfileImage = null;
+                        _previewProfilePicture = null;
+                    }
+                    else
+                    {
+                        var fileName = $"institution_profile_{Guid.NewGuid()}{Path.GetExtension(UploadedProfileImage.Name)}";
+                        var dirPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/images/profiles");
+                        if (!Directory.Exists(dirPath))
+                        {
+                            Directory.CreateDirectory(dirPath);
+                        }
+                        var savePath = Path.Combine(dirPath, fileName);
+                        await using (var stream = File.Create(savePath))
+                        {
+                            await UploadedProfileImage.OpenReadStream(5 * 1024 * 1024).CopyToAsync(stream);
+                        }
+                        // Always use web-accessible path
+                        var webPath = $"/images/profiles/{fileName}";
+                        profile.ProfilePicture = webPath;
+                        ProfilePicture = webPath;
+                    }
+                }
+                else if (!string.IsNullOrWhiteSpace(ProfilePicture))
+                {
+                    // Only use web-accessible path or blank avatar
+                    profile.ProfilePicture = ProfilePicture.StartsWith("/images/profiles/") ? ProfilePicture : "https://via.placeholder.com/120";
+                }
                 await InstitutionProfileService.SaveProfileAsync(profile);
+                // Reload profile data to update ProfilePicture and other fields
+                await LoadExtendedProfileData(user.Id);
                 IsEditMode = false;
+                _previewProfilePicture = null;
+                UploadedProfileImage = null;
                 Console.WriteLine("Institution profile updated successfully!");
             }
         }

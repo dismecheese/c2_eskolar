@@ -37,6 +37,7 @@ namespace c2_eskolar.Services
                 existing.Address = profile.Address;
                 existing.ContactEmail = profile.ContactEmail;
                 existing.ContactNumber = profile.ContactNumber;
+                existing.ProfilePicture = profile.ProfilePicture;
                 // ...add other fields as needed
             }
             await context.SaveChangesAsync();
