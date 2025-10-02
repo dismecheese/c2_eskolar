@@ -1,31 +1,32 @@
 
 @page "/student/verification"
+
 <div class="sv-container sv-modal-content">
         <div class="sv-header">
             <h2 id="sv-modal-title">Student Verification</h2>
             <div class="sv-divider"></div>
         </div>
         <!-- Personal Information Section -->
-        <section class="sv-card">
+        <section class="sv-card sv-card-elevated">
             <div class="sv-section-title">Personal Information</div>
             <div class="sv-fields sv-fields-3">
                 <div class="sv-field">
                     <label for="firstName">First Name</label>
-                    <input id="firstName" />
+                    <input id="firstName" class="sv-input sv-input-medium" />
                 </div>
                 <div class="sv-field">
                     <label for="middleName">Middle Name</label>
-                    <input id="middleName" />
+                    <input id="middleName" class="sv-input sv-input-medium" />
                 </div>
                 <div class="sv-field">
                     <label for="lastName">Last Name</label>
-                    <input id="lastName" />
+                    <input id="lastName" class="sv-input sv-input-medium" />
                 </div>
             </div>
-            <div class="sv-fields sv-fields-4">
+            <div class="sv-fields sv-fields-3">
                 <div class="sv-field">
                     <label for="sex">Sex</label>
-                    <select id="sex">
+                    <select id="sex" class="sv-input sv-input-short">
                         <option value="">Select</option>
                         <option>Male</option>
                         <option>Female</option>
@@ -34,49 +35,51 @@
                 </div>
                 <div class="sv-field">
                     <label for="bday">Birthday</label>
-                    <input id="bday" type="date" />
+                    <input id="bday" type="date" class="sv-input sv-input-short" />
                 </div>
                 <div class="sv-field">
                     <label for="nationality">Nationality</label>
-                    <input id="nationality" />
-                </div>
-                <div class="sv-field">
-                    <label for="number">Contact Number</label>
-                    <input id="number" />
+                    <input id="nationality" class="sv-input sv-input-medium" />
                 </div>
             </div>
             <div class="sv-fields sv-fields-2">
                 <div class="sv-field">
-                    <label for="address">Address</label>
-                    <input id="address" />
+                    <label for="number">Contact Number</label>
+                    <input id="number" class="sv-input sv-input-short" />
                 </div>
                 <div class="sv-field">
                     <label for="email">Email</label>
-                    <input id="email" readonly />
+                    <input id="email" readonly class="sv-input sv-input-medium" />
+                </div>
+            </div>
+            <div class="sv-fields sv-fields-1">
+                <div class="sv-field">
+                    <label for="address">Address</label>
+                    <input id="address" class="sv-input sv-input-long" />
                 </div>
             </div>
         </section>
         <!-- Educational Info Section -->
-        <section class="sv-card">
+        <section class="sv-card sv-card-elevated">
             <div class="sv-section-title">Educational Information</div>
             <div class="sv-fields sv-fields-2">
                 <div class="sv-field">
                     <label for="university">University</label>
-                    <input id="university" />
+                    <input id="university" class="sv-input sv-input-long" />
                 </div>
                 <div class="sv-field">
                     <label for="studentNumber">Student Number</label>
-                    <input id="studentNumber" />
+                    <input id="studentNumber" class="sv-input sv-input-medium" />
                 </div>
             </div>
             <div class="sv-fields sv-fields-3">
                 <div class="sv-field">
                     <label for="program">Program</label>
-                    <input id="program" />
+                    <input id="program" class="sv-input sv-input-medium" />
                 </div>
                 <div class="sv-field">
                     <label for="yearLevel">Year Level</label>
-                    <select id="yearLevel">
+                    <select id="yearLevel" class="sv-input sv-input-short">
                         <option value="">Select</option>
                         <option>1st Year</option>
                         <option>2nd Year</option>
@@ -88,17 +91,17 @@
                 </div>
                 <div class="sv-field">
                     <label for="status">Status</label>
-                    <input id="status" readonly value="Pending" />
+                    <input id="status" readonly value="Pending" class="sv-input sv-input-short" />
                 </div>
             </div>
         </section>
         <!-- Document Upload Section -->
-        <section class="sv-card">
+        <section class="sv-card sv-card-elevated">
             <div class="sv-section-title">Document Upload</div>
             <div class="sv-fields sv-fields-2">
                 <div class="sv-field">
                     <label for="idUpload">Student ID</label>
-                    <input type="file" id="idUpload" />
+                    <input type="file" id="idUpload" class="sv-input sv-input-medium" />
                     <div class="sv-upload-preview">
                         <img src="" alt="ID Preview" style="display:none;" />
                         <button type="button" disabled>Remove</button>
@@ -106,7 +109,7 @@
                 </div>
                 <div class="sv-field">
                     <label for="corUpload">Certificate of Registration (COR)</label>
-                    <input type="file" id="corUpload" />
+                    <input type="file" id="corUpload" class="sv-input sv-input-medium" />
                     <div class="sv-upload-preview">
                         <img src="" alt="COR Preview" style="display:none;" />
                         <button type="button" disabled>Remove</button>
@@ -115,7 +118,7 @@
             </div>
         </section>
         <!-- Institution Check Section -->
-        <section class="sv-card">
+        <section class="sv-card sv-card-elevated">
             <div class="sv-section-title">Institution Check</div>
             <div class="sv-fields sv-fields-2">
                 <div class="sv-field sv-radio-group">
@@ -129,7 +132,7 @@
                 </div>
                 <div class="sv-field">
                     <label for="institutionDropdown">Select Institution</label>
-                    <select id="institutionDropdown">
+                    <select id="institutionDropdown" class="sv-input sv-input-medium">
                         <option value="">Select</option>
                         <option>Institution A</option>
                         <option>Institution B</option>
@@ -149,199 +152,6 @@
         </div>
     </div>
 
-<style>
-/* Modal overlay and modal styles */
-.sv-modal-overlay {}
-.sv-modal {}
-.sv-modal-content {
-    max-width: 700px;
-    margin: 0 auto;
-    background: #fff;
-    border-radius: 18px;
-    box-shadow: 0 4px 32px 0 rgba(30,40,90,0.08);
-    padding: 32px 28px 18px 28px;
-    overflow-y: auto;
-    max-height: 90vh;
-}
-.sv-modal-close {
-    position: absolute;
-    top: 18px;
-    right: 24px;
-    font-size: 2.1rem;
-    background: none;
-    border: none;
-    color: #283593;
-    cursor: pointer;
-    z-index: 10;
-    opacity: 0.7;
-    transition: opacity 0.2s;
-}
-.sv-modal-close:hover {
-    opacity: 1;
-}
-.sv-container {
-    max-width: 700px;
-    margin: 0 auto;
-    background: transparent;
-    border-radius: 18px;
-    box-shadow: none;
-    padding: 0;
-}
-.sv-header {
-    text-align: center;
-    margin-bottom: 18px;
-}
-.sv-header h2 {
-    font-weight: 700;
-    font-size: 2.1rem;
-    margin-bottom: 0.2em;
-    color: #1a237e;
-}
-.sv-divider {
-    width: 60px;
-    height: 3px;
-    background: #1976d2;
-    border-radius: 2px;
-    margin: 0 auto 8px auto;
-}
-.sv-card {
-    background: none;
-    border-radius: 0;
-    box-shadow: none;
-    padding: 0 0 0 0;
-    margin-bottom: 0;
-    border-bottom: 1.5px solid #e3e8f0;
-    padding-bottom: 18px;
-    margin-bottom: 18px;
-}
-.sv-card:last-child {
-    border-bottom: none;
-    padding-bottom: 0;
-    margin-bottom: 0;
-}
-.sv-section-title {
-    font-size: 1.13rem;
-    font-weight: 600;
-    color: #283593;
-    margin-bottom: 12px;
-    margin-top: 8px;
-    letter-spacing: 0.01em;
-}
-.sv-fields {
-    display: flex;
-    gap: 18px;
-    margin-bottom: 14px;
-    flex-wrap: wrap;
-}
-.sv-fields-2 > .sv-field { flex: 1 1 48%; }
-.sv-fields-3 > .sv-field { flex: 1 1 30%; }
-.sv-fields-4 > .sv-field { flex: 1 1 22%; }
-.sv-field {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    margin-bottom: 8px;
-}
-.sv-field label {
-    font-size: 0.98rem;
-    color: #374151;
-    font-weight: 500;
-    margin-bottom: 2px;
-}
-.sv-field input,
-.sv-field select {
-    border-radius: 7px;
-    border: 1.2px solid #cfd8dc;
-    padding: 8px 12px;
-    font-size: 1rem;
-    background: #fff;
-    transition: border 0.2s;
-}
-.sv-field input:focus,
-.sv-field select:focus {
-    outline: none;
-    border-color: #1976d2;
-    background: #f0f7ff;
-}
-.sv-radio-group label {
-    margin-right: 16px;
-    font-weight: 400;
-}
-.sv-radio-group input[type="radio"] {
-    margin-right: 4px;
-}
-.sv-upload-preview {
-    margin-top: 6px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-.sv-upload-preview img {
-    border-radius: 6px;
-    border: 1px solid #e3e3e3;
-    background: #f5f5f5;
-    width: 90px;
-    height: 60px;
-    object-fit: cover;
-}
-.sv-upload-preview button {
-    font-size: 0.92rem;
-    padding: 3px 14px;
-    border-radius: 6px;
-    border: none;
-    background: #e57373;
-    color: #fff;
-    opacity: 0.7;
-    cursor: not-allowed;
-}
-.sv-actions-row {
-    display: flex;
-    align-items: center;
-    gap: 18px;
-    margin-top: 18px;
-    justify-content: flex-end;
-}
-.sv-btn {
-    font-size: 1rem;
-    padding: 7px 28px;
-    border-radius: 7px;
-    border: none;
-    font-weight: 600;
-    transition: background 0.2s, color 0.2s;
-}
-.sv-btn-primary {
-    background: #1976d2;
-    color: #fff;
-    opacity: 0.7;
-}
-.sv-btn-secondary {
-    background: #e3e8f0;
-    color: #283593;
-    opacity: 0.7;
-}
-.sv-status {
-    margin-left: 18px;
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-}
-.sv-status-info {
-    color: #1976d2;
-    font-weight: 500;
-    font-size: 0.98rem;
-}
-    .sv-status-error {
-        color: #e53935;
-        font-weight: 500;
-        font-size: 0.98rem;
-    }
-    @@media (max-width: 900px) {
-        .sv-modal-content { padding: 18px 4vw; }
-        .sv-fields { flex-direction: column; gap: 8px; }
-        .sv-actions-row { flex-direction: column; align-items: stretch; gap: 10px; }
-        .sv-status { margin-left: 0; }
-    }
-</style>
 
 
 
