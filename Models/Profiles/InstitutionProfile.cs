@@ -56,8 +56,11 @@ namespace c2_eskolar.Models
         [StringLength(2000)]
         public string? Description { get; set; }
 
-        [StringLength(255)]
-        public string? Logo { get; set; } // Institution logo file path/URL
+    [StringLength(255)]
+    public string? Logo { get; set; } // Institution logo file path/URL
+
+    [StringLength(255)]
+    public string? ProfilePicture { get; set; } // Institution profile picture file path/URL
 
         // Academic Information
         public int? TotalStudents { get; set; }
