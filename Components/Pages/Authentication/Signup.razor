@@ -94,9 +94,14 @@
                 </div>
                 <!-- Email -->
                 <div class="form-group">
-                    <input class="signup-input" type="email" placeholder="Email Address" 
-                        @bind="registerModel.Email" />
+                    <input class="signup-input @(ShowInstitutionEmailError ? "input-invalid" : "")" type="email" placeholder="Email Address" 
+                        @bind="registerModel.Email"
+                        @oninput="OnEmailInput" />
                     <ValidationMessage For="@(() => registerModel.Email)" />
+                    @if (ShowInstitutionEmailError)
+                    {
+                        <div class="validation-message">Please enter a valid institutional email address.</div>
+                    }
                 </div>
                 <!-- Password with toggle -->
                 <div class="form-group">
@@ -165,6 +170,25 @@
     private bool IsPasswordUpperValid => !string.IsNullOrEmpty(registerModel.Password) && registerModel.Password.Any(char.IsUpper);
     private bool IsPasswordAllValid => IsPasswordLengthValid && IsPasswordDigitValid && IsPasswordUpperValid;
 
+    // Institution email validation
+    private bool ShowInstitutionEmailError => registerModel.UserRole == UserRole.Institution && !string.IsNullOrEmpty(registerModel.Email) && !IsInstitutionEmail(registerModel.Email);
+    // Called on every email input
+    private void OnEmailInput(ChangeEventArgs e)
+    {
+        registerModel.Email = e.Value?.ToString() ?? string.Empty;
+        StateHasChanged();
+    }
+
+    // Checks if the email is a valid institutional email (simple version: ends with .edu, .ac, or .org)
+    private bool IsInstitutionEmail(string email)
+    {
+        if (string.IsNullOrWhiteSpace(email) || !email.Contains("@")) return false;
+        var domain = email.Split('@').Last().ToLower();
+        // List of allowed institutional domain suffixes
+        string[] allowedSuffixes = new[] { ".edu", ".ac", ".org", ".edu.ph", ".ac.ph", ".gov.ph" };
+        return allowedSuffixes.Any(suffix => domain.EndsWith(suffix));
+    }
+
     protected override void OnInitialized()
     {
         // Default role is Student
@@ -215,6 +239,12 @@
     // Handle form submission
     private async Task HandleRegistration()
     {
+        // Prevent submission if institution email is invalid
+        if (registerModel.UserRole == UserRole.Institution && !IsInstitutionEmail(registerModel.Email))
+        {
+            errorMessage = "Please enter a valid institutional email address.";
+            return;
+        }
         try
         {
             isLoading = true;
