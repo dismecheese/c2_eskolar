@@ -10,7 +10,9 @@
 @inject AuthenticationStateProvider AuthStateProvider
 @inject StudentProfileService StudentProfileService
 
+
 @inject NavigationManager Navigation
+
 
 <div class="dashboard-center-container">
     <!-- Top Bar -->
@@ -33,6 +35,8 @@
         <button class="dashboard-tab @(activeTab == 1 ? "active" : "")" @onclick="() => SetTab(1)">Current Applications</button>
         <button class="dashboard-tab @(activeTab == 2 ? "active" : "")" @onclick="() => SetTab(2)">My Scholarships</button>
     </div>
+
+
 
     @if (showScholarshipList)
     {
@@ -220,13 +224,31 @@
             </div>
         </div>
     }
+
+    @if (showVerificationPrompt)
+    {
+        <div class="verify-prompt-overlay" tabindex="-1" aria-modal="true" role="dialog">
+            <div class="verify-prompt-modal">
+                <button class="verify-prompt-close" aria-label="Close" @onclick="() => showVerificationPrompt = false">&times;</button>
+                <div class="verify-prompt-title">Verify your student account</div>
+                <div class="verify-prompt-desc">Verifying your account unlocks more features and scholarships.<br />Would you like to verify now?</div>
+                <div class="verify-prompt-actions">
+                    <button class="verify-btn verify-btn-primary" @onclick="GoToVerification">Verify</button>
+                    <button class="verify-btn verify-btn-secondary" @onclick="() => showVerificationPrompt = false">Skip</button>
+                </div>
+            </div>
+        </div>
+    }
 </div>
 
 @code {
+
     private int activeTab = -1;
     private bool showScholarshipList = false;
     private int scholarshipTab = 0; // 0: Institutional, 1: Open, 2: All, 3: Recommended
     private string? firstName;
+    private bool showVerificationModal = true;
+    private bool showVerificationPrompt = true;
 
     protected override async Task OnInitializedAsync()
     {
@@ -278,4 +300,6 @@
     {
         // Add logic to clear recently viewed scholarships if needed
     }
+
+    private void GoToVerification() => Navigation.NavigateTo("/student/verification");
 }
