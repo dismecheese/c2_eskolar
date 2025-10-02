@@ -94,7 +94,7 @@
                 </div>
                 <!-- Email -->
                 <div class="form-group">
-                    <input class="signup-input @(ShowInstitutionEmailError ? "input-invalid" : "")" type="email" placeholder="Email Address" 
+                    <input class="signup-input @(ShowInstitutionEmailError ? "input-invalid" : (ShowInstitutionEmailValid ? "input-valid" : ""))" type="email" placeholder="Email Address" 
                         @bind="registerModel.Email"
                         @oninput="OnEmailInput" />
                     <ValidationMessage For="@(() => registerModel.Email)" />
@@ -103,6 +103,8 @@
                         <div class="validation-message">Please enter a valid institutional email address.</div>
                     }
                 </div>
+    // True if institution email is valid and role is Institution
+    private bool ShowInstitutionEmailValid => registerModel.UserRole == UserRole.Institution && !string.IsNullOrEmpty(registerModel.Email) && IsInstitutionEmail(registerModel.Email);
                 <!-- Password with toggle -->
                 <div class="form-group">
                     <div class="password-wrapper">
