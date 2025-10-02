@@ -1,0 +1,57 @@
+/* Professional bubble/frame styling for Terms and Conditions */
+.terms-bubble {
+  max-width: 800px;
+  margin: 40px auto 60px auto;
+  background: #fff;
+  border-radius: 18px;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.10), 0 1.5px 6px rgba(0,0,0,0.08);
+  padding: 2.5rem 2.5rem 2rem 2.5rem;
+  border: 1.5px solid #e0e0e0;
+  font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+  color: #232323;
+}
+.terms-bubble h1 {
+  text-align: center;
+  font-size: 2.3rem;
+  font-weight: 800;
+  margin-bottom: 1.5rem;
+  color: #1a1a1a;
+  font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+  letter-spacing: -0.5px;
+}
+.terms-bubble h2 {
+  font-size: 1.22rem;
+  font-weight: 700;
+  margin-top: 1.7rem;
+  margin-bottom: 0.7rem;
+  color: #1976d2;
+  font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+  letter-spacing: 0.01em;
+}
+.terms-bubble ul {
+  margin-left: 1.2rem;
+  margin-bottom: 1.2rem;
+  font-size: 1.04rem;
+  font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+}
+.terms-bubble li {
+  margin-bottom: 0.5rem;
+  line-height: 1.7;
+  font-size: 1.04rem;
+  font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+}
+.terms-bubble p {
+  margin-bottom: 1.1rem;
+  color: #333;
+  font-size: 1.07rem;
+  font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+}
+.terms-bubble a {
+  color: #1976d2;
+  text-decoration: underline;
+  font-weight: 500;
+  font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+}
+.terms-bubble a:hover {
+  color: #0d47a1;
+}

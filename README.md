@@ -98,7 +98,6 @@ This will start both the SQL Server and the Blazor Server app containers. The ap
 ### 3. Common Issues
 - **Decimal precision warnings:** These do not prevent the app from running, but you may want to configure precision in your EF Core models.
 - **Data Protection keys warning:** Keys are stored in the container and reset on restart. For production, use persistent storage.
-- **Identity DI errors:** Ensure all Identity services use `ApplicationUser` consistently.
 
 ### 4. Stopping Containers
 ```powershell
