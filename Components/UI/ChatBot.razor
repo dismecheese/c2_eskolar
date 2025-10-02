@@ -1,0 +1,108 @@
+@inject c2_eskolar.Services.OpenAIService OpenAIService
+@inject HttpClient Http
+@using System.Threading.Tasks
+
+<div class="chatbot-float-window">
+    <div class="chatbot-header">
+        <span>AI Assistant</span>
+        <button class="btn-close" @onclick="CloseChatbot" aria-label="Close chatbot">×</button>
+    </div>
+    <div class="chatbot-body">
+        @foreach (var message in Messages)
+        {
+            <div class="chat-message @(message.IsUser ? "user" : "bot")">
+                <div class="message-avatar @(message.IsUser ? "user" : "bot")">
+                    @(message.IsUser ? "You" : "AI")
+                </div>
+                <div class="message-bubble @(message.IsUser ? "user" : "bot")">
+                    @message.Text
+                </div>
+            </div>
+        }
+    </div>
+    <div class="chatbot-input">
+        <input @bind="UserInput" @bind:event="oninput" @onkeydown="HandleKeyDown" placeholder="Type your message..." />
+        <button class="chatbot-send-btn" @onclick="SendMessage" disabled="@IsSending">
+            <span class="fa fa-paper-plane"></span>
+        </button>
+    </div>
+ </div>
+@code {
+    [Parameter]
+    public EventCallback CloseChatbot { get; set; }
+    private string UserInput { get; set; } = string.Empty;
+    private List<ChatMessage> Messages { get; set; } = new();
+    private bool IsSending { get; set; } = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadGreetingAsync();
+    }
+
+    private async Task LoadGreetingAsync()
+    {
+        try
+        {
+            var response = await Http.GetAsync("/api/chatbot/start-message");
+            if (response.IsSuccessStatusCode)
+            {
+                var json = await response.Content.ReadAsStringAsync();
+                var result = System.Text.Json.JsonSerializer.Deserialize<GreetingResponse>(json);
+                var greeting = result?.message ?? "Welcome! How can I help you today?";
+                Messages.Add(new ChatMessage { Text = greeting, IsUser = false });
+            }
+            else
+            {
+                Messages.Add(new ChatMessage { Text = "Welcome! How can I help you today?", IsUser = false });
+            }
+        }
+        catch
+        {
+            Messages.Add(new ChatMessage { Text = "Welcome! How can I help you today?", IsUser = false });
+        }
+        StateHasChanged();
+    }
+
+    private async Task SendMessage()
+    {
+        if (string.IsNullOrWhiteSpace(UserInput) || IsSending) return;
+        var input = UserInput.Trim();
+        Messages.Add(new ChatMessage { Text = input, IsUser = true });
+        UserInput = string.Empty;
+        IsSending = true;
+        StateHasChanged();
+        try
+        {
+            var response = await OpenAIService.GetChatCompletionAsync(input);
+            Messages.Add(new ChatMessage { Text = response, IsUser = false });
+        }
+        catch (Exception ex)
+        {
+            Messages.Add(new ChatMessage { Text = $"[Error: {ex.Message}]", IsUser = false });
+        }
+        finally
+        {
+            IsSending = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task HandleKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            await SendMessage();
+        }
+    }
+
+    private class ChatMessage
+    {
+        public string Text { get; set; } = string.Empty;
+        public bool IsUser { get; set; }
+    }
+
+    private class GreetingResponse
+    {
+        public string? message { get; set; }
+    }
+}

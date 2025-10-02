@@ -59,8 +59,18 @@ builder.Services.AddDbContextFactory<ApplicationDbContext>(options =>
     // Add authorization services
     builder.Services.AddAuthorization();
 
-    // ADD THIS LINE: Register AuthService
+
+    // Register AuthService
     builder.Services.AddScoped<AuthService>();
+
+    // Register HttpClient for DI in Blazor Server
+    builder.Services.AddHttpClient();
+    // Register a default HttpClient with NavigationManager.BaseUri for direct injection
+    builder.Services.AddScoped<HttpClient>(sp =>
+    {
+        var navigationManager = sp.GetRequiredService<Microsoft.AspNetCore.Components.NavigationManager>();
+        return new HttpClient { BaseAddress = new Uri(navigationManager.BaseUri) };
+    });
 
 // Register custom services
 builder.Services.AddScoped<PartnerService>();
@@ -72,6 +82,7 @@ builder.Services.AddScoped<StudentProfileService>();
 builder.Services.AddScoped<BenefactorProfileService>();
 builder.Services.AddScoped<InstitutionProfileService>();
 builder.Services.AddScoped<VerificationDocumentService>();
+builder.Services.AddScoped<OpenAIService>();
 
     var app = builder.Build();
 
