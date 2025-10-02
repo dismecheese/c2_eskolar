@@ -1,0 +1,191 @@
+@inject c2_eskolar.Services.OpenAIService OpenAIService
+@inject HttpClient Http
+@inject Microsoft.AspNetCore.Components.Authorization.AuthenticationStateProvider AuthStateProvider
+@inject Microsoft.AspNetCore.Identity.UserManager<Microsoft.AspNetCore.Identity.IdentityUser> UserManager
+@inject Blazored.LocalStorage.ILocalStorageService LocalStorage
+@using System.Threading.Tasks
+@using Microsoft.AspNetCore.Identity
+
+<div class="chatbot-float-window">
+    <div class="chatbot-header">
+        <span>AI Assistant</span>
+        <div class="chatbot-header-buttons">
+            <button class="btn-minimize" @onclick="MinimizeChatbot" aria-label="Minimize chatbot" title="Minimize">
+                −
+            </button>
+            <button class="btn-close" @onclick="HandleCloseChatbot" aria-label="Close chatbot" title="Close and clear session">×</button>
+        </div>
+    </div>
+    <div class="chatbot-body">
+        @foreach (var message in Messages)
+        {
+            <div class="chat-message @(message.IsUser ? "user" : "bot")">
+                <div class="message-avatar @(message.IsUser ? "user" : "bot")">
+                    @(message.IsUser ? "You" : "AI")
+                </div>
+                <div class="message-bubble @(message.IsUser ? "user" : "bot")">
+                    @message.Text
+                </div>
+            </div>
+        }
+    </div>
+    <div class="chatbot-input">
+        <input @bind="UserInput" @bind:event="oninput" @onkeydown="HandleKeyDown" placeholder="Type your message..." />
+        <button class="chatbot-send-btn" @onclick="SendMessage" disabled="@IsSending">
+            <span class="fa fa-paper-plane"></span>
+        </button>
+    </div>
+ </div>
+@code {
+    [Parameter]
+    public EventCallback CloseChatbot { get; set; }
+    
+    [Parameter]
+    public EventCallback MinimizeChatbot { get; set; }
+    
+    private string UserInput { get; set; } = string.Empty;
+    private List<ChatMessage> Messages { get; set; } = new();
+    private bool IsSending { get; set; } = false;
+    private bool IsFirstUserMessage { get; set; } = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadChatHistoryAsync();
+        // Only load greeting if there are no existing messages
+        if (!Messages.Any())
+        {
+            await LoadGreetingAsync();
+        }
+    }
+
+    private async Task LoadChatHistoryAsync()
+    {
+        try
+        {
+            var storedMessages = await LocalStorage.GetItemAsync<List<ChatMessage>>("chatbot-messages");
+            if (storedMessages != null && storedMessages.Any())
+            {
+                Messages = storedMessages;
+                // If there are stored messages, we're not on the first message anymore
+                IsFirstUserMessage = false;
+            }
+        }
+        catch
+        {
+            // If loading fails, start with empty messages
+            Messages = new List<ChatMessage>();
+        }
+    }
+
+    private async Task SaveChatHistoryAsync()
+    {
+        try
+        {
+            await LocalStorage.SetItemAsync("chatbot-messages", Messages);
+        }
+        catch
+        {
+            // If saving fails, continue without persistence
+        }
+    }
+
+    private async Task LoadGreetingAsync()
+    {
+        try
+        {
+            var response = await Http.GetAsync("/api/chatbot/start-message");
+            if (response.IsSuccessStatusCode)
+            {
+                var json = await response.Content.ReadAsStringAsync();
+                var result = System.Text.Json.JsonSerializer.Deserialize<GreetingResponse>(json);
+                var greeting = result?.message ?? "Welcome! How can I help you today?";
+                Messages.Add(new ChatMessage { Text = greeting, IsUser = false });
+            }
+            else
+            {
+                Messages.Add(new ChatMessage { Text = "Welcome! How can I help you today?", IsUser = false });
+            }
+        }
+        catch
+        {
+            Messages.Add(new ChatMessage { Text = "Welcome! How can I help you today?", IsUser = false });
+        }
+        StateHasChanged();
+        await SaveChatHistoryAsync();
+    }
+
+    private async Task SendMessage()
+    {
+        if (string.IsNullOrWhiteSpace(UserInput) || IsSending) return;
+        var input = UserInput.Trim();
+        Messages.Add(new ChatMessage { Text = input, IsUser = true });
+        UserInput = string.Empty;
+        IsSending = true;
+        StateHasChanged();
+        await SaveChatHistoryAsync(); // Save after user message
+        
+        try
+        {
+            // Get the current user
+            var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+            var user = await UserManager.GetUserAsync(authState.User);
+            
+            string response;
+            if (user != null)
+            {
+                // Use the enhanced method with profile information
+                response = await OpenAIService.GetChatCompletionWithProfileAsync(input, user, IsFirstUserMessage);
+                IsFirstUserMessage = false; // Mark that we've had the first interaction
+            }
+            else
+            {
+                // Fallback to basic method if user is not authenticated
+                response = await OpenAIService.GetChatCompletionAsync(input);
+            }
+            
+            Messages.Add(new ChatMessage { Text = response, IsUser = false });
+            await SaveChatHistoryAsync(); // Save after AI response
+        }
+        catch (Exception ex)
+        {
+            Messages.Add(new ChatMessage { Text = $"[Error: {ex.Message}]", IsUser = false });
+            await SaveChatHistoryAsync(); // Save error message too
+        }
+        finally
+        {
+            IsSending = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task HandleKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            await SendMessage();
+        }
+    }
+
+    private async Task HandleCloseChatbot()
+    {
+        // Clear session when closing
+        Messages.Clear();
+        IsFirstUserMessage = true;
+        await LocalStorage.RemoveItemAsync("chatbot-messages");
+        StateHasChanged();
+        
+        // Call the parent's close callback
+        await CloseChatbot.InvokeAsync();
+    }
+
+    private class ChatMessage
+    {
+        public string Text { get; set; } = string.Empty;
+        public bool IsUser { get; set; }
+    }
+
+    private class GreetingResponse
+    {
+        public string? message { get; set; }
+    }
+}

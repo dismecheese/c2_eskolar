@@ -154,110 +154,25 @@
     }
 
     // --- CHATBOT STATE ---
+    // (All chatbot state and logic is now handled by the ChatBot component)
+    private bool ShowChatbot = false;
 
-    private bool ShowChatbot = false; // Whether chatbot window is visible
-    
-    private string UserInput = ""; // Current user message text
-    
-    private List<ChatMessage> Messages = new(); // Chat history
-
-    // Opens the chatbot window and triggers a UI re-render
     private void OpenChatbot()
     {
         ShowChatbot = true;
         StateHasChanged();
     }
 
-    // Closes the chatbot window and triggers a UI re-render
     private void CloseChatbot()
     {
         ShowChatbot = false;
         StateHasChanged();
     }
 
-    // Handles sending a message to the chatbot.
-    private async Task SendMessage()
+    private void MinimizeChatbot()
     {
-        if (string.IsNullOrWhiteSpace(UserInput)) return;
-
-        // Add user's message
-        Messages.Add(new ChatMessage { Text = UserInput, IsUser = true });
-        var userMessage = UserInput;
-        UserInput = "";
+        ShowChatbot = false;
         StateHasChanged();
-
-        // TODO: UNCOMMENT WHEN BACKEND AI API IS READY
-        /*
-        try
-        {
-            var apiResponse = await CallAIBackend(userMessage);
-            Messages.Add(new ChatMessage { Text = apiResponse, IsUser = false });
-        }
-        catch (Exception ex)
-        {
-            Messages.Add(new ChatMessage { Text = "Sorry, I'm having trouble connecting right now. Please try again later.", IsUser = false });
-            // Log error: Console.WriteLine($"AI API Error: {ex.Message}");
-        }
-        */
-
-        // --- FRONTEND-ONLY MOCK REPLY (REMOVE WHEN BACKEND IS READY) ---
-        await Task.Delay(1000); // Simulate thinking time
-        
-        var userMessageLower = userMessage.ToLower();
-        string response = userMessageLower switch
-        {
-            var msg when msg.Contains("scholarship") => "I can help you manage institutional scholarships! You can create new scholarships, review applications, or manage existing programs. What would you like to do?",
-            var msg when msg.Contains("application") || msg.Contains("apply") => "You can review scholarship applications in your dashboard. Check pending applications, review submitted documents, and manage the selection process.",
-            var msg when msg.Contains("help") || msg.Contains("how") => "I'm here to help with your institutional dashboard! I can assist with scholarship management, application reviews, announcements, and platform navigation.",
-            var msg when msg.Contains("account") || msg.Contains("profile") => "You can update your institution profile by clicking the profile icon. Make sure your institution information is complete and verified.",
-            var msg when msg.Contains("announcement") => "You can create and manage announcements from your dashboard. Keep students informed about new scholarships, deadlines, and important updates.",
-            _ => "I understand you're asking about: \"" + userMessage + "\". I can help with scholarship management, application reviews, announcements, and institutional settings. Could you be more specific?"
-        };
-        
-        Messages.Add(new ChatMessage { Text = response, IsUser = false });
-        StateHasChanged();
-    }
-
-    // TODO: UNCOMMENT AND IMPLEMENT WHEN BACKEND AI API IS READY
-    // Placeholder for calling a backend AI service.
-    /*
-    private async Task<string> CallAIBackend(string userMessage)
-    {
-        using var client = new HttpClient();
-        var requestBody = new
-        {
-            message = userMessage,
-            context = "eSkolar institutional dashboard assistant"
-        };
-        
-        var json = System.Text.Json.JsonSerializer.Serialize(requestBody);
-        var content = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
-        
-        // Replace with your actual AI API endpoint
-        var response = await client.PostAsync("https://your-api-endpoint.com/ai/chat", content);
-        response.EnsureSuccessStatusCode();
-        
-        var responseJson = await response.Content.ReadAsStringAsync();
-        var apiResponse = System.Text.Json.JsonSerializer.Deserialize<dynamic>(responseJson);
-        
-        return apiResponse.response ?? "I'm having trouble processing your request right now.";
-    }
-    */
-
-    // Handles 'Enter' key press in the chatbot input field to send a message
-    private async Task HandleKeyDown(KeyboardEventArgs e)
-    {
-        if (e.Key == "Enter")
-        {
-            await SendMessage();
-        }
-    }
-
-    // Data model for a single chat message
-    public class ChatMessage
-    {
-        public string Text { get; set; } = ""; // The text content of the message
-        public bool IsUser { get; set; } // Flag to determine if the message is from the user or the bot
     }
 }
 
@@ -396,50 +311,11 @@
     </main>
 </div>
 
+
 <!-- Floating Chatbot Window -->
 @if (ShowChatbot)
 {
-    <div class="chatbot-float-window">
-        <!-- Header -->
-        <div class="chatbot-header">
-            <span>eSkolar Assistant</span>
-            <button class="btn-close" @onclick="CloseChatbot" aria-label="Close chatbot">×</button>
-        </div>
-
-        <!-- Messages -->
-        <div class="chatbot-body">
-            @if (!Messages.Any())
-            {
-                <!-- Initial greeting from chatbot -->
-                <div class="chat-message bot">
-                    <div class="message-avatar bot">AI</div>
-                    <div class="message-bubble bot">
-                        Hello! I'm your eSkolar assistant for institutions. How can I help you today? I can assist with scholarship management, application reviews, and platform navigation.
-                    </div>
-                </div>
-            }
-            @foreach (var msg in Messages)
-            {
-                <div class="chat-message @(msg.IsUser ? "user" : "bot")">
-                    <div class="message-avatar @(msg.IsUser ? "user" : "bot")">
-                        @(msg.IsUser ? "You" : "AI")
-                    </div>
-                    <div class="message-bubble @(msg.IsUser ? "user" : "bot")">
-                        @msg.Text
-                    </div>
-                </div>
-            }
-        </div>
-
-        <!-- Input field + send button -->
-        <div class="chatbot-input">
-            <input @bind="UserInput" @bind:event="oninput" @onkeydown="HandleKeyDown" 
-                   placeholder="Type a message..." />
-            <button class="chatbot-send-btn" @onclick="SendMessage">
-                <i class="fa fa-paper-plane"></i>
-            </button>
-        </div>
-    </div>
+    <ChatBot CloseChatbot="CloseChatbot" MinimizeChatbot="MinimizeChatbot" />
 }
 
 <!-- JavaScript helper to close Bootstrap offcanvas programmatically -->

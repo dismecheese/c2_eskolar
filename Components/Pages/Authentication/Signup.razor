@@ -159,7 +159,7 @@
     private void OnRoleChangedBenefactor(ChangeEventArgs e) => OnRoleChanged(UserRole.Benefactor);
     // Registration model bound to the form
     private RegisterViewModel registerModel = new();
-    private EditContext editContext;
+    private EditContext? editContext;
     
     // Toggle password visibility
     private bool showPassword = false;

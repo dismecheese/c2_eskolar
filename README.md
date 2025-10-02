@@ -69,9 +69,21 @@ A comprehensive scholarship management platform built with **Blazor Server** and
 
 ## 📋 Prerequisites
 
-- [.NET 8.0 SDK](https://dotnet.microsoft.com/download/dotnet/8.0)
+- [.NET 9.0 SDK](https://dotnet.microsoft.com/download/dotnet/9.0)
 - [SQL Server](https://www.microsoft.com/en-us/sql-server/sql-server-downloads) (LocalDB, Express, or full version)
 - [Visual Studio 2022](https://visualstudio.microsoft.com/) or [VS Code](https://code.visualstudio.com/)
+
+
+## 🧠 NuGet Packages for AI Integration
+
+To enable Azure OpenAI chatbot features, install these NuGet packages:
+
+```powershell
+dotnet add package Azure.AI.OpenAI
+dotnet add package Azure.Core
+```
+
+---
 
 ## 🚀 Getting Started
 

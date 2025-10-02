@@ -1,3 +1,4 @@
+
 @inherits LayoutComponentBase
 @implements IDisposable
 
@@ -15,211 +16,56 @@
 @rendermode InteractiveServer
 
 @code {
-    // --- USER INFORMATION STATE ---
-    
-    // Stores the display name of the currently signed in user
-    private string currentUserName = "Loading...";
-    // Stores the email of the currently signed in user
-    private string currentUserEmail = "";
-
-    // Stores the first and last name of the signed in institution admin
+    // --- SIDEBAR/PROFILE STATE ---
     private string? adminFirstName;
     private string? adminLastName;
-
-    // Tracks the current month for the calendar component
     private DateTime currentMonth = new(DateTime.Now.Year, DateTime.Now.Month, 1);
 
-    // --- LIFECYCLE METHODS ---
-
-    // Called when the layout initializes
     protected override async Task OnInitializedAsync()
     {
-        Navigation.LocationChanged += OnLocationChanged;
-        await LoadCurrentUserFromClaims();
         await LoadInstitutionProfile();
     }
 
-        private async Task LoadInstitutionProfile()
-        {
-            try
-            {
-                var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
-                var userId = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-                if (!string.IsNullOrEmpty(userId))
-                {
-                    var profile = await InstitutionProfileService.GetProfileByUserIdAsync(userId);
-                    adminFirstName = profile?.AdminFirstName;
-                    adminLastName = profile?.AdminLastName;
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error loading institution profile: {ex.Message}");
-            }
-            StateHasChanged();
-        }
-
-    // Loads the currently authenticated user's information from claims only
-    private async Task LoadCurrentUserFromClaims()
+    private async Task LoadInstitutionProfile()
     {
         try
         {
             var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
-            var user = authState.User;
-
-            if (user.Identity?.IsAuthenticated == true)
+            var userId = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (!string.IsNullOrEmpty(userId))
             {
-                currentUserEmail = user.Identity.Name ?? "";
-                currentUserName = user.FindFirst("DisplayName")?.Value
-                                ?? user.FindFirst("Name")?.Value
-                                ?? currentUserEmail.Split('@')[0];
+                var profile = await InstitutionProfileService.GetProfileByUserIdAsync(userId);
+                adminFirstName = profile?.AdminFirstName;
+                adminLastName = profile?.AdminLastName;
             }
         }
         catch (Exception ex)
         {
-            // Log any errors during user loading
-            Console.WriteLine($"Error loading user: {ex.Message}");
-            currentUserName = "User";
-            currentUserEmail = "";
+            Console.WriteLine($"Error loading institution profile: {ex.Message}");
         }
         StateHasChanged();
     }
 
-    // Handles navigation changes and triggers UI re-render
-    private void OnLocationChanged(object? sender, Microsoft.AspNetCore.Components.Routing.LocationChangedEventArgs e)
-    {
-        InvokeAsync(StateHasChanged);
-    }
-
-    // Cleans up event subscriptions to avoid memory leaks
-    public void Dispose()
-    {
-        Navigation.LocationChanged -= OnLocationChanged;
-    }
-
-    // --- SIDEBAR LINK HANDLING ---
-    // Dynamically applies the "active" class to the current sidebar link based on the route
     private string GetSidebarLinkClass(string href)
     {
         var currentPath = Navigation.ToBaseRelativePath(Navigation.Uri).Split('?')[0].TrimEnd('/');
         var linkPath = href.TrimStart('/').TrimEnd('/');
-        
-        // Exact match condition
         if (currentPath == linkPath)
-        {
             return "nav-link d-flex align-items-center gap-2 sidebar-link active";
-        }
-            
         return "nav-link d-flex align-items-center gap-2 sidebar-link";
     }
 
-    // Navigates the user to their institution profile
     private void NavigateToInstitutionProfile()
     {
         Navigation.NavigateTo("/dashboard/institution/profile");
     }
 
     // --- CHATBOT STATE ---
-    // Controls chatbot visibility and stores chat messages.
     private bool ShowChatbot = false;
-    private string UserInput = "";
-    private List<ChatMessage> Messages = new();
-
-    private void OpenChatbot()
-    {
-        ShowChatbot = true;
-        StateHasChanged();
-    }
-
-    private void CloseChatbot()
-    {
-        ShowChatbot = false;
-        StateHasChanged();
-    }
-
-    // --- CHATBOT MESSAGE HANDLING ---
-    // Handles sending user messages and generating AI responses
-    private async Task SendMessage()
-    {
-        if (string.IsNullOrWhiteSpace(UserInput)) return;
-        Messages.Add(new ChatMessage { Text = UserInput, IsUser = true });
-        var userMessage = UserInput;
-        UserInput = "";
-        StateHasChanged();
-
-        // TODO: UNCOMMENT WHEN BACKEND AI API IS READY
-        /*
-        try
-        {
-            var apiResponse = await CallAIBackend(userMessage);
-            Messages.Add(new ChatMessage { Text = apiResponse, IsUser = false });
-        }
-        catch (Exception ex)
-        {
-            Messages.Add(new ChatMessage { Text = "Sorry, I'm having trouble connecting right now. Please try again later.", IsUser = false });
-            // Log error: Console.WriteLine($"AI API Error: {ex.Message}");
-        }
-        */
-
-        // --- FRONTEND-ONLY MOCK REPLY (REMOVE WHEN BACKEND IS READY) ---
-        await Task.Delay(1000); // Simulate thinking time
-        
-        var userMessageLower = userMessage.ToLower();
-        string response = userMessageLower switch
-        {
-            var msg when msg.Contains("scholarship") => "I can help you manage institutional scholarships! You can create new scholarships, review applications, or manage existing programs. What would you like to do?",
-            var msg when msg.Contains("application") || msg.Contains("apply") => "You can review scholarship applications in your dashboard. Check pending applications, review submitted documents, and manage the selection process.",
-            var msg when msg.Contains("help") || msg.Contains("how") => "I'm here to help with your institutional dashboard! I can assist with scholarship management, application reviews, announcements, and platform navigation.",
-            var msg when msg.Contains("account") || msg.Contains("profile") => "You can update your institution profile by clicking the profile icon. Make sure your institution information is complete and verified.",
-            var msg when msg.Contains("announcement") => "You can create and manage announcements from your dashboard. Keep students informed about new scholarships, deadlines, and important updates.",
-            _ => "I understand you're asking about: \"" + userMessage + "\". I can help with scholarship management, application reviews, announcements, and institutional settings. Could you be more specific?"
-        };
-        
-        Messages.Add(new ChatMessage { Text = response, IsUser = false });
-        StateHasChanged();
-    }
-
-    // TODO: UNCOMMENT AND IMPLEMENT WHEN BACKEND AI API IS READY
-    /*
-    private async Task<string> CallAIBackend(string userMessage)
-    {
-        using var client = new HttpClient();
-        var requestBody = new
-        {
-            message = userMessage,
-            context = "eSkolar institutional dashboard assistant"
-        };
-        
-        var json = System.Text.Json.JsonSerializer.Serialize(requestBody);
-        var content = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
-        
-        // Replace with your actual AI API endpoint
-        var response = await client.PostAsync("https://your-api-endpoint.com/ai/chat", content);
-        response.EnsureSuccessStatusCode();
-        
-        var responseJson = await response.Content.ReadAsStringAsync();
-        var apiResponse = System.Text.Json.JsonSerializer.Deserialize<dynamic>(responseJson);
-        
-        return apiResponse.response ?? "I'm having trouble processing your request right now.";
-    }
-    */
-
-    // Handles pressing Enter in the chatbot input box
-    private async Task HandleKeyDown(KeyboardEventArgs e)
-    {
-        if (e.Key == "Enter")
-        {
-            await SendMessage();
-        }
-    }
-
-    // --- CHAT MESSAGE MODEL ---
-    // Defines a simple message object for the chatbot
-    public class ChatMessage
-    {
-        public string Text { get; set; } = "";
-        public bool IsUser { get; set; }
-    }
+    private void OpenChatbot() => ShowChatbot = true;
+    private void CloseChatbot() => ShowChatbot = false;
+    private void MinimizeChatbot() => ShowChatbot = false;
+    public void Dispose() { }
 }
 
 <!-- --- MAIN LAYOUT STRUCTURE --- -->
@@ -319,9 +165,9 @@
             <circle cx="12" cy="12" r="11" stroke="#222" stroke-width="2"/>
             <path d="M4 20c1.5-3 5.5-5 8-5s6.5 2 8 5" stroke="#222" stroke-width="2"/>
         </svg>
-        <div class="sidebar-profile-name">@((adminFirstName ?? "Institution") + (string.IsNullOrWhiteSpace(adminLastName) ? "" : $" {adminLastName}"))</div>
-        <div class="sidebar-profile-role">Student</div>
-        <button class="sidebar-profile-btn" @onclick="NavigateToInstitutionProfile" data-bs-dismiss="offcanvas">Profile</button>
+    <div class="sidebar-profile-name">@((adminFirstName ?? "Institution") + (string.IsNullOrWhiteSpace(adminLastName) ? "" : $" {adminLastName}"))</div>
+    <div class="sidebar-profile-role">Institution Admin</div>
+    <button class="sidebar-profile-btn" @onclick="NavigateToInstitutionProfile" data-bs-dismiss="offcanvas">Profile</button>
     </div>
     
     <!-- Sidebar Calendar -->
@@ -350,55 +196,15 @@
     <!-- --- MAIN CONTENT AREA --- -->
     <main class="main-content" style="flex:1; min-width:0; background: #f5f6fa;">
         @Body
+
     </main>
 
+    @if (ShowChatbot)
+    {
+        <ChatBot CloseChatbot="CloseChatbot" MinimizeChatbot="MinimizeChatbot" />
+    }
+
 </div>
-
-<!-- --- CHATBOT FLOATING WINDOW --- -->
-@if (ShowChatbot)
-{
-    <div class="chatbot-float-window">
-        <div class="chatbot-header">
-            <span>eSkolar Assistant</span>
-            <button class="btn-close" @onclick="CloseChatbot" aria-label="Close chatbot">×</button>
-        </div>
-
-        <div class="chatbot-body">
-        <!-- Default welcome message -->
-            @if (!Messages.Any())
-            {
-                <div class="chat-message bot">
-                    <div class="message-avatar bot">AI</div>
-                    <div class="message-bubble bot">
-                        Hello! I'm your eSkolar assistant for institutions. How can I help you today? I can assist with scholarship management, application reviews, and platform navigation.
-                    </div>
-                </div>
-            }
-
-            <!-- Render chat history -->
-            @foreach (var msg in Messages)
-            {
-                <div class="chat-message @(msg.IsUser ? "user" : "bot")">
-                    <div class="message-avatar @(msg.IsUser ? "user" : "bot")">
-                        @(msg.IsUser ? "You" : "AI")
-                    </div>
-                    <div class="message-bubble @(msg.IsUser ? "user" : "bot")">
-                        @msg.Text
-                    </div>
-                </div>
-            }
-        </div>
-
-        <!-- Chat input field -->
-        <div class="chatbot-input">
-            <input @bind="UserInput" @bind:event="oninput" @onkeydown="HandleKeyDown" 
-                   placeholder="Type a message..." />
-            <button class="chatbot-send-btn" @onclick="SendMessage">
-                <i class="fa fa-paper-plane"></i>
-            </button>
-        </div>
-    </div>
-}
 
 <!-- JavaScript helper to close Bootstrap offcanvas programmatically -->
 <script>

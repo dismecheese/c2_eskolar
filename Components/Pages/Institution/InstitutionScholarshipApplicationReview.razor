@@ -4,9 +4,9 @@
     [Parameter] public Guid ApplicationId { get; set; }
     private ScholarshipApplication? application;
     private bool isLoading = true;
-            <div class="mb-2"><span class="text-muted">Reference:</span> <strong>@application.ScholarshipApplicationId.ToString()</strong></div>
-            <div class="mb-2"><span class="text-muted">Application Date:</span> @application.ApplicationDate.ToString("MMMM dd, yyyy")</div>
-            <div class="mb-2"><span class="text-muted">Status:</span> <span class="fw-semibold">@application.Status</span></div>
+            <div class="mb-2"><span class="text-muted">Reference:</span> <strong>@(application?.ScholarshipApplicationId.ToString() ?? "(No Reference)")</strong></div>
+            <div class="mb-2"><span class="text-muted">Application Date:</span> @(application?.ApplicationDate.ToString("MMMM dd, yyyy") ?? "(No Date)")</div>
+            <div class="mb-2"><span class="text-muted">Status:</span> <span class="fw-semibold">@(application?.Status ?? "(No Status)")</span></div>
                 application = await DbContext.ScholarshipApplications
                     .Include(a => a.Student)
                     .Include(a => a.Scholarship)
@@ -51,48 +51,48 @@ else
     <div class="card shadow-sm border-0 mb-4">
         <div class="card-header bg-primary text-white fw-bold">Application Info</div>
         <div class="card-body">
-            <h4 class="mb-2">@application.Scholarship?.Title ?? "(No Title)"</h4>
+            <h4 class="mb-2">@(application?.Scholarship?.Title ?? "(No Title)")</h4>
             <div class="mb-2"><span class="text-muted">Reference:</span> <strong>@(application?.ScholarshipApplicationId.ToString())</strong></div>
-            <div class="mb-2"><span class="text-muted">Application Date:</span> @application.ApplicationDate.ToString("MMMM dd, yyyy")</div>
-            <div class="mb-2"><span class="text-muted">Status:</span> <span class="fw-semibold">@application.Status</span></div>
+            <div class="mb-2"><span class="text-muted">Application Date:</span> @(application?.ApplicationDate.ToString("MMMM dd, yyyy") ?? "(No Date)")</div>
+            <div class="mb-2"><span class="text-muted">Status:</span> <span class="fw-semibold">@(application?.Status ?? "(No Status)")</span></div>
         </div>
     </div>
 
     <div class="card shadow-sm border-0 mb-4">
         <div class="card-header bg-info text-white fw-bold">Applicant Info</div>
         <div class="card-body">
-            <div class="mb-2"><span class="text-muted">Applicant:</span> <strong>@(application.Student != null ? $"{application.Student.FirstName} {application.Student.LastName}" : "-")</strong></div>
+            <div class="mb-2"><span class="text-muted">Applicant:</span> <strong>@(application?.Student != null ? $"{application.Student.FirstName} {application.Student.LastName}" : "-")</strong></div>
         </div>
     </div>
 
     <div class="card shadow-sm border-0 mb-4">
         <div class="card-header bg-success text-white fw-bold">Documents & Statement</div>
         <div class="card-body">
-            @if (application.IsExternalApplication)
+            @if (application?.IsExternalApplication == true)
             {
                 <div class="mb-3">
                     <strong>External Application:</strong>
                     <p>
                         @if (!string.IsNullOrWhiteSpace(application.ExternalApplicationUrl))
                         {
-                            <a href="@application.ExternalApplicationUrl" target="_blank" rel="noopener noreferrer">@application.ExternalApplicationUrl</a>
+                            <a href="@(application?.ExternalApplicationUrl ?? "#")" target="_blank" rel="noopener noreferrer">@(application?.ExternalApplicationUrl ?? "No URL")</a>
                         }
                         else
                         {
                             <span class="text-muted">No URL provided</span>
                         }
                     </p>
-                    <p><strong>Confirmed Applied:</strong> @(application.HasAppliedExternally ? "Yes" : "No")</p>
+                    <p><strong>Confirmed Applied:</strong> @(application?.HasAppliedExternally == true ? "Yes" : "No")</p>
                 </div>
             }
             else
             {
                 <div class="mb-3">
                     <strong>Personal Statement</strong>
-                    <p>@(!string.IsNullOrWhiteSpace(application.PersonalStatement) ? application.PersonalStatement : "No statement provided.")</p>
+                    <p>@(!string.IsNullOrWhiteSpace(application?.PersonalStatement) ? application.PersonalStatement : "No statement provided.")</p>
                 </div>
 
-                @if (!string.IsNullOrEmpty(application.UploadedDocuments))
+                @if (!string.IsNullOrEmpty(application!.UploadedDocuments))
                 {
                     <div class="mb-3">
                         <strong>Supporting Documents:</strong>
@@ -125,7 +125,7 @@ else
                 <div class="mb-3">
                     <label for="ReviewNotes" class="form-label">Review Notes</label>
                     <InputTextArea id="ReviewNotes" class="form-control"
-                                   @bind-Value="application.ReviewNotes" rows="4"
+                                   @bind-Value="application!.ReviewNotes" rows="4"
                                    placeholder="Add feedback or notes about this application" aria-label="Review Notes" />
                 </div>
 
