@@ -6,6 +6,7 @@ using System;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 using System.Linq;
+using c2_eskolar.Models;
 
 namespace c2_eskolar.Services
 {
@@ -15,8 +16,9 @@ namespace c2_eskolar.Services
         private readonly string _deploymentName;
         private readonly ProfileSummaryService _profileSummaryService;
         private readonly ScholarshipRecommendationService _scholarshipRecommendationService;
+        private readonly AnnouncementRecommendationService _announcementRecommendationService;
 
-        public OpenAIService(IConfiguration config, ProfileSummaryService profileSummaryService, ScholarshipRecommendationService scholarshipRecommendationService)
+        public OpenAIService(IConfiguration config, ProfileSummaryService profileSummaryService, ScholarshipRecommendationService scholarshipRecommendationService, AnnouncementRecommendationService announcementRecommendationService)
         {
             var apiKey = config["AzureOpenAI:ApiKey"] ?? throw new ArgumentNullException("AzureOpenAI:ApiKey");
             var endpoint = config["AzureOpenAI:Endpoint"] ?? throw new ArgumentNullException("AzureOpenAI:Endpoint");
@@ -24,6 +26,7 @@ namespace c2_eskolar.Services
             _client = new OpenAIClient(new Uri(endpoint), new Azure.AzureKeyCredential(apiKey));
             _profileSummaryService = profileSummaryService;
             _scholarshipRecommendationService = scholarshipRecommendationService;
+            _announcementRecommendationService = announcementRecommendationService;
         }
 
         public async Task<string> GetChatCompletionAsync(string userMessage)
@@ -53,8 +56,16 @@ namespace c2_eskolar.Services
                     : "Hello! How can I help you today?\n\n";
             }
 
-            // Check if user is asking about scholarships, recommendations, or similar queries
+            // Check if user is asking about scholarships, announcements, or similar queries
             var isScholarshipQuery = IsScholarshipRelatedQuery(userMessage);
+            var isAnnouncementQuery = IsAnnouncementRelatedQuery(userMessage);
+            
+            // Get announcement recommendations if this is an announcement query
+            List<AnnouncementRecommendation> announcementRecommendations = new();
+            if (isAnnouncementQuery)
+            {
+                announcementRecommendations = await _announcementRecommendationService.GetAnnouncementRecommendationsAsync(user, userMessage);
+            }
 
             string systemPrompt = profileSummary != null
                 ? $"You are an AI assistant for eSkolar, a scholarship platform. You are helping a {profileSummary.Role.ToLower()}. " +
@@ -65,6 +76,8 @@ namespace c2_eskolar.Services
                   $"When they ask about scholarships, recommendations, or what scholarships they're eligible for, " +
                   $"use the scholarship recommendations provided below and explain why each scholarship matches their profile. " +
                   $"Present scholarships in order of best match first.\n\n" +
+                  $"When they ask about announcements, news, or updates, use the announcement recommendations provided below " +
+                  $"and explain why each announcement is relevant to them. Present announcements by relevance.\n\n" +
                   $"Always be friendly, professional, and specific when referencing their profile data."
                 : (isFirstMessage 
                     ? $"You are an AI assistant for eSkolar, a scholarship platform. Start your response with: '{greeting.Trim()}' " +
@@ -89,6 +102,16 @@ namespace c2_eskolar.Services
                     if (!string.IsNullOrEmpty(scholarshipContext))
                     {
                         messages.Add(new ChatRequestSystemMessage(scholarshipContext));
+                    }
+                }
+
+                // Add announcement recommendations if this is an announcement-related query
+                if (profileSummary.Role == "Student" && isAnnouncementQuery && announcementRecommendations.Any())
+                {
+                    var announcementContext = GenerateAnnouncementContext(announcementRecommendations);
+                    if (!string.IsNullOrEmpty(announcementContext))
+                    {
+                        messages.Add(new ChatRequestSystemMessage(announcementContext));
                     }
                 }
             }
@@ -121,6 +144,24 @@ namespace c2_eskolar.Services
             };
             
             return scholarshipKeywords.Any(keyword => 
+                userMessage.Contains(keyword, StringComparison.OrdinalIgnoreCase));
+        }
+
+        private bool IsAnnouncementRelatedQuery(string userMessage)
+        {
+            var announcementKeywords = new[]
+            {
+                "announcement", "announcements", "news", "updates", "latest", "recent",
+                "what's new", "notifications", "alerts", "bulletin", "notice",
+                "institution announcement", "school announcement", "university announcement",
+                "application announcement", "deadline announcement", "requirement announcement",
+                "grant announcement", "scholarship announcement", "funding announcement",
+                "pinned announcement", "important announcement", "urgent announcement",
+                "benefactor announcement", "sponsor announcement", "organization announcement",
+                "all announcements", "any announcements", "show announcements"
+            };
+
+            return announcementKeywords.Any(keyword =>
                 userMessage.Contains(keyword, StringComparison.OrdinalIgnoreCase));
         }
 
@@ -178,6 +219,68 @@ namespace c2_eskolar.Services
 
             context += "When presenting these scholarships, explain why each one is a good match for the user based on their profile and the match reasons provided.";
             
+            return context;
+        }
+
+        private string GenerateAnnouncementContext(List<AnnouncementRecommendation> recommendations)
+        {
+            if (!recommendations.Any())
+            {
+                return "No relevant announcements found at this time. Check back later for updates.";
+            }
+
+            var context = "Relevant Announcements (ranked by relevance):\n\n";
+
+            for (int i = 0; i < Math.Min(recommendations.Count, 5); i++) // Limit to top 5 to avoid token limits
+            {
+                var rec = recommendations[i];
+                var announcement = rec.Announcement;
+
+                context += $"{i + 1}. **{announcement.Title}**\n";
+                context += $"   - Author: {announcement.AuthorName} ({announcement.AuthorType})\n";
+                context += $"   - Posted: {announcement.CreatedAt:MMMM dd, yyyy}\n";
+                context += $"   - Relevance Score: {rec.RelevanceScore}\n";
+
+                if (!string.IsNullOrEmpty(announcement.Category))
+                    context += $"   - Category: {announcement.Category}\n";
+
+                if (announcement.IsPinned)
+                    context += $"   - Status: PINNED (Important)\n";
+
+                if (announcement.Priority > AnnouncementPriority.Normal)
+                    context += $"   - Priority: {announcement.Priority}\n";
+
+                if (!string.IsNullOrEmpty(announcement.OrganizationName))
+                    context += $"   - Organization: {announcement.OrganizationName}\n";
+
+                if (rec.MatchReasons.Any())
+                {
+                    context += $"   - Why it's relevant: {string.Join("; ", rec.MatchReasons)}\n";
+                }
+
+                // Add announcement summary or truncated content
+                var content = !string.IsNullOrEmpty(announcement.Summary) 
+                    ? announcement.Summary 
+                    : announcement.Content;
+                
+                if (!string.IsNullOrEmpty(content))
+                {
+                    var shortContent = content.Length > 200 
+                        ? content.Substring(0, 200) + "..." 
+                        : content;
+                    context += $"   - Summary: {shortContent}\n";
+                }
+
+                context += "\n";
+            }
+
+            if (recommendations.Count > 5)
+            {
+                context += $"... and {recommendations.Count - 5} more announcements available.\n\n";
+            }
+
+            context += "When presenting these announcements, explain why each one is relevant to the user and highlight the key information they should know.";
+
             return context;
         }
     }
