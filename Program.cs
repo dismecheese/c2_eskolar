@@ -83,6 +83,7 @@ builder.Services.AddScoped<BenefactorProfileService>();
 builder.Services.AddScoped<InstitutionProfileService>();
 builder.Services.AddScoped<VerificationDocumentService>();
 builder.Services.AddScoped<ProfileSummaryService>();
+builder.Services.AddScoped<ScholarshipRecommendationService>();
 builder.Services.AddScoped<OpenAIService>();
 
     var app = builder.Build();

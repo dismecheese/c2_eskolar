@@ -93,6 +93,8 @@ namespace c2_eskolar.Services
             }
             return null;
         }
+
+
     }
 
     public class ProfileSummaryResult
