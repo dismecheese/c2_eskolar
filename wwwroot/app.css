@@ -1,3 +1,4 @@
+
 /* Import Inter font from Google Fonts */
 @import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
 
@@ -22,34 +23,23 @@ a, .btn-link {
     color: #006bb7;
 }
 
-.btn-primary {
-    color: #fff;
-    background-color: #1b6ec2;
-    border-color: #1861ac;
+.signup-input {
+    margin-bottom: 0;
+    padding-top: 8px;
+    padding-bottom: 0;
+    height: auto;
+    line-height: 1.1;
+    box-sizing: border-box;
+    border-radius: 2px;
+    border-width: 1px;
+    border-color: #bdbdbd;
+    transition: border-color 0.2s;
 }
-
-.btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
-  box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
+.signup-input.pw-valid {
+    border-color: #26b050 !important;
 }
-
-.content {
-    padding-top: 1.1rem;
-}
-
-h1:focus {
-    outline: none;
-}
-
-.valid.modified:not([type=checkbox]) {
-    outline: 1px solid #26b050;
-}
-
-.invalid {
-    outline: 1px solid #e50000;
-}
-
-.validation-message {
-    color: #e50000;
+.signup-input.pw-invalid {
+    border-color: #e53935 !important;
 }
 
 .blazor-error-boundary {
@@ -84,6 +74,24 @@ h1:focus {
     display: flex;
     align-items: center;
 }
+.password-requirements {
+    margin: 4px 0 0 0;
+    font-size: 0.8em;
+    color: #888;
+}
+.pw-req {
+    margin: 0;
+    padding: 0;
+    line-height: 1.3;
+    transition: color 0.2s;
+}
+.pw-req.met {
+    color: #26b050;
+    font-weight: 600;
+}
+.pw-req.unmet {
+    color: #e53935;
+}
 
 .password-toggle {
     position: absolute;
@@ -117,6 +125,33 @@ h1:focus {
 
 .signup-link a:hover {
     text-decoration: underline;
+}
+
+
+
+/* Signup form spacing fix */
+.form-group {
+    margin-top: 8px;
+    margin-bottom: 0px; /* space between input fields */
+}
+.form-group:first-child {
+    margin-top: 0;
+}
+.signup-input {
+    margin-bottom: 0;
+    padding-top: 8px;
+    padding-bottom: 0;
+    height: auto;
+    line-height: 1.1;
+    box-sizing: border-box;
+    border-radius: 2px;
+    border-width: 1px;
+}
+.validation-message, .validation-message[data-valmsg-for] {
+    color: #e53935;
+    font-size: 0.9em;
+    margin: 0 0 0 0; /* 0px gap above error message */
+    display: block;
 }
 
 /* =======================
@@ -173,11 +208,6 @@ h1:focus {
     color: #222;
     outline: none;
     box-shadow: 0 2px 8px rgba(0,0,0,0.03);
-    transition: border 0.2s, box-shadow 0.2s;
-}
-
-.university-input:focus {
-    border-color: #8ec3e6;
     box-shadow: 0 4px 16px rgba(142,195,230,0.10);
     background: #fff;
 }

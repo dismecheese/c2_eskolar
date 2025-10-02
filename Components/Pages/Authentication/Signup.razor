@@ -21,7 +21,7 @@
                 <!-- Student role -->
                 <label class="role-option">
                     <input type="radio" name="role" value="@UserRole.Student" 
-                           @onchange="@(() => registerModel.UserRole = UserRole.Student)" 
+                           @onchange="@(() => OnRoleChanged(UserRole.Student))" 
                            checked="@(registerModel.UserRole == UserRole.Student)" />
                     <span>Student</span>
                 </label>
@@ -29,7 +29,7 @@
                 <!-- Institution role -->
                 <label class="role-option">
                     <input type="radio" name="role" value="@UserRole.Institution" 
-                           @onchange="@(() => registerModel.UserRole = UserRole.Institution)"
+                           @onchange="@(() => OnRoleChanged(UserRole.Institution))"
                            checked="@(registerModel.UserRole == UserRole.Institution)" />
                     <span>Institution</span>
                 </label>
@@ -37,7 +37,7 @@
                 <!-- Benefactor role -->
                 <label class="role-option">
                     <input type="radio" name="role" value="@UserRole.Benefactor" 
-                           @onchange="@(() => registerModel.UserRole = UserRole.Benefactor)"
+                           @onchange="@(() => OnRoleChanged(UserRole.Benefactor))"
                            checked="@(registerModel.UserRole == UserRole.Benefactor)" />
                     <span>Benefactor</span>
                 </label>
@@ -65,38 +65,45 @@
             }
 
              <!-- SIGNUP FORM -->
-            <EditForm Model="@registerModel" OnValidSubmit="@HandleRegistration" FormName="SignupForm">
+            <EditForm EditContext="@editContext" OnValidSubmit="@HandleRegistration" FormName="SignupForm">
                 <DataAnnotationsValidator />
                 <AntiforgeryToken />
-                
                 <!-- First name -->
-                <input class="signup-input" type="text" placeholder="First Name" 
-                       @bind="registerModel.FirstName" />
-                <ValidationMessage For="@(() => registerModel.FirstName)" />
-                
-                <!-- Last name -->
-                <input class="signup-input" type="text" placeholder="Last Name" 
-                       @bind="registerModel.LastName" />
-                <ValidationMessage For="@(() => registerModel.LastName)" />
-                
-                <!-- Email -->
-                <input class="signup-input" type="email" placeholder="Email Address" 
-                       @bind="registerModel.Email" />
-                <ValidationMessage For="@(() => registerModel.Email)" />
-                
-                <!-- Password with toggle -->
-                <div class="password-wrapper">
-                    <input class="signup-input"
-                           type="@(showPassword ? "text" : "password")"
-                           placeholder="Password" 
-                           @bind="registerModel.Password" />
-                    <button type="button" class="password-toggle" @onclick="TogglePassword">
-                        <img src="@(showPassword ? "/images/eye.svg" : "/images/eyeX.svg")" 
-                             alt="@(showPassword ? "Hide password" : "Show password")" />
-                    </button>
+                <div class="form-group">
+                    <input class="signup-input" type="text" placeholder="First Name" 
+                        @bind="registerModel.FirstName" />
+                    <ValidationMessage For="@(() => registerModel.FirstName)" />
                 </div>
-                <ValidationMessage For="@(() => registerModel.Password)" />
-                
+                <!-- Last name -->
+                <div class="form-group">
+                    <input class="signup-input" type="text" placeholder="Last Name" 
+                        @bind="registerModel.LastName" />
+                    <ValidationMessage For="@(() => registerModel.LastName)" />
+                </div>
+                <!-- Email -->
+                <div class="form-group">
+                    <input class="signup-input" type="email" placeholder="Email Address" 
+                        @bind="registerModel.Email" />
+                    <ValidationMessage For="@(() => registerModel.Email)" />
+                </div>
+                <!-- Password with toggle -->
+                <div class="form-group">
+                    <div class="password-wrapper">
+                        <input class="signup-input @(IsPasswordAllValid ? "pw-valid" : (registerModel.Password?.Length > 0 ? "pw-invalid" : ""))"
+                            type="@(showPassword ? "text" : "password")"
+                            placeholder="Password" 
+                            @bind="registerModel.Password"
+                            @oninput="OnPasswordInput" />
+                        <button type="button" class="password-toggle" @onclick="TogglePassword">
+                            <img src="@(showPassword ? "/images/eye.svg" : "/images/eyeX.svg")" 
+                                alt="@(showPassword ? "Hide password" : "Show password")" />
+                        </button>
+                    </div>
+                    <div class="password-hint">
+                        Password must be at least 6 characters, contain at least one digit and one uppercase letter.
+                    </div>
+                    <ValidationMessage For="@(() => registerModel.Password)" />
+                </div>
                 <!-- Terms and conditions -->
                 <label class="terms-label">
                     <input type="checkbox" @bind="registerModel.AgreeToTerms" />
@@ -105,7 +112,6 @@
                         <a href="/terms-and-conditions" target="_blank" rel="noopener noreferrer">Terms &amp; Conditions</a>
                     </span>
                 </label>
-                
                 <!-- Submit button -->
                 <button type="submit" class="btn btn-primary signup-btn" disabled="@(!registerModel.AgreeToTerms || isLoading)">
                     @if (isLoading)
@@ -117,17 +123,8 @@
                         <span>Sign up</span>
                     }
                 </button>
-                
             </EditForm>
-            
-            <!-- Divider -->
-            <div class="divider">
-                <span>or</span>
-            </div>
-
-            <!-- institutional signup -->
-            <button class="btn btn-google">Sign up with institutional email</button>
-            
+                
             <!-- Link to login -->
             <div class="signup-link">
                 <p>Already have an account? <a href="/login" class="signup-link-a">Sign in</a></p>
@@ -139,22 +136,62 @@
 @code {
     // Registration model bound to the form
     private RegisterViewModel registerModel = new();
+    private EditContext editContext;
     
-     // Toggle password visibility
+    // Toggle password visibility
     private bool showPassword = false;
-    
-     // Track loading state
+    // Track loading state
     private bool isLoading = false;
-    
     // Store error messages
     private string errorMessage = string.Empty;
     // Store success messages
     private string successMessage = string.Empty;
 
+    // Live password requirement flags
+    private bool IsPasswordLengthValid => registerModel.Password?.Length >= 6;
+    private bool IsPasswordDigitValid => !string.IsNullOrEmpty(registerModel.Password) && registerModel.Password.Any(char.IsDigit);
+    private bool IsPasswordUpperValid => !string.IsNullOrEmpty(registerModel.Password) && registerModel.Password.Any(char.IsUpper);
+    private bool IsPasswordAllValid => IsPasswordLengthValid && IsPasswordDigitValid && IsPasswordUpperValid;
+
     protected override void OnInitialized()
     {
         // Default role is Student
         registerModel.UserRole = UserRole.Student;
+        editContext = new EditContext(registerModel);
+    }
+
+    // Called on every password input
+    private void OnPasswordInput(ChangeEventArgs e)
+    {
+        registerModel.Password = e.Value?.ToString() ?? string.Empty;
+        // Trigger UI update for live feedback
+        StateHasChanged();
+    }
+
+    // Method to clear all input fields except UserRole
+    private void ClearRegisterModelFields()
+    {
+        registerModel.FirstName = string.Empty;
+        registerModel.LastName = string.Empty;
+        registerModel.Email = string.Empty;
+        registerModel.Password = string.Empty;
+        registerModel.AgreeToTerms = false;
+        // Add any other fields that should be cleared here
+    }
+
+    // Called when the user changes role
+    private void OnRoleChanged(UserRole newRole)
+    {
+        if (registerModel.UserRole != newRole)
+        {
+            ClearRegisterModelFields();
+            registerModel.UserRole = newRole;
+            errorMessage = string.Empty;
+            successMessage = string.Empty;
+            // Reset validation state so built-in validation messages are cleared
+            editContext = new EditContext(registerModel);
+            StateHasChanged();
+        }
     }
 
     // Toggle password visibility
@@ -172,13 +209,13 @@
             errorMessage = string.Empty;
             successMessage = string.Empty;
 
-             // Call authentication service to register user
+            // Call authentication service to register user
             var result = await AuthService.RegisterAsync(registerModel);
 
             if (result.Succeeded)
             {
                 successMessage = "Account created successfully! Redirecting to login...";
-                
+
                 // Redirect to login page after 2 seconds
                 await Task.Delay(2000);
                 Navigation.NavigateTo("/login");

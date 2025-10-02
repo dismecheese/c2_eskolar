@@ -221,3 +221,10 @@
     background: #125bb5;
     color: #fff;
 }
+
+.password-hint {
+    font-size: 0.85rem;
+    color: #888;
+    margin-top: 2px;
+    margin-bottom: 10px; /* Increased space below the password note */
+}
