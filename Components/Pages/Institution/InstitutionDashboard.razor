@@ -19,6 +19,27 @@
         text-decoration: none !important;
     }
 </style>
+<style>
+    .verify-fab {
+        position: fixed;
+        bottom: 32px;
+        right: 32px;
+        z-index: 1000;
+        background: #2563eb;
+        color: #fff;
+        border: none;
+        border-radius: 50px;
+        padding: 12px 24px;
+        font-size: 1rem;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+        cursor: pointer;
+        opacity: 0.85;
+        transition: opacity 0.2s;
+    }
+    .verify-fab:hover {
+        opacity: 1;
+    }
+</style>
 
 <PageTitle>Institution Dashboard</PageTitle>
 
@@ -28,6 +49,9 @@
         <input class="university-input" type="text" placeholder="University Name:" />
         <span class="dashboard-date">@DateTime.Now.ToString("dd MMM yyyy, ddd")</span>
     </div>
+
+    <!-- Temporary floating button for Institution Verification page -->
+    <button class="verify-fab" @onclick="GoToInstitutionVerification">Verify Institution</button>
 
     <!-- Welcome Banner -->
     <div class="dashboard-banner-centered">
@@ -392,5 +416,11 @@
     private void DeleteScholarship(int scholarshipId)
     {
         // Example: scholarships.RemoveAll(s => s.ScholarshipId == scholarshipId);
+    }
+
+    // Added for floating verification button
+    private void GoToInstitutionVerification()
+    {
+        Navigation.NavigateTo("/institution/verification");
     }
 }

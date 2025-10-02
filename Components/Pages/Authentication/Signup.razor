@@ -22,24 +22,24 @@
                     <!-- Student role -->
                     <label class="role-option">
                         <input type="radio" name="role" value="@UserRole.Student" 
-                               @onchange="@(() => OnRoleChanged(UserRole.Student))" 
-                               checked="@(registerModel.UserRole == UserRole.Student)" />
+                                   @onchange="OnRoleChangedStudent"
+                                   checked="@(registerModel.UserRole == UserRole.Student)" />
                         <span>Student</span>
                     </label>
 
                     <!-- Institution role -->
                     <label class="role-option">
                         <input type="radio" name="role" value="@UserRole.Institution" 
-                               @onchange="@(() => OnRoleChanged(UserRole.Institution))"
-                               checked="@(registerModel.UserRole == UserRole.Institution)" />
+                                   @onchange="OnRoleChangedInstitution"
+                                   checked="@(registerModel.UserRole == UserRole.Institution)" />
                         <span>Institution</span>
                     </label>
 
                     <!-- Benefactor role -->
                     <label class="role-option">
                         <input type="radio" name="role" value="@UserRole.Benefactor" 
-                               @onchange="@(() => OnRoleChanged(UserRole.Benefactor))"
-                               checked="@(registerModel.UserRole == UserRole.Benefactor)" />
+                                   @onchange="OnRoleChangedBenefactor"
+                                   checked="@(registerModel.UserRole == UserRole.Benefactor)" />
                         <span>Benefactor</span>
                     </label>
                 </div>
@@ -103,8 +103,6 @@
                         <div class="validation-message">Please enter a valid institutional email address.</div>
                     }
                 </div>
-    // True if institution email is valid and role is Institution
-    private bool ShowInstitutionEmailValid => registerModel.UserRole == UserRole.Institution && !string.IsNullOrEmpty(registerModel.Email) && IsInstitutionEmail(registerModel.Email);
                 <!-- Password with toggle -->
                 <div class="form-group">
                     <div class="password-wrapper">
@@ -153,6 +151,12 @@
 </div>
 
 @code {
+    // True if institution email is valid and role is Institution
+    private bool ShowInstitutionEmailValid => registerModel.UserRole == UserRole.Institution && !string.IsNullOrEmpty(registerModel.Email) && IsInstitutionEmail(registerModel.Email);
+
+    private void OnRoleChangedStudent(ChangeEventArgs e) => OnRoleChanged(UserRole.Student);
+    private void OnRoleChangedInstitution(ChangeEventArgs e) => OnRoleChanged(UserRole.Institution);
+    private void OnRoleChangedBenefactor(ChangeEventArgs e) => OnRoleChanged(UserRole.Benefactor);
     // Registration model bound to the form
     private RegisterViewModel registerModel = new();
     private EditContext editContext;
