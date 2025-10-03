@@ -6,7 +6,7 @@
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @inject UserManager<IdentityUser> UserManager
 @inject StudentProfileService StudentProfileService
-@inject ApplicationDbContext DbContext
+@inject IDbContextFactory<ApplicationDbContext> DbContextFactory
 
 @using Microsoft.AspNetCore.Components.Web
 @using Microsoft.AspNetCore.Components.Authorization
@@ -82,8 +82,11 @@
                 var studentProfile = await StudentProfileService.GetProfileByUserIdAsync(userId);
                 if (studentProfile != null)
                 {
+                    // Create a new DbContext instance for this operation
+                    using var dbContext = await DbContextFactory.CreateDbContextAsync();
+                    
                     // Get recent scholarship application approvals
-                    var approvedApplications = await DbContext.ScholarshipApplications
+                    var approvedApplications = await dbContext.ScholarshipApplications
                         .Include(a => a.Scholarship)
                         .Where(a => a.StudentProfileId == studentProfile.StudentProfileId && 
                                a.Status == "Approved" && 

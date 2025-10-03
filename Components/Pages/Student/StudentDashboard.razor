@@ -8,7 +8,7 @@
 @using c2_eskolar.Data
 @using Microsoft.EntityFrameworkCore
 @using Microsoft.AspNetCore.Identity
-@inject ApplicationDbContext DbContext
+@inject IDbContextFactory<ApplicationDbContext> DbContextFactory
 @inject AuthenticationStateProvider AuthStateProvider
 @inject StudentProfileService StudentProfileService
 @inject UserManager<IdentityUser> UserManager
@@ -473,8 +473,9 @@
     {
         if (firstRender)
         {
-            // Load all scholarships for search bar autocomplete
-            allScholarshipBarResults = await DbContext.Scholarships
+            // Load all scholarships for search bar autocomplete using separate context
+            using var dbContext = await DbContextFactory.CreateDbContextAsync();
+            allScholarshipBarResults = await dbContext.Scholarships
                 .Include(s => s.Institution)
                 .Include(s => s.Benefactor)
                 .Where(s => s.IsActive && s.ApplicationDeadline > DateTime.Now)
@@ -620,20 +621,26 @@
                 approvedScholarships = new List<Scholarship>();
                 return;
             }
-            var studentProfile = await DbContext.StudentProfiles.FirstOrDefaultAsync(sp => sp.UserId == userId);
+            
+            var studentProfile = await StudentProfileService.GetProfileByUserIdAsync(userId);
             if (studentProfile == null)
             {
                 approvedScholarships = new List<Scholarship>();
                 return;
             }
+            
             Guid studentId = studentProfile.StudentProfileId;
-            var approvedApps = await DbContext.ScholarshipApplications
+            
+            // Use a scoped context for this operation
+            using var dbContext = await DbContextFactory.CreateDbContextAsync();
+            var approvedApps = await dbContext.ScholarshipApplications
                 .Where(a => a.StudentProfileId == studentId && a.Status == "Approved")
                 .Include(a => a.Scholarship)
                     .ThenInclude(s => s.Institution)
                 .Include(a => a.Scholarship)
                     .ThenInclude(s => s.Benefactor)
                 .ToListAsync();
+                
             approvedScholarships = approvedApps
                 .Where(a => a.Scholarship != null)
                 .Select(a => a.Scholarship!)
@@ -665,12 +672,14 @@
 
             if (recentlyViewedIds.Any())
             {
-                // Load scholarship details for these IDs, preserving order
-                recentlyViewedScholarships = await DbContext.Scholarships
+                // Load scholarship details for these IDs, preserving order using scoped context
+                using var dbContext = await DbContextFactory.CreateDbContextAsync();
+                recentlyViewedScholarships = await dbContext.Scholarships
                     .Include(s => s.Institution)
                     .Include(s => s.Benefactor)
                     .Where(s => recentlyViewedIds.Contains(s.ScholarshipId))
                     .ToListAsync();
+                    
                 // Preserve order as in recentlyViewedIds
                 recentlyViewedScholarships = recentlyViewedIds
                     .Select(id => recentlyViewedScholarships.FirstOrDefault(s => s.ScholarshipId == id))
@@ -730,8 +739,9 @@
     {
         try
         {
-            // Load all active scholarships with their related data
-            allScholarships = await DbContext.Scholarships
+            // Load all active scholarships with their related data using a scoped context
+            using var dbContext = await DbContextFactory.CreateDbContextAsync();
+            allScholarships = await dbContext.Scholarships
                 .Include(s => s.Institution)
                 .Include(s => s.Benefactor)
                 .Where(s => s.IsActive && s.ApplicationDeadline > DateTime.Now)
@@ -941,7 +951,7 @@
             }
 
             // Find the student's profile
-            var studentProfile = await DbContext.StudentProfiles.FirstOrDefaultAsync(sp => sp.UserId == userId);
+            var studentProfile = await StudentProfileService.GetProfileByUserIdAsync(userId);
             if (studentProfile == null)
             {
                 applicationsErrorMessage = "Student profile not found.";
@@ -951,8 +961,9 @@
 
             Guid studentId = studentProfile.StudentProfileId;
 
-            // Load all applications for this student, including scholarship and provider info
-            var appEntities = await DbContext.ScholarshipApplications
+            // Load all applications for this student, including scholarship and provider info using scoped context
+            using var dbContext = await DbContextFactory.CreateDbContextAsync();
+            var appEntities = await dbContext.ScholarshipApplications
                 .Where(a => a.StudentProfileId == studentId)
                 .Include(a => a.Scholarship.Institution)
                 .Include(a => a.Scholarship.Benefactor)
