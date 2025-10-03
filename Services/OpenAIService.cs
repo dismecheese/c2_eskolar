@@ -1,5 +1,6 @@
 
 using Azure.AI.OpenAI;
+using OpenAI.Chat;
 using Microsoft.Extensions.Configuration;
 using Microsoft.AspNetCore.Identity;
 using System;
@@ -12,7 +13,7 @@ namespace c2_eskolar.Services
 {
     public class OpenAIService
     {
-        private readonly OpenAIClient _client;
+        private readonly AzureOpenAIClient _client;
         private readonly string _deploymentName;
         private readonly ProfileSummaryService _profileSummaryService;
         private readonly ScholarshipRecommendationService _scholarshipRecommendationService;
@@ -23,7 +24,7 @@ namespace c2_eskolar.Services
             var apiKey = config["AzureOpenAI:ApiKey"] ?? throw new ArgumentNullException("AzureOpenAI:ApiKey");
             var endpoint = config["AzureOpenAI:Endpoint"] ?? throw new ArgumentNullException("AzureOpenAI:Endpoint");
             _deploymentName = config["AzureOpenAI:DeploymentName"] ?? throw new ArgumentNullException("AzureOpenAI:DeploymentName");
-            _client = new OpenAIClient(new Uri(endpoint), new Azure.AzureKeyCredential(apiKey));
+            _client = new AzureOpenAIClient(new Uri(endpoint), new Azure.AzureKeyCredential(apiKey));
             _profileSummaryService = profileSummaryService;
             _scholarshipRecommendationService = scholarshipRecommendationService;
             _announcementRecommendationService = announcementRecommendationService;
@@ -31,13 +32,13 @@ namespace c2_eskolar.Services
 
         public async Task<string> GetChatCompletionAsync(string userMessage)
         {
-            var chatOptions = new ChatCompletionsOptions()
+            var chatClient = _client.GetChatClient(_deploymentName);
+            var messages = new[]
             {
-                DeploymentName = _deploymentName,
-                Messages = { new ChatRequestUserMessage(userMessage) }
+                new UserChatMessage(userMessage)
             };
-            var response = await _client.GetChatCompletionsAsync(chatOptions);
-            return response.Value.Choices[0].Message.Content.Trim();
+            var response = await chatClient.CompleteChatAsync(messages);
+            return response.Value.Content[0].Text.Trim();
         }
 
         // New method: includes the user's profile summary in the prompt
@@ -84,16 +85,17 @@ namespace c2_eskolar.Services
                       $"I don't have access to your profile information yet, but I'm here to help with general questions about scholarships and the platform."
                     : "You are an AI assistant for eSkolar, a scholarship platform. Answer questions as best you can.");
 
-            var messages = new List<ChatRequestMessage>
+            var chatClient = _client.GetChatClient(_deploymentName);
+            var messages = new List<ChatMessage>
             {
-                new ChatRequestSystemMessage(systemPrompt)
+                new SystemChatMessage(systemPrompt)
             };
 
             if (profileSummary != null)
             {
                 // Create a more natural profile context
                 var profileContext = $"User Profile Information:\n{profileSummary.Summary}";
-                messages.Add(new ChatRequestSystemMessage(profileContext));
+                messages.Add(new SystemChatMessage(profileContext));
 
                 // Add scholarship recommendations if this is a scholarship-related query or user is a student
                 if (profileSummary.Role == "Student" && (isScholarshipQuery || isFirstMessage || scholarshipRecommendations.Any()))
@@ -101,7 +103,7 @@ namespace c2_eskolar.Services
                     var scholarshipContext = GenerateScholarshipContext(scholarshipRecommendations);
                     if (!string.IsNullOrEmpty(scholarshipContext))
                     {
-                        messages.Add(new ChatRequestSystemMessage(scholarshipContext));
+                        messages.Add(new SystemChatMessage(scholarshipContext));
                     }
                 }
 
@@ -111,24 +113,15 @@ namespace c2_eskolar.Services
                     var announcementContext = GenerateAnnouncementContext(announcementRecommendations);
                     if (!string.IsNullOrEmpty(announcementContext))
                     {
-                        messages.Add(new ChatRequestSystemMessage(announcementContext));
+                        messages.Add(new SystemChatMessage(announcementContext));
                     }
                 }
             }
             
-            messages.Add(new ChatRequestUserMessage(userMessage));
+            messages.Add(new UserChatMessage(userMessage));
 
-            var chatOptions = new ChatCompletionsOptions()
-            {
-                DeploymentName = _deploymentName,
-                Messages = { }
-            };
-            foreach (var msg in messages)
-            {
-                chatOptions.Messages.Add(msg);
-            }
-            var response = await _client.GetChatCompletionsAsync(chatOptions);
-            return response.Value.Choices[0].Message.Content.Trim();
+            var response = await chatClient.CompleteChatAsync(messages);
+            return response.Value.Content[0].Text.Trim();
         }
 
         private bool IsScholarshipRelatedQuery(string userMessage)
