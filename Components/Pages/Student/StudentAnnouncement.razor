@@ -27,6 +27,9 @@
             <!-- Category Tabs -->
             <div class="modern-tabs d-flex align-items-center mb-4 gap-3">
                 <div class="tab-pills">
+                    <button class="tab-pill @(activeTab == "All" ? "active" : "")" @onclick='() => SetActiveTab("All")'>
+                        <i class="bi bi-megaphone"></i> <span>All</span>
+                    </button>
                     <button class="tab-pill @(activeTab == "Institution" ? "active" : "")" @onclick='() => SetActiveTab("Institution")'>
                         <i class="bi bi-building"></i> <span>Institution</span>
                     </button>
@@ -274,7 +277,7 @@
             }
         }
     }
-    private string activeTab = "Institution"; // Default to Institution tab
+    private string activeTab = "All"; // Default to All tab to show all announcements
     
     // Pagination
     private int currentPage = 1;
@@ -335,9 +338,11 @@
 
         return tab switch
         {
+            "All" => allAnnouncements.ToList(),
             "Institution" => allAnnouncements.Where(a => a.AuthorType == UserRole.Institution && IsGeneralInstitutionAnnouncement(a)).ToList(),
             "Application" => allAnnouncements.Where(a => IsApplicationRelated(a)).ToList(),
             "Grants" => allAnnouncements.Where(a => IsGrantRelated(a)).ToList(),
+            "Benefactor" => allAnnouncements.Where(a => a.AuthorType == UserRole.Benefactor).ToList(),
             _ => allAnnouncements.ToList()
         };
     }
@@ -479,9 +484,11 @@
     {
         return activeTab switch
         {
+            "All" => "All announcements from all sources",
             "Institution" => "General announcements from educational institutions",
             "Application" => "Updates related to your scholarship applications",
             "Grants" => "Announcements about your current scholarships and grants",
+            "Benefactor" => "Announcements from scholarship benefactors and donors",
             _ => "All announcements"
         };
     }
@@ -490,9 +497,11 @@
     {
         return activeTab switch
         {
+            "All" => "This view shows all announcements from institutions, benefactors, and other sources. Use this to get a comprehensive overview of all available announcements.",
             "Institution" => "These are general announcements from educational institutions that may be relevant to all students.",
             "Application" => "These announcements are specifically related to scholarships you have applied for. Keep an eye on application deadlines and updates.",
             "Grants" => "These announcements are related to scholarships and grants you currently have. Stay informed about requirements and opportunities.",
+            "Benefactor" => "These announcements are from scholarship benefactors and donors. They may include information about new opportunities, events, or program updates.",
             _ => ""
         };
     }
@@ -501,9 +510,11 @@
     {
         return activeTab switch
         {
+            "All" => "bi bi-megaphone",
             "Institution" => "bi bi-building",
             "Application" => "bi bi-file-earmark-text",
             "Grants" => "bi bi-award",
+            "Benefactor" => "bi bi-globe",
             _ => "bi bi-megaphone"
         };
     }
@@ -512,9 +523,11 @@
     {
         return activeTab switch
         {
+            "All" => "No Announcements Available",
             "Institution" => "No Institution Announcements",
             "Application" => "No Application Updates",
             "Grants" => "No Grant Announcements",
+            "Benefactor" => "No Benefactor Announcements",
             _ => "No Announcements Found"
         };
     }
@@ -523,9 +536,11 @@
     {
         return activeTab switch
         {
+            "All" => "There are no announcements available at the moment. Check back later for updates.",
             "Institution" => "There are no general announcements from institutions at the moment.",
             "Application" => "No updates available for your scholarship applications.",
             "Grants" => "No announcements related to your current grants and scholarships.",
+            "Benefactor" => "There are no announcements from benefactors at the moment.",
             _ => "No announcements match your current filters."
         };
     }

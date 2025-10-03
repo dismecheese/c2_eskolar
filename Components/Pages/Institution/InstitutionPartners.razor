@@ -2,13 +2,21 @@
 @attribute [Authorize(Roles = "Institution")] 
 @layout Layout.InstitutionDashLayout
 @using Microsoft.AspNetCore.WebUtilities
-@using c2_eskolar.Components.Pages
+@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.EntityFrameworkCore
+@using System.Security.Claims
+@using c2_eskolar.Data
+@using c2_eskolar.Models
+@using c2_eskolar.Services
+@inject ApplicationDbContext DbContext
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject InstitutionProfileService InstitutionProfileService
 <!-- Search Bar -->
 <div class="container mb-4 mt-5">
     <div class="row justify-content-center">
         <div class="col-12 col-lg-10">
             <div class="input-group mb-3">
-                <input type="text" class="form-control" placeholder="Search" />
+                <input type="text" class="form-control" placeholder="Search partners..." @bind="searchQuery" @oninput="HandleSearch" />
                 <span class="input-group-text bg-white border-0">
                     <i class="bi bi-search"></i>
                 </span>
@@ -31,53 +39,279 @@
 </ul>
 <div class="tab-content border border-top-0 p-4" id="myTabContent">
   <div class="tab-pane fade show active" id="tab-one" role="tabpanel" aria-labelledby="tab-one-tab">
-    <h2 class="fw-bold text-center mb-2" style="font-size:2rem;">Our Partner Institutions</h2>
+    <h2 class="fw-bold text-center mb-2" style="font-size:2rem;">Partner Institutions</h2>
     <p class="text-center mb-4" style="max-width:600px;margin:auto;">
-        Here are the institutions who support our mission to connect students with academic opportunities.
+        Institutions we collaborate with through scholarship partnerships.
     </p>
-    <div class="row g-4 justify-content-center">
-        @for (int i = 0; i < 6; i++)
-        {
-            <div class="col-12 col-sm-6 col-md-4">
-                <div class="card shadow-sm border-0 h-100 d-flex flex-column align-items-center p-4" style="min-height:150px;">
-                    <div class="mb-3">
-                        <svg width="60" height="60" viewBox="0 0 60 60">
-                            <rect width="60" height="60" fill="#E0E0E0"/>
-                            <line x1="0" y1="0" x2="60" y2="60" stroke="#888" stroke-width="2"/>
-                            <line x1="60" y1="0" x2="0" y2="60" stroke="#888" stroke-width="2"/>
-                        </svg>
-                    </div>
-                    <div class="fw-semibold text-center">Institution Name</div>
-                </div>
+    
+    @if (filteredPartnerInstitutions == null)
+    {
+        <div class="text-center py-4">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
             </div>
-        }
-    </div>
-  </div>
-  <div class="tab-pane fade" id="tab-two" role="tabpanel" aria-labelledby="tab-two-tab">
-    <h2 class="fw-bold text-center mb-2" style="font-size:2rem;">Meet our Partners</h2>
-        <p class="text-center mb-4" style="max-width:600px;margin:auto;">
-            Here are the organizations and sponsors who support our mission to connect students with academic opportunities.
-        </p>
+        </div>
+    }
+    else if (!filteredPartnerInstitutions.Any())
+    {
+        <div class="alert alert-info text-center mx-auto" style="max-width: 500px;">
+            <i class="bi bi-info-circle me-2"></i>
+            @if (!string.IsNullOrEmpty(searchQuery))
+            {
+                <text>No institutions found matching "@searchQuery"</text>
+            }
+            else
+            {
+                <text>No partnership institutions found yet.</text>
+            }
+        </div>
+    }
+    else
+    {
         <div class="row g-4 justify-content-center">
-            @for (int i = 0; i < 9; i++)
+            @foreach (var institution in filteredPartnerInstitutions)
             {
                 <div class="col-12 col-sm-6 col-md-4">
-                    <div class="card shadow-sm border-0 h-100 d-flex flex-column align-items-center p-4" style="min-height:150px;">
+                    <div class="card shadow-sm border-0 h-100 d-flex flex-column align-items-center p-4" style="min-height:180px;">
                         <div class="mb-3">
-                            <svg width="60" height="60" viewBox="0 0 60 60">
-                                <rect width="60" height="60" fill="#E0E0E0"/>
-                                <line x1="0" y1="0" x2="60" y2="60" stroke="#888" stroke-width="2"/>
-                                <line x1="60" y1="0" x2="0" y2="60" stroke="#888" stroke-width="2"/>
-                            </svg>
+                            @if (!string.IsNullOrEmpty(institution.Logo))
+                            {
+                                <img src="@institution.Logo" alt="@institution.InstitutionName Logo" class="rounded" style="width: 60px; height: 60px; object-fit: cover;" />
+                            }
+                            else
+                            {
+                                <div class="bg-primary text-white rounded d-flex align-items-center justify-content-center" style="width: 60px; height: 60px; font-size: 1.5rem;">
+                                    @GetInitials(institution.InstitutionName)
+                                </div>
+                            }
                         </div>
-                        <div class="fw-semibold text-center">Benefactor Name</div>
+                        <div class="fw-semibold text-center mb-2">@institution.InstitutionName</div>
+                        <div class="text-muted small text-center mb-2">@(institution.InstitutionType ?? "Institution")</div>
+                        @if (institution.IsVerified)
+                        {
+                            <span class="badge bg-success">Verified ✓</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-warning text-dark">Pending</span>
+                        }
                     </div>
                 </div>
             }
         </div>
+    }
+  </div>
+  <div class="tab-pane fade" id="tab-two" role="tabpanel" aria-labelledby="tab-two-tab">
+    <h2 class="fw-bold text-center mb-2" style="font-size:2rem;">Partner Benefactors</h2>
+    <p class="text-center mb-4" style="max-width:600px;margin:auto;">
+        Organizations and sponsors who collaborate with us to fund scholarships.
+    </p>
+    
+    @if (filteredPartnerBenefactors == null)
+    {
+        <div class="text-center py-4">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>
+    }
+    else if (!filteredPartnerBenefactors.Any())
+    {
+        <div class="alert alert-info text-center mx-auto" style="max-width: 500px;">
+            <i class="bi bi-info-circle me-2"></i>
+            @if (!string.IsNullOrEmpty(searchQuery))
+            {
+                <text>No benefactors found matching "@searchQuery"</text>
+            }
+            else
+            {
+                <text>No partnership benefactors found yet.</text>
+            }
+        </div>
+    }
+    else
+    {
+        <div class="row g-4 justify-content-center">
+            @foreach (var benefactor in filteredPartnerBenefactors)
+            {
+                <div class="col-12 col-sm-6 col-md-4">
+                    <div class="card shadow-sm border-0 h-100 d-flex flex-column align-items-center p-4" style="min-height:200px;">
+                        <div class="mb-3">
+                            @if (!string.IsNullOrEmpty(benefactor.Logo))
+                            {
+                                <img src="@benefactor.Logo" alt="@benefactor.OrganizationName Logo" class="rounded" style="width: 60px; height: 60px; object-fit: cover;" />
+                            }
+                            else
+                            {
+                                <div class="bg-success text-white rounded d-flex align-items-center justify-content-center" style="width: 60px; height: 60px; font-size: 1.5rem;">
+                                    @GetInitials(benefactor.OrganizationName)
+                                </div>
+                            }
+                        </div>
+                        <div class="fw-semibold text-center mb-2">@benefactor.OrganizationName</div>
+                        <div class="text-muted small text-center mb-2">@(benefactor.OrganizationType ?? "Organization")</div>
+                        <div class="text-center mb-2">
+                            @if (benefactor.IsVerified)
+                            {
+                                <span class="badge bg-success me-1">Verified ✓</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-warning text-dark me-1">Pending</span>
+                            }
+                            <small class="text-muted d-block mt-1">@GetPartnershipCount(benefactor.BenefactorProfileId) partnerships</small>
+                        </div>
+                        @if (!string.IsNullOrEmpty(benefactor.Website))
+                        {
+                            <a href="@benefactor.Website" target="_blank" class="btn btn-sm btn-outline-primary mt-auto">
+                                <i class="bi bi-globe me-1"></i> Visit Website
+                            </a>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+    }
   </div>
 </div>
 
-<div class="text-center mt-4 text-muted" style="font-size: 1rem;">
-    Want to be our partner? <b>Contact us to collaborate.</b>
+<div class="text-center mt-4">
+    @if (currentInstitution != null)
+    {
+        <div class="alert alert-primary d-inline-block">
+            <i class="bi bi-info-circle me-2"></i>
+            <strong>Your Institution:</strong> @currentInstitution.InstitutionName
+            @if (currentInstitution.IsVerified)
+            {
+                <span class="badge bg-success ms-2">Verified ✓</span>
+            }
+            else
+            {
+                <span class="badge bg-warning text-dark ms-2">Pending Verification</span>
+            }
+        </div>
+    }
+    <div class="text-muted mt-3" style="font-size: 1rem;">
+        Want to expand partnerships? <b>Contact benefactors to collaborate on scholarships.</b>
+    </div>
 </div>
+
+@code {
+    private c2_eskolar.Models.InstitutionProfile? currentInstitution;
+    private List<c2_eskolar.Models.InstitutionProfile>? partnerInstitutions;
+    private List<c2_eskolar.Models.BenefactorProfile>? partnerBenefactors;
+    private List<c2_eskolar.Models.InstitutionProfile>? filteredPartnerInstitutions;
+    private List<c2_eskolar.Models.BenefactorProfile>? filteredPartnerBenefactors;
+    private string searchQuery = string.Empty;
+    private Dictionary<Guid, int> partnershipCounts = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadCurrentInstitution();
+        await LoadPartnerData();
+        ApplyFilters();
+    }
+
+    private async Task LoadCurrentInstitution()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+        var userId = user?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+        if (!string.IsNullOrEmpty(userId))
+        {
+            currentInstitution = await InstitutionProfileService.GetProfileByUserIdAsync(userId);
+        }
+    }
+
+    private async Task LoadPartnerData()
+    {
+        try
+        {
+            // Get institutions that have partnerships (excluding current institution)
+            var institutionIds = await DbContext.Scholarships
+                .Where(s => s.InstitutionProfileId != null && s.BenefactorProfileId != null) // Partnership scholarships
+                .Where(s => currentInstitution == null || s.InstitutionProfileId != currentInstitution.InstitutionProfileId) // Exclude current
+                .Select(s => s.InstitutionProfileId!.Value)
+                .Distinct()
+                .ToListAsync();
+
+            partnerInstitutions = await DbContext.InstitutionProfiles
+                .Where(ip => institutionIds.Contains(ip.InstitutionProfileId))
+                .OrderBy(ip => ip.InstitutionName)
+                .ToListAsync();
+
+            // Get benefactors that have partnerships with any institution
+            var benefactorIds = await DbContext.Scholarships
+                .Where(s => s.BenefactorProfileId != null && s.InstitutionProfileId != null) // Partnership scholarships
+                .Select(s => s.BenefactorProfileId!.Value)
+                .Distinct()
+                .ToListAsync();
+
+            partnerBenefactors = await DbContext.BenefactorProfiles
+                .Where(bp => benefactorIds.Contains(bp.BenefactorProfileId))
+                .OrderBy(bp => bp.OrganizationName)
+                .ToListAsync();
+
+            // Calculate partnership counts for each benefactor
+            foreach (var benefactor in partnerBenefactors)
+            {
+                var count = await DbContext.Scholarships
+                    .Where(s => s.BenefactorProfileId == benefactor.BenefactorProfileId && s.InstitutionProfileId != null)
+                    .CountAsync();
+                partnershipCounts[benefactor.BenefactorProfileId] = count;
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading partner data: {ex.Message}");
+            partnerInstitutions = new List<c2_eskolar.Models.InstitutionProfile>();
+            partnerBenefactors = new List<c2_eskolar.Models.BenefactorProfile>();
+        }
+    }
+
+    private void ApplyFilters()
+    {
+        if (partnerInstitutions != null)
+        {
+            filteredPartnerInstitutions = string.IsNullOrEmpty(searchQuery)
+                ? partnerInstitutions
+                : partnerInstitutions.Where(i => 
+                    i.InstitutionName.Contains(searchQuery, StringComparison.OrdinalIgnoreCase) ||
+                    (i.InstitutionType?.Contains(searchQuery, StringComparison.OrdinalIgnoreCase) ?? false)
+                ).ToList();
+        }
+
+        if (partnerBenefactors != null)
+        {
+            filteredPartnerBenefactors = string.IsNullOrEmpty(searchQuery)
+                ? partnerBenefactors
+                : partnerBenefactors.Where(b => 
+                    b.OrganizationName.Contains(searchQuery, StringComparison.OrdinalIgnoreCase) ||
+                    (b.OrganizationType?.Contains(searchQuery, StringComparison.OrdinalIgnoreCase) ?? false)
+                ).ToList();
+        }
+    }
+
+    private void HandleSearch(ChangeEventArgs e)
+    {
+        searchQuery = e.Value?.ToString() ?? string.Empty;
+        ApplyFilters();
+        StateHasChanged();
+    }
+
+    private string GetInitials(string name)
+    {
+        if (string.IsNullOrEmpty(name)) return "?";
+        
+        var words = name.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        if (words.Length == 1) return words[0].Substring(0, Math.Min(2, words[0].Length)).ToUpper();
+        
+        return (words[0].Substring(0, 1) + words[words.Length - 1].Substring(0, 1)).ToUpper();
+    }
+
+    private int GetPartnershipCount(Guid benefactorId)
+    {
+        return partnershipCounts.GetValueOrDefault(benefactorId, 0);
+    }
+}

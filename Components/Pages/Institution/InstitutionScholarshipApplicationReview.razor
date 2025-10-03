@@ -1,19 +1,6 @@
 @page "/dashboard/institution/applications/review/{ApplicationId:guid}"
 @attribute [Authorize(Roles = "Institution")]
 @layout Layout.InstitutionDashLayout
-    [Parameter] public Guid ApplicationId { get; set; }
-    private ScholarshipApplication? application;
-    private bool isLoading = true;
-            <div class="mb-2"><span class="text-muted">Reference:</span> <strong>@(application?.ScholarshipApplicationId.ToString() ?? "(No Reference)")</strong></div>
-            <div class="mb-2"><span class="text-muted">Application Date:</span> @(application?.ApplicationDate.ToString("MMMM dd, yyyy") ?? "(No Date)")</div>
-            <div class="mb-2"><span class="text-muted">Status:</span> <span class="fw-semibold">@(application?.Status ?? "(No Status)")</span></div>
-                application = await DbContext.ScholarshipApplications
-                    .Include(a => a.Student)
-                    .Include(a => a.Scholarship)
-        .FirstOrDefaultAsync(a => a.ScholarshipApplicationId == ApplicationId)
-        .ConfigureAwait(false);
-    }
-
 
 @using c2_eskolar.Data
 @using c2_eskolar.Models
@@ -51,10 +38,10 @@ else
     <div class="card shadow-sm border-0 mb-4">
         <div class="card-header bg-primary text-white fw-bold">Application Info</div>
         <div class="card-body">
-            <h4 class="mb-2">@(application?.Scholarship?.Title ?? "(No Title)")</h4>
+            <h4 class="mb-2">@(!string.IsNullOrWhiteSpace(application?.Scholarship?.Title) ? application.Scholarship.Title : "(No Title)")</h4>
             <div class="mb-2"><span class="text-muted">Reference:</span> <strong>@(application?.ScholarshipApplicationId.ToString())</strong></div>
-            <div class="mb-2"><span class="text-muted">Application Date:</span> @(application?.ApplicationDate.ToString("MMMM dd, yyyy") ?? "(No Date)")</div>
-            <div class="mb-2"><span class="text-muted">Status:</span> <span class="fw-semibold">@(application?.Status ?? "(No Status)")</span></div>
+            <div class="mb-2"><span class="text-muted">Application Date:</span> @(application?.ApplicationDate.ToString("MMMM dd, yyyy"))</div>
+            <div class="mb-2"><span class="text-muted">Status:</span> <span class="fw-semibold">@(application?.Status)</span></div>
         </div>
     </div>
 
@@ -62,6 +49,10 @@ else
         <div class="card-header bg-info text-white fw-bold">Applicant Info</div>
         <div class="card-body">
             <div class="mb-2"><span class="text-muted">Applicant:</span> <strong>@(application?.Student != null ? $"{application.Student.FirstName} {application.Student.LastName}" : "-")</strong></div>
+            <div class="mb-2"><span class="text-muted">Student ID:</span> <strong>@(application?.StudentId ?? "-")</strong></div>
+            <div class="mb-2"><span class="text-muted">GWA:</span> <strong>@(application?.GWA != null ? application.GWA.Value.ToString("0.00") : "-")</strong></div>
+            <div class="mb-2"><span class="text-muted">1st Sem Grades:</span> <span>@(string.IsNullOrWhiteSpace(application?.FirstSemesterGrades) ? "-" : application.FirstSemesterGrades)</span></div>
+            <div class="mb-2"><span class="text-muted">2nd Sem Grades:</span> <span>@(string.IsNullOrWhiteSpace(application?.SecondSemesterGrades) ? "-" : application.SecondSemesterGrades)</span></div>
         </div>
     </div>
 
@@ -73,9 +64,9 @@ else
                 <div class="mb-3">
                     <strong>External Application:</strong>
                     <p>
-                        @if (!string.IsNullOrWhiteSpace(application.ExternalApplicationUrl))
+                        @if (!string.IsNullOrWhiteSpace(application?.ExternalApplicationUrl))
                         {
-                            <a href="@(application?.ExternalApplicationUrl ?? "#")" target="_blank" rel="noopener noreferrer">@(application?.ExternalApplicationUrl ?? "No URL")</a>
+                            <a href="@application.ExternalApplicationUrl" target="_blank" rel="noopener noreferrer">@application.ExternalApplicationUrl</a>
                         }
                         else
                         {
@@ -92,18 +83,20 @@ else
                     <p>@(!string.IsNullOrWhiteSpace(application?.PersonalStatement) ? application.PersonalStatement : "No statement provided.")</p>
                 </div>
 
-                @if (!string.IsNullOrEmpty(application!.UploadedDocuments))
+                @if (!string.IsNullOrEmpty(application?.UploadedDocuments))
                 {
                     <div class="mb-3">
                         <strong>Supporting Documents:</strong>
                         <ul>
-                            @foreach (var doc in application.UploadedDocuments.Split(',', StringSplitOptions.RemoveEmptyEntries))
+                            @foreach (var doc in (application?.UploadedDocuments ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries))
                             {
                                 var trimmed = doc.Trim();
                                 if (!string.IsNullOrWhiteSpace(trimmed))
                                 {
                                     <li>
-                                        <a href="@trimmed" target="_blank" rel="noopener noreferrer">@trimmed</a>
+                                        <a href="@trimmed" target="_blank" rel="noopener noreferrer" title="@trimmed">
+                                            @GetFileName(trimmed)
+                                        </a>
                                         <span class="text-muted">(Document)</span>
                                     </li>
                                 }
@@ -131,7 +124,7 @@ else
 
                 <div class="mb-3">
                     <label class="form-label" for="DecisionSelect">Decision</label>
-                    <InputSelect id="DecisionSelect" @bind-Value="application.Status" class="form-select" aria-label="Decision">
+                    <InputSelect id="DecisionSelect" @bind-Value="application!.Status" class="form-select" aria-label="Decision">
                         <option value="Under Review">Under Review</option>
                         <option value="Approved">Approved</option>
                         <option value="Rejected">Rejected</option>
@@ -149,7 +142,7 @@ else
                         <span>Save Review</span>
                     }
                 </button>
-                @if (application.Scholarship != null)
+                @if (application?.Scholarship != null)
                 {
                     <NavLink href="@($"/dashboard/institution/scholarships-info/{application.Scholarship.ScholarshipId}")" class="btn btn-secondary ms-2">Back</NavLink>
                 }
@@ -161,6 +154,26 @@ else
             </EditForm>
         </div>
     </div>
+}
+
+@code {
+    // ...existing code...
+
+    private string GetFileName(string path)
+    {
+        if (string.IsNullOrWhiteSpace(path)) return "";
+        try
+        {
+            // Handles both / and \ as separators
+            var parts = path.Split(new[] {'/', '\\'}, StringSplitOptions.RemoveEmptyEntries);
+            var fileName = parts.Length > 0 ? parts[^1] : path;
+            // Truncate if too long
+            if (fileName.Length > 32)
+                return fileName.Substring(0, 14) + "..." + fileName.Substring(fileName.Length - 12);
+            return fileName;
+        }
+        catch { return path; }
+    }
 }
 
 @code {
@@ -206,13 +219,41 @@ else
             var user = authState.User;
             var reviewerId = user.FindFirstValue(ClaimTypes.NameIdentifier);
 
+            // Track previous status before update
+            var previousStatus = await DbContext.ScholarshipApplications
+                .Where(a => a.ScholarshipApplicationId == application.ScholarshipApplicationId)
+                .Select(a => a.Status)
+                .FirstOrDefaultAsync();
+
             application.ReviewDate = DateTime.Now;
             application.ReviewedBy = reviewerId;
+
+            // Only decrement slots if status is being set to Approved and was not previously Approved
+            if (application.Status == "Approved" && previousStatus != "Approved" && application.Scholarship != null)
+            {
+                // Reload scholarship from DB to ensure up-to-date value
+                var scholarship = await DbContext.Scholarships.FirstOrDefaultAsync(s => s.ScholarshipId == application.Scholarship.ScholarshipId);
+                if (scholarship != null && scholarship.SlotsAvailable.HasValue && scholarship.SlotsAvailable.Value > 0)
+                {
+                    scholarship.SlotsAvailable -= 1;
+                    DbContext.Scholarships.Update(scholarship);
+                }
+            }
 
             DbContext.ScholarshipApplications.Update(application);
             await DbContext.SaveChangesAsync().ConfigureAwait(false);
 
             successMessage = "✅ Review saved successfully.";
+
+            // Redirect to scholarship info page after save
+            if (application.Scholarship != null)
+            {
+                Navigation.NavigateTo($"/dashboard/institution/scholarships-info/{application.Scholarship.ScholarshipId}");
+            }
+            else
+            {
+                Navigation.NavigateTo("/dashboard/institution/scholarships");
+            }
         }
         catch (Exception ex)
         {

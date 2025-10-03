@@ -23,13 +23,11 @@ try
     // Add Controllers for API endpoints
     builder.Services.AddControllers();
 
-// Add Entity Framework with SQL Server
-// builder.Services.AddDbContext<ApplicationDbContext>(options =>
-//     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
-
 // Register IDbContextFactory for ApplicationDbContext in DI container for Blazor Server concurrency safety
 builder.Services.AddDbContextFactory<ApplicationDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+{
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"));
+});
 
     // Add ASP.NET Core Identity
     builder.Services.AddDefaultIdentity<IdentityUser>(options =>
@@ -81,6 +79,9 @@ builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<StudentProfileService>();
 builder.Services.AddScoped<BenefactorProfileService>();
 builder.Services.AddScoped<InstitutionProfileService>();
+
+// Register DocumentIntelligenceService
+// builder.Services.AddScoped<DocumentIntelligenceService>();
 builder.Services.AddScoped<VerificationDocumentService>();
 builder.Services.AddScoped<ProfileSummaryService>();
 builder.Services.AddScoped<ScholarshipRecommendationService>();
