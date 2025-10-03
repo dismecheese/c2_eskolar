@@ -2,9 +2,18 @@
 @attribute [Authorize(Roles = "Institution")] 
 @layout Layout.InstitutionDashLayout
 
+@using c2_eskolar.Data
+@using c2_eskolar.Models
+@using Microsoft.EntityFrameworkCore
+@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.AspNetCore.Identity
 
 @inject c2_eskolar.Services.StudentProfileService StudentProfileService
 @inject c2_eskolar.Services.VerificationDocumentService VerificationDocumentService
+@inject c2_eskolar.Services.InstitutionProfileService InstitutionProfileService
+@inject IDbContextFactory<ApplicationDbContext> DbContextFactory
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject UserManager<IdentityUser> UserManager
 
 @code {
     public class StudentDocument
@@ -14,6 +23,9 @@
         public string Status { get; set; } = "";
         public string StatusClass { get; set; } = "";
         public string FileType { get; set; } = "";
+        public string FilePath { get; set; } = "";
+        public string DocumentSource { get; set; } = ""; // "Verification" or "Application"
+        public string ApplicationTitle { get; set; } = ""; // For application documents
     }
 
     public class Student
@@ -27,25 +39,111 @@
         public List<StudentDocument> Documents { get; set; } = new List<StudentDocument>();
     }
 
-    private List<Student> students = new List<Student>();
+    private List<Student> affiliatedStudents = new List<Student>();
+    private List<Student> externalScholars = new List<Student>();
+    private string activeTab = "affiliated";
+    private string currentInstitutionName = "";
 
     protected override async Task OnInitializedAsync()
     {
+        await LoadCurrentInstitution();
+        await LoadStudentsAndScholars();
+    }
+
+    private async Task LoadCurrentInstitution()
+    {
+        try
+        {
+            var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+            if (authState.User.Identity?.IsAuthenticated == true)
+            {
+                var user = await UserManager.GetUserAsync(authState.User);
+                if (user != null)
+                {
+                    var institutionProfile = await InstitutionProfileService.GetProfileByUserIdAsync(user.Id);
+                    currentInstitutionName = institutionProfile?.InstitutionName ?? "";
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading institution: {ex.Message}");
+        }
+    }
+
+    private async Task LoadStudentsAndScholars()
+    {
         var profiles = await StudentProfileService.GetAllProfilesAsync();
-        students = new List<Student>();
+        affiliatedStudents = new List<Student>();
+        externalScholars = new List<Student>();
+        
+        using var dbContext = await DbContextFactory.CreateDbContextAsync();
+        
         foreach (var profile in profiles)
         {
-            var docs = await VerificationDocumentService.GetDocumentsByUserIdAsync(profile.UserId);
-            var mappedDocs = docs.Select(d => new StudentDocument
+            var allDocuments = new List<StudentDocument>();
+            
+            // Get verification documents
+            var verificationDocs = await VerificationDocumentService.GetDocumentsByUserIdAsync(profile.UserId);
+            var mappedVerificationDocs = verificationDocs.Select(d => new StudentDocument
             {
                 Name = d.DocumentType ?? "Document",
                 DateUploaded = d.UploadedAt?.ToString("MM/dd/yyyy") ?? "",
                 Status = d.Status ?? "Pending",
                 StatusClass = d.Status == "Approved" ? "text-success" : d.Status == "Pending" ? "text-warning" : d.Status == "Needs Revision" ? "text-danger" : "text-info",
-                FileType = d.FilePath?.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase) == true ? "PDF" : d.FilePath?.EndsWith(".docx", StringComparison.OrdinalIgnoreCase) == true ? "DOCX" : "Other"
+                FileType = d.FilePath?.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase) == true ? "PDF" : d.FilePath?.EndsWith(".docx", StringComparison.OrdinalIgnoreCase) == true ? "DOCX" : "Other",
+                FilePath = d.FilePath ?? "",
+                DocumentSource = "Verification",
+                ApplicationTitle = ""
             }).ToList();
+            
+            allDocuments.AddRange(mappedVerificationDocs);
+            
+            // Get scholarship applications and their documents
+            var applications = await dbContext.ScholarshipApplications
+                .Include(a => a.Scholarship)
+                .Include(a => a.Documents)
+                .Where(a => a.StudentProfileId == profile.StudentProfileId)
+                .ToListAsync();
+                
+            foreach (var application in applications)
+            {
+                // Add documents from the Documents collection
+                var appDocuments = application.Documents.Select(d => new StudentDocument
+                {
+                    Name = d.FileName,
+                    DateUploaded = d.UploadedAt.ToString("MM/dd/yyyy"),
+                    Status = "Submitted", // Application documents don't have individual status
+                    StatusClass = "text-info",
+                    FileType = GetFileTypeFromPath(d.FilePath),
+                    FilePath = d.FilePath,
+                    DocumentSource = "Application",
+                    ApplicationTitle = application.Scholarship?.Title ?? "Unknown Scholarship"
+                }).ToList();
+                
+                allDocuments.AddRange(appDocuments);
+                
+                // Add documents from UploadedDocuments property (comma-separated paths)
+                if (!string.IsNullOrEmpty(application.UploadedDocuments))
+                {
+                    var uploadedDocPaths = application.UploadedDocuments.Split(',', StringSplitOptions.RemoveEmptyEntries);
+                    var uploadedDocs = uploadedDocPaths.Select(path => new StudentDocument
+                    {
+                        Name = GetFileName(path.Trim()),
+                        DateUploaded = application.ApplicationDate.ToString("MM/dd/yyyy"),
+                        Status = application.Status ?? "Pending",
+                        StatusClass = application.Status == "Approved" ? "text-success" : application.Status == "Pending" ? "text-warning" : application.Status == "Rejected" ? "text-danger" : "text-info",
+                        FileType = GetFileTypeFromPath(path.Trim()),
+                        FilePath = path.Trim(),
+                        DocumentSource = "Application",
+                        ApplicationTitle = application.Scholarship?.Title ?? "Unknown Scholarship"
+                    }).ToList();
+                    
+                    allDocuments.AddRange(uploadedDocs);
+                }
+            }
 
-            students.Add(new Student
+            var student = new Student
             {
                 Id = profile.StudentProfileId,
                 Name = profile.FullName,
@@ -53,9 +151,63 @@
                 Status = profile.VerificationStatus ?? "Pending",
                 GPA = profile.GPA?.ToString("0.0") ?? "N/A",
                 Year = profile.YearLevel.HasValue ? $"{profile.YearLevel} Year" : "N/A",
-                Documents = mappedDocs
-            });
+                Documents = allDocuments
+            };
+
+            // Categorize students based on their university affiliation
+            if (!string.IsNullOrEmpty(profile.UniversityName) && 
+                !string.IsNullOrEmpty(currentInstitutionName) &&
+                profile.UniversityName.Equals(currentInstitutionName, StringComparison.OrdinalIgnoreCase))
+            {
+                affiliatedStudents.Add(student);
+            }
+            else
+            {
+                externalScholars.Add(student);
+            }
         }
+    }
+    
+    private string GetFileName(string path)
+    {
+        if (string.IsNullOrWhiteSpace(path)) return "";
+        try
+        {
+            // Handles both / and \ as separators
+            var parts = path.Split(new[] {'/', '\\'}, StringSplitOptions.RemoveEmptyEntries);
+            var fileName = parts.Length > 0 ? parts[^1] : path;
+            // Truncate if too long
+            if (fileName.Length > 32)
+                return fileName.Substring(0, 14) + "..." + fileName.Substring(fileName.Length - 12);
+            return fileName;
+        }
+        catch { return path; }
+    }
+    
+    private string GetFileTypeFromPath(string path)
+    {
+        if (string.IsNullOrWhiteSpace(path)) return "Other";
+        if (path.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase)) return "PDF";
+        if (path.EndsWith(".docx", StringComparison.OrdinalIgnoreCase) || path.EndsWith(".doc", StringComparison.OrdinalIgnoreCase)) return "DOCX";
+        if (path.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase) || path.EndsWith(".jpeg", StringComparison.OrdinalIgnoreCase) || path.EndsWith(".png", StringComparison.OrdinalIgnoreCase)) return "Image";
+        return "Other";
+    }
+
+    private List<Student> GetCurrentStudentList()
+    {
+        return activeTab == "affiliated" ? affiliatedStudents : externalScholars;
+    }
+
+    private string GetCurrentTabTitle()
+    {
+        return activeTab == "affiliated" ? "Affiliated Students" : "External Scholars";
+    }
+
+    private string GetCurrentTabDescription()
+    {
+        return activeTab == "affiliated" 
+            ? "Students who are enrolled in your institution" 
+            : "Scholarship recipients from other institutions";
     }
 }
 
@@ -74,18 +226,44 @@
                             <p class="mb-0 opacity-90">Monitor and manage scholarship recipients and their documentation</p>
                         </div>
                         <div class="col-md-4 text-end">
-                            <div class="d-flex justify-content-end gap-2">
+                            <div class="d-flex justify-content-end gap-3">
                                 <div class="text-center">
-                                    <div class="fs-4 fw-bold">@students.Count</div>
-                                    <small class="opacity-90">Total Scholars</small>
+                                    <div class="fs-4 fw-bold">@affiliatedStudents.Count</div>
+                                    <small class="opacity-90">Affiliated</small>
                                 </div>
-                                <div class="text-center ms-3">
-                                    <div class="fs-4 fw-bold">@students.Count(s => s.Status == "Active")</div>
-                                    <small class="opacity-90">Active</small>
+                                <div class="text-center">
+                                    <div class="fs-4 fw-bold">@externalScholars.Count</div>
+                                    <small class="opacity-90">External</small>
+                                </div>
+                                <div class="text-center">
+                                    <div class="fs-4 fw-bold">@(affiliatedStudents.Count + externalScholars.Count)</div>
+                                    <small class="opacity-90">Total</small>
                                 </div>
                             </div>
                         </div>
                     </div>
+                </div>
+            </div>
+
+            <!-- Tab Navigation -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-body p-0">
+                    <nav class="nav nav-tabs border-0" id="scholarTabs" role="tablist">
+                        <button class="nav-link @(activeTab == "affiliated" ? "active" : "") fw-semibold px-4 py-3 border-0" 
+                                type="button" @onclick="@(() => activeTab = "affiliated")"
+                                style="@(activeTab == "affiliated" ? "background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%); color: #1976d2; border-bottom: 3px solid #1976d2 !important;" : "background: transparent; color: #666;")">
+                            <i class="fa fa-university me-2"></i>
+                            Affiliated Students
+                            <span class="badge @(activeTab == "affiliated" ? "bg-primary" : "bg-secondary") ms-2">@affiliatedStudents.Count</span>
+                        </button>
+                        <button class="nav-link @(activeTab == "external" ? "active" : "") fw-semibold px-4 py-3 border-0" 
+                                type="button" @onclick="@(() => activeTab = "external")"
+                                style="@(activeTab == "external" ? "background: linear-gradient(135deg, #e8f5e8 0%, #c8e6c9 100%); color: #388e3c; border-bottom: 3px solid #388e3c !important;" : "background: transparent; color: #666;")">
+                            <i class="fa fa-globe me-2"></i>
+                            External Scholars
+                            <span class="badge @(activeTab == "external" ? "bg-success" : "bg-secondary") ms-2">@externalScholars.Count</span>
+                        </button>
+                    </nav>
                 </div>
             </div>
 
@@ -125,29 +303,30 @@
                 </div>
             </div>
 
-            <!-- Scholarship Info Banner -->
-            <div class="card border-0 shadow-sm mb-4" style="background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%); border-left: 5px solid #1976d2 !important;">
+            <!-- Tab Content Info Banner -->
+            <div class="card border-0 shadow-sm mb-4" style="background: linear-gradient(135deg, @(activeTab == "affiliated" ? "#e3f2fd 0%, #bbdefb 100%" : "#e8f5e8 0%, #c8e6c9 100%")); border-left: 5px solid @(activeTab == "affiliated" ? "#1976d2" : "#388e3c") !important;">
                 <div class="card-body">
                     <div class="row align-items-center">
                         <div class="col-md-2 text-center">
-                            <div class="bg-primary rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 80px; height: 80px;">
-                                <i class="fa fa-trophy text-white fa-2x"></i>
+                            <div class="@(activeTab == "affiliated" ? "bg-primary" : "bg-success") rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 80px; height: 80px;">
+                                <i class="fa @(activeTab == "affiliated" ? "fa-university" : "fa-globe") text-white fa-2x"></i>
                             </div>
                         </div>
                         <div class="col-md-10">
-                            <h4 class="fw-bold text-primary mb-2">Excellence Scholarship Program</h4>
+                            <h4 class="fw-bold @(activeTab == "affiliated" ? "text-primary" : "text-success") mb-2">@GetCurrentTabTitle()</h4>
+                            <p class="text-muted mb-2">@GetCurrentTabDescription()</p>
                             <div class="row">
                                 <div class="col-md-4">
-                                    <small class="text-muted">Provider:</small>
-                                    <div class="fw-semibold">University Foundation</div>
+                                    <small class="text-muted">Category:</small>
+                                    <div class="fw-semibold">@(activeTab == "affiliated" ? "Institution Students" : "External Recipients")</div>
                                 </div>
                                 <div class="col-md-4">
-                                    <small class="text-muted">Award Amount:</small>
-                                    <div class="fw-semibold text-success">₱50,000 per semester</div>
+                                    <small class="text-muted">Total Count:</small>
+                                    <div class="fw-semibold @(activeTab == "affiliated" ? "text-primary" : "text-success")">@GetCurrentStudentList().Count students</div>
                                 </div>
                                 <div class="col-md-4">
-                                    <small class="text-muted">Duration:</small>
-                                    <div class="fw-semibold">4 Years</div>
+                                    <small class="text-muted">Active Status:</small>
+                                    <div class="fw-semibold">@GetCurrentStudentList().Count(s => s.Status == "Active" || s.Status == "Verified") active</div>
                                 </div>
                             </div>
                         </div>
@@ -157,14 +336,31 @@
 
             <!-- Scholars List -->
             <div class="accordion" id="scholarsAccordion">
-                @foreach (var student in students)
+                @{
+                    var currentStudents = GetCurrentStudentList();
+                }
+                @if (currentStudents.Count == 0)
                 {
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-body text-center py-5">
+                            <i class="fa @(activeTab == "affiliated" ? "fa-university" : "fa-globe") fa-4x text-muted mb-3"></i>
+                            <h5 class="text-muted">No @(activeTab == "affiliated" ? "affiliated students" : "external scholars") found</h5>
+                            <p class="text-muted">@(activeTab == "affiliated" ? "Students from your institution will appear here once they register." : "Scholarship recipients from other institutions will appear here.")</p>
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    @for (int i = 0; i < currentStudents.Count; i++)
+                    {
+                        var student = currentStudents[i];
+                        var isFirst = i == 0;
                     <div class="card border-0 shadow-sm mb-3">
                         <div class="card-header bg-white border-0 p-0">
                             <h2 class="accordion-header" id="heading@(student.Id)">
-                                <button class="accordion-button @(student.Id == Guid.Empty ? "" : "collapsed") fw-semibold border-0 rounded"
+                                <button class="accordion-button @(isFirst ? "" : "collapsed") fw-semibold border-0 rounded"
                                         type="button" data-bs-toggle="collapse" data-bs-target="#collapse@(student.Id)" 
-                                        aria-expanded="@(student.Id == Guid.Empty ? "true" : "false")" aria-controls="collapse@(student.Id)"
+                                        aria-expanded="@(isFirst ? "true" : "false")" aria-controls="collapse@(student.Id)"
                                         style="background: linear-gradient(135deg, #f8fbff 0%, #e8f4fd 100%); border-left: 4px solid #1976d2;">
                                     <div class="d-flex justify-content-between align-items-center w-100 me-3">
                                         <div class="d-flex align-items-center">
@@ -195,7 +391,7 @@
                                 </button>
                             </h2>
                         </div>
-                        <div id="collapse@(student.Id)" class="accordion-collapse collapse @(student.Id == Guid.Empty ? "show" : "")"
+                        <div id="collapse@(student.Id)" class="accordion-collapse collapse @(isFirst ? "show" : "")"
                              aria-labelledby="heading@(student.Id)" data-bs-parent="#scholarsAccordion">
                             <div class="card-body bg-light">
                                 <!-- Student Details -->
@@ -284,6 +480,7 @@
                                                     <thead style="background: rgba(25, 118, 210, 0.1);">
                                                         <tr>
                                                             <th class="border-0 fw-bold text-primary">Document</th>
+                                                            <th class="border-0 fw-bold text-primary">Source</th>
                                                             <th class="border-0 fw-bold text-primary">Type</th>
                                                             <th class="border-0 fw-bold text-primary">Date Submitted</th>
                                                             <th class="border-0 fw-bold text-primary">Status</th>
@@ -297,9 +494,18 @@
                                                             <tr class="border-bottom">
                                                                 <td class="border-0">
                                                                     <div class="d-flex align-items-center">
-                                                                        <i class="fa @(doc.FileType == "PDF" ? "fa-file-pdf-o text-danger" : "fa-file-word-o text-primary") me-2"></i>
-                                                                        <span class="fw-semibold">@doc.Name</span>
+                                                                        <i class="fa @(doc.FileType == "PDF" ? "fa-file-pdf-o text-danger" : doc.FileType == "DOCX" ? "fa-file-word-o text-primary" : doc.FileType == "Image" ? "fa-file-image-o text-success" : "fa-file-o text-secondary") me-2"></i>
+                                                                        <div>
+                                                                            <div class="fw-semibold">@doc.Name</div>
+                                                                            @if (!string.IsNullOrEmpty(doc.ApplicationTitle))
+                                                                            {
+                                                                                <small class="text-muted">@doc.ApplicationTitle</small>
+                                                                            }
+                                                                        </div>
                                                                     </div>
+                                                                </td>
+                                                                <td class="border-0">
+                                                                    <span class="badge @(doc.DocumentSource == "Verification" ? "bg-info" : "bg-primary") text-white">@doc.DocumentSource</span>
                                                                 </td>
                                                                 <td class="border-0">
                                                                     <span class="badge bg-light text-dark border">@doc.FileType</span>
@@ -309,19 +515,31 @@
                                                                 </td>
                                                                 <td class="border-0">
                                                                     <span class="@doc.StatusClass fw-semibold">
-                                                                        <i class="fa @(doc.Status == "Approved" ? "fa-check-circle" : doc.Status.Contains("Pending") ? "fa-clock-o" : doc.Status.Contains("Review") ? "fa-eye" : "fa-times-circle") me-1"></i>
+                                                                        <i class="fa @(doc.Status == "Approved" ? "fa-check-circle" : doc.Status.Contains("Pending") || doc.Status == "Submitted" ? "fa-clock-o" : doc.Status.Contains("Review") ? "fa-eye" : "fa-times-circle") me-1"></i>
                                                                         @doc.Status
                                                                     </span>
                                                                 </td>
                                                                 <td class="border-0">
                                                                     <div class="btn-group btn-group-sm">
-                                                                        <button type="button" class="btn btn-outline-primary" title="View Document">
-                                                                            <i class="fa fa-eye"></i>
-                                                                        </button>
-                                                                        <button type="button" class="btn btn-outline-secondary" title="Download">
-                                                                            <i class="fa fa-download"></i>
-                                                                        </button>
-                                                                        @if (doc.Status == "Pending Review" || doc.Status == "Under Review")
+                                                                        @if (!string.IsNullOrEmpty(doc.FilePath))
+                                                                        {
+                                                                            <a href="@doc.FilePath" target="_blank" class="btn btn-outline-primary" title="View Document">
+                                                                                <i class="fa fa-eye"></i>
+                                                                            </a>
+                                                                            <a href="@doc.FilePath" download class="btn btn-outline-secondary" title="Download">
+                                                                                <i class="fa fa-download"></i>
+                                                                            </a>
+                                                                        }
+                                                                        else
+                                                                        {
+                                                                            <button type="button" class="btn btn-outline-primary" disabled title="No file path available">
+                                                                                <i class="fa fa-eye"></i>
+                                                                            </button>
+                                                                            <button type="button" class="btn btn-outline-secondary" disabled title="No file path available">
+                                                                                <i class="fa fa-download"></i>
+                                                                            </button>
+                                                                        }
+                                                                        @if (doc.DocumentSource == "Verification" && (doc.Status == "Pending Review" || doc.Status == "Under Review"))
                                                                         {
                                                                             <button type="button" class="btn btn-outline-success" title="Approve">
                                                                                 <i class="fa fa-check"></i>
@@ -350,6 +568,7 @@
                             </div>
                         </div>
                     </div>
+                    }
                 }
             </div>
         </div>
