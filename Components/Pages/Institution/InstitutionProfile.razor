@@ -5,6 +5,7 @@
 @inject UserManager<IdentityUser> UserManager
 @using Microsoft.AspNetCore.Components.Authorization
 @using Microsoft.AspNetCore.Identity
+@using Microsoft.AspNetCore.Components.Forms
 
 <div class="container-fluid p-5 institution-profile-bg">
     <!-- Header Section -->
@@ -38,22 +39,18 @@
             <div class="card shadow-sm mb-4">
                 <div class="card-body text-center">
                     <div class="position-relative d-inline-block mb-3">
-                        @if (IsEditMode && !string.IsNullOrWhiteSpace(_previewProfilePicture))
+                        @if (string.IsNullOrWhiteSpace(_previewProfilePicture) && (string.IsNullOrWhiteSpace(ProfilePicture) || ProfilePicture == "https://via.placeholder.com/120"))
                         {
-                            <img src="@_previewProfilePicture" class="profile-image shadow" alt="Profile Preview" width="120" height="120" />
-                        }
-                        else if (string.IsNullOrWhiteSpace(ProfilePicture) || ProfilePicture == "https://via.placeholder.com/120")
-                        {
-                            <!-- Blank SVG avatar (same as student profile) -->
-                            <svg width="120" height="120" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg" class="profile-image">
+                            <!-- Blank person silhouette SVG -->
+                            <svg class="rounded-circle profile-image shadow" width="120" height="120" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
                                 <circle cx="60" cy="60" r="60" fill="#eaf1fb"/>
-                                <circle cx="60" cy="54" r="28" fill="#cfd8dc"/>
-                                <ellipse cx="60" cy="94" rx="36" ry="18" fill="#cfd8dc"/>
+                                <ellipse cx="60" cy="54" rx="28" ry="26" fill="#b3c6e6"/>
+                                <ellipse cx="60" cy="92" rx="36" ry="18" fill="#b3c6e6"/>
                             </svg>
                         }
                         else
                         {
-                            <img src="@ProfilePicture" class="profile-image shadow" alt="Profile Picture" width="120" height="120" />
+                            <img src="@PreviewProfilePicture" class="rounded-circle profile-image shadow" alt="Profile Picture" width="120" height="120" />
                         }
                         @if (IsEditMode)
                         {
@@ -371,27 +368,40 @@
         UploadedProfileImage = e.File;
         if (UploadedProfileImage != null)
         {
-            if (UploadedProfileImage.Size > 5 * 1024 * 1024)
+            if (UploadedProfileImage.Size > 10 * 1024 * 1024)
             {
-                // Optionally show error message (not implemented here)
+                // TODO: Show error message to user about file size limit
                 _previewProfilePicture = null;
                 UploadedProfileImage = null;
                 return;
             }
+            
+            // Validate file type
+            var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif" };
+            var fileExtension = Path.GetExtension(UploadedProfileImage.Name).ToLower();
+            if (!allowedExtensions.Contains(fileExtension))
+            {
+                _previewProfilePicture = null;
+                UploadedProfileImage = null;
+                return;
+            }
+            
             using var ms = new MemoryStream();
-            await UploadedProfileImage.OpenReadStream(5 * 1024 * 1024).CopyToAsync(ms);
+            await UploadedProfileImage.OpenReadStream(10 * 1024 * 1024).CopyToAsync(ms);
             var base64 = Convert.ToBase64String(ms.ToArray());
-            var ext = Path.GetExtension(UploadedProfileImage.Name).ToLower();
-            var mime = ext == ".png" ? "image/png" : "image/jpeg";
+            var mime = fileExtension == ".png" ? "image/png" : "image/jpeg";
             _previewProfilePicture = $"data:{mime};base64,{base64}";
         }
     }
 
     private async Task RemoveProfileImageAsync()
     {
+        // Set to blank avatar
         ProfilePicture = "https://via.placeholder.com/120";
         _previewProfilePicture = null;
         UploadedProfileImage = null;
+
+        // Optionally update in DB
         var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
         var user = await UserManager.GetUserAsync(authState.User);
         if (user != null)
@@ -537,17 +547,16 @@
                 profile.ContactEmail = ContactEmail;
                 profile.Address = Address;
                 profile.InstitutionName = University;
-                // Save uploaded profile image if present
+                // Handle file upload
                 if (UploadedProfileImage != null)
                 {
-                    if (UploadedProfileImage.Size > 5 * 1024 * 1024)
+                    // Validate file type and size again
+                    var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif" };
+                    var fileExtension = Path.GetExtension(UploadedProfileImage.Name).ToLower();
+                    
+                    if (allowedExtensions.Contains(fileExtension) && UploadedProfileImage.Size <= 10 * 1024 * 1024)
                     {
-                        UploadedProfileImage = null;
-                        _previewProfilePicture = null;
-                    }
-                    else
-                    {
-                        var fileName = $"institution_profile_{Guid.NewGuid()}{Path.GetExtension(UploadedProfileImage.Name)}";
+                        var fileName = $"institution_profile_{Guid.NewGuid()}{fileExtension}";
                         var dirPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/images/profiles");
                         if (!Directory.Exists(dirPath))
                         {
@@ -556,18 +565,15 @@
                         var savePath = Path.Combine(dirPath, fileName);
                         await using (var stream = File.Create(savePath))
                         {
-                            await UploadedProfileImage.OpenReadStream(5 * 1024 * 1024).CopyToAsync(stream);
+                            await UploadedProfileImage.OpenReadStream(10 * 1024 * 1024).CopyToAsync(stream);
                         }
-                        // Always use web-accessible path
-                        var webPath = $"/images/profiles/{fileName}";
-                        profile.ProfilePicture = webPath;
-                        ProfilePicture = webPath;
+                        profile.ProfilePicture = $"/images/profiles/{fileName}";
+                        ProfilePicture = profile.ProfilePicture;
                     }
                 }
-                else if (!string.IsNullOrWhiteSpace(ProfilePicture))
+                else if (!string.IsNullOrWhiteSpace(ProfilePicture) && ProfilePicture != "https://via.placeholder.com/120")
                 {
-                    // Only use web-accessible path or blank avatar
-                    profile.ProfilePicture = ProfilePicture.StartsWith("/images/profiles/") ? ProfilePicture : "https://via.placeholder.com/120";
+                    profile.ProfilePicture = ProfilePicture;
                 }
                 await InstitutionProfileService.SaveProfileAsync(profile);
                 // Reload profile data to update ProfilePicture and other fields

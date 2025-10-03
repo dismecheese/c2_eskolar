@@ -32,12 +32,17 @@ namespace c2_eskolar.Services
             else
             {
                 existing.AdminFirstName = profile.AdminFirstName;
+                existing.AdminMiddleName = profile.AdminMiddleName;
                 existing.AdminLastName = profile.AdminLastName;
+                existing.Sex = profile.Sex;
+                existing.Nationality = profile.Nationality;
+                existing.BirthDate = profile.BirthDate;
                 existing.OrganizationName = profile.OrganizationName;
                 existing.Address = profile.Address;
                 existing.ContactEmail = profile.ContactEmail;
                 existing.ContactNumber = profile.ContactNumber;
-                // ...add other fields as needed
+                existing.Logo = profile.Logo; // This was missing!
+                existing.UpdatedAt = DateTime.Now;
             }
             await context.SaveChangesAsync();
         }

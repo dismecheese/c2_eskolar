@@ -43,6 +43,18 @@
             var userId = authState.User?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
             if (!string.IsNullOrWhiteSpace(userId))
             {
+                // Load user email from Identity first
+                if (authState.User != null)
+                {
+                    var user = await UserManager.GetUserAsync(authState.User);
+                    if (user != null)
+                    {
+                        Email = user.Email ?? "";
+                        Username = user.UserName ?? "";
+                        EmailVerified = await UserManager.IsEmailConfirmedAsync(user);
+                    }
+                }
+                
                 await LoadExtendedProfileData(userId);
             }
             else
@@ -84,7 +96,26 @@
 
     private string GetYearLevelText(string yearLevel)
     {
-        if (string.IsNullOrWhiteSpace(yearLevel)) return "";
+        if (string.IsNullOrWhiteSpace(yearLevel)) return "1st Year";
+        
+        // Handle numeric values
+        if (int.TryParse(yearLevel, out var level))
+        {
+            return level switch
+            {
+                1 => "1st Year",
+                2 => "2nd Year",
+                3 => "3rd Year",
+                4 => "4th Year",
+                5 => "5th Year",
+                6 => "6th Year",
+                7 => "7th Year",
+                8 => "8th Year",
+                _ => $"{level}th Year"
+            };
+        }
+        
+        // Handle text values
         var lower = yearLevel.ToLower();
         if (lower.Contains("1")) return "1st Year";
         if (lower.Contains("2")) return "2nd Year";
@@ -96,7 +127,7 @@
         if (lower.Contains("8")) return "8th Year";
         return yearLevel;
     }
-    private string Status = "Active";
+    private string Status = "Pending";
     private string Role = "Student";
     private string Bio = "";
     private DateTime CreatedDate = DateTime.Now;
@@ -121,6 +152,164 @@
     private string PreviewProfilePicture => _previewProfilePicture ?? ProfilePicture;
     private string? _previewProfilePicture;
     private string ProfileErrorMessage = "";
+    
+    // Validation error properties
+    private Dictionary<string, string> ValidationErrors = new();
+    private bool IsValidating = false;
+
+    // Validation methods
+    private bool ValidateField(string fieldName, string value, string fieldDisplayName)
+    {
+        ValidationErrors.Remove(fieldName);
+        
+        switch (fieldName)
+        {
+            case "FirstName":
+            case "LastName":
+                if (string.IsNullOrWhiteSpace(value))
+                {
+                    ValidationErrors[fieldName] = $"{fieldDisplayName} is required.";
+                    return false;
+                }
+                if (!IsValidName(value))
+                {
+                    ValidationErrors[fieldName] = $"{fieldDisplayName} should only contain letters, spaces, hyphens, and apostrophes.";
+                    return false;
+                }
+                break;
+                
+            case "MiddleName":
+                if (!string.IsNullOrWhiteSpace(value) && !IsValidName(value))
+                {
+                    ValidationErrors[fieldName] = $"{fieldDisplayName} should only contain letters, spaces, hyphens, and apostrophes.";
+                    return false;
+                }
+                break;
+                
+            case "Phone":
+                if (!string.IsNullOrWhiteSpace(value) && !IsValidPhoneNumber(value))
+                {
+                    ValidationErrors[fieldName] = "Phone number should only contain numbers, spaces, hyphens, plus signs, and parentheses.";
+                    return false;
+                }
+                break;
+                
+            case "StudentNumber":
+                if (!string.IsNullOrWhiteSpace(value) && !IsValidStudentNumber(value))
+                {
+                    ValidationErrors[fieldName] = "Student number should only contain letters, numbers, and hyphens.";
+                    return false;
+                }
+                break;
+                
+            case "Nationality":
+                if (!string.IsNullOrWhiteSpace(value) && !IsValidName(value))
+                {
+                    ValidationErrors[fieldName] = "Nationality should only contain letters and spaces.";
+                    return false;
+                }
+                break;
+                
+            case "University":
+                if (!string.IsNullOrWhiteSpace(value) && !IsValidUniversityName(value))
+                {
+                    ValidationErrors[fieldName] = "University name contains invalid characters.";
+                    return false;
+                }
+                break;
+                
+            case "Program":
+                if (!string.IsNullOrWhiteSpace(value) && !IsValidProgramName(value))
+                {
+                    ValidationErrors[fieldName] = "Program name contains invalid characters.";
+                    return false;
+                }
+                break;
+        }
+        
+        return true;
+    }
+    
+    private bool IsValidName(string name)
+    {
+        if (string.IsNullOrWhiteSpace(name)) return false;
+        // Allow letters, spaces, hyphens, apostrophes, and common name characters
+        return System.Text.RegularExpressions.Regex.IsMatch(name.Trim(), @"^[a-zA-Z\s\-'\.]+$");
+    }
+    
+    private bool IsValidPhoneNumber(string phone)
+    {
+        if (string.IsNullOrWhiteSpace(phone)) return true; // Optional field
+        // Allow digits, spaces, hyphens, plus, parentheses
+        var cleanPhone = System.Text.RegularExpressions.Regex.Replace(phone, @"[\s\-\+\(\)]", "");
+        return System.Text.RegularExpressions.Regex.IsMatch(cleanPhone, @"^\d{7,15}$"); // 7-15 digits
+    }
+    
+    private bool IsValidStudentNumber(string studentNum)
+    {
+        if (string.IsNullOrWhiteSpace(studentNum)) return true;
+        // Allow letters, numbers, hyphens
+        return System.Text.RegularExpressions.Regex.IsMatch(studentNum.Trim(), @"^[a-zA-Z0-9\-]+$");
+    }
+    
+    private bool IsValidUniversityName(string university)
+    {
+        if (string.IsNullOrWhiteSpace(university)) return true;
+        // Allow letters, numbers, spaces, common punctuation for institution names
+        return System.Text.RegularExpressions.Regex.IsMatch(university.Trim(), @"^[a-zA-Z0-9\s\-'\.&,()]+$");
+    }
+    
+    private bool IsValidProgramName(string program)
+    {
+        if (string.IsNullOrWhiteSpace(program)) return true;
+        // Allow letters, numbers, spaces, common punctuation for program names
+        return System.Text.RegularExpressions.Regex.IsMatch(program.Trim(), @"^[a-zA-Z0-9\s\-'\.&,()]+$");
+    }
+    
+    private bool ValidateAllFields()
+    {
+        IsValidating = true;
+        ValidationErrors.Clear();
+        
+        var isValid = true;
+        
+        // Validate required fields
+        isValid &= ValidateField("FirstName", FirstName, "First Name");
+        isValid &= ValidateField("LastName", LastName, "Last Name");
+        
+        // Validate optional fields
+        ValidateField("MiddleName", MiddleName, "Middle Name");
+        ValidateField("Phone", Phone, "Phone Number");
+        ValidateField("StudentNumber", StudentNumber, "Student Number");
+        ValidateField("Nationality", Nationality, "Nationality");
+        ValidateField("University", University, "University");
+        ValidateField("Program", Program, "Program");
+        
+        // Additional business logic validations
+        if (!string.IsNullOrWhiteSpace(Phone) && Phone.Length < 7)
+        {
+            ValidationErrors["Phone"] = "Phone number must be at least 7 digits.";
+            isValid = false;
+        }
+        
+        if (!string.IsNullOrWhiteSpace(StudentNumber) && StudentNumber.Length < 3)
+        {
+            ValidationErrors["StudentNumber"] = "Student number must be at least 3 characters.";
+            isValid = false;
+        }
+        
+        return isValid;
+    }
+    
+    private string GetValidationErrorClass(string fieldName)
+    {
+        return ValidationErrors.ContainsKey(fieldName) ? "is-invalid" : "";
+    }
+    
+    private string GetValidationMessage(string fieldName)
+    {
+        return ValidationErrors.TryGetValue(fieldName, out var error) ? error : "";
+    }
 
     private async Task OnProfileImageChange(InputFileChangeEventArgs e)
     {
@@ -128,7 +317,7 @@
         if (UploadedProfileImage != null)
         {
             using var ms = new MemoryStream();
-            await UploadedProfileImage.OpenReadStream(5 * 1024 * 1024).CopyToAsync(ms);
+            await UploadedProfileImage.OpenReadStream(10 * 1024 * 1024).CopyToAsync(ms);
             var base64 = Convert.ToBase64String(ms.ToArray());
             var ext = Path.GetExtension(UploadedProfileImage.Name).ToLower();
             var mime = ext == ".png" ? "image/png" : "image/jpeg";
@@ -145,9 +334,32 @@
             var userId = authState.User?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
             if (!string.IsNullOrWhiteSpace(userId))
             {
+                // Reload fresh data from database when entering edit mode
+                if (authState.User != null)
+                {
+                    var user = await UserManager.GetUserAsync(authState.User);
+                    if (user != null)
+                    {
+                        Email = user.Email ?? "";
+                        EmailVerified = await UserManager.IsEmailConfirmedAsync(user);
+                    }
+                }
                 await LoadExtendedProfileData(userId);
             }
             isLoading = false;
+        }
+        else
+        {
+            // If canceling edit mode, reload original data
+            var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+            var userId = authState.User?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (!string.IsNullOrWhiteSpace(userId))
+            {
+                await LoadExtendedProfileData(userId);
+            }
+            // Clear any pending uploads
+            _previewProfilePicture = null;
+            UploadedProfileImage = null;
         }
         IsEditMode = !IsEditMode;
     }
@@ -157,9 +369,19 @@
         if (isLoading) return;
         isLoading = true;
         ProfileErrorMessage = "";
+        
         try
         {
-            // Step 1: Get userId from claims
+            // Step 1: Validate all fields before proceeding
+            if (!ValidateAllFields())
+            {
+                ProfileErrorMessage = "Please correct the validation errors before saving.";
+                StateHasChanged();
+                isLoading = false;
+                return;
+            }
+            
+            // Step 2: Get userId from claims
             var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
             var userId = authState.User?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
             if (string.IsNullOrWhiteSpace(userId))
@@ -169,45 +391,58 @@
                 return;
             }
 
-            // Step 2: Get or create student profile
+            // Step 3: Get or create student profile
             var studentProfile = await StudentProfileService.GetProfileByUserIdAsync(userId);
             if (studentProfile == null)
             {
                 studentProfile = new Models.StudentProfile {
                     UserId = userId,
-                    FirstName = FirstName,
-                    LastName = LastName
+                    FirstName = FirstName.Trim(),
+                    LastName = LastName.Trim()
                 };
             }
 
-            // Step 3: Update fields
-            studentProfile.FirstName = FirstName;
-            studentProfile.MiddleName = MiddleName;
-            studentProfile.LastName = LastName;
+            // Step 4: Update fields with trimmed and sanitized values
+            studentProfile.FirstName = FirstName?.Trim() ?? "";
+            studentProfile.MiddleName = string.IsNullOrWhiteSpace(MiddleName) ? null : MiddleName.Trim();
+            studentProfile.LastName = LastName?.Trim() ?? "";
             studentProfile.Sex = Sex;
-            studentProfile.Nationality = Nationality;
-            studentProfile.PermanentAddress = PermanentAddress;
+            studentProfile.Nationality = string.IsNullOrWhiteSpace(Nationality) ? null : Nationality.Trim();
+            studentProfile.PermanentAddress = string.IsNullOrWhiteSpace(PermanentAddress) ? null : PermanentAddress.Trim();
             studentProfile.BirthDate = BirthDate;
-            studentProfile.MobileNumber = Phone;
-            studentProfile.Email = Email;
-            studentProfile.UniversityName = University;
-            studentProfile.StudentNumber = StudentNumber;
-            studentProfile.Course = Program;
+            studentProfile.MobileNumber = string.IsNullOrWhiteSpace(Phone) ? null : System.Text.RegularExpressions.Regex.Replace(Phone.Trim(), @"[\s\-\(\)]", "");
+            studentProfile.Email = Email?.Trim();
+            studentProfile.UniversityName = string.IsNullOrWhiteSpace(University) ? null : University.Trim();
+            studentProfile.StudentNumber = string.IsNullOrWhiteSpace(StudentNumber) ? null : StudentNumber.Trim();
+            studentProfile.Course = string.IsNullOrWhiteSpace(Program) ? null : Program.Trim();
             var yearLevelInt = ParseYearLevel(YearLevel);
             studentProfile.YearLevel = yearLevelInt;
-            studentProfile.VerificationStatus = Status;
+            
+            // Status is managed by the service - students cannot change verification status
 
-            // Step 4: Handle file upload (wait for all DB ops to finish first)
+            // Step 5: Handle file upload with additional validation
             if (UploadedProfileImage != null)
             {
-                if (UploadedProfileImage.Size > 5 * 1024 * 1024)
+                // Validate file type
+                var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif" };
+                var fileExtension = Path.GetExtension(UploadedProfileImage.Name).ToLower();
+                if (!allowedExtensions.Contains(fileExtension))
                 {
-                    ProfileErrorMessage = "Profile image exceeds the 5MB size limit. Please choose a smaller file.";
+                    ProfileErrorMessage = "Profile image must be a JPG, PNG, or GIF file.";
                     StateHasChanged();
                     isLoading = false;
                     return;
                 }
-                var fileName = $"profile_{Guid.NewGuid()}{Path.GetExtension(UploadedProfileImage.Name)}";
+                
+                if (UploadedProfileImage.Size > 10 * 1024 * 1024)
+                {
+                    ProfileErrorMessage = "Profile image exceeds the 10MB size limit. Please choose a smaller file.";
+                    StateHasChanged();
+                    isLoading = false;
+                    return;
+                }
+                
+                var fileName = $"profile_{Guid.NewGuid()}{fileExtension}";
                 var dirPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/images/profiles");
                 if (!Directory.Exists(dirPath))
                 {
@@ -216,22 +451,37 @@
                 var savePath = Path.Combine(dirPath, fileName);
                 await using (var stream = File.Create(savePath))
                 {
-                    await UploadedProfileImage.OpenReadStream(5 * 1024 * 1024).CopyToAsync(stream);
+                    await UploadedProfileImage.OpenReadStream(10 * 1024 * 1024).CopyToAsync(stream);
                 }
                 studentProfile.ProfilePicture = $"/images/profiles/{fileName}";
                 ProfilePicture = studentProfile.ProfilePicture;
             }
-            else if (!string.IsNullOrWhiteSpace(ProfilePicture))
+            else if (!string.IsNullOrWhiteSpace(ProfilePicture) && ProfilePicture != "https://via.placeholder.com/120")
             {
                 studentProfile.ProfilePicture = ProfilePicture;
             }
 
-            // Step 5: Save profile (wait for all file IO to finish first)
-            await StudentProfileService.SaveProfileAsync(studentProfile, studentProfile.Email);
-            IsEditMode = false;
+            // Step 6: Save profile with error handling
+            await StudentProfileService.SaveProfileAsync(studentProfile, Email);
+            
+            // Clear upload state and validation errors
             _previewProfilePicture = null;
             UploadedProfileImage = null;
+            ValidationErrors.Clear();
+            
+            // Reload the profile data to reflect database changes
+            await LoadExtendedProfileData(userId);
+            
+            IsEditMode = false;
+            
             Console.WriteLine("Student profile updated successfully!");
+            StateHasChanged();
+        }
+        catch (ArgumentException ex)
+        {
+            ProfileErrorMessage = ex.Message;
+            StateHasChanged();
+            Console.WriteLine($"Validation error: {ex.Message}");
         }
         catch (Exception ex)
         {
@@ -239,7 +489,10 @@
             StateHasChanged();
             Console.WriteLine($"Error saving profile: {ex.Message}");
         }
-        isLoading = false;
+        finally
+        {
+            isLoading = false;
+        }
     }
 
     private async Task LoadExtendedProfileData(string userId)
@@ -252,19 +505,41 @@
                 FirstName = studentProfile.FirstName ?? "";
                 MiddleName = studentProfile.MiddleName ?? "";
                 LastName = studentProfile.LastName ?? "";
-                Sex = studentProfile.Sex ?? "";
+                Sex = studentProfile.Sex ?? "Male";
                 Nationality = studentProfile.Nationality ?? "";
                 PermanentAddress = studentProfile.PermanentAddress ?? "";
                 BirthDate = studentProfile.BirthDate ?? DateTime.Now;
                 Phone = studentProfile.MobileNumber ?? "";
-                Email = studentProfile.Email ?? Email;
+                
+                // Only override email if profile has a valid email, otherwise keep Identity email
+                if (!string.IsNullOrWhiteSpace(studentProfile.Email))
+                    Email = studentProfile.Email;
+                
                 FullName = $"{FirstName} {LastName}".Trim();
+                if (string.IsNullOrWhiteSpace(FullName))
+                    FullName = Username;
+                
                 University = studentProfile.UniversityName ?? "";
                 StudentNumber = studentProfile.StudentNumber ?? "";
                 Program = studentProfile.Course ?? "";
-                YearLevel = studentProfile.YearLevel.HasValue ? $"{studentProfile.YearLevel} year" : "";
+                YearLevel = studentProfile.YearLevel.HasValue ? GetYearLevelText(studentProfile.YearLevel.Value.ToString()) : "1st Year";
+                
+                // Status should always reflect the actual verification status from DB
                 Status = studentProfile.VerificationStatus ?? "Pending";
+                
                 ProfilePicture = !string.IsNullOrWhiteSpace(studentProfile.ProfilePicture) ? studentProfile.ProfilePicture : "https://via.placeholder.com/120";
+                
+                // Set timestamps
+                CreatedDate = studentProfile.CreatedAt;
+                LastLogin = DateTime.Now;
+            }
+            else
+            {
+                // Set defaults for new profile
+                Status = "Pending";
+                Sex = "Male";
+                YearLevel = "1st Year";
+                BirthDate = DateTime.Now;
             }
         }
         catch (Exception ex)
@@ -276,13 +551,22 @@
     private int? ParseYearLevel(string yearLevelStr)
     {
         if (string.IsNullOrWhiteSpace(yearLevelStr)) return null;
+        
+        // Handle direct numeric strings first
         var digits = new string(yearLevelStr.TakeWhile(char.IsDigit).ToArray());
         if (int.TryParse(digits, out var yl)) return yl;
+        
+        // Handle text values like "1st Year", "2nd Year", etc.
         if (yearLevelStr.Contains("1")) return 1;
         if (yearLevelStr.Contains("2")) return 2;
         if (yearLevelStr.Contains("3")) return 3;
         if (yearLevelStr.Contains("4")) return 4;
-        return null;
+        if (yearLevelStr.Contains("5")) return 5;
+        if (yearLevelStr.Contains("6")) return 6;
+        if (yearLevelStr.Contains("7")) return 7;
+        if (yearLevelStr.Contains("8")) return 8;
+        
+        return 1; // Default to 1st year if parsing fails
     }
 }
 
@@ -315,7 +599,7 @@
                     @if (IsEditMode)
                     {
                         <button class="btn btn-success profile-btn" @onclick="SaveProfile" disabled="@(isLoading)">
-                            <i class="fas fa-save me-2"></i>Save Changes
+                            <i class="fas fa-save me-2"></i>Save
                         </button>
                     }
                 </div>
@@ -397,16 +681,31 @@
                     {
                         <div class="row">
                             <div class="col-md-4 mb-3">
-                                <label class="form-label profile-label-bold">First Name</label>
-                                <input type="text" class="form-control" @bind="FirstName" />
+                                <label class="form-label profile-label-bold">First Name <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control @GetValidationErrorClass("FirstName")" @bind="FirstName" 
+                                       @onblur="@(() => ValidateField("FirstName", FirstName, "First Name"))" maxlength="50" />
+                                @if (!string.IsNullOrEmpty(GetValidationMessage("FirstName")))
+                                {
+                                    <div class="invalid-feedback d-block">@GetValidationMessage("FirstName")</div>
+                                }
                             </div>
                             <div class="col-md-4 mb-3">
                                 <label class="form-label profile-label-bold">Middle Name</label>
-                                <input type="text" class="form-control" @bind="MiddleName" />
+                                <input type="text" class="form-control @GetValidationErrorClass("MiddleName")" @bind="MiddleName" 
+                                       @onblur="@(() => ValidateField("MiddleName", MiddleName, "Middle Name"))" maxlength="50" />
+                                @if (!string.IsNullOrEmpty(GetValidationMessage("MiddleName")))
+                                {
+                                    <div class="invalid-feedback d-block">@GetValidationMessage("MiddleName")</div>
+                                }
                             </div>
                             <div class="col-md-4 mb-3">
-                                <label class="form-label profile-label-bold">Last Name</label>
-                                <input type="text" class="form-control" @bind="LastName" />
+                                <label class="form-label profile-label-bold">Last Name <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control @GetValidationErrorClass("LastName")" @bind="LastName" 
+                                       @onblur="@(() => ValidateField("LastName", LastName, "Last Name"))" maxlength="50" />
+                                @if (!string.IsNullOrEmpty(GetValidationMessage("LastName")))
+                                {
+                                    <div class="invalid-feedback d-block">@GetValidationMessage("LastName")</div>
+                                }
                             </div>
                             <div class="col-md-4 mb-3">
                                 <label class="form-label profile-label-bold">Sex</label>
@@ -422,19 +721,30 @@
                             </div>
                             <div class="col-md-4 mb-3">
                                 <label class="form-label profile-label-bold">Nationality</label>
-                                <input type="text" class="form-control" @bind="Nationality" />
+                                <input type="text" class="form-control @GetValidationErrorClass("Nationality")" @bind="Nationality" 
+                                       @onblur="@(() => ValidateField("Nationality", Nationality, "Nationality"))" maxlength="50" />
+                                @if (!string.IsNullOrEmpty(GetValidationMessage("Nationality")))
+                                {
+                                    <div class="invalid-feedback d-block">@GetValidationMessage("Nationality")</div>
+                                }
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label class="form-label profile-label-bold">Permanent Address</label>
-                                <input type="text" class="form-control" @bind="PermanentAddress" />
+                                <input type="text" class="form-control" @bind="PermanentAddress" maxlength="200" />
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label class="form-label profile-label-bold">Phone</label>
-                                <input type="text" class="form-control" @bind="Phone" />
+                                <input type="tel" class="form-control @GetValidationErrorClass("Phone")" @bind="Phone" 
+                                       @onblur="@(() => ValidateField("Phone", Phone, "Phone Number"))" 
+                                       placeholder="e.g., +63 912 345 6789" maxlength="20" />
+                                @if (!string.IsNullOrEmpty(GetValidationMessage("Phone")))
+                                {
+                                    <div class="invalid-feedback d-block">@GetValidationMessage("Phone")</div>
+                                }
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label class="form-label profile-label-bold">Email</label>
-                                <input type="email" class="profile-email-readonly" value="@Email" readonly />
+                                <input type="email" class="form-control" value="@Email" readonly />
                             </div>
                         </div>
                     }
@@ -491,15 +801,31 @@
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">University</label>
-                                <input type="text" class="form-control" @bind="University" />
+                                <input type="text" class="form-control @GetValidationErrorClass("University")" @bind="University" 
+                                       @onblur="@(() => ValidateField("University", University, "University"))" maxlength="100" />
+                                @if (!string.IsNullOrEmpty(GetValidationMessage("University")))
+                                {
+                                    <div class="invalid-feedback d-block">@GetValidationMessage("University")</div>
+                                }
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">Student Number</label>
-                                <input type="text" class="form-control" @bind="StudentNumber" />
+                                <input type="text" class="form-control @GetValidationErrorClass("StudentNumber")" @bind="StudentNumber" 
+                                       @onblur="@(() => ValidateField("StudentNumber", StudentNumber, "Student Number"))" 
+                                       placeholder="e.g., 2022-1234" maxlength="20" />
+                                @if (!string.IsNullOrEmpty(GetValidationMessage("StudentNumber")))
+                                {
+                                    <div class="invalid-feedback d-block">@GetValidationMessage("StudentNumber")</div>
+                                }
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">Program</label>
-                                <input type="text" class="form-control" @bind="Program" />
+                                <input type="text" class="form-control @GetValidationErrorClass("Program")" @bind="Program" 
+                                       @onblur="@(() => ValidateField("Program", Program, "Program"))" maxlength="100" />
+                                @if (!string.IsNullOrEmpty(GetValidationMessage("Program")))
+                                {
+                                    <div class="invalid-feedback d-block">@GetValidationMessage("Program")</div>
+                                }
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">Year Level</label>
@@ -512,12 +838,7 @@
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">Status</label>
-                                <select class="form-control" @bind="Status">
-                                    <option>Active</option>
-                                    <option>Pending</option>
-                                    <option>Graduated</option>
-                                    <option>On Leave</option>
-                                </select>
+                                <div class="form-control-plaintext"><span class="profile-status-text @GetStatusBadgeClass(Status)">@Status</span></div>
                             </div>
                         </div>
                     }

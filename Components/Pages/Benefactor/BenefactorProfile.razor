@@ -6,6 +6,7 @@
 @inject BenefactorProfileService BenefactorProfileService
 @using Microsoft.AspNetCore.Components.Authorization
 @using Microsoft.AspNetCore.Identity
+@using Microsoft.AspNetCore.Components.Forms
 
 <div class="container-fluid p-5 benefactor-profile-bg">
     <div class="row mb-4">
@@ -35,7 +36,11 @@
             <div class="card shadow-sm mb-4">
                 <div class="card-body text-center">
                     <div class="position-relative d-inline-block mb-3">
-                        @if (string.IsNullOrWhiteSpace(ProfilePicture) || ProfilePicture == "https://via.placeholder.com/120")
+                        @if (IsEditMode && !string.IsNullOrWhiteSpace(_previewProfilePicture))
+                        {
+                            <img src="@_previewProfilePicture" class="profile-image shadow" alt="Profile Preview" width="120" height="120" />
+                        }
+                        else if (string.IsNullOrWhiteSpace(ProfilePicture) || ProfilePicture == "https://via.placeholder.com/120")
                         {
                             <!-- Blank SVG avatar (same as student profile) -->
                             <svg width="120" height="120" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg" class="profile-image">
@@ -47,6 +52,18 @@
                         else
                         {
                             <img src="@ProfilePicture" class="profile-image shadow" alt="Profile Picture" width="120" height="120" />
+                        }
+                        @if (IsEditMode)
+                        {
+                            <div class="d-flex flex-row justify-content-center gap-2 mt-2">
+                                <label class="btn btn-sm btn-primary rounded-circle profile-img-btn profile-upload-label">
+                                    <i class="fas fa-camera profile-upload-icon"></i>
+                                    <InputFile OnChange="OnProfileImageChange" accept="image/*" style="display:none;" />
+                                </label>
+                                <button class="btn btn-sm btn-danger rounded-circle profile-img-btn" type="button" title="Remove Profile Picture" @onclick="RemoveProfileImageAsync">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
                         }
                     </div>
                     <h4 class="card-title mb-1 profile-name">@FullName</h4>
@@ -318,20 +335,43 @@
     private int ScholarshipsReceived = 0;
     private int Applications = 0;
     private string GPA = "0.00";
+    private IBrowserFile? UploadedProfileImage;
+    private string? _previewProfilePicture;
+    private string PreviewProfilePicture => _previewProfilePicture ?? ProfilePicture;
 
     private void ToggleEditMode() => IsEditMode = !IsEditMode;
     private void ToggleBenefactorEditMode() => IsBenefactorEditMode = !IsBenefactorEditMode;
-    private void SaveProfile() { IsEditMode = false; }
-    private void SaveBenefactorInfo() { IsBenefactorEditMode = false; }
-}
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadUserData();
+        StateHasChanged();
+    }
+
+    private async Task LoadUserData()
+    {
+        try
+        {
+            var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+            if (authState.User.Identity?.IsAuthenticated == true)
+            {
+                var user = await UserManager.GetUserAsync(authState.User);
+                if (user != null)
+                {
+                    // Load basic Identity data
+                    ContactEmail = user.Email ?? "";
+                    FullName = user.UserName ?? "Benefactor User";
+                    
+                    // Check email confirmation status
+                    EmailVerified = await UserManager.IsEmailConfirmedAsync(user);
+                    
                     // Set creation date from user registration
                     CreatedDate = user.LockoutEnd?.DateTime ?? DateTime.Now;
                     
-                    // Set last login (you may need to track this separately)
-                    LastLogin = DateTime.Now.AddHours(-1); // Placeholder
+                    // Set last login (placeholder)
+                    LastLogin = DateTime.Now.AddHours(-1);
                     
-                    // TODO: Load additional profile data from your custom database tables
-                    // Example: Load student-specific data from StudentProfile table
+                    // Load extended profile data from custom tables
                     await LoadExtendedProfileData(user.Id);
                 }
             }
@@ -339,9 +379,9 @@
         catch (Exception ex)
         {
             Console.WriteLine($"Error loading user data: {ex.Message}");
-            // Set default values
-            FullName = "Student User";
-            ContactEmail = "benefactor@example.com";
+            // Only set default values if we don't already have data
+            if (string.IsNullOrWhiteSpace(FullName))
+                FullName = "Benefactor User";
         }
     }
 
@@ -352,29 +392,28 @@
             var profile = await BenefactorProfileService.GetProfileByUserIdAsync(userId);
             if (profile != null)
             {
-                AdminFirstName = profile.AdminFirstName;
+                AdminFirstName = profile.AdminFirstName ?? "";
                 AdminMiddleName = profile.AdminMiddleName ?? "";
-                AdminLastName = profile.AdminLastName;
-                FullName = profile.AdminFullName;
-                Sex = profile.Sex ?? "";
+                AdminLastName = profile.AdminLastName ?? "";
+                FullName = profile.AdminFullName ?? FullName;
+                Sex = profile.Sex ?? "Male";
                 Nationality = profile.Nationality ?? "";
                 BirthDate = profile.BirthDate ?? DateTime.Now;
                 ContactNumber = profile.ContactNumber ?? "";
-                ContactEmail = profile.ContactEmail ?? ContactEmail;
                 Address = profile.Address ?? "";
-                // You can set other fields as needed
+                ProfilePicture = !string.IsNullOrWhiteSpace(profile.Logo) ? profile.Logo : "https://via.placeholder.com/120";
+                
+                // Load benefactor-specific organization data (separate from personal email)
+                BenefactorOrganizationName = profile.OrganizationName ?? "";
+                BenefactorOrganizationAddress = profile.Address ?? "";
+                BenefactorContactNumber = profile.ContactNumber ?? "";
+                BenefactorEmail = profile.ContactEmail ?? "";
             }
         }
         catch (Exception ex)
         {
             Console.WriteLine($"Error loading extended profile data: {ex.Message}");
         }
-    }
-
-    // Methods
-    private void ToggleEditMode()
-    {
-        IsEditMode = !IsEditMode;
     }
 
     private async Task SaveProfile()
@@ -386,41 +425,154 @@
             
             if (user != null)
             {
-                // TODO: Implement save functionality to database
-                // Save to your custom StudentProfile table
+                // Get or create benefactor profile
+                var profile = await BenefactorProfileService.GetProfileByUserIdAsync(user.Id);
+                if (profile == null)
+                {
+                    profile = new Models.BenefactorProfile
+                    {
+                        UserId = user.Id,
+                        AdminFirstName = AdminFirstName,
+                        AdminLastName = AdminLastName,
+                        OrganizationName = BenefactorOrganizationName ?? "Default Organization"
+                        // Don't set ContactEmail here - that's for organization contact, not user's personal email
+                    };
+                }
+
+                // Update profile fields
+                profile.AdminFirstName = AdminFirstName;
+                profile.AdminMiddleName = AdminMiddleName;
+                profile.AdminLastName = AdminLastName;
+                profile.Sex = Sex;
+                profile.Nationality = Nationality;
+                profile.BirthDate = BirthDate;
+                profile.ContactNumber = ContactNumber;
+                // Don't save the user's identity email to ContactEmail - that's for organization contact
+                profile.Address = Address;
+                profile.OrganizationName = BenefactorOrganizationName ?? "Default Organization";
+
+                // Handle file upload
+                if (UploadedProfileImage != null)
+                {
+                    if (UploadedProfileImage.Size <= 5 * 1024 * 1024)
+                    {
+                        var fileName = $"benefactor_profile_{Guid.NewGuid()}{Path.GetExtension(UploadedProfileImage.Name)}";
+                        var dirPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/images/profiles");
+                        if (!Directory.Exists(dirPath))
+                        {
+                            Directory.CreateDirectory(dirPath);
+                        }
+                        var savePath = Path.Combine(dirPath, fileName);
+                        await using (var stream = File.Create(savePath))
+                        {
+                            await UploadedProfileImage.OpenReadStream(5 * 1024 * 1024).CopyToAsync(stream);
+                        }
+                        var webPath = $"/images/profiles/{fileName}";
+                        profile.Logo = webPath;
+                        ProfilePicture = webPath;
+                    }
+                }
+                else if (!string.IsNullOrWhiteSpace(ProfilePicture) && ProfilePicture != "https://via.placeholder.com/120")
+                {
+                    // Keep existing profile picture if no new one uploaded
+                    profile.Logo = ProfilePicture;
+                }
+
+                await BenefactorProfileService.SaveProfileAsync(profile);
                 
-                // Example:
-                // var studentProfile = await DbContext.StudentProfiles
-                //     .FirstOrDefaultAsync(sp => sp.UserId == user.Id);
+                // Clear preview and uploaded image before reloading
+                _previewProfilePicture = null;
+                UploadedProfileImage = null;
                 
-                // if (studentProfile == null)
-                // {
-                //     studentProfile = new StudentProfile { UserId = user.Id };
-                //     DbContext.StudentProfiles.Add(studentProfile);
-                // }
-                
-                // studentProfile.FirstName = FullName.Split(' ').FirstOrDefault();
-                // studentProfile.LastName = FullName.Split(' ').LastOrDefault();
-                // studentProfile.Phone = Phone;
-                // studentProfile.Location = Location;
-                // studentProfile.University = University;
-                // studentProfile.Course = Course;
-                // studentProfile.YearLevel = YearLevel;
-                // studentProfile.Bio = Bio;
-                
-                // await DbContext.SaveChangesAsync();
+                // Reload profile data to get the saved profile picture
+                await LoadExtendedProfileData(user.Id);
                 
                 IsEditMode = false;
-                Console.WriteLine("Student profile updated successfully!");
                 
-                // Show success message to user
-                // You might want to add a toast notification here
+                // Force UI update
+                StateHasChanged();
+                
+                Console.WriteLine("Benefactor profile updated successfully!");
             }
         }
         catch (Exception ex)
         {
             Console.WriteLine($"Error saving profile: {ex.Message}");
-            // Show error message to user
         }
+    }
+
+    private async Task SaveBenefactorInfo() 
+    { 
+        try
+        {
+            var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+            var user = await UserManager.GetUserAsync(authState.User);
+            
+            if (user != null)
+            {
+                var profile = await BenefactorProfileService.GetProfileByUserIdAsync(user.Id);
+                if (profile != null)
+                {
+                    // Update organization-specific fields only
+                    profile.OrganizationName = BenefactorOrganizationName ?? "Default Organization";
+                    profile.Address = BenefactorOrganizationAddress;
+                    profile.ContactNumber = BenefactorContactNumber;
+                    profile.ContactEmail = BenefactorEmail; // This is organization email, not personal
+                    
+                    await BenefactorProfileService.SaveProfileAsync(profile);
+                    
+                    // Reload data to reflect changes
+                    await LoadExtendedProfileData(user.Id);
+                    
+                    Console.WriteLine("Benefactor organization info updated successfully!");
+                }
+            }
+            IsBenefactorEditMode = false;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error saving benefactor info: {ex.Message}");
+            IsBenefactorEditMode = false;
+        }
+    }
+
+    private async Task OnProfileImageChange(InputFileChangeEventArgs e)
+    {
+        UploadedProfileImage = e.File;
+        if (UploadedProfileImage != null)
+        {
+            if (UploadedProfileImage.Size > 5 * 1024 * 1024)
+            {
+                // Optionally show error message (not implemented here)
+                _previewProfilePicture = null;
+                UploadedProfileImage = null;
+                return;
+            }
+            using var ms = new MemoryStream();
+            await UploadedProfileImage.OpenReadStream(5 * 1024 * 1024).CopyToAsync(ms);
+            var base64 = Convert.ToBase64String(ms.ToArray());
+            var ext = Path.GetExtension(UploadedProfileImage.Name).ToLower();
+            var mime = ext == ".png" ? "image/png" : "image/jpeg";
+            _previewProfilePicture = $"data:{mime};base64,{base64}";
+        }
+    }
+
+    private async Task RemoveProfileImageAsync()
+    {
+        ProfilePicture = "https://via.placeholder.com/120";
+        _previewProfilePicture = null;
+        UploadedProfileImage = null;
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = await UserManager.GetUserAsync(authState.User);
+        if (user != null)
+        {
+            var profile = await BenefactorProfileService.GetProfileByUserIdAsync(user.Id);
+            if (profile != null)
+            {
+                profile.Logo = ProfilePicture;
+                await BenefactorProfileService.SaveProfileAsync(profile);
+            }
+        }
+        StateHasChanged();
     }
 }

@@ -168,3 +168,14 @@
     background-color: #1560d4;
     border-color: #1560d4;
 }
+.profile-upload-label {
+    z-index: 2;
+}
+.profile-upload-icon {
+    box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+    font-size: 1.2rem;
+    transition: background 0.2s;
+}
+.profile-upload-label:hover .profile-upload-icon {
+    background: #0d6efd;
+}
