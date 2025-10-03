@@ -546,7 +546,6 @@
     private int totalApplications = 0;
     private int pendingReviews = 0;
     private int activeScholarships = 0;
-    private bool isLoading = true;
 
     protected override async Task OnInitializedAsync()
     {
@@ -565,7 +564,6 @@
         }
         
         await LoadDashboardData();
-        isLoading = false;
         StateHasChanged();
     }
 
