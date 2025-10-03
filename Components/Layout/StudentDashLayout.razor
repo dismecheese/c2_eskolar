@@ -207,106 +207,10 @@
     }
 
     // --- CHATBOT STATE ---
-    // Controls chatbot visibility and stores chat messages.
     private bool ShowChatbot = false;
-    private string UserInput = "";
-    private List<ChatMessage> Messages = new();
-
-    private void OpenChatbot()
-    {
-        ShowChatbot = true;
-        StateHasChanged();
-    }
-
-    private void CloseChatbot()
-    {
-        ShowChatbot = false;
-        StateHasChanged();
-    }
-
-    // --- CHATBOT MESSAGE HANDLING ---
-    // Handles sending user messages and generating AI responses
-    private async Task SendMessage()
-    {
-        if (string.IsNullOrWhiteSpace(UserInput)) return;
-        Messages.Add(new ChatMessage { Text = UserInput, IsUser = true });
-        var userMessage = UserInput;
-        UserInput = "";
-        StateHasChanged();
-
-        // TODO: UNCOMMENT WHEN BACKEND AI API IS READY
-        /*
-        try
-        {
-            var apiResponse = await CallAIBackend(userMessage);
-            Messages.Add(new ChatMessage { Text = apiResponse, IsUser = false });
-        }
-        catch (Exception ex)
-        {
-            Messages.Add(new ChatMessage { Text = "Sorry, I'm having trouble connecting right now. Please try again later.", IsUser = false });
-            // Log error: Console.WriteLine($"AI API Error: {ex.Message}");
-        }
-        */
-
-        // --- FRONTEND-ONLY MOCK REPLY (REMOVE WHEN BACKEND IS READY) ---
-        await Task.Delay(1000); // Simulate thinking time
-        
-        var userMessageLower = userMessage.ToLower();
-        string response = userMessageLower switch
-        {
-            var msg when msg.Contains("scholarship") => "I can help you find scholarships! You can browse institutional scholarships, open scholarships, or get personalized recommendations based on your profile. What type of scholarship are you looking for?",
-            var msg when msg.Contains("application") || msg.Contains("apply") => "To apply for scholarships, you can view your current applications in the 'Current Applications' tab. Make sure your account is verified to access all features. Need help with a specific application?",
-            var msg when msg.Contains("help") || msg.Contains("how") => "I'm here to help! You can ask me about finding scholarships, managing applications, updating your profile, or navigating the eSkolar platform. What would you like help with?",
-            var msg when msg.Contains("account") || msg.Contains("profile") => "You can update your profile by clicking the profile icon in the top right. Make sure to verify your account by uploading required documents to access all features.",
-            var msg when msg.Contains("upload") || msg.Contains("document") => "To upload documents for account verification, go to your profile settings. You'll need to provide the required documents to access all scholarship features.",
-            _ => "I understand you're asking about: \"" + userMessage + "\". I can help with scholarships, applications, account settings, and platform navigation. Could you be more specific about what you need help with?"
-        };
-        
-        Messages.Add(new ChatMessage { Text = response, IsUser = false });
-        StateHasChanged();
-    }
-
-    // TODO: UNCOMMENT AND IMPLEMENT WHEN BACKEND AI API IS READY
-    /*
-    private async Task<string> CallAIBackend(string userMessage)
-    {
-        using var client = new HttpClient();
-        var requestBody = new
-        {
-            message = userMessage,
-            context = "eSkolar scholarship platform assistant"
-        };
-        
-        var json = System.Text.Json.JsonSerializer.Serialize(requestBody);
-        var content = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
-        
-        // Replace with your actual AI API endpoint
-        var response = await client.PostAsync("https://your-api-endpoint.com/ai/chat", content);
-        response.EnsureSuccessStatusCode();
-        
-        var responseJson = await response.Content.ReadAsStringAsync();
-        var apiResponse = System.Text.Json.JsonSerializer.Deserialize<dynamic>(responseJson);
-        
-        return apiResponse.response ?? "I'm having trouble processing your request right now.";
-    }
-    */
-
-    // Handles pressing Enter in the chatbot input box
-    private async Task HandleKeyDown(KeyboardEventArgs e)
-    {
-        if (e.Key == "Enter")
-        {
-            await SendMessage();
-        }
-    }
-
-    // --- CHAT MESSAGE MODEL ---
-    // Defines a simple message object for the chatbot
-    public class ChatMessage
-    {
-        public string Text { get; set; } = "";
-        public bool IsUser { get; set; }
-    }
+    private void OpenChatbot() => ShowChatbot = true;
+    private void CloseChatbot() => ShowChatbot = false;
+    private void MinimizeChatbot() => ShowChatbot = false;
 
     // --- NOTIFICATION MODEL ---
     // Defines a notification item
@@ -478,53 +382,29 @@
     <main class="main-content" style="flex:1; min-width:0; background: #f5f6fa;">
         @Body
     </main>
+
+    @if (ShowChatbot)
+    {
+        <ChatBot CloseChatbot="CloseChatbot" MinimizeChatbot="MinimizeChatbot" />
+    }
+
 </div>
 
-<!-- --- CHATBOT FLOATING WINDOW --- -->
-@if (ShowChatbot)
-{
-    <div class="chatbot-float-window">
-        <div class="chatbot-header">
-            <span>eSkolar Assistant</span>
-            <button class="btn-close" @onclick="CloseChatbot" aria-label="Close chatbot">×</button>
-        </div>
-
-        <div class="chatbot-body">
-        <!-- Default welcome message -->
-            @if (!Messages.Any())
-            {
-                <div class="chat-message bot">
-                    <div class="message-avatar bot">AI</div>
-                    <div class="message-bubble bot">
-                        Hello! I'm your eSkolar assistant. How can I help you today? I can answer questions about scholarships, applications, and navigating the platform.
-                    </div>
-                </div>
+<!-- JavaScript helper to close Bootstrap offcanvas programmatically -->
+<script>
+document.addEventListener('click', function(event) {
+    const offcanvas = document.getElementById('rightSidebar');
+    if (offcanvas && offcanvas.classList.contains('show')) {
+        // Ignore clicks inside the offcanvas or on the toggle button
+        if (!offcanvas.contains(event.target) && !event.target.matches('[data-bs-toggle="offcanvas"]')) {
+            const bsOffcanvas = bootstrap.Offcanvas.getInstance(offcanvas);
+            if (bsOffcanvas) {
+                bsOffcanvas.hide();
             }
-
-            <!-- Render chat history -->
-            @foreach (var msg in Messages)
-            {
-                <div class="chat-message @(msg.IsUser ? "user" : "bot")">
-                    <div class="message-avatar @(msg.IsUser ? "user" : "bot")">
-                        @(msg.IsUser ? "You" : "AI")
-                    </div>
-                    <div class="message-bubble @(msg.IsUser ? "user" : "bot")">
-                        @msg.Text
-                    </div>
-                </div>
-            }
-        </div>
-
-        <!-- Chat input field -->
-        <div class="chatbot-input">
-            <input @bind="UserInput" @bind:event="oninput" @onkeydown="HandleKeyDown" 
-                   placeholder="Type a message..." />
-            <button class="chatbot-send-btn" @onclick="SendMessage">
-                <i class="fa fa-paper-plane"></i>
-            </button>
-        </div>
-    </div>
-}
+        }
+    }
+});
+</script>
 
 <!-- Styles for notification enhancements -->
 <style>
@@ -544,19 +424,3 @@
     font-weight: 600;
 }
 </style>
-
-<!-- JavaScript helper to close Bootstrap offcanvas programmatically -->
-<script>
-document.addEventListener('click', function(event) {
-    const offcanvas = document.getElementById('rightSidebar');
-    if (offcanvas && offcanvas.classList.contains('show')) {
-        // Ignore clicks inside the offcanvas or on the toggle button
-        if (!offcanvas.contains(event.target) && !event.target.matches('[data-bs-toggle="offcanvas"]')) {
-            const bsOffcanvas = bootstrap.Offcanvas.getInstance(offcanvas);
-            if (bsOffcanvas) {
-                bsOffcanvas.hide();
-            }
-        }
-    }
-});
-</script>
