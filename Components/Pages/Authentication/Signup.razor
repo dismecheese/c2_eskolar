@@ -22,24 +22,24 @@
                     <!-- Student role -->
                     <label class="role-option">
                         <input type="radio" name="role" value="@UserRole.Student" 
-                               @onchange="@(() => OnRoleChanged(UserRole.Student))" 
-                               checked="@(registerModel.UserRole == UserRole.Student)" />
+                                   @onchange="OnRoleChangedStudent"
+                                   checked="@(registerModel.UserRole == UserRole.Student)" />
                         <span>Student</span>
                     </label>
 
                     <!-- Institution role -->
                     <label class="role-option">
                         <input type="radio" name="role" value="@UserRole.Institution" 
-                               @onchange="@(() => OnRoleChanged(UserRole.Institution))"
-                               checked="@(registerModel.UserRole == UserRole.Institution)" />
+                                   @onchange="OnRoleChangedInstitution"
+                                   checked="@(registerModel.UserRole == UserRole.Institution)" />
                         <span>Institution</span>
                     </label>
 
                     <!-- Benefactor role -->
                     <label class="role-option">
                         <input type="radio" name="role" value="@UserRole.Benefactor" 
-                               @onchange="@(() => OnRoleChanged(UserRole.Benefactor))"
-                               checked="@(registerModel.UserRole == UserRole.Benefactor)" />
+                                   @onchange="OnRoleChangedBenefactor"
+                                   checked="@(registerModel.UserRole == UserRole.Benefactor)" />
                         <span>Benefactor</span>
                     </label>
                 </div>
@@ -94,9 +94,14 @@
                 </div>
                 <!-- Email -->
                 <div class="form-group">
-                    <input class="signup-input" type="email" placeholder="Email Address" 
-                        @bind="registerModel.Email" />
+                    <input class="signup-input @(ShowInstitutionEmailError ? "input-invalid" : (ShowInstitutionEmailValid ? "input-valid" : ""))" type="email" placeholder="Email Address" 
+                        @bind="registerModel.Email"
+                        @oninput="OnEmailInput" />
                     <ValidationMessage For="@(() => registerModel.Email)" />
+                    @if (ShowInstitutionEmailError)
+                    {
+                        <div class="validation-message">Please enter a valid institutional email address.</div>
+                    }
                 </div>
                 <!-- Password with toggle -->
                 <div class="form-group">
@@ -146,6 +151,12 @@
 </div>
 
 @code {
+    // True if institution email is valid and role is Institution
+    private bool ShowInstitutionEmailValid => registerModel.UserRole == UserRole.Institution && !string.IsNullOrEmpty(registerModel.Email) && IsInstitutionEmail(registerModel.Email);
+
+    private void OnRoleChangedStudent(ChangeEventArgs e) => OnRoleChanged(UserRole.Student);
+    private void OnRoleChangedInstitution(ChangeEventArgs e) => OnRoleChanged(UserRole.Institution);
+    private void OnRoleChangedBenefactor(ChangeEventArgs e) => OnRoleChanged(UserRole.Benefactor);
     // Registration model bound to the form
     private RegisterViewModel registerModel = new();
     private EditContext? editContext;
@@ -164,6 +175,25 @@
     private bool IsPasswordDigitValid => !string.IsNullOrEmpty(registerModel.Password) && registerModel.Password.Any(char.IsDigit);
     private bool IsPasswordUpperValid => !string.IsNullOrEmpty(registerModel.Password) && registerModel.Password.Any(char.IsUpper);
     private bool IsPasswordAllValid => IsPasswordLengthValid && IsPasswordDigitValid && IsPasswordUpperValid;
+
+    // Institution email validation
+    private bool ShowInstitutionEmailError => registerModel.UserRole == UserRole.Institution && !string.IsNullOrEmpty(registerModel.Email) && !IsInstitutionEmail(registerModel.Email);
+    // Called on every email input
+    private void OnEmailInput(ChangeEventArgs e)
+    {
+        registerModel.Email = e.Value?.ToString() ?? string.Empty;
+        StateHasChanged();
+    }
+
+    // Checks if the email is a valid institutional email (simple version: ends with .edu, .ac, or .org)
+    private bool IsInstitutionEmail(string email)
+    {
+        if (string.IsNullOrWhiteSpace(email) || !email.Contains("@")) return false;
+        var domain = email.Split('@').Last().ToLower();
+        // List of allowed institutional domain suffixes
+        string[] allowedSuffixes = new[] { ".edu", ".ac", ".org", ".edu.ph", ".ac.ph", ".gov.ph" };
+        return allowedSuffixes.Any(suffix => domain.EndsWith(suffix));
+    }
 
     protected override void OnInitialized()
     {
@@ -215,6 +245,12 @@
     // Handle form submission
     private async Task HandleRegistration()
     {
+        // Prevent submission if institution email is invalid
+        if (registerModel.UserRole == UserRole.Institution && !IsInstitutionEmail(registerModel.Email))
+        {
+            errorMessage = "Please enter a valid institutional email address.";
+            return;
+        }
         try
         {
             isLoading = true;

@@ -58,13 +58,25 @@ namespace c2_eskolar.Models
         [StringLength(50)]
         public string? StudentNumber { get; set; }
 
-        // Profile & Verification (from your proposal)
-        [StringLength(255)]
-        public string? ProfilePicture { get; set; }
 
-        public bool IsVerified { get; set; } = false;
-        public string? VerificationStatus { get; set; } = "Pending"; // Pending, Verified, Rejected
-        public DateTime? VerificationDate { get; set; }
+    // Profile & Verification (from your proposal)
+    [StringLength(255)]
+    public string? ProfilePicture { get; set; }
+
+    public bool IsVerified { get; set; } = false;
+    public string? VerificationStatus { get; set; } = "Pending"; // Pending, Verified, Rejected
+    public DateTime? VerificationDate { get; set; }
+
+    // Document Uploads
+    [StringLength(255)]
+    public string? StudentIdDocumentPath { get; set; }
+    [StringLength(255)]
+    public string? CorDocumentPath { get; set; }
+
+    // Institution Check
+    public bool? IsPartnerInstitution { get; set; }
+    [StringLength(100)]
+    public string? PartnerInstitutionName { get; set; }
 
         // Academic Performance (for AI recommendations)
         [Range(1.0, 5.0)]

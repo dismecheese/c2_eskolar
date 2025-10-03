@@ -1,4 +1,5 @@
 
+
 @page "/dashboard/student/profile"
 @attribute [Authorize(Roles = "Student")]
 @layout Layout.StudentDashLayout
@@ -9,6 +10,27 @@
 @using Microsoft.AspNetCore.Identity
 
 @code {
+    private async Task RemoveProfileImageAsync()
+    {
+        // Set to blank avatar
+        ProfilePicture = "https://via.placeholder.com/120";
+        _previewProfilePicture = null;
+        UploadedProfileImage = null;
+
+        // Optionally update in DB
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var userId = authState.User?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        if (!string.IsNullOrWhiteSpace(userId))
+        {
+            var studentProfile = await StudentProfileService.GetProfileByUserIdAsync(userId);
+            if (studentProfile != null)
+            {
+                studentProfile.ProfilePicture = ProfilePicture;
+                await StudentProfileService.SaveProfileAsync(studentProfile, studentProfile.Email);
+            }
+        }
+        StateHasChanged();
+    }
     private bool _isInitRunning = false;
     protected override async Task OnInitializedAsync()
     {
@@ -39,20 +61,55 @@
     private bool IsEditMode = false;
     private bool isLoading = true;
     private string FullName = "";
+    private string Username = "";
     private string Email = "";
     private string Phone = "";
+    private string Location = "";
     private string University = "";
-    private string YearLevel = "1st Year";
     private string StudentNumber = "";
     private string Program = "";
+    private string YearLevel = "1st Year";
+
+    private string GetStatusBadgeClass(string status)
+    {
+        return status switch
+        {
+            "Active" => "profile-badge-active",
+            "Pending" => "profile-badge-pending",
+            "On Leave" => "profile-badge-onleave",
+            "Graduated" => "profile-badge-graduated",
+            _ => ""
+        };
+    }
+
+    private string GetYearLevelText(string yearLevel)
+    {
+        if (string.IsNullOrWhiteSpace(yearLevel)) return "";
+        var lower = yearLevel.ToLower();
+        if (lower.Contains("1")) return "1st Year";
+        if (lower.Contains("2")) return "2nd Year";
+        if (lower.Contains("3")) return "3rd Year";
+        if (lower.Contains("4")) return "4th Year";
+        if (lower.Contains("5")) return "5th Year";
+        if (lower.Contains("6")) return "6th Year";
+        if (lower.Contains("7")) return "7th Year";
+        if (lower.Contains("8")) return "8th Year";
+        return yearLevel;
+    }
     private string Status = "Active";
+    private string Role = "Student";
+    private string Bio = "";
     private DateTime CreatedDate = DateTime.Now;
     private string ProfilePicture = "https://via.placeholder.com/120";
     private bool EmailVerified = false;
     private bool PhoneVerified = false;
     private bool StudentIdVerified = false;
     private bool AcademicRecordsVerified = false;
+    private bool IsTwoFactorEnabled = false;
     private DateTime LastLogin = DateTime.Now;
+    private int ScholarshipsReceived = 0;
+    private int Applications = 0;
+    private string GPA = "0.00";
     private string FirstName = "";
     private string MiddleName = "";
     private string LastName = "";
@@ -117,7 +174,6 @@
             if (studentProfile == null)
             {
                 studentProfile = new Models.StudentProfile {
-                    StudentProfileId = Guid.NewGuid(),
                     UserId = userId,
                     FirstName = FirstName,
                     LastName = LastName
@@ -231,7 +287,8 @@
 }
 
 
-<div class="container-fluid p-5" style="padding-left: 80px; padding-right: 120px;">
+
+<div class="container-fluid p-5 student-profile-bg">
     @if (!string.IsNullOrWhiteSpace(ProfileErrorMessage))
     {
         <div class="alert alert-danger" role="alert">
@@ -241,14 +298,23 @@
     <div class="row mb-4">
         <div class="col-12">
             <div class="d-flex justify-content-between align-items-center">
-                <h2 class="mb-0">My Profile</h2>
+                <h2 class="mb-0 profile-title">My Profile</h2>
                 <div class="d-flex gap-2">
-                    <button class="btn btn-primary" @onclick="ToggleEditModeAsync" disabled="@(isLoading)">
-                        <i class="fas fa-edit me-2"></i>@(IsEditMode ? "Cancel" : "Edit Profile")
-                    </button>
                     @if (IsEditMode)
                     {
-                        <button class="btn btn-success" @onclick="SaveProfile" disabled="@(isLoading)">
+                        <button class="btn btn-cancel profile-btn" @onclick="ToggleEditModeAsync" disabled="@(isLoading)">
+                            <i class="fas fa-edit me-2"></i>Cancel
+                        </button>
+                    }
+                    else
+                    {
+                        <button class="btn btn-primary profile-btn" @onclick="ToggleEditModeAsync" disabled="@(isLoading)">
+                            <i class="fas fa-edit me-2"></i>Edit Profile
+                        </button>
+                    }
+                    @if (IsEditMode)
+                    {
+                        <button class="btn btn-success profile-btn" @onclick="SaveProfile" disabled="@(isLoading)">
                             <i class="fas fa-save me-2"></i>Save Changes
                         </button>
                     }
@@ -259,74 +325,91 @@
     <div class="row">
         <!-- Profile Summary (Left Column) -->
         <div class="col-lg-4 mb-4">
-            <div class="card shadow-sm mb-4">
+            <div class="card profile-card mb-4">
                 <div class="card-body text-center">
                     <div class="position-relative d-inline-block mb-3">
-                        <img src="@PreviewProfilePicture" class="rounded-circle profile-image" alt="Profile Picture" width="120" height="120" />
+                        @if (string.IsNullOrWhiteSpace(_previewProfilePicture) && ProfilePicture == "https://via.placeholder.com/120")
+                        {
+                            <!-- Facebook-style blank avatar SVG -->
+                            <svg class="rounded-circle profile-image shadow" width="120" height="120" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <circle cx="60" cy="60" r="60" fill="#eaf1fb"/>
+                                <ellipse cx="60" cy="54" rx="28" ry="26" fill="#b3c6e6"/>
+                                <ellipse cx="60" cy="92" rx="36" ry="18" fill="#b3c6e6"/>
+                            </svg>
+                        }
+                        else
+                        {
+                            <img src="@PreviewProfilePicture" class="rounded-circle profile-image shadow" alt="Profile Picture" width="120" height="120" />
+                        }
                         @if (IsEditMode)
                         {
-                            <label class="btn btn-sm btn-primary position-absolute bottom-0 end-0 rounded-circle" style="width: 30px; height: 30px;">
-                                <i class="fas fa-camera"></i>
-                                <InputFile OnChange="OnProfileImageChange" accept="image/*" style="display:none;" />
-                            </label>
+                            <div class="d-flex flex-row justify-content-center gap-2 mt-2">
+                                <label class="btn btn-sm btn-primary rounded-circle profile-img-btn">
+                                    <i class="fas fa-camera"></i>
+                                    <InputFile OnChange="OnProfileImageChange" accept="image/*" style="display:none;" />
+                                </label>
+                                <button class="btn btn-sm btn-danger rounded-circle profile-img-btn" type="button" title="Remove Profile Picture" @onclick="RemoveProfileImageAsync">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
                         }
                     </div>
-                    <h4 class="card-title mb-1">@FullName</h4>
+                    <h4 class="card-title mb-1 profile-name">@FullName</h4>
                     <div class="text-muted mb-2">@Email</div>
                     <div class="d-flex flex-column align-items-center gap-2">
-                        <span class="badge bg-success">@Status</span>
-                        <span class="badge bg-secondary">@YearLevel</span>
+                        <span class="badge profile-badge-status @(GetStatusBadgeClass(Status))">@Status</span>
+                        <span class="badge profile-badge-year">@GetYearLevelText(YearLevel)</span>
                     </div>
                 </div>
             </div>
-            <div class="card shadow-sm">
+            <div class="card profile-card">
                 <div class="card-header bg-white">
-                    <h6 class="mb-0"><i class="fas fa-check-circle me-2"></i>Verification</h6>
+                    <h6 class="mb-0 profile-verification-title"><i class="fas fa-check-circle profile-header-icon"></i>Verification</h6>
                 </div>
                 <div class="card-body">
                     <div class="verification-item d-flex justify-content-between align-items-center">
-                        <span>Email</span>
-                        <i class="fas fa-@(EmailVerified ? "check-circle text-success" : "clock text-warning")"></i>
+                        <span class="profile-label-bold">Email</span>
+                        <i class="fas fa-@(EmailVerified ? "check-circle" : "clock") @(EmailVerified ? "profile-icon-verified" : "profile-icon-pending")"></i>
                     </div>
                     <div class="verification-item d-flex justify-content-between align-items-center">
-                        <span>Phone</span>
-                        <i class="fas fa-@(PhoneVerified ? "check-circle text-success" : "clock text-warning")"></i>
+                        <span class="profile-label-bold">Phone</span>
+                        <i class="fas fa-@(PhoneVerified ? "check-circle" : "clock") @(PhoneVerified ? "profile-icon-verified" : "profile-icon-pending")"></i>
                     </div>
                     <div class="verification-item d-flex justify-content-between align-items-center">
-                        <span>Student ID</span>
-                        <i class="fas fa-@(StudentIdVerified ? "check-circle text-success" : "clock text-warning")"></i>
+                        <span class="profile-label-bold">Student ID</span>
+                        <i class="fas fa-@(StudentIdVerified ? "check-circle" : "clock") @(StudentIdVerified ? "profile-icon-verified" : "profile-icon-pending")"></i>
                     </div>
                     <div class="verification-item d-flex justify-content-between align-items-center">
-                        <span>Academic Records</span>
-                        <i class="fas fa-@(AcademicRecordsVerified ? "check-circle text-success" : "clock text-warning")"></i>
+                        <span class="profile-label-bold">Academic Records</span>
+                        <i class="fas fa-@(AcademicRecordsVerified ? "check-circle" : "clock") @(AcademicRecordsVerified ? "profile-icon-verified" : "profile-icon-pending")"></i>
                     </div>
                 </div>
             </div>
         </div>
         <!-- Profile Details (Right Column) -->
         <div class="col-lg-8">
-            <div class="card shadow-sm mb-4">
+            <div class="card profile-card mb-4">
                 <div class="card-header bg-white">
-                    <h5 class="mb-0"><i class="fas fa-user me-2"></i>Personal Information</h5>
+                    <h5 class="mb-0 profile-section-title"><i class="fas fa-user profile-header-icon"></i>Personal Information</h5>
                 </div>
                 <div class="card-body">
                     @if (IsEditMode)
                     {
                         <div class="row">
                             <div class="col-md-4 mb-3">
-                                <label class="form-label">First Name</label>
+                                <label class="form-label profile-label-bold">First Name</label>
                                 <input type="text" class="form-control" @bind="FirstName" />
                             </div>
                             <div class="col-md-4 mb-3">
-                                <label class="form-label">Middle Name</label>
+                                <label class="form-label profile-label-bold">Middle Name</label>
                                 <input type="text" class="form-control" @bind="MiddleName" />
                             </div>
                             <div class="col-md-4 mb-3">
-                                <label class="form-label">Last Name</label>
+                                <label class="form-label profile-label-bold">Last Name</label>
                                 <input type="text" class="form-control" @bind="LastName" />
                             </div>
                             <div class="col-md-4 mb-3">
-                                <label class="form-label">Sex</label>
+                                <label class="form-label profile-label-bold">Sex</label>
                                 <select class="form-control" @bind="Sex">
                                     <option value="Male">Male</option>
                                     <option value="Female">Female</option>
@@ -334,24 +417,24 @@
                                 </select>
                             </div>
                             <div class="col-md-4 mb-3">
-                                <label class="form-label">Birthdate</label>
+                                <label class="form-label profile-label-bold">Birthdate</label>
                                 <input type="date" class="form-control" @bind="BirthDate" />
                             </div>
                             <div class="col-md-4 mb-3">
-                                <label class="form-label">Nationality</label>
+                                <label class="form-label profile-label-bold">Nationality</label>
                                 <input type="text" class="form-control" @bind="Nationality" />
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label class="form-label">Permanent Address</label>
+                                <label class="form-label profile-label-bold">Permanent Address</label>
                                 <input type="text" class="form-control" @bind="PermanentAddress" />
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label class="form-label">Phone</label>
+                                <label class="form-label profile-label-bold">Phone</label>
                                 <input type="text" class="form-control" @bind="Phone" />
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label class="form-label">Email</label>
-                                <input type="email" class="form-control" @bind="Email" disabled />
+                                <label class="form-label profile-label-bold">Email</label>
+                                <input type="email" class="profile-email-readonly" value="@Email" readonly />
                             </div>
                         </div>
                     }
@@ -359,48 +442,48 @@
                     {
                         <div class="row">
                             <div class="col-md-4 mb-3">
-                                <label class="form-label">First Name</label>
+                                <label class="form-label profile-label-bold">First Name</label>
                                 <div class="form-control-plaintext">@FirstName</div>
                             </div>
                             <div class="col-md-4 mb-3">
-                                <label class="form-label">Middle Name</label>
+                                <label class="form-label profile-label-bold">Middle Name</label>
                                 <div class="form-control-plaintext">@MiddleName</div>
                             </div>
                             <div class="col-md-4 mb-3">
-                                <label class="form-label">Last Name</label>
+                                <label class="form-label profile-label-bold">Last Name</label>
                                 <div class="form-control-plaintext">@LastName</div>
                             </div>
                             <div class="col-md-4 mb-3">
-                                <label class="form-label">Sex</label>
+                                <label class="form-label profile-label-bold">Sex</label>
                                 <div class="form-control-plaintext">@Sex</div>
                             </div>
                             <div class="col-md-4 mb-3">
-                                <label class="form-label">Birthdate</label>
+                                <label class="form-label profile-label-bold">Birthdate</label>
                                 <div class="form-control-plaintext">@BirthDate.ToShortDateString()</div>
                             </div>
                             <div class="col-md-4 mb-3">
-                                <label class="form-label">Nationality</label>
+                                <label class="form-label profile-label-bold">Nationality</label>
                                 <div class="form-control-plaintext">@Nationality</div>
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label class="form-label">Permanent Address</label>
+                                <label class="form-label profile-label-bold">Permanent Address</label>
                                 <div class="form-control-plaintext">@PermanentAddress</div>
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label class="form-label">Phone</label>
+                                <label class="form-label profile-label-bold">Phone</label>
                                 <div class="form-control-plaintext">@Phone</div>
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label class="form-label">Email</label>
+                                <label class="form-label profile-label-bold">Email</label>
                                 <div class="form-control-plaintext">@Email</div>
                             </div>
                         </div>
                     }
                 </div>
             </div>
-            <div class="card shadow-sm">
+            <div class="card profile-card">
                 <div class="card-header bg-white">
-                    <h5 class="mb-0"><i class="fas fa-graduation-cap me-2"></i>Educational Information</h5>
+                    <h5 class="mb-0 profile-section-title"><i class="fas fa-graduation-cap profile-header-icon"></i>Educational Information</h5>
                 </div>
                 <div class="card-body">
                     @if (IsEditMode)
@@ -425,10 +508,6 @@
                                     <option>2nd Year</option>
                                     <option>3rd Year</option>
                                     <option>4th Year</option>
-                                    <option>5th Year</option>
-                                    <option>6th Year</option>
-                                    <option>7th Year</option>
-                                    <option>8th Year</option>
                                 </select>
                             </div>
                             <div class="col-md-6 mb-3">
@@ -446,24 +525,24 @@
                     {
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <label class="form-label">University</label>
+                                <label class="form-label profile-label-bold">University</label>
                                 <div class="form-control-plaintext">@University</div>
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label class="form-label">Student Number</label>
+                                <label class="form-label profile-label-bold">Student Number</label>
                                 <div class="form-control-plaintext">@StudentNumber</div>
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label class="form-label">Program</label>
+                                <label class="form-label profile-label-bold">Program</label>
                                 <div class="form-control-plaintext">@Program</div>
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label class="form-label">Year Level</label>
+                                <label class="form-label profile-label-bold">Year Level</label>
                                 <div class="form-control-plaintext">@YearLevel</div>
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label class="form-label">Status</label>
-                                <div class="form-control-plaintext">@Status</div>
+                                <label class="form-label profile-label-bold">Status</label>
+                                <div class="form-control-plaintext"><span class="profile-status-text @GetStatusBadgeClass(Status)">@Status</span></div>
                             </div>
                         </div>
                     }
@@ -473,13 +552,7 @@
     </div>
 </div>
 
-<style>
-    .form-check-input:checked {
-        background-color: #198754;
-        border-color: #198754;
-    }
-</style>
-        }
+
 
 
         

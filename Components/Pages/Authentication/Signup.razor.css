@@ -291,3 +291,7 @@
     line-height: 1.2;
     height: 1.1em;
 }
+
+.input-valid {
+    border-color: #26b050 !important;
+}

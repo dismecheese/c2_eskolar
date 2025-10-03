@@ -1,0 +1,143 @@
+@page "/institution/verification"
+
+<div class="institution-verification-container">
+	<h2>Institution Verification</h2>
+	<p class="subtitle">Please complete the form below to verify your institution account.</p>
+
+	<!-- Email Verification Section -->
+	<div class="section">
+		<h3>Email Verification</h3>
+		<div class="form-group">
+			<span>Email Status: <strong>Unverified</strong></span>
+			<button class="btn btn-secondary" disabled>Verify Email</button>
+			<!-- Enable and wire up later -->
+		</div>
+	</div>
+
+	<!-- Personal Info Section -->
+	<div class="section">
+		<h3>Personal Information</h3>
+		<div class="form-row">
+			<input class="input" type="text" placeholder="First Name" />
+			<input class="input" type="text" placeholder="Middle Name" />
+			<input class="input" type="text" placeholder="Last Name" />
+		</div>
+		<div class="form-row">
+			<input class="input" type="text" placeholder="Position/Title" />
+			<input class="input" type="email" placeholder="Contact Email" />
+			<input class="input" type="text" placeholder="Contact Number" />
+		</div>
+		<div class="form-row">
+			<label>Upload Government-issued ID
+				<input class="input" type="file" />
+			</label>
+		</div>
+	</div>
+
+	<!-- Institution Info Section -->
+	<div class="section">
+		<h3>Institution Information</h3>
+		<div class="form-row">
+			<input class="input" type="text" placeholder="Institution Name" />
+			<input class="input" type="text" placeholder="Official Address" />
+		</div>
+		<div class="form-row">
+			<select class="input">
+				<option value="">Type of Institution</option>
+				<option>University</option>
+				<option>College</option>
+				<option>High School</option>
+				<option>Other</option>
+			</select>
+			<input class="input" type="text" placeholder="Website" />
+			<input class="input" type="text" placeholder="Institution Contact Number" />
+		</div>
+		<div class="form-row">
+			<input class="input" type="text" placeholder="Dean/Head Name" />
+			<input class="input" type="email" placeholder="Dean/Head Official Email" />
+		</div>
+		<div class="form-row">
+			<textarea class="input" placeholder="Brief Description/About" rows="2"></textarea>
+		</div>
+	</div>
+
+	<!-- Document Uploads Section -->
+	<div class="section">
+		<h3>Document Uploads</h3>
+		<div class="form-row">
+			<label>Letter of Authorization (signed by dean/head)
+				<input class="input" type="file" />
+			</label>
+		</div>
+		<div class="form-row">
+			<label>Other Supporting Documents (optional)
+				<input class="input" type="file" multiple />
+			</label>
+		</div>
+	</div>
+
+	<!-- Declaration and Submit -->
+	<div class="section">
+		<label class="declaration">
+			<input type="checkbox" />
+			I confirm that the information provided is accurate and I am authorized to represent this institution.
+		</label>
+		<button class="btn btn-primary" disabled>Submit</button>
+	</div>
+</div>
+
+<style>
+	.institution-verification-container {
+		max-width: 1000px;
+		margin: 2rem auto;
+		padding: 2.5rem 2rem;
+		background: #fff;
+		border-radius: 10px;
+		box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+	}
+	.section {
+		margin-bottom: 2rem;
+	}
+	.form-row {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 1rem;
+		margin-bottom: 1rem;
+	}
+	.input {
+		flex: 1 1 220px;
+		min-width: 180px;
+		padding: 0.5rem;
+		border: 1px solid #ccc;
+		border-radius: 5px;
+		box-sizing: border-box;
+	}
+	.btn {
+		padding: 0.5rem 1.5rem;
+		border: none;
+		border-radius: 5px;
+		background: #2563eb;
+		color: #fff;
+		cursor: pointer;
+		font-size: 1rem;
+	}
+	.btn-secondary {
+		background: #e0e7ef;
+		color: #222;
+		margin-left: 1rem;
+	}
+	.btn[disabled] {
+		opacity: 0.6;
+		cursor: not-allowed;
+	}
+	.declaration {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		margin-bottom: 1rem;
+	}
+	.subtitle {
+		color: #555;
+		margin-bottom: 2rem;
+	}
+</style>

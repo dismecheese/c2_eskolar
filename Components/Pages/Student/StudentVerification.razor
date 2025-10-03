@@ -1,0 +1,157 @@
+
+@page "/student/verification"
+
+<div class="sv-container sv-modal-content">
+        <div class="sv-header">
+            <h2 id="sv-modal-title">Student Verification</h2>
+            <div class="sv-divider"></div>
+        </div>
+        <!-- Personal Information Section -->
+        <section class="sv-card sv-card-elevated">
+            <div class="sv-section-title">Personal Information</div>
+            <div class="sv-fields sv-fields-3">
+                <div class="sv-field">
+                    <label for="firstName">First Name</label>
+                    <input id="firstName" class="sv-input sv-input-medium" />
+                </div>
+                <div class="sv-field">
+                    <label for="middleName">Middle Name</label>
+                    <input id="middleName" class="sv-input sv-input-medium" />
+                </div>
+                <div class="sv-field">
+                    <label for="lastName">Last Name</label>
+                    <input id="lastName" class="sv-input sv-input-medium" />
+                </div>
+            </div>
+            <div class="sv-fields sv-fields-3">
+                <div class="sv-field">
+                    <label for="sex">Sex</label>
+                    <select id="sex" class="sv-input sv-input-short">
+                        <option value="">Select</option>
+                        <option>Male</option>
+                        <option>Female</option>
+                        <option>Other</option>
+                    </select>
+                </div>
+                <div class="sv-field">
+                    <label for="bday">Birthday</label>
+                    <input id="bday" type="date" class="sv-input sv-input-short" />
+                </div>
+                <div class="sv-field">
+                    <label for="nationality">Nationality</label>
+                    <input id="nationality" class="sv-input sv-input-medium" />
+                </div>
+            </div>
+            <div class="sv-fields sv-fields-2">
+                <div class="sv-field">
+                    <label for="number">Contact Number</label>
+                    <input id="number" class="sv-input sv-input-short" />
+                </div>
+                <div class="sv-field">
+                    <label for="email">Email</label>
+                    <input id="email" readonly class="sv-input sv-input-medium" />
+                </div>
+            </div>
+            <div class="sv-fields sv-fields-1">
+                <div class="sv-field">
+                    <label for="address">Address</label>
+                    <input id="address" class="sv-input sv-input-long" />
+                </div>
+            </div>
+        </section>
+        <!-- Educational Info Section -->
+        <section class="sv-card sv-card-elevated">
+            <div class="sv-section-title">Educational Information</div>
+            <div class="sv-fields sv-fields-2">
+                <div class="sv-field">
+                    <label for="university">University</label>
+                    <input id="university" class="sv-input sv-input-long" />
+                </div>
+                <div class="sv-field">
+                    <label for="studentNumber">Student Number</label>
+                    <input id="studentNumber" class="sv-input sv-input-medium" />
+                </div>
+            </div>
+            <div class="sv-fields sv-fields-3">
+                <div class="sv-field">
+                    <label for="program">Program</label>
+                    <input id="program" class="sv-input sv-input-medium" />
+                </div>
+                <div class="sv-field">
+                    <label for="yearLevel">Year Level</label>
+                    <select id="yearLevel" class="sv-input sv-input-short">
+                        <option value="">Select</option>
+                        <option>1st Year</option>
+                        <option>2nd Year</option>
+                        <option>3rd Year</option>
+                        <option>4th Year</option>
+                        <option>5th Year</option>
+                        <option>Other</option>
+                    </select>
+                </div>
+                <div class="sv-field">
+                    <label for="status">Status</label>
+                    <input id="status" readonly value="Pending" class="sv-input sv-input-short" />
+                </div>
+            </div>
+        </section>
+        <!-- Document Upload Section -->
+        <section class="sv-card sv-card-elevated">
+            <div class="sv-section-title">Document Upload</div>
+            <div class="sv-fields sv-fields-2">
+                <div class="sv-field">
+                    <label for="idUpload">Student ID</label>
+                    <input type="file" id="idUpload" class="sv-input sv-input-medium" />
+                    <div class="sv-upload-preview">
+                        <img src="" alt="ID Preview" style="display:none;" />
+                        <button type="button" disabled>Remove</button>
+                    </div>
+                </div>
+                <div class="sv-field">
+                    <label for="corUpload">Certificate of Registration (COR)</label>
+                    <input type="file" id="corUpload" class="sv-input sv-input-medium" />
+                    <div class="sv-upload-preview">
+                        <img src="" alt="COR Preview" style="display:none;" />
+                        <button type="button" disabled>Remove</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+        <!-- Institution Check Section -->
+        <section class="sv-card sv-card-elevated">
+            <div class="sv-section-title">Institution Check</div>
+            <div class="sv-fields sv-fields-2">
+                <div class="sv-field sv-radio-group">
+                    <label>Are you affiliated with a partner institution?</label>
+                    <div>
+                        <input type="radio" id="instYes" name="institutionCheck" />
+                        <label for="instYes">Yes</label>
+                        <input type="radio" id="instNo" name="institutionCheck" />
+                        <label for="instNo">No</label>
+                    </div>
+                </div>
+                <div class="sv-field">
+                    <label for="institutionDropdown">Select Institution</label>
+                    <select id="institutionDropdown" class="sv-input sv-input-medium">
+                        <option value="">Select</option>
+                        <option>Institution A</option>
+                        <option>Institution B</option>
+                        <option>Institution C</option>
+                    </select>
+                </div>
+            </div>
+        </section>
+        <!-- Actions and Status/Feedback Section -->
+        <div class="sv-actions-row">
+            <button class="sv-btn sv-btn-primary" disabled>Submit</button>
+            <button class="sv-btn sv-btn-secondary" disabled>Skip for now</button>
+            <div class="sv-status">
+                <span class="sv-status-info">Status message placeholder</span>
+                <span class="sv-status-error">Error message placeholder</span>
+            </div>
+        </div>
+    </div>
+
+
+
+
