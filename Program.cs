@@ -71,6 +71,7 @@ builder.Services.AddDbContextFactory<ApplicationDbContext>(options =>
         return new HttpClient { BaseAddress = new Uri(navigationManager.BaseUri) };
     });
 
+
 // Register custom services
 builder.Services.AddScoped<PartnerService>();
 builder.Services.AddScoped<AnnouncementService>();
@@ -80,6 +81,7 @@ builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<StudentProfileService>();
 builder.Services.AddScoped<BenefactorProfileService>();
 builder.Services.AddScoped<InstitutionProfileService>();
+builder.Services.AddScoped<BlobStorageService>();
 
 // Register DocumentIntelligenceService
 // builder.Services.AddScoped<DocumentIntelligenceService>();
