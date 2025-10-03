@@ -3,91 +3,231 @@
 @layout Layout.InstitutionDashLayout
 
 @using Microsoft.EntityFrameworkCore
+@using Microsoft.AspNetCore.Components.Authorization
+@using System.Security.Claims
 @using c2_eskolar.Data
 @using c2_eskolar.Models
+@using c2_eskolar.Services
 @inject ApplicationDbContext DbContext
 @inject NavigationManager Navigation
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject InstitutionProfileService InstitutionProfileService
 
 <PageTitle>Scholarships</PageTitle>
 
-<div class="container my-5" style="margin-right: 80px;">
-    <div class="d-flex justify-content-between align-items-center mb-4">
+<div class="container my-5 p-4 rounded-4 shadow-lg animate__animated animate__fadeIn" style="margin-right: 80px; background: #f8fafc; min-height: 80vh;">
+    <div class="d-flex justify-content-between align-items-center mb-4 animate__animated animate__fadeInDown">
         <div>
-            <h2 class="fw-bold mb-0">
-                <i class="bi bi-mortarboard-fill text-primary me-2"></i> Scholarships
+            <h2 class="fw-bold mb-0 text-primary">
+                <i class="bi bi-mortarboard-fill text-primary me-2"></i> My Scholarships
             </h2>
-            <p class="text-muted mb-0">View and manage your posted scholarships below.</p>
+            <p class="text-secondary mb-0">View and manage your internal scholarships and benefactor partnership scholarships.</p>
         </div>
-        <button class="btn btn-lg btn-success shadow-sm px-4 py-2" @onclick="AddScholarship">
+        <button class="btn btn-lg shadow-sm px-4 py-2 animate__animated animate__pulse animate__infinite btn-primary text-white border-0" style="background: #2563eb;" @onclick="AddScholarship">
             <i class="bi bi-plus-circle me-2"></i> Add Scholarship
         </button>
     </div>
 
+    <!-- Partnership Status Information -->
+    @if (institutionProfile != null)
+    {
+        <div class="alert alert-primary mb-4 animate__animated animate__fadeInUp" style="border: none; color: #1e3a8a; background: #e0e7ff;">
+            <div class="d-flex align-items-start">
+                <span aria-hidden="true" class="me-2" style="font-size: 1.2rem;">🤝</span>
+                <div class="flex-grow-1">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <strong>Partnership Status:</strong> Your institution is 
+                            <span class="fw-bold" style="color: @(institutionProfile.IsVerified ? "#2563eb" : "#60a5fa");">
+                                @(institutionProfile.IsVerified ? "eligible" : "pending eligibility")
+                            </span> 
+                            for benefactor partnerships.
+                        </div>
+                        <div class="ms-3">
+                            <span class="badge bg-primary text-white">
+                                @(institutionProfile.IsVerified ? "Verified ✓" : "Unverified")
+                            </span>
+                        </div>
+                    </div>
+                    <div class="mt-2 small">
+                        @if (institutionProfile.IsVerified)
+                        {
+                            <span style="color: #2563eb;">✓ Benefactors can select your institution for partnerships</span><br/>
+                            <span style="color: #2563eb;">✓ You can manage partnership scholarships from benefactors</span><br/>
+                            <span class="text-primary">Partnership scholarships will appear in your list with a "Partnership" badge</span>
+                            @if (partnershipCount > 0 || internalCount > 0)
+                            {
+                                <br/><strong class="text-primary">Current Status:</strong> 
+                                <span class="badge bg-primary text-white me-1">@internalCount Internal</span>
+                                <span class="badge bg-info text-dark me-1">@partnershipCount Partnership</span>
+                            }
+                        }
+                        else
+                        {
+                            <span style="color: #2563eb;">⚠ Your institution needs verification before benefactors can partner with you</span><br/>
+                            <span class="text-primary">Contact administrators to complete the verification process</span><br/>
+                            <span class="text-primary">You can still create internal scholarships for your own students</span>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+
+    <ul class="nav nav-tabs mb-4 animate__animated animate__fadeInDown">
+        <li class="nav-item">
+            <button class="nav-link @(selectedTab == 0 ? "active" : "")" @onclick="() => SelectTab(0)">Institutional</button>
+        </li>
+        <li class="nav-item">
+            <button class="nav-link @(selectedTab == 1 ? "active" : "")" @onclick="() => SelectTab(1)">Open Scholarships</button>
+        </li>
+    </ul>
+
     @if (scholarships is null)
     {
-        <div class="d-flex justify-content-center align-items-center" style="height: 200px;">
+        <div class="d-flex justify-content-center align-items-center animate__animated animate__fadeIn" style="height: 200px;">
             <div class="spinner-border text-primary" role="status">
                 <span class="visually-hidden">Loading...</span>
             </div>
         </div>
     }
-    else if (!scholarships.Any())
-    {
-        <div class="alert alert-info text-center py-4">
-            <i class="bi bi-emoji-frown me-2"></i> No scholarships posted yet.
-        </div>
-    }
     else
     {
-        <div class="row g-4">
-            @foreach (var scholarship in scholarships)
-            {
-                <div class="col-md-6 col-lg-4">
-                    <div class="card shadow-sm h-100 clickable-card border-0"
-                         @onclick="() => ViewScholarship(scholarship.ScholarshipId)"
-                         style="cursor: pointer; transition: box-shadow 0.2s;">
-                        <div class="card-body d-flex flex-column">
-                            <div class="d-flex align-items-center mb-2">
-                                <i class="bi bi-award text-warning me-2 fs-4"></i>
-                                <h5 class="card-title mb-0">@scholarship.Title</h5>
-                            </div>
-                            <p class="card-text text-muted mb-2">
-                                <span class="badge bg-primary me-1">@(!string.IsNullOrEmpty(scholarship.Institution?.InstitutionName)
-                                    ? scholarship.Institution.InstitutionName
-                                    : scholarship.Benefactor?.OrganizationName ?? "Unknown Provider")</span>
-                            </p>
-                            <div class="mb-2">
-                                <span class="badge bg-success">@scholarship.CreatedAt.ToString("MMM dd, yyyy")</span>
-                                <span class="badge bg-secondary ms-1">@((scholarship.IsInternal ? "Internal" : "External"))</span>
-                            </div>
-                            <div class="mt-auto d-flex justify-content-between align-items-center">
-                                <span class="badge @(scholarship.IsActive ? "bg-success" : "bg-danger")">
-                                    @(scholarship.IsActive ? "Active" : "Inactive")
-                                </span>
-                                <button class="btn btn-sm btn-outline-danger ms-2"
-                                        @onclick:stopPropagation="true"
-                                        @onclick="async (e) => await DeleteScholarship(scholarship.ScholarshipId)">
-                                    <i class="bi bi-trash"></i> Delete
-                                </button>
+        var filteredScholarships = selectedTab == 0
+            ? scholarships.Where(s => s.IsInternal).ToList()
+            : scholarships.Where(s => !s.IsInternal).ToList();
+
+        if (!filteredScholarships.Any())
+        {
+            <div class="alert alert-primary text-center py-4 animate__animated animate__fadeInUp" style="border: none; color: #1e3a8a; background: #e0e7ff;">
+                <i class="bi bi-emoji-frown me-2"></i> No scholarships available yet.
+                <div class="mt-2 small text-primary">
+                    @if (selectedTab == 0)
+                    {
+                        <span>You can create internal scholarships for your own students.</span>
+                    }
+                    else
+                    {
+                        <span>You can partner with benefactors to manage their scholarships.</span>
+                    }
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="row g-4">
+                @foreach (var scholarship in filteredScholarships)
+                {
+                    <div class="col-md-6 col-lg-4">
+                        <div class="card shadow-lg h-100 clickable-card border-0 animate__animated animate__fadeInUp"
+                             @onclick="() => ViewScholarship(scholarship.ScholarshipId)"
+                             style="cursor: pointer; background: #fff; border-radius: 1.5rem; transition: box-shadow 0.2s, transform 0.2s;"
+                             onmouseover="this.style.boxShadow='0 0 0 0.25rem #2563eb55'; this.style.transform='scale(1.03)';" onmouseout="this.style.boxShadow='none'; this.style.transform='scale(1)';">
+                            <div class="card-body d-flex flex-column">
+                                <div class="d-flex align-items-center mb-2">
+                                    <i class="bi bi-award me-2 fs-4" style="color: #2563eb;"></i>
+                                    <h5 class="card-title mb-0 text-primary">@scholarship.Title</h5>
+                                </div>
+                                <p class="card-text mb-2">
+                                    <span class="badge bg-primary text-white me-1">
+                                        @(!string.IsNullOrEmpty(scholarship.Institution?.InstitutionName)
+                                            ? scholarship.Institution.InstitutionName
+                                            : scholarship.Benefactor?.OrganizationName ?? "Unknown Provider")
+                                    </span>
+                                </p>
+                                <div class="mb-2">
+                                    <span class="badge bg-info text-dark">@scholarship.CreatedAt.ToString("MMM dd, yyyy")</span>
+                                    @if (scholarship.IsInternal)
+                                    {
+                                        <span class="badge bg-primary text-white ms-1">Internal</span>
+                                    }
+                                    else if (scholarship.BenefactorProfileId != null)
+                                    {
+                                        <span class="badge bg-info text-dark ms-1">Partnership</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-secondary text-white ms-1">External</span>
+                                    }
+                                </div>
+                                <div class="mt-auto d-flex justify-content-between align-items-center">
+                                    <span class="badge @(scholarship.IsActive ? "bg-primary text-white" : "bg-secondary text-white")">
+                                        @(scholarship.IsActive ? "Active" : "Inactive")
+                                    </span>
+                                    <div class="d-flex gap-1">
+                                        @if (scholarship.InstitutionProfileId == institutionProfile?.InstitutionProfileId)
+                                        {
+                                            <button class="btn btn-sm animate__animated animate__fadeIn btn-primary text-white border-0" style="transition: box-shadow 0.2s;" @onclick:stopPropagation="true" @onclick="() => EditScholarship(scholarship.ScholarshipId)" title="Edit scholarship">
+                                                <i class="bi bi-pencil"></i> Edit
+                                            </button>
+                                            <button class="btn btn-sm animate__animated animate__fadeIn btn-info text-dark border-0" style="transition: box-shadow 0.2s;" @onclick:stopPropagation="true" @onclick="async (e) => await DeleteScholarship(scholarship.ScholarshipId)" title="Delete scholarship">
+                                                <i class="bi bi-trash"></i> Delete
+                                            </button>
+                                            @if (!scholarship.IsInternal && scholarship.BenefactorProfileId != null)
+                                            {
+                                                <small class="fst-italic ms-1 align-self-center text-primary">Partnership</small>
+                                            }
+                                        }
+                                        else
+                                        {
+                                            <span class="text-primary small fst-italic">View only</span>
+                                        }
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
-            }
-        </div>
+                }
+            </div>
+        }
     }
 </div>
 
 @code {
     private List<Scholarship>? scholarships;
+    private c2_eskolar.Models.InstitutionProfile? institutionProfile;
+    private int partnershipCount = 0;
+    private int internalCount = 0;
+    private int selectedTab = 0; // 0 = Institutional, 1 = Open Scholarships
 
     protected override async Task OnInitializedAsync()
     {
-        scholarships = await DbContext.Scholarships
-            .Include(s => s.Institution)
-            .Include(s => s.Benefactor)
-            .OrderByDescending(s => s.CreatedAt)
-            .ToListAsync();
+        // Get current user's institution profile
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+        var userId = user?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+        if (!string.IsNullOrEmpty(userId))
+        {
+            institutionProfile = await InstitutionProfileService.GetProfileByUserIdAsync(userId);
+        }
+
+        // Load scholarships owned by this institution (internal) and partnership scholarships (external with this institution as partner)
+        if (institutionProfile != null)
+        {
+            scholarships = await DbContext.Scholarships
+                .Include(s => s.Institution)
+                .Include(s => s.Benefactor)
+                .Where(s => s.InstitutionProfileId == institutionProfile.InstitutionProfileId) // Both internal and partnership scholarships
+                .OrderByDescending(s => s.CreatedAt)
+                .ToListAsync();
+
+            // Calculate partnership statistics
+            if (scholarships != null)
+            {
+                partnershipCount = scholarships.Count(s => !s.IsInternal && s.BenefactorProfileId != null);
+                internalCount = scholarships.Count(s => s.IsInternal);
+            }
+        }
+        else
+        {
+            scholarships = new List<Scholarship>(); // Empty list if no profile found
+        }
+    }
+
+    private void SelectTab(int tab)
+    {
+        selectedTab = tab;
     }
 
     private void ViewScholarship(int id)
@@ -98,12 +238,20 @@
     private async Task DeleteScholarship(int id)
     {
         var scholarship = await DbContext.Scholarships.FindAsync(id);
-        if (scholarship is not null)
+        if (scholarship is not null && 
+            institutionProfile is not null && 
+            scholarship.InstitutionProfileId == institutionProfile.InstitutionProfileId) // Allow delete for both internal scholarships and partnership scholarships
         {
             DbContext.Scholarships.Remove(scholarship);
             await DbContext.SaveChangesAsync();
             scholarships?.RemoveAll(s => s.ScholarshipId == id);
         }
+    }
+
+    private void EditScholarship(int id)
+    {
+        // Navigate to edit page - you might want to create this page later
+        Navigation.NavigateTo($"/dashboard/institution/scholarships/edit/{id}");
     }
 
     private void AddScholarship()

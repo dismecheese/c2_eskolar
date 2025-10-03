@@ -81,6 +81,9 @@ builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<StudentProfileService>();
 builder.Services.AddScoped<BenefactorProfileService>();
 builder.Services.AddScoped<InstitutionProfileService>();
+
+// Register DocumentIntelligenceService
+// builder.Services.AddScoped<DocumentIntelligenceService>();
 builder.Services.AddScoped<VerificationDocumentService>();
 builder.Services.AddScoped<ProfileSummaryService>();
 builder.Services.AddScoped<ScholarshipRecommendationService>();

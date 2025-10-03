@@ -5,21 +5,80 @@
 @using Microsoft.EntityFrameworkCore
 @using c2_eskolar.Data
 @using c2_eskolar.Models
+
 @inject ApplicationDbContext DbContext
+@inject IJSRuntime JS
+@inject AuthenticationStateProvider AuthStateProvider
+
 
 @code {
     [Parameter] public int ScholarshipId { get; set; }
+
     private Scholarship? scholarship;
-    private List<StudentProfile> studentApplicants = new();
+    private bool hasPendingApplication = false;
+
+
 
     protected override async Task OnInitializedAsync()
     {
-        scholarship = await DbContext.Scholarships
-            .Include(s => s.Institution)
-            .Include(s => s.Benefactor)
-            .Include(s => s.Applications)
-                .ThenInclude(a => a.Student)
-            .FirstOrDefaultAsync(s => s.ScholarshipId == ScholarshipId);
+        try
+        {
+            Console.WriteLine($"[DEBUG] ScholarshipId parameter: {ScholarshipId}");
+            scholarship = await DbContext.Scholarships
+                .Include(s => s.Institution)
+                .Include(s => s.Benefactor)
+                .Include(s => s.Applications)
+                    .ThenInclude(a => a.Student)
+                .FirstOrDefaultAsync(s => s.ScholarshipId == ScholarshipId);
+            if (scholarship == null)
+            {
+                Console.WriteLine($"[DEBUG] No scholarship found with ID {ScholarshipId}");
+            }
+            else
+            {
+                Console.WriteLine($"[DEBUG] Scholarship loaded: {scholarship.Title}");
+                await AddToRecentlyViewedAsync(ScholarshipId);
+
+                // Check if the current student has a pending application for this scholarship
+                var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+                var userId = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+                if (!string.IsNullOrEmpty(userId))
+                {
+                    var studentProfile = await DbContext.StudentProfiles.FirstOrDefaultAsync(sp => sp.UserId == userId);
+                    if (studentProfile != null)
+                    {
+                        var studentId = studentProfile.StudentProfileId;
+                        hasPendingApplication = scholarship.Applications.Any(a => a.StudentProfileId == studentId && (a.Status == "Submitted" || a.Status == "Under Review" || a.Status == "Pending"));
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[ERROR] Exception in OnInitializedAsync: {ex.Message}");
+        }
+    }
+
+    private async Task AddToRecentlyViewedAsync(int scholarshipId)
+    {
+        try
+        {
+            var idsJson = await JS.InvokeAsync<string>("localStorage.getItem", "recentlyViewedScholarships");
+            List<int> ids = !string.IsNullOrEmpty(idsJson)
+                ? System.Text.Json.JsonSerializer.Deserialize<List<int>>(idsJson) ?? new List<int>()
+                : new List<int>();
+            // Remove if already exists, then insert at front
+            ids.Remove(scholarshipId);
+            ids.Insert(0, scholarshipId);
+            // Only keep the most recent 9
+            ids = ids.Take(9).ToList();
+            var newJson = System.Text.Json.JsonSerializer.Serialize(ids);
+            await JS.InvokeVoidAsync("localStorage.setItem", "recentlyViewedScholarships", newJson);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[ERROR] Failed to update recently viewed scholarships: {ex.Message}");
+        }
     }
 }
 
@@ -28,66 +87,103 @@
     <div class="text-center my-5">
         <div class="spinner-border text-primary" role="status"></div>
         <p>Loading scholarship details...</p>
+        <p class="text-danger mt-3">@($"Debug: ScholarshipId = {ScholarshipId}")</p>
+        <p class="text-danger">Scholarship not found or failed to load. Please check if the scholarship exists and try again.</p>
     </div>
 }
 else
 {
     <!-- 🔷 Banner -->
     <div class="scholarship-banner text-white mb-4 me-lg-5"
-         style="background: linear-gradient(135deg, #004085, #007bff); padding: 40px; border-radius: 8px; display: flex; align-items: center; margin-right: 40px;">
-        <img src="https://via.placeholder.com/80x80.png?text=🎓" alt="Scholarship Logo"
-             style="width: 80px; height: 80px; border-radius: 50%; background-color: white; padding: 10px; margin-right: 20px;" />
-        <div>
-            <h1 class="mb-1" style="font-size: 2rem;">@scholarship.Title</h1>
-            <p class="mb-0" style="opacity: 0.9;">
-                @(!string.IsNullOrEmpty(scholarship.Institution?.InstitutionName)
-                    ? scholarship.Institution.InstitutionName
-                    : scholarship.Benefactor?.OrganizationName ?? "Unknown Provider")
-            </p>
-        </div>
-    </div>
-
-    <!-- 🔄 Main content with 2-column layout -->
-    <div class="container-fluid px-4">
-        <div class="row">
-            <!-- 📄 Scholarship Info (Left Column) -->
-            <div class="col-lg-8 mb-5">
-                <h2 class="fw-bold mb-4">@scholarship.Title</h2>
-
-                <div class="mb-3"><strong>Provider:</strong>
+         style="background: linear-gradient(135deg, #004085, #007bff); padding: 40px 32px; border-radius: 12px; display: flex; align-items: center; margin-right: 40px; box-shadow: 0 4px 24px rgba(0,0,0,0.08); justify-content: space-between;">
+        <div style="display: flex; align-items: center;">
+            <img src="https://via.placeholder.com/80x80.png?text=🎓" alt="Scholarship Logo"
+                 style="width: 80px; height: 80px; border-radius: 50%; background-color: white; padding: 10px; margin-right: 28px; box-shadow: 0 2px 8px rgba(0,0,0,0.10);" />
+            <div>
+                <h1 class="mb-1" style="font-size: 2.2rem; font-weight: 700;">@scholarship.Title</h1>
+                <p class="mb-0" style="opacity: 0.92; font-size: 1.1rem;">
                     @(!string.IsNullOrEmpty(scholarship.Institution?.InstitutionName)
                         ? scholarship.Institution.InstitutionName
-                        : scholarship.Benefactor?.OrganizationName ?? "Unknown")
+                        : scholarship.Benefactor?.OrganizationName ?? "Unknown Provider")
+                </p>
+            </div>
+        </div>
+        @if (scholarship.IsActive)
+        {
+            @if (hasPendingApplication)
+            {
+                <button class="btn btn-lg btn-secondary fw-bold shadow-sm" style="min-width: 120px;" disabled>Already Applied</button>
+            }
+            else
+            {
+                <a class="btn btn-lg btn-success fw-bold shadow-sm" href="/dashboard/student/apply/@scholarship.ScholarshipId" style="min-width: 120px;">Apply</a>
+            }
+        }
+    </div>
+
+    <!-- 🔄 Main content with categories -->
+    <div class="container-fluid px-2 px-md-4">
+        <div class="row justify-content-center">
+            <div class="col-lg-9 col-xl-8">
+                <!-- General Info -->
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-primary text-white fw-bold" style="font-size: 1.15rem;">General Information</div>
+                    <div class="card-body">
+                        <div class="mb-2"><strong>Provider:</strong>
+                            @(!string.IsNullOrEmpty(scholarship.Institution?.InstitutionName)
+                                ? scholarship.Institution.InstitutionName
+                                : scholarship.Benefactor?.OrganizationName ?? "Unknown")
+                        </div>
+                        @if (!string.IsNullOrWhiteSpace(scholarship.Description))
+                        {
+                            <div class="mb-2"><strong>Description:</strong><p class="mb-1">@scholarship.Description</p></div>
+                        }
+                        <div class="mb-2"><strong>Status:</strong> <span class="ms-1">@(scholarship.IsActive ? "🟢 Active" : "🔴 Inactive")</span></div>
+                    </div>
                 </div>
 
-                @if (!string.IsNullOrWhiteSpace(scholarship.Description))
-                {
-                    <div class="mb-3"><strong>Description:</strong><p>@scholarship.Description</p></div>
-                }
-
-                <div class="mb-3"><strong>Benefits:</strong> <p>@scholarship.Benefits</p></div>
-                <div class="mb-3"><strong>Requirements:</strong> <p>@scholarship.Requirements</p></div>
-                <div class="mb-3"><strong>Application Deadline:</strong> @scholarship.ApplicationDeadline.ToString("MMMM dd, yyyy")</div>
-                <div class="mb-3"><strong>Slots Available:</strong> @scholarship.SlotsAvailable</div>
-                <div class="mb-3"><strong>Minimum GPA:</strong> @scholarship.MinimumGPA</div>
-                <div class="mb-3"><strong>Required Course:</strong> @scholarship.RequiredCourse</div>
-                <div class="mb-3"><strong>Required Year Level:</strong> @scholarship.RequiredYearLevel</div>
-                <div class="mb-3"><strong>Required University:</strong> @scholarship.RequiredUniversity</div>
-
-                @if (!string.IsNullOrWhiteSpace(scholarship.ExternalApplicationUrl))
-                {
-                    <div class="mb-3">
-                        <strong>Apply Externally:</strong>
-                        <a href="@scholarship.ExternalApplicationUrl" target="_blank">@scholarship.ExternalApplicationUrl</a>
+                <!-- Benefits & Requirements -->
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-info text-white fw-bold" style="font-size: 1.12rem;">Benefits & Requirements</div>
+                    <div class="card-body">
+                        <div class="mb-2"><strong>Benefits:</strong> <p class="mb-1">@scholarship.Benefits</p></div>
+                        <div class="mb-2"><strong>Requirements:</strong> <p class="mb-1">@scholarship.Requirements</p></div>
                     </div>
-                }
+                </div>
 
-                <div class="mb-4"><strong>Status:</strong> @(scholarship.IsActive ? "🟢 Active" : "🔴 Inactive")</div>
-                @if (scholarship.IsActive)
-                {
-                    <a class="btn btn-primary me-2" href="/dashboard/student/apply/@scholarship.ScholarshipId">Apply</a>
-                }
-                <a class="btn btn-secondary" href="/dashboard/student/scholarships">⬅ Back to List</a>
+                <!-- Eligibility -->
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-success text-white fw-bold" style="font-size: 1.12rem;">Eligibility</div>
+                    <div class="card-body">
+                        <div class="row g-2">
+                            <div class="col-md-6 mb-2"><strong>Minimum GPA:</strong> <span class="ms-1">@scholarship.MinimumGPA</span></div>
+                            <div class="col-md-6 mb-2"><strong>Required Course:</strong> <span class="ms-1">@scholarship.RequiredCourse</span></div>
+                            <div class="col-md-6 mb-2"><strong>Required Year Level:</strong> <span class="ms-1">@scholarship.RequiredYearLevel</span></div>
+                            <div class="col-md-6 mb-2"><strong>Required University:</strong> <span class="ms-1">@scholarship.RequiredUniversity</span></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Application Details -->
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-warning text-dark fw-bold" style="font-size: 1.12rem;">Application Details</div>
+                    <div class="card-body">
+                        <div class="mb-2"><strong>Application Deadline:</strong> <span class="ms-1">@scholarship.ApplicationDeadline.ToString("MMMM dd, yyyy")</span></div>
+                        <div class="mb-2"><strong>Slots Available:</strong> <span class="ms-1">@scholarship.SlotsAvailable</span></div>
+                        @if (!string.IsNullOrWhiteSpace(scholarship.ExternalApplicationUrl))
+                        {
+                            <div class="mb-2">
+                                <strong>Apply Externally:</strong>
+                                <a href="@scholarship.ExternalApplicationUrl" target="_blank" class="ms-1">@scholarship.ExternalApplicationUrl</a>
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                <!-- Actions -->
+                <div class="d-flex flex-wrap gap-2 mb-4">
+                    <a class="btn btn-outline-secondary px-4" href="/dashboard/student/scholarships">⬅ Back to List</a>
+                </div>
             </div>
         </div>
     </div>

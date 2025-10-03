@@ -17,6 +17,7 @@
 @inject NavigationManager Navigation
 @inject Blazored.LocalStorage.ILocalStorageService LocalStorage
 
+
 <PageTitle>Scholarship Application</PageTitle>
 
 
@@ -52,6 +53,34 @@
                         <EditForm Model="application" OnValidSubmit="HandleSubmit">
                             <DataAnnotationsValidator />
                             <ValidationSummary />
+
+                            <div class="mb-4">
+                                <h5 class="mb-2"><i class="fas fa-user-graduate me-2"></i>Student Information</h5>
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label for="StudentId" class="form-label">Student ID <span class="text-danger">*</span></label>
+                                        <InputText id="StudentId" class="form-control" @bind-Value="application.StudentId" @oninput="async _ => await OnFieldChanged()" placeholder="Enter your student ID" />
+                                        <ValidationMessage For="@(() => application.StudentId)" />
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="GWA" class="form-label">GWA <span class="text-danger">*</span></label>
+                                        <InputNumber id="GWA" class="form-control" @bind-Value="application.GWA" @oninput="async _ => await OnFieldChanged()" step="0.01" placeholder="e.g. 1.75" />
+                                        <ValidationMessage For="@(() => application.GWA)" />
+                                    </div>
+                                </div>
+                                <div class="row g-3 mt-2">
+                                    <div class="col-md-6">
+                                        <label for="FirstSemGrades" class="form-label">1st Semester Grades</label>
+                                        <InputTextArea id="FirstSemGrades" class="form-control" @bind-Value="application.FirstSemesterGrades" @oninput="async _ => await OnFieldChanged()" rows="2" placeholder="List your 1st semester grades..." />
+                                        <ValidationMessage For="@(() => application.FirstSemesterGrades)" />
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="SecondSemGrades" class="form-label">2nd Semester Grades</label>
+                                        <InputTextArea id="SecondSemGrades" class="form-control" @bind-Value="application.SecondSemesterGrades" @oninput="async _ => await OnFieldChanged()" rows="2" placeholder="List your 2nd semester grades..." />
+                                        <ValidationMessage For="@(() => application.SecondSemesterGrades)" />
+                                    </div>
+                                </div>
+                            </div>
 
                             <div class="mb-4">
                                 <h5 class="mb-2"><i class="fas fa-tasks me-2"></i>Application Type</h5>
@@ -118,8 +147,10 @@
                                 </div>
                             }
 
+
+
                             <div class="d-flex align-items-center mt-4">
-                                <button type="submit" class="btn btn-success px-4" disabled="@isSubmitting">
+                                <button type="submit" class="btn btn-success px-4" disabled="@(!IsFormValid() || isSubmitting)">
                                     @if (isSubmitting)
                                     {
                                         <span class="spinner-border spinner-border-sm me-2" role="status"></span>
@@ -151,6 +182,35 @@
                                 </div>
                             }
 
+                            @if (showSubmittedModal)
+                            {
+                                <div style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.5); z-index: 1050; display: flex; align-items: center; justify-content: center;">
+                                    <div class="modal-dialog modal-dialog-centered" style="z-index: 1060; max-width: 400px; width: 100%;">
+                                        <div class="modal-content" style="background: #fff; border-radius: 12px; box-shadow: 0 8px 32px rgba(0,0,0,0.25); overflow: hidden;">
+                                            <div class="modal-header bg-success text-white" style="background: #198754; border-bottom: 1px solid #e9ecef;">
+                                                <h5 class="modal-title"><i class="fas fa-check-circle me-2"></i>Application Submitted</h5>
+                                                <button type="button" class="btn-close btn-close-white" aria-label="Close" @onclick="CloseSubmittedModal"></button>
+                                            </div>
+                                            <div class="modal-body" style="padding: 1.5rem;">
+                                                <p>Your application has been submitted successfully!</p>
+                                                @if (application.ScholarshipApplicationId != Guid.Empty)
+                                                {
+                                                    <a href="@($"/dashboard/student/applications/{application.ScholarshipApplicationId}")" class="btn btn-success me-2">
+                                                        <i class="fas fa-eye me-1"></i>View Application
+                                                    </a>
+                                                }
+                                                <a href="/dashboard/student/applications" class="btn btn-outline-secondary">
+                                                    <i class="fas fa-folder-open me-1"></i>View All Applications
+                                                </a>
+                                            </div>
+                                            <div class="modal-footer" style="background: #f8f9fa; border-top: 1px solid #e9ecef;">
+                                                <button type="button" class="btn btn-secondary" @onclick="CloseSubmittedModal">Close</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+
                             @if (!string.IsNullOrEmpty(errorMessage))
                             {
                                 <div class="alert alert-danger mt-4">
@@ -174,17 +234,19 @@
     private bool isLoading = true;
     private bool isSubmitting = false;
     private string? successMessage;
+    private bool showSubmittedModal = false;
     private string? errorMessage;
     private List<string> uploadedFileNames = new();
     private List<IBrowserFile> selectedFiles = new();
+    // Document intelligence fields removed
     private const string LocalStorageKey = "student-scholarship-application";
 
     private async Task OnFilesSelected(InputFileChangeEventArgs e)
     {
         selectedFiles = e.GetMultipleFiles().ToList();
         uploadedFileNames = selectedFiles.Select(f => f.Name).ToList();
+        // Document intelligence logic removed
         await SaveFormStateAsync();
-        // Files will be saved on submit
     }
 
     private async Task SaveFormStateAsync()
@@ -313,6 +375,7 @@
             uploadedFileNames.Clear();
             selectedFiles.Clear();
             await ClearFormStateAsync();
+            showSubmittedModal = true;
         }
         catch (Exception ex)
         {
@@ -322,6 +385,12 @@
         {
             isSubmitting = false;
         }
+    }
+
+    private void CloseSubmittedModal()
+    {
+        showSubmittedModal = false;
+        Navigation.NavigateTo("/dashboard/student");
     }
 
     private async Task CancelAndClearAsync()
@@ -335,5 +404,34 @@
     {
         public ScholarshipApplication? Application { get; set; }
         public List<string>? UploadedFileNames { get; set; }
+    }
+
+    private bool IsFormValid()
+    {
+        if (scholarship == null || application == null)
+            return false;
+
+        // Always required fields
+        if (string.IsNullOrWhiteSpace(application.StudentId?.ToString()))
+            return false;
+        if (application.GWA == null || application.GWA <= 0)
+            return false;
+
+        // Internal application
+        if (!application.IsExternalApplication)
+        {
+            if (string.IsNullOrWhiteSpace(application.PersonalStatement))
+                return false;
+            // Optionally require at least one file
+            // if (selectedFiles.Count == 0) return false;
+        }
+        else // External application
+        {
+            if (string.IsNullOrWhiteSpace(application.ExternalApplicationUrl))
+                return false;
+            if (!application.HasAppliedExternally)
+                return false;
+        }
+        return true;
     }
 }
