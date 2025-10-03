@@ -119,13 +119,35 @@ builder.Services.AddScoped<OpenAIService>();
             using var scope = app.Services.CreateScope();
             var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
             var userManager = scope.ServiceProvider.GetRequiredService<UserManager<IdentityUser>>();
-            string[] roles = { "Student", "Benefactor", "Institution" };
+            string[] roles = { "Student", "Benefactor", "Institution", "SuperAdmin" };
             foreach (var role in roles)
             {
                 if (!await roleManager.RoleExistsAsync(role))
                 {
                     await roleManager.CreateAsync(new IdentityRole(role));
                     Console.WriteLine($"✅ Created role: {role}");
+                }
+            }
+            // Create SuperAdmin user if not exists
+            var superAdminEmail = "super@gmail.com";
+            var existingSuperAdmin = await userManager.FindByEmailAsync(superAdminEmail);
+            if (existingSuperAdmin == null)
+            {
+                var superAdminUser = new IdentityUser
+                {
+                    UserName = superAdminEmail,
+                    Email = superAdminEmail,
+                    EmailConfirmed = true
+                };
+                var result = await userManager.CreateAsync(superAdminUser, "@Super123");
+                if (result.Succeeded)
+                {
+                    await userManager.AddToRoleAsync(superAdminUser, "SuperAdmin");
+                    Console.WriteLine($"✅ Created SuperAdmin: {superAdminEmail} / @Super123");
+                }
+                else
+                {
+                    Console.WriteLine($"❌ Failed to create SuperAdmin: {string.Join(", ", result.Errors.Select(e => e.Description))}");
                 }
             }
             var testEmail = "student@test.com";

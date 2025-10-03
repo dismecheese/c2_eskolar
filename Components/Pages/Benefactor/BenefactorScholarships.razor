@@ -1,5 +1,5 @@
 @page "/dashboard/benefactor/scholarships/"
-@attribute [Authorize(Roles = "Benefactor")]
+@attribute [Authorize(Roles = "Benefactor,SuperAdmin")]
 @layout Layout.BenefactorDashLayout
 
 @using Microsoft.EntityFrameworkCore

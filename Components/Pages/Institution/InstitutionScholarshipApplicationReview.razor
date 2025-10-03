@@ -1,5 +1,5 @@
 @page "/dashboard/institution/applications/review/{ApplicationId:guid}"
-@attribute [Authorize(Roles = "Institution")]
+@attribute [Authorize(Roles = "Institution,SuperAdmin")]
 @layout Layout.InstitutionDashLayout
 
 @using c2_eskolar.Data

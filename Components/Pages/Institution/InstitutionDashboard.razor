@@ -38,9 +38,6 @@
     <div class="dashboard-banner-centered">
         <div class="banner-text">
             <h2>Welcome, @(profile?.AdminFirstName ?? "Institution")!</h2>
-            <p style="margin: 8px 0 0 0; color: #4a5568; font-size: 1.1rem;">
-                Here's your scholarship management overview
-            </p>
         </div>
         <img src="images/eskolar_books.svg" alt="Books" class="banner-img" />
     </div>
@@ -55,10 +52,7 @@
             </div>
             <div class="stat-value">@totalScholarships</div>
             <div class="stat-label">Total Scholarships</div>
-            <div class="stat-change positive">
-                <i class="bi bi-arrow-up"></i>
-                @(GetMonthlyIncrease("scholarships"))% this month
-            </div>
+            <!-- Percentage change removed for cleaner look -->
         </div>
         
         <div class="stat-card">
@@ -69,10 +63,7 @@
             </div>
             <div class="stat-value">@totalApplications</div>
             <div class="stat-label">Total Applications</div>
-            <div class="stat-change positive">
-                <i class="bi bi-arrow-up"></i>
-                @(GetMonthlyIncrease("applications"))% this month
-            </div>
+            <!-- Percentage change removed for cleaner look -->
         </div>
         
         <div class="stat-card">
@@ -83,10 +74,7 @@
             </div>
             <div class="stat-value">@pendingReviews</div>
             <div class="stat-label">Pending Reviews</div>
-            <div class="stat-change negative">
-                <i class="bi bi-arrow-down"></i>
-                @(GetMonthlyIncrease("pending"))% this month
-            </div>
+            <!-- Percentage change removed for cleaner look -->
         </div>
         
         <div class="stat-card">
@@ -97,10 +85,7 @@
             </div>
             <div class="stat-value">@activeScholarships</div>
             <div class="stat-label">Active Scholarships</div>
-            <div class="stat-change positive">
-                <i class="bi bi-arrow-up"></i>
-                @(GetMonthlyIncrease("active"))% this month
-            </div>
+            <!-- Percentage change removed for cleaner look -->
         </div>
     </div>
 
@@ -278,7 +263,7 @@
                         Institutional Scholarships 
                         <i class="bi bi-arrow-right" style="font-size: 1rem;"></i>
                     </button>
-                    <span style="color: #64748b; font-size: 0.875rem;">@(scholarships?.Count(s => s.IsInternal) ?? 0) total</span>
+                    <span style="color: #64748b; font-size: 0.875rem;">@(scholarships?.Count(s => profile != null && s.IsInternal && s.InstitutionProfileId == profile.InstitutionProfileId) ?? 0) total</span>
                 </div>
                 @if (scholarships is null)
                 {
@@ -584,10 +569,28 @@
             filteredScholarships = scholarships;
 
             // Calculate statistics
-            totalScholarships = scholarships.Count;
-            activeScholarships = scholarships.Count(s => s.IsActive);
-            totalApplications = scholarships.SelectMany(s => s.Applications).Count();
-            pendingReviews = scholarships.SelectMany(s => s.Applications).Count(); // Assuming all are pending for now
+            // Only count institutional scholarships created by this institution (when signed in)
+            if (profile != null)
+            {
+                totalScholarships = scholarships.Count(s => s.InstitutionProfileId == profile.InstitutionProfileId && s.IsInternal == true);
+            }
+            else
+            {
+                // Fallback: show zero when no institution profile is available
+                totalScholarships = 0;
+            }
+            activeScholarships = scholarships.Count(s => s.IsActive && s.InstitutionProfileId == profile?.InstitutionProfileId);
+            if (profile != null)
+            {
+                var myInstitutionScholarships = scholarships.Where(s => s.InstitutionProfileId == profile.InstitutionProfileId && s.IsInternal == true).ToList();
+                totalApplications = myInstitutionScholarships.SelectMany(s => s.Applications).Count();
+                pendingReviews = myInstitutionScholarships.SelectMany(s => s.Applications).Count(); // Replace with real pending logic if available
+            }
+            else
+            {
+                totalApplications = scholarships.SelectMany(s => s.Applications).Count();
+                pendingReviews = scholarships.SelectMany(s => s.Applications).Count(); // Assuming all are pending for now
+            }
         }
         catch (Exception ex)
         {
@@ -703,7 +706,7 @@
         
         return scholarshipTab switch
         {
-            0 => baseScholarships.Where(s => s.IsInternal).ToList(),
+            0 => baseScholarships.Where(s => s.IsInternal && profile != null && s.InstitutionProfileId == profile.InstitutionProfileId).ToList(),
             1 => baseScholarships.Where(s => !s.IsInternal).ToList(),
             2 => baseScholarships.ToList(),
             3 => baseScholarships.Where(s => s.IsActive).ToList(),

@@ -1,5 +1,5 @@
 @page "/dashboard/institution/announcements"
-@attribute [Authorize(Roles = "Institution")] 
+@attribute [Authorize(Roles = "Institution,SuperAdmin")]
 @layout Layout.InstitutionDashLayout
 @rendermode InteractiveServer
 @using c2_eskolar.Models

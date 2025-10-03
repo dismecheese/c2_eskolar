@@ -1,5 +1,5 @@
 @page "/dashboard/benefactor/scholarships/post"
-@attribute [Authorize(Roles = "Benefactor")]
+@attribute [Authorize(Roles = "Benefactor,SuperAdmin")]
 @layout Layout.BenefactorDashLayout
 
 @using Microsoft.AspNetCore.Components.Authorization
@@ -57,22 +57,22 @@
                         <div class="row g-3">
                             <div class="col-12">
                                 <label for="title" class="form-label fw-semibold" style="font-size:1.1rem;">Title</label>
-                                <InputText id="title" class="form-control" @bind-Value="scholarship.Title" aria-required="true" aria-label="Scholarship Title" placeholder="e.g. Academic Excellence Scholarship" />
+                                <InputText id="title" class="form-control" @bind-Value="scholarship.Title" aria-required="true" required aria-label="Scholarship Title" placeholder="e.g. Academic Excellence Scholarship" />
                                 <ValidationMessage For="@(() => scholarship.Title)" class="text-danger small ms-1" />
                             </div>
                             <div class="col-12 col-md-6">
                                 <label for="benefits" class="form-label fw-semibold">Benefits</label>
-                                <InputText id="benefits" class="form-control" @bind-Value="scholarship.Benefits" aria-label="Benefits" placeholder="e.g. Full tuition, stipend, books" />
+                                <InputText id="benefits" class="form-control" @bind-Value="scholarship.Benefits" aria-required="true" required aria-label="Benefits" placeholder="e.g. Full tuition, stipend, books" />
                                 <ValidationMessage For="@(() => scholarship.Benefits)" class="text-danger small ms-1" />
                             </div>
                             <div class="col-12 col-md-6">
                                 <label for="deadline" class="form-label fw-semibold">Application Deadline</label>
-                                <InputDate id="deadline" class="form-control" @bind-Value="scholarship.ApplicationDeadline" aria-required="true" aria-label="Application Deadline" placeholder="Select deadline" />
+                                <InputDate id="deadline" class="form-control" @bind-Value="scholarship.ApplicationDeadline" aria-required="true" required aria-label="Application Deadline" placeholder="Select deadline" />
                                 <ValidationMessage For="@(() => scholarship.ApplicationDeadline)" class="text-danger small ms-1" />
                             </div>
                             <div class="col-12">
                                 <label for="description" class="form-label fw-semibold">Description</label>
-                                <InputTextArea id="description" class="form-control" rows="3" @bind-Value="scholarship.Description" aria-label="Description" placeholder="Describe the scholarship, its purpose, and any special notes..." />
+                                <InputTextArea id="description" class="form-control" rows="3" @bind-Value="scholarship.Description" aria-required="true" required aria-label="Description" placeholder="Describe the scholarship, its purpose, and any special notes..." />
                                 <ValidationMessage For="@(() => scholarship.Description)" class="text-danger small ms-1" />
                             </div>
                         </div>
@@ -88,22 +88,22 @@
                         <div class="row g-3">
                             <div class="col-12">
                                 <label for="requirements" class="form-label fw-semibold">Requirements</label>
-                                <InputTextArea id="requirements" class="form-control" rows="2" @bind-Value="scholarship.Requirements" aria-label="Requirements" placeholder="e.g. Must be a full-time student, leadership experience, etc." />
+                                <InputTextArea id="requirements" class="form-control" rows="2" @bind-Value="scholarship.Requirements" aria-required="true" required aria-label="Requirements" placeholder="e.g. Must be a full-time student, leadership experience, etc." />
                                 <ValidationMessage For="@(() => scholarship.Requirements)" class="text-danger small ms-1" />
                             </div>
                             <div class="col-12 col-md-4">
                                 <label for="slots" class="form-label fw-semibold">Slots Available</label>
-                                <InputNumber id="slots" class="form-control" @bind-Value="scholarship.SlotsAvailable" aria-label="Slots Available" placeholder="e.g. 10" />
+                                <InputNumber id="slots" class="form-control" @bind-Value="scholarship.SlotsAvailable" aria-required="true" required aria-label="Slots Available" placeholder="e.g. 10" />
                                 <ValidationMessage For="@(() => scholarship.SlotsAvailable)" class="text-danger small ms-1" />
                             </div>
                             <div class="col-12 col-md-4">
                                 <label for="gpa" class="form-label fw-semibold">Minimum GPA</label>
-                                <InputNumber id="gpa" class="form-control" @bind-Value="scholarship.MinimumGPA" step="0.01" aria-label="Minimum GPA" placeholder="e.g. 3.50" />
+                                <InputNumber id="gpa" class="form-control" @bind-Value="scholarship.MinimumGPA" step="0.01" aria-required="true" required aria-label="Minimum GPA" placeholder="e.g. 3.50" />
                                 <ValidationMessage For="@(() => scholarship.MinimumGPA)" class="text-danger small ms-1" />
                             </div>
                             <div class="col-12 col-md-4">
                                 <label for="yearlevel" class="form-label fw-semibold">Required Year Level</label>
-                                <InputNumber id="yearlevel" class="form-control" @bind-Value="scholarship.RequiredYearLevel" aria-label="Required Year Level" placeholder="e.g. 2 (for 2nd year)" />
+                                <InputNumber id="yearlevel" class="form-control" @bind-Value="scholarship.RequiredYearLevel" aria-required="true" required aria-label="Required Year Level" placeholder="e.g. 2 (for 2nd year)" />
                                 <ValidationMessage For="@(() => scholarship.RequiredYearLevel)" class="text-danger small ms-1" />
                             </div>
                         </div>
@@ -119,12 +119,12 @@
                         <div class="row g-3">
                             <div class="col-12 col-md-6">
                                 <label for="course" class="form-label fw-semibold">Required Course</label>
-                                <InputText id="course" class="form-control" @bind-Value="scholarship.RequiredCourse" aria-label="Required Course" placeholder="e.g. BS Computer Science" />
+                                <InputText id="course" class="form-control" @bind-Value="scholarship.RequiredCourse" aria-required="true" required aria-label="Required Course" placeholder="e.g. BS Computer Science" />
                                 <ValidationMessage For="@(() => scholarship.RequiredCourse)" class="text-danger small ms-1" />
                             </div>
                             <div class="col-12 col-md-6">
                                 <label for="university" class="form-label fw-semibold">Required University</label>
-                                <InputText id="university" class="form-control" @bind-Value="scholarship.RequiredUniversity" aria-label="Required University" placeholder="e.g. University of the Philippines" />
+                                <InputText id="university" class="form-control" @bind-Value="scholarship.RequiredUniversity" aria-required="true" required aria-label="Required University" placeholder="e.g. University of the Philippines" />
                                 <ValidationMessage For="@(() => scholarship.RequiredUniversity)" class="text-danger small ms-1" />
                             </div>
                         </div>

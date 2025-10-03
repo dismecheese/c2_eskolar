@@ -1,5 +1,5 @@
 @page "/dashboard/benefactor/announcements"
-@attribute [Authorize(Roles = "Benefactor")]
+@attribute [Authorize(Roles = "Benefactor,SuperAdmin")]
 @layout Layout.BenefactorDashLayout
 @rendermode InteractiveServer
 @using c2_eskolar.Models

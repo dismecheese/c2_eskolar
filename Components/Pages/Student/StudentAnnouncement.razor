@@ -1,5 +1,5 @@
 @page "/dashboard/student/announcements"
-@attribute [Authorize(Roles = "Student")]
+@attribute [Authorize(Roles = "Student,SuperAdmin")]
 @layout Layout.StudentDashLayout
 @using c2_eskolar.Models
 @using c2_eskolar.Models.Enums
