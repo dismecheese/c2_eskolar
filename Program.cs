@@ -2,6 +2,7 @@ using System;
 using c2_eskolar.Components;
 using c2_eskolar.Data;
 using c2_eskolar.Services; // Add this import
+using c2_eskolar.Services.AI; // Add this import for AI services
 using c2_eskolar.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc; // Add this for [FromForm]
@@ -70,6 +71,7 @@ builder.Services.AddDbContextFactory<ApplicationDbContext>(options =>
         return new HttpClient { BaseAddress = new Uri(navigationManager.BaseUri) };
     });
 
+
 // Register custom services
 builder.Services.AddScoped<PartnerService>();
 builder.Services.AddScoped<AnnouncementService>();
@@ -79,13 +81,23 @@ builder.Services.AddScoped<IEmailService, EmailService>();
 builder.Services.AddScoped<StudentProfileService>();
 builder.Services.AddScoped<BenefactorProfileService>();
 builder.Services.AddScoped<InstitutionProfileService>();
+builder.Services.AddScoped<BlobStorageService>();
 
 // Register DocumentIntelligenceService
 // builder.Services.AddScoped<DocumentIntelligenceService>();
 builder.Services.AddScoped<VerificationDocumentService>();
+
+// Register AI Services
 builder.Services.AddScoped<ProfileSummaryService>();
 builder.Services.AddScoped<ScholarshipRecommendationService>();
 builder.Services.AddScoped<AnnouncementRecommendationService>();
+builder.Services.AddScoped<QueryClassificationService>();
+builder.Services.AddScoped<StudentContextService>();
+builder.Services.AddScoped<BenefactorContextService>();
+builder.Services.AddScoped<InstitutionContextService>();
+builder.Services.AddScoped<ContextGenerationService>();
+builder.Services.AddScoped<DisplayContextAwarenessService>();
+builder.Services.AddScoped<ChatbotMessageFormattingService>();
 builder.Services.AddScoped<OpenAIService>();
 
     var app = builder.Build();
