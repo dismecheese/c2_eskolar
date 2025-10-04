@@ -115,7 +115,7 @@ namespace c2_eskolar.Services
                   $"I don't have access to your profile information yet, but I'm here to help with general questions about scholarships and the platform. " +
                   $"Please use clear formatting with emojis and bullet points when presenting information.";
 
-            var messages = new List<ChatRequestMessage>
+            var messages = new List<ChatMessage>
             {
                 new SystemChatMessage(systemPrompt)
             };
@@ -130,7 +130,7 @@ namespace c2_eskolar.Services
                                    $"• Use simple bullet points for multiple items\n" +
                                    $"• Highlight important details like GPA, verification status\n" +
                                    $"• Present information in a conversational but organized way\n";
-                messages.Add(new ChatRequestSystemMessage(profileContext));
+                messages.Add(new SystemChatMessage(profileContext));
 
                 // Add scholarship recommendations if this is a scholarship-related query or user is a student
                 if (profileSummary.Role == "Student" && (isScholarshipQuery || isFirstMessage || scholarshipRecommendations.Any()))
@@ -153,19 +153,11 @@ namespace c2_eskolar.Services
                 }
             }
             
-            messages.Add(new ChatRequestUserMessage(userMessage));
+            messages.Add(new UserChatMessage(userMessage));
 
-            var chatOptions = new ChatCompletionsOptions()
-            {
-                DeploymentName = _deploymentName,
-                Messages = { }
-            };
-            foreach (var msg in messages)
-            {
-                chatOptions.Messages.Add(msg);
-            }
-            var response = await _client.GetChatCompletionsAsync(chatOptions);
-            string aiResponse = response.Value.Choices[0].Message.Content.Trim();
+            var chatClient = _client.GetChatClient(_deploymentName);
+            var response = await chatClient.CompleteChatAsync(messages);
+            string aiResponse = response.Value.Content[0].Text.Trim();
             
             // Combine greeting with AI response if this is the first message
             if (isFirstMessage && !string.IsNullOrEmpty(greeting))

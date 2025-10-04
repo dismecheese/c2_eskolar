@@ -19,9 +19,9 @@ namespace c2_eskolar.Services
 
         public BlobStorageService(IConfiguration config)
         {
-            _connectionString = config["AzureBlobStorage:ConnectionString"];
-            _documentsContainer = config["AzureBlobStorage:DocumentsContainer"];
-            _photosContainer = config["AzureBlobStorage:PhotosContainer"];
+            _connectionString = config["AzureBlobStorage:ConnectionString"] ?? throw new ArgumentNullException("AzureBlobStorage:ConnectionString");
+            _documentsContainer = config["AzureBlobStorage:DocumentsContainer"] ?? throw new ArgumentNullException("AzureBlobStorage:DocumentsContainer");
+            _photosContainer = config["AzureBlobStorage:PhotosContainer"] ?? throw new ArgumentNullException("AzureBlobStorage:PhotosContainer");
         }
 
         private BlobContainerClient GetContainerClient(string containerName)
