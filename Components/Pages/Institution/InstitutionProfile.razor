@@ -1,5 +1,5 @@
 @page "/dashboard/institution/profile"
-@attribute [Authorize(Roles = "Institution")] 
+@attribute [Authorize(Roles = "Institution,SuperAdmin")]
 @layout Layout.InstitutionDashLayout
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @inject UserManager<IdentityUser> UserManager
@@ -10,21 +10,25 @@
     <!-- Header Section -->
     <div class="row mb-4">
         <div class="col-12">
-            <div class="d-flex justify-content-between align-items-center">
-                <h2 class="mb-0 profile-title">My Profile</h2>
-                <div class="d-flex gap-2">
-                    <button class="btn btn-primary profile-btn" @onclick="ToggleEditMode">
-                        <i class="fas fa-edit me-2"></i>@(IsEditMode ? "Cancel" : "Edit Profile")
-                    </button>
-                    @if (IsEditMode)
-                    {
-                        <button class="btn btn-success profile-btn" @onclick="SaveProfile">
-                            <i class="fas fa-save me-2"></i>Save Changes
-                        </button>
-                    }
-                </div>
-            </div>
+            <h2 class="mb-0 profile-title">My Profile</h2>
         </div>
+    </div>
+    <div class="d-flex justify-content-end mb-2 gap-2">
+        @if (IsEditMode)
+        {
+            <button class="btn btn-danger btn-md profile-btn" @onclick="ToggleEditMode">
+                <i class="fas fa-times me-2"></i>Cancel
+            </button>
+            <button class="btn btn-success btn-md profile-btn" @onclick="SaveProfile">
+                <i class="fas fa-save me-2"></i>Save
+            </button>
+        }
+        else
+        {
+            <button class="btn btn-primary btn-md profile-btn" @onclick="ToggleEditMode">
+                <i class="fas fa-edit me-2"></i>Edit Profile
+            </button>
+        }
     </div>
 
     <div class="row">
@@ -78,34 +82,7 @@
                 </div>
             </div>
 
-            <!-- Quick Stats -->
-            <div class="card shadow-sm mb-4">
-                <div class="card-header bg-primary text-white">
-                    <h6 class="mb-0"><i class="fas fa-chart-bar profile-header-icon me-2"></i>Academic Summary</h6>
-                </div>
-                <div class="card-body">
-                    <div class="row text-center">
-                        <div class="col-4">
-                            <div class="stat-item">
-                                <h4 class="text-primary mb-1">@ScholarshipsReceived</h4>
-                                <small class="text-muted">Scholarships</small>
-                            </div>
-                        </div>
-                        <div class="col-4">
-                            <div class="stat-item">
-                                <h4 class="text-success mb-1">@Applications</h4>
-                                <small class="text-muted">Applications</small>
-                            </div>
-                        </div>
-                        <div class="col-4">
-                            <div class="stat-item">
-                                <h4 class="text-info mb-1">@GPA</h4>
-                                <small class="text-muted">GPA</small>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            <!-- Verification Card removed completely -->
 
             <!-- Verification Status -->
             <div class="card shadow-sm">
@@ -117,51 +94,54 @@
                         Verification
                     </span>
                 </div>
-                <div class="card-body">
-                    <div class="verification-item d-flex justify-content-between align-items-center mb-2">
-                        <span class="profile-label-bold">Email</span>
-                        @if (EmailVerified)
-                        {
-                            <span><i class="fas fa-check-circle profile-icon-verified"></i></span>
-                        }
-                        else
-                        {
-                            <span><i class="fas fa-clock profile-icon-pending"></i></span>
-                        }
+                <div class="card-body d-flex flex-column">
+                    <div>
+                        <div class="verification-item d-flex justify-content-between align-items-center mb-2">
+                            <span class="profile-label-bold">Email</span>
+                            @if (EmailVerified)
+                            {
+                                <span><i class="fas fa-check-circle profile-icon-verified"></i></span>
+                            }
+                            else
+                            {
+                                <span><i class="fas fa-clock profile-icon-pending"></i></span>
+                            }
+                        </div>
+                        <div class="verification-item d-flex justify-content-between align-items-center mb-2">
+                            <span class="profile-label-bold">Phone</span>
+                            @if (PhoneVerified)
+                            {
+                                <span><i class="fas fa-check-circle profile-icon-verified"></i></span>
+                            }
+                            else
+                            {
+                                <span><i class="fas fa-clock profile-icon-pending"></i></span>
+                            }
+                        </div>
+                        <div class="verification-item d-flex justify-content-between align-items-center mb-2">
+                            <span class="profile-label-bold">Institution ID</span>
+                            @if (StudentIdVerified)
+                            {
+                                <span><i class="fas fa-check-circle profile-icon-verified"></i></span>
+                            }
+                            else
+                            {
+                                <span><i class="fas fa-clock profile-icon-pending"></i></span>
+                            }
+                        </div>
+                        <div class="verification-item d-flex justify-content-between align-items-center">
+                            <span class="profile-label-bold">Accreditation</span>
+                            @if (AcademicRecordsVerified)
+                            {
+                                <span><i class="fas fa-check-circle profile-icon-verified"></i></span>
+                            }
+                            else
+                            {
+                                <span><i class="fas fa-clock profile-icon-pending"></i></span>
+                            }
+                        </div>
                     </div>
-                    <div class="verification-item d-flex justify-content-between align-items-center mb-2">
-                        <span class="profile-label-bold">Phone</span>
-                        @if (PhoneVerified)
-                        {
-                            <span><i class="fas fa-check-circle profile-icon-verified"></i></span>
-                        }
-                        else
-                        {
-                            <span><i class="fas fa-clock profile-icon-pending"></i></span>
-                        }
-                    </div>
-                    <div class="verification-item d-flex justify-content-between align-items-center mb-2">
-                        <span class="profile-label-bold">Institution ID</span>
-                        @if (StudentIdVerified)
-                        {
-                            <span><i class="fas fa-check-circle profile-icon-verified"></i></span>
-                        }
-                        else
-                        {
-                            <span><i class="fas fa-clock profile-icon-pending"></i></span>
-                        }
-                    </div>
-                    <div class="verification-item d-flex justify-content-between align-items-center">
-                        <span class="profile-label-bold">Accreditation</span>
-                        @if (AcademicRecordsVerified)
-                        {
-                            <span><i class="fas fa-check-circle profile-icon-verified"></i></span>
-                        }
-                        else
-                        {
-                            <span><i class="fas fa-clock profile-icon-pending"></i></span>
-                        }
-                    </div>
+                    <div class="flex-grow-1"></div>
                 </div>
             </div>
         </div>
@@ -263,72 +243,73 @@
                 </div>
             </div>
 
-            <!-- Recent Activity -->
-            <div class="card shadow-sm mb-4">
-                <div class="card-header bg-white">
-                    <h5 class="mb-0"><i class="fas fa-history profile-header-icon me-2"></i>Recent Activity</h5>
-                </div>
-                <div class="card-body">
-                    <div class="activity-timeline">
-                        <div class="activity-item d-flex mb-3">
-                            <div class="activity-icon bg-success text-white rounded-circle me-3">
-                                <i class="fas fa-graduation-cap"></i>
-                            </div>
-                            <div class="activity-content">
-                                <h6 class="mb-1">Scholarship Application Submitted</h6>
-                                <p class="text-muted small mb-0">Applied for "Excellence in Engineering" scholarship - 2 hours ago</p>
-                            </div>
-                        </div>
-                        <div class="activity-item d-flex mb-3">
-                            <div class="activity-icon bg-info text-white rounded-circle me-3">
-                                <i class="fas fa-user-check"></i>
-                            </div>
-                            <div class="activity-content">
-                                <h6 class="mb-1">Profile Updated</h6>
-                                <p class="text-muted small mb-0">Updated academic information and GPA - 1 day ago</p>
-                            </div>
-                        </div>
-                        <div class="activity-item d-flex mb-3">
-                            <div class="activity-icon bg-warning text-white rounded-circle me-3">
-                                <i class="fas fa-bell"></i>
-                            </div>
-                            <div class="activity-content">
-                                <h6 class="mb-1">New Scholarship Available</h6>
-                                <p class="text-muted small mb-0">New scholarship opportunity matched your profile - 3 days ago</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+            <!-- Institutional Information -->
+            <div class="d-flex justify-content-end mb-2 gap-2">
+                @if (IsInstitutionEditMode)
+                {
+                    <button class="btn btn-danger btn-md profile-btn" @onclick="ToggleInstitutionEditMode">
+                        <i class="fas fa-times me-2"></i>Cancel
+                    </button>
+                    <button class="btn btn-success btn-md profile-btn" @onclick="SaveInstitutionalInfo">
+                        <i class="fas fa-save me-2"></i>Save
+                    </button>
+                }
+                else
+                {
+                    <button class="btn btn-primary btn-md profile-btn" @onclick="ToggleInstitutionEditMode">
+                        <i class="fas fa-edit me-2"></i>Edit Institutional Profile
+                    </button>
+                }
             </div>
-
-            <!-- Security Settings -->
-            <div class="card shadow-sm">
-                <div class="card-header bg-white">
-                    <h5 class="mb-0"><i class="fas fa-lock profile-header-icon me-2"></i>Security Settings</h5>
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-white d-flex align-items-center profile-card-header">
+                    <span class="profile-header-icon me-2"><i class="fas fa-building"></i></span>
+                    <span class="profile-section-title">Institutional Information</span>
                 </div>
                 <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <div>
-                                    <h6 class="mb-1">Two-Factor Authentication</h6>
-                                    <p class="text-muted small mb-0">Add extra security to your account</p>
-                                </div>
-                                <div class="form-check form-switch">
-                                    <input class="form-check-input" type="checkbox" @bind="IsTwoFactorEnabled" />
-                                </div>
+                    @if (IsInstitutionEditMode)
+                    {
+                        <div class="row mb-2">
+                            <div class="col-md-6 mb-3">
+                                <label class="profile-label-bold">Institution Name</label>
+                                <input type="text" class="form-control" @bind="InstitutionName" />
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="profile-label-bold">Institution Address</label>
+                                <input type="text" class="form-control" @bind="InstitutionAddress" />
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="profile-label-bold">Institution Contact Number</label>
+                                <input type="text" class="form-control" @bind="InstitutionContactNumber" />
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="profile-label-bold">Institution Email</label>
+                                <input type="email" class="form-control" @bind="InstitutionEmail" />
                             </div>
                         </div>
-                        <div class="col-md-6 mb-3">
-                            <h6 class="mb-1">Last Login</h6>
-                            <p class="text-muted small mb-0">@LastLogin.ToString("MMM dd, yyyy hh:mm tt")</p>
+                        <!-- Save button removed; use header Save button instead -->
+                    }
+                    else
+                    {
+                        <div class="row mb-2">
+                            <div class="col-md-6 mb-3">
+                                <label class="profile-label-bold">Institution Name</label>
+                                <div>@(string.IsNullOrWhiteSpace(InstitutionName) ? "" : InstitutionName)</div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="profile-label-bold">Institution Address</label>
+                                <div>@(string.IsNullOrWhiteSpace(InstitutionAddress) ? "" : InstitutionAddress)</div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="profile-label-bold">Institution Contact Number</label>
+                                <div>@(string.IsNullOrWhiteSpace(InstitutionContactNumber) ? "" : InstitutionContactNumber)</div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="profile-label-bold">Institution Email</label>
+                                <div>@(string.IsNullOrWhiteSpace(InstitutionEmail) ? "" : InstitutionEmail)</div>
+                            </div>
                         </div>
-                        <div class="col-12">
-                            <button class="btn btn-outline-primary">
-                                <i class="fas fa-key me-2"></i>Change Password
-                            </button>
-                        </div>
-                    </div>
+                    }
                 </div>
             </div>
         </div>
@@ -338,6 +319,23 @@
 <!-- Styles moved to InstitutionProfile.razor.css -->
 
 @code {
+    // Institutional Information state
+    private bool IsInstitutionEditMode = false;
+    private string InstitutionName = "";
+    private string InstitutionAddress = "";
+    private string InstitutionContactNumber = "";
+    private string InstitutionEmail = "";
+
+    private void ToggleInstitutionEditMode()
+    {
+        IsInstitutionEditMode = !IsInstitutionEditMode;
+    }
+
+    private void SaveInstitutionalInfo()
+    {
+        // TODO: Save institutional info to backend if needed
+        IsInstitutionEditMode = false;
+    }
     // Edit mode state
     private bool IsEditMode = false;
     // Removed unused isLoading field

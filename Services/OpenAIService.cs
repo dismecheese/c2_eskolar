@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using System.Collections.Generic;
 using System.Linq;
 using c2_eskolar.Models;
+using c2_eskolar.Services.AI;
 
 namespace c2_eskolar.Services
 {
@@ -18,8 +19,10 @@ namespace c2_eskolar.Services
         private readonly ProfileSummaryService _profileSummaryService;
         private readonly ScholarshipRecommendationService _scholarshipRecommendationService;
         private readonly AnnouncementRecommendationService _announcementRecommendationService;
+        private readonly ContextGenerationService _contextGenerationService;
+        private readonly DisplayContextAwarenessService _displayContextAwarenessService;
 
-        public OpenAIService(IConfiguration config, ProfileSummaryService profileSummaryService, ScholarshipRecommendationService scholarshipRecommendationService, AnnouncementRecommendationService announcementRecommendationService)
+        public OpenAIService(IConfiguration config, ProfileSummaryService profileSummaryService, ScholarshipRecommendationService scholarshipRecommendationService, AnnouncementRecommendationService announcementRecommendationService, ContextGenerationService contextGenerationService, DisplayContextAwarenessService displayContextAwarenessService)
         {
             var apiKey = config["AzureOpenAI:ApiKey"] ?? throw new ArgumentNullException("AzureOpenAI:ApiKey");
             var endpoint = config["AzureOpenAI:Endpoint"] ?? throw new ArgumentNullException("AzureOpenAI:Endpoint");
@@ -28,6 +31,8 @@ namespace c2_eskolar.Services
             _profileSummaryService = profileSummaryService;
             _scholarshipRecommendationService = scholarshipRecommendationService;
             _announcementRecommendationService = announcementRecommendationService;
+            _contextGenerationService = contextGenerationService;
+            _displayContextAwarenessService = displayContextAwarenessService;
         }
 
         public async Task<string> GetChatCompletionAsync(string userMessage)
@@ -41,8 +46,8 @@ namespace c2_eskolar.Services
             return response.Value.Content[0].Text.Trim();
         }
 
-        // New method: includes the user's profile summary in the prompt
-        public async Task<string> GetChatCompletionWithProfileAsync(string userMessage, IdentityUser user, bool isFirstMessage = false)
+        // Enhanced method: includes user profile and current page context
+        public async Task<string> GetChatCompletionWithProfileAndContextAsync(string userMessage, IdentityUser user, ChatContext? context = null, bool isFirstMessage = false)
         {
             var profileSummary = await _profileSummaryService.GetProfileSummaryAsync(user);
             var firstName = await _profileSummaryService.GetUserFirstNameAsync(user);
@@ -53,8 +58,8 @@ namespace c2_eskolar.Services
             if (isFirstMessage)
             {
                 greeting = !string.IsNullOrEmpty(firstName) 
-                    ? $"Hello {firstName}! How can I help you today?\n\n"
-                    : "Hello! How can I help you today?\n\n";
+                    ? $"Hello {firstName}! How can I help you today?"
+                    : "Hello! How can I help you today?";
             }
 
             // Check if user is asking about scholarships, announcements, or similar queries
@@ -68,39 +73,69 @@ namespace c2_eskolar.Services
                 announcementRecommendations = await _announcementRecommendationService.GetAnnouncementRecommendationsAsync(user, userMessage);
             }
 
+            // For greeting requests, return simple greeting without complex system prompts
+            if (isFirstMessage && (userMessage.Contains("welcome", StringComparison.OrdinalIgnoreCase) || 
+                                  userMessage.Contains("brief", StringComparison.OrdinalIgnoreCase) ||
+                                  userMessage.Contains("hello", StringComparison.OrdinalIgnoreCase)))
+            {
+                return greeting;
+            }
+
+            // Generate context-aware system prompt
+            string contextInfo = context != null ? _displayContextAwarenessService.GeneratePageContext(context) : "";
+            
             string systemPrompt = profileSummary != null
                 ? $"You are an AI assistant for eSkolar, a scholarship platform. You are helping a {profileSummary.Role.ToLower()}. " +
-                  (isFirstMessage ? $"Start your response with: '{greeting.Trim()}'\n\n" : "") +
                   $"You have access to the user's profile information and should use it to answer their questions. " +
                   $"When they ask about their personal information (like 'what is my name?', 'what is my GPA?', 'what course am I taking?'), " +
                   $"answer using the specific data from their profile below. Be conversational and helpful.\n\n" +
+                  
+                  contextInfo +
+                  
+                  $"FORMATTING GUIDELINES (Apply to ALL content - scholarships, announcements, profiles, etc.):\n" +
+                  $"• When listing items, use NUMBERED format: 1. Title, 2. Title, 3. Title\n" +
+                  $"• DO NOT use bullet points (•) for main titles\n" +
+                  $"• DO NOT put ** around main titles (but DO use ** for ALL property labels like **Author:**, **Match Score:**, **Posted:**)\n" +
+                  $"• Use numbered lists (1. 2. 3.) for step-by-step instructions\n" +
+                  $"• Add relevant emojis to make content easy to scan: 🎓📚💰📅⚠️📢✅❗👤🕒🏷️📌🏢📄\n" +
+                  $"• Use ---- as separators between different items or sections\n" +
+                  $"• Keep formatting clean and readable in a chat interface\n" +
+                  $"• Use minimal line breaks between details to keep content compact\n" +
+                  $"• Emphasize urgent deadlines, important announcements, and key information\n" +
+                  $"• For ALL content types, use **Label:** format for properties (Author, Date, Category, etc.)\n\n" +
+                  
                   $"When they ask about scholarships, recommendations, or what scholarships they're eligible for, " +
                   $"use the scholarship recommendations provided below and explain why each scholarship matches their profile. " +
                   $"Present scholarships in order of best match first.\n\n" +
                   $"When they ask about announcements, news, or updates, use the announcement recommendations provided below " +
                   $"and explain why each announcement is relevant to them. Present announcements by relevance.\n\n" +
-                  $"Always be friendly, professional, and specific when referencing their profile data."
-                : (isFirstMessage 
-                    ? $"You are an AI assistant for eSkolar, a scholarship platform. Start your response with: '{greeting.Trim()}' " +
-                      $"I don't have access to your profile information yet, but I'm here to help with general questions about scholarships and the platform."
-                    : "You are an AI assistant for eSkolar, a scholarship platform. Answer questions as best you can.");
+                  $"Always be friendly, professional, and specific when referencing their profile data. Use emojis to make responses engaging and readable."
+                
+                : $"You are an AI assistant for eSkolar, a scholarship platform. " +
+                  $"I don't have access to your profile information yet, but I'm here to help with general questions about scholarships and the platform. " +
+                  $"Please use clear formatting with emojis and bullet points when presenting information.";
 
-            var chatClient = _client.GetChatClient(_deploymentName);
-            var messages = new List<ChatMessage>
+            var messages = new List<ChatRequestMessage>
             {
                 new SystemChatMessage(systemPrompt)
             };
 
             if (profileSummary != null)
             {
-                // Create a more natural profile context
-                var profileContext = $"User Profile Information:\n{profileSummary.Summary}";
-                messages.Add(new SystemChatMessage(profileContext));
+                // Create a more natural profile context with better formatting instructions
+                var profileContext = $"📋 USER PROFILE INFORMATION:\n{profileSummary.Summary}\n\n" +
+                                   $"FORMATTING INSTRUCTIONS FOR PROFILE DATA:\n" +
+                                   $"• When presenting personal information, use clear labels and emojis\n" +
+                                   $"• Format academic info with 📚, contact info with 📧📱, dates with 📅\n" +
+                                   $"• Use simple bullet points for multiple items\n" +
+                                   $"• Highlight important details like GPA, verification status\n" +
+                                   $"• Present information in a conversational but organized way\n";
+                messages.Add(new ChatRequestSystemMessage(profileContext));
 
                 // Add scholarship recommendations if this is a scholarship-related query or user is a student
                 if (profileSummary.Role == "Student" && (isScholarshipQuery || isFirstMessage || scholarshipRecommendations.Any()))
                 {
-                    var scholarshipContext = GenerateScholarshipContext(scholarshipRecommendations);
+                    var scholarshipContext = _contextGenerationService.GenerateScholarshipContext(scholarshipRecommendations);
                     if (!string.IsNullOrEmpty(scholarshipContext))
                     {
                         messages.Add(new SystemChatMessage(scholarshipContext));
@@ -110,7 +145,7 @@ namespace c2_eskolar.Services
                 // Add announcement recommendations if this is an announcement-related query
                 if (profileSummary.Role == "Student" && isAnnouncementQuery && announcementRecommendations.Any())
                 {
-                    var announcementContext = GenerateAnnouncementContext(announcementRecommendations);
+                    var announcementContext = _contextGenerationService.GenerateAnnouncementContext(announcementRecommendations);
                     if (!string.IsNullOrEmpty(announcementContext))
                     {
                         messages.Add(new SystemChatMessage(announcementContext));
@@ -118,11 +153,29 @@ namespace c2_eskolar.Services
                 }
             }
             
-            messages.Add(new UserChatMessage(userMessage));
+            messages.Add(new ChatRequestUserMessage(userMessage));
 
-            var response = await chatClient.CompleteChatAsync(messages);
-            return response.Value.Content[0].Text.Trim();
+            var chatOptions = new ChatCompletionsOptions()
+            {
+                DeploymentName = _deploymentName,
+                Messages = { }
+            };
+            foreach (var msg in messages)
+            {
+                chatOptions.Messages.Add(msg);
+            }
+            var response = await _client.GetChatCompletionsAsync(chatOptions);
+            string aiResponse = response.Value.Choices[0].Message.Content.Trim();
+            
+            // Combine greeting with AI response if this is the first message
+            if (isFirstMessage && !string.IsNullOrEmpty(greeting))
+            {
+                return $"{greeting}\n\n{aiResponse}";
+            }
+            
+            return aiResponse;
         }
+
 
         private bool IsScholarshipRelatedQuery(string userMessage)
         {
@@ -158,123 +211,18 @@ namespace c2_eskolar.Services
                 userMessage.Contains(keyword, StringComparison.OrdinalIgnoreCase));
         }
 
-        private string GenerateScholarshipContext(List<ScholarshipRecommendation> recommendations)
+        private string GetGeneralFormattingInstructions()
         {
-            if (!recommendations.Any())
-            {
-                return "No scholarship recommendations available at this time. The user should check if their profile is complete and if there are active scholarships in the system.";
-            }
-
-            var context = "Scholarship Recommendations (ranked by compatibility):\n\n";
-            
-            for (int i = 0; i < Math.Min(recommendations.Count, 5); i++) // Limit to top 5 to avoid token limits
-            {
-                var rec = recommendations[i];
-                var scholarship = rec.Scholarship;
-                
-                context += $"{i + 1}. **{scholarship.Title}**\n";
-                context += $"   - Match Score: {rec.MatchScore}%\n";
-                context += $"   - Benefits: {scholarship.Benefits}\n";
-                context += $"   - Deadline: {scholarship.ApplicationDeadline:MMMM dd, yyyy}\n";
-                
-                if (scholarship.MinimumGPA.HasValue)
-                    context += $"   - Minimum GPA: {scholarship.MinimumGPA:F2}\n";
-                
-                if (!string.IsNullOrEmpty(scholarship.RequiredCourse))
-                    context += $"   - Required Course: {scholarship.RequiredCourse}\n";
-                
-                if (scholarship.RequiredYearLevel.HasValue)
-                    context += $"   - Year Level: {scholarship.RequiredYearLevel}\n";
-                
-                if (!string.IsNullOrEmpty(scholarship.RequiredUniversity))
-                    context += $"   - University: {scholarship.RequiredUniversity}\n";
-                
-                if (rec.MatchReasons.Any())
-                {
-                    context += $"   - Why it matches: {string.Join("; ", rec.MatchReasons)}\n";
-                }
-                
-                if (!string.IsNullOrEmpty(scholarship.Description))
-                {
-                    var shortDesc = scholarship.Description.Length > 200 
-                        ? scholarship.Description.Substring(0, 200) + "..." 
-                        : scholarship.Description;
-                    context += $"   - Description: {shortDesc}\n";
-                }
-                
-                context += "\n";
-            }
-
-            if (recommendations.Count > 5)
-            {
-                context += $"... and {recommendations.Count - 5} more scholarships available.\n\n";
-            }
-
-            context += "When presenting these scholarships, explain why each one is a good match for the user based on their profile and the match reasons provided.";
-            
-            return context;
-        }
-
-        private string GenerateAnnouncementContext(List<AnnouncementRecommendation> recommendations)
-        {
-            if (!recommendations.Any())
-            {
-                return "No relevant announcements found at this time. Check back later for updates.";
-            }
-
-            var context = "Relevant Announcements (ranked by relevance):\n\n";
-
-            for (int i = 0; i < Math.Min(recommendations.Count, 5); i++) // Limit to top 5 to avoid token limits
-            {
-                var rec = recommendations[i];
-                var announcement = rec.Announcement;
-
-                context += $"{i + 1}. **{announcement.Title}**\n";
-                context += $"   - Author: {announcement.AuthorName} ({announcement.AuthorType})\n";
-                context += $"   - Posted: {announcement.CreatedAt:MMMM dd, yyyy}\n";
-                context += $"   - Relevance Score: {rec.RelevanceScore}\n";
-
-                if (!string.IsNullOrEmpty(announcement.Category))
-                    context += $"   - Category: {announcement.Category}\n";
-
-                if (announcement.IsPinned)
-                    context += $"   - Status: PINNED (Important)\n";
-
-                if (announcement.Priority > AnnouncementPriority.Normal)
-                    context += $"   - Priority: {announcement.Priority}\n";
-
-                if (!string.IsNullOrEmpty(announcement.OrganizationName))
-                    context += $"   - Organization: {announcement.OrganizationName}\n";
-
-                if (rec.MatchReasons.Any())
-                {
-                    context += $"   - Why it's relevant: {string.Join("; ", rec.MatchReasons)}\n";
-                }
-
-                // Add announcement summary or truncated content
-                var content = !string.IsNullOrEmpty(announcement.Summary) 
-                    ? announcement.Summary 
-                    : announcement.Content;
-                
-                if (!string.IsNullOrEmpty(content))
-                {
-                    var shortContent = content.Length > 200 
-                        ? content.Substring(0, 200) + "..." 
-                        : content;
-                    context += $"   - Summary: {shortContent}\n";
-                }
-
-                context += "\n";
-            }
-
-            if (recommendations.Count > 5)
-            {
-                context += $"... and {recommendations.Count - 5} more announcements available.\n\n";
-            }
-
-            context += "When presenting these announcements, explain why each one is relevant to the user and highlight the key information they should know.";
-
-            return context;
+            return "💡 GENERAL FORMATTING GUIDELINES:\n" +
+                   "• Use clear headings with emojis for different sections\n" +
+                   "• Organize information in bullet points or numbered lists\n" +
+                   "• Use visual separators (───) between different items or sections\n" +
+                   "• Include relevant emojis to make content scannable and engaging\n" +
+                   "• Use consistent indentation and spacing\n" +
+                   "• Group related information together\n" +
+                   "• Make urgent or important items stand out with warning emojis\n" +
+                   "• Keep descriptions concise but informative\n" +
+                   "• Always explain why information is relevant to the user\n";
         }
     }
 }

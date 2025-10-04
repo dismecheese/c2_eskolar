@@ -1,0 +1,170 @@
+/* Benefactor Profile - Modern Dashboard Inspired by Student/Institution Profile */
+.benefactor-profile-bg {
+    background: linear-gradient(120deg, #eaf1fb 0%, #f6f8fc 100%);
+    min-height: 100vh;
+}
+/* Uniform card style for benefactor profile */
+/* Uniform card style for benefactor profile */
+/* Card, header, and body uniform corners and font sizes */
+.card,
+.card-header,
+.card-body {
+    border-radius: 16px !important;
+    font-size: 1rem !important;
+}
+.profile-card-header {
+    background-color: #1560d4 !important;
+    color: #fff !important;
+    border-top-left-radius: 16px !important;
+    border-top-right-radius: 16px !important;
+    padding: 0.8em 1.2em;
+    display: flex;
+    align-items: center;
+}
+.profile-section-title,
+.profile-header-title,
+.profile-verification-title,
+.card-header h5 {
+    font-size: 1.15rem !important;
+    font-weight: 700 !important;
+    color: #fff !important;
+    letter-spacing: 0.5px;
+}
+.profile-label-bold {
+    font-size: 1rem !important;
+    font-weight: 700 !important;
+}
+.profile-title {
+    color: #1560d4;
+    font-weight: 700;
+    font-size: 2.2rem;
+    letter-spacing: 1px;
+    margin-bottom: 1.2rem;
+}
+.profile-header-icon {
+    color: #FFD600 !important;
+    font-size: 1.3em !important;
+    margin-right: 0.5em !important;
+}
+.profile-image {
+    width: 120px;
+    height: 120px;
+    object-fit: cover;
+    object-position: center;
+    border-radius: 50%;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.10);
+}
+.profile-img-btn {
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1em;
+    margin: 0 2px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.10);
+}
+.profile-badge-status {
+    font-weight: 600;
+    border-radius: 8px;
+    padding: 0.4em 1.2em;
+    font-size: 1em;
+    box-shadow: 0 2px 8px rgba(21,96,212,0.10);
+    letter-spacing: 0.5px;
+    color: #fff;
+    background-color: #1560d4;
+}
+.profile-badge-active {
+    color: #198754 !important;
+    background: none !important;
+}
+.profile-badge-pending {
+    color: #FFD600 !important;
+    background: none !important;
+}
+.profile-badge-onleave {
+    color: #d32f2f !important;
+    background: none !important;
+}
+.profile-badge-graduated {
+    color: #1560d4 !important;
+    background: none !important;
+}
+.card-header.bg-white {
+    background: #1560d4 !important;
+    color: #fff !important;
+    border-bottom: none;
+    padding: 0.8em 1.2em;
+    border-radius: 16px 16px 0 0 !important;
+    display: flex;
+    align-items: center;
+}
+.profile-verification-title {
+    color: #fff !important;
+    font-weight: 700;
+    font-size: 1.1rem;
+    letter-spacing: 0.5px;
+    display: flex;
+    align-items: center;
+    gap: 0.5em;
+}
+.profile-verification-icon {
+    background: #FFD600;
+    color: #fff;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 0.5em;
+}
+.profile-verification-icon i {
+    color: #fff;
+    font-size: 1.1em;
+}
+.profile-email-readonly {
+    background-color: #e9ecef;
+    border: none;
+    border-radius: 6px;
+    padding: 0.5em 1em;
+    color: #222;
+    font-size: 1em;
+    box-shadow: none;
+}
+.profile-alert {
+    background: #ffe5e5;
+    color: #d32f2f;
+    border-radius: 8px;
+    padding: 0.7em 1.2em;
+    margin-bottom: 1.2em;
+    font-weight: 500;
+    font-size: 1em;
+    box-shadow: 0 2px 8px rgba(211,47,47,0.08);
+}
+.activity-icon {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    border-radius: 50%;
+    font-size: 1.2em;
+}
+.activity-icon.bg-success {
+    background: #198754;
+    color: #fff;
+}
+.activity-icon.bg-info {
+    background: #1560d4;
+    color: #fff;
+}
+.activity-icon.bg-warning {
+    background: #FFD600;
+    color: #fff;
+}
+.form-check-input:checked {
+    background-color: #1560d4;
+    border-color: #1560d4;
+}

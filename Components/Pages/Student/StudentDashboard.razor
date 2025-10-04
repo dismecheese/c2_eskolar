@@ -1,5 +1,5 @@
 @page "/dashboard/student"
-@attribute [Authorize(Roles = "Student")]
+@attribute [Authorize(Roles = "Student,SuperAdmin")]
 
 @layout Layout.StudentDashLayout
 @using Microsoft.AspNetCore.WebUtilities

@@ -1,5 +1,5 @@
 @page "/dashboard/student/scholarships/"
-@attribute [Authorize(Roles = "Student")]
+@attribute [Authorize(Roles = "Student,SuperAdmin")]
 @layout Layout.StudentDashLayout
 
 @using Microsoft.EntityFrameworkCore
@@ -10,8 +10,8 @@
 
 <PageTitle>Scholarships</PageTitle>
 
-<div style="background: #f8fafc; min-height: 100vh;">
-    <div class="container my-5 p-4 rounded-4 shadow-lg" style="background: #fff; min-height: 80vh; margin-top: 40px; margin-right: 80px;">
+<div style="background: #f8fafc; min-height: 100vh; margin-top: 40px;">
+    <div class="container my-5 p-4 rounded-4 shadow-lg" style="background: #fff; min-height: 80vh; margin-right: 80px;">
         <div class="d-flex justify-content-between align-items-center mb-4">
             <div>
                 <h2 class="fw-bold mb-0 text-primary">

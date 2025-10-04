@@ -7,7 +7,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 
-namespace c2_eskolar.Services
+namespace c2_eskolar.Services.AI
 {
     public class ScholarshipRecommendationService
     {

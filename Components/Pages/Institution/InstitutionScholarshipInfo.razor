@@ -1,5 +1,5 @@
 @page "/dashboard/institution/scholarships-info/{ScholarshipId:int}"
-@attribute [Authorize(Roles = "Institution")]
+@attribute [Authorize(Roles = "Institution,SuperAdmin")]
 @layout Layout.InstitutionDashLayout
 
 @using Microsoft.EntityFrameworkCore
@@ -14,9 +14,12 @@
     private bool isEditMode = false;
 
     private Scholarship editableScholarship = new Scholarship { Title = string.Empty, Benefits = string.Empty, ApplicationDeadline = DateTime.Now };
+    private int SlotsRemaining => (scholarship?.SlotsAvailable ?? 0) - studentApplicants.Count;
     private string? errorMessage;
     private string? successMessage;
     private bool showStudentList = false;
+
+    [Inject] private NavigationManager? Navigation { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
@@ -127,6 +130,11 @@
             errorMessage = $"Error saving changes: {ex.Message}";
         }
     }
+
+    private void GoBackToList()
+    {
+        Navigation?.NavigateTo("/dashboard/institution/scholarships");
+    }
 }
 
 @if (scholarship == null)
@@ -162,13 +170,43 @@ else
             </div>
             <div class="mt-2">
                 <span class="badge bg-primary text-white me-2">@scholarship.ApplicationDeadline.ToString("MMM dd, yyyy")</span>
-                <span class="badge bg-info text-dark me-2">Slots: @scholarship.SlotsAvailable</span>
+                <span class="badge bg-info text-dark me-2">Slots: @SlotsRemaining of @scholarship.SlotsAvailable</span>
                 <span class="badge bg-secondary text-white">@((scholarship.IsActive) ? "Active" : "Inactive")</span>
             </div>
         </div>
     </div>
 
+    <style>
+        .eskolar-back-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: #fff;
+            color: #2563eb;
+            border: 1.5px solid #2563eb;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 1.08rem;
+            padding: 0.5em 1.3em;
+            margin-bottom: 1.2rem;
+            box-shadow: 0 1px 4px 0 rgba(30,34,90,0.04);
+            transition: background 0.13s, color 0.13s, border 0.13s;
+            cursor: pointer;
+            text-decoration: none;
+        }
+        .eskolar-back-btn:hover, .eskolar-back-btn:focus {
+            background: #2563eb;
+            color: #fff;
+            border-color: #1746a2;
+            text-decoration: none;
+        }
+    </style>
+
     <div class="container-fluid px-2 px-md-4">
+        <button class="eskolar-back-btn" @onclick="GoBackToList">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 20 20"><path d="M9.707 15.707a1 1 0 01-1.414 0l-5-5a1 1 0 010-1.414l5-5a1 1 0 111.414 1.414L6.414 9H17a1 1 0 110 2H6.414l3.293 3.293a1 1 0 010 1.414z"/></svg>
+            Back to List
+        </button>
         <div class="row gx-4 gy-4">
             <!-- 📄 Scholarship Info (Left Column, Categorized) -->
             <div class="col-lg-8 mb-5 animate__animated animate__fadeInUp">
@@ -257,7 +295,7 @@ else
                             {
                                 <div class="mb-2"><strong>Requirements:</strong> <p class="mb-1">@scholarship.Requirements</p></div>
                                 <div class="mb-2"><strong>Application Deadline:</strong> @scholarship.ApplicationDeadline.ToString("MMMM dd, yyyy")</div>
-                                <div class="mb-2"><strong>Slots Available:</strong> @scholarship.SlotsAvailable</div>
+                                <div class="mb-2"><strong>Slots Available:</strong> @SlotsRemaining of @scholarship.SlotsAvailable</div>
                                 <div class="mb-2"><strong>Minimum GPA:</strong> @scholarship.MinimumGPA</div>
                             }
                         </div>
@@ -319,7 +357,6 @@ else
                     }
                 </EditForm>
 
-                <a class="btn btn-secondary mt-2 animate__animated animate__fadeIn btn-sm" href="/dashboard/institution/scholarships">⬅ Back to List</a>
             </div>
 
             <!-- 👥 Student Applicants (Right Column, toggled by button) -->

@@ -1,5 +1,5 @@
 @page "/dashboard/benefactor/scholarships-info/{ScholarshipId:int}"
-@attribute [Authorize(Roles = "Benefactor")]
+@attribute [Authorize(Roles = "Benefactor,SuperAdmin")]
 @layout Layout.BenefactorDashLayout
 
 @using Microsoft.EntityFrameworkCore
@@ -7,11 +7,16 @@
 @using c2_eskolar.Models
 @using Microsoft.AspNetCore.Components.Forms
 @inject ApplicationDbContext DbContext
+@inject c2_eskolar.Services.BenefactorProfileService BenefactorProfileService
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject Microsoft.AspNetCore.Identity.UserManager<Microsoft.AspNetCore.Identity.IdentityUser> UserManager
+@inject IJSRuntime JS
 
 @code {
     [Parameter] public int ScholarshipId { get; set; }
     private Scholarship? scholarship;
     private List<ScholarshipApplication> studentApplicants = new();
+    private List<ScholarshipApplication> acceptedStudents = new();
     private bool isEditMode = false;
 
     private Scholarship editableScholarship = new Scholarship 
@@ -24,10 +29,33 @@
     private string? successMessage;
     private bool showStudentList = false;
     private bool isSaving = false;
+    private Guid? currentBenefactorProfileId = null;
 
     protected override async Task OnInitializedAsync()
     {
+        await LoadCurrentBenefactor();
         await LoadScholarship();
+    }
+
+    private async Task LoadCurrentBenefactor()
+    {
+        try
+        {
+            var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+            if (authState.User.Identity?.IsAuthenticated == true)
+            {
+                var user = await UserManager.GetUserAsync(authState.User);
+                if (user != null)
+                {
+                    var benefactorProfile = await BenefactorProfileService.GetProfileByUserIdAsync(user.Id);
+                    currentBenefactorProfileId = benefactorProfile?.BenefactorProfileId;
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading benefactor: {ex.Message}");
+        }
     }
 
     private async Task LoadScholarship()
@@ -43,6 +71,9 @@
         {
             studentApplicants = scholarship.Applications
                 .Where(a => a.Student != null)
+                .ToList();
+            acceptedStudents = scholarship.Applications
+                .Where(a => a.Student != null && a.Status == "Accepted")
                 .ToList();
             // Copy scholarship to editableScholarship for editing
             editableScholarship = new Scholarship
@@ -174,6 +205,11 @@
             isSaving = false;
         }
     }
+
+    private async Task GoBack()
+    {
+        await JS.InvokeVoidAsync("history.back");
+    }
 }
 
 @if (scholarship == null)
@@ -185,6 +221,11 @@
 }
 else
 {
+    <!-- Back Button -->
+    <button class="btn btn-outline-primary mb-3 animate__animated animate__fadeIn btn-sm d-flex align-items-center gap-2" @onclick="GoBack">
+        <span style="font-size:1.2rem;">&#8592;</span>
+        <span>Back</span>
+    </button>
     <!-- 🔷 Improved Banner -->
     <div class="scholarship-banner mb-4 animate__animated animate__fadeIn" style="background: linear-gradient(90deg, #2563eb 60%, #60a5fa 100%); box-shadow: 0 4px 24px #2563eb22; border-radius: 1.5rem; padding: 2.5rem 2rem 2rem 2rem; display: flex; align-items: center; gap: 2rem; margin-right: 0;">
         <div class="d-flex align-items-center justify-content-center" style="min-width: 100px;">
@@ -202,15 +243,18 @@ else
                         ? scholarship.Institution.InstitutionName
                         : scholarship.Benefactor?.OrganizationName ?? "Unknown Provider")
                 </span>
-                @if (!string.IsNullOrWhiteSpace(scholarship.Description))
+                @if (scholarship != null && !string.IsNullOrWhiteSpace(scholarship.Description))
                 {
                     <span class="text-white-50 ms-2" style="font-size: 1rem;">@scholarship.Description</span>
                 }
             </div>
             <div class="mt-2">
-                <span class="badge bg-primary text-white me-2">@scholarship.ApplicationDeadline.ToString("MMM dd, yyyy")</span>
-                <span class="badge bg-info text-dark me-2">Slots: @scholarship.SlotsAvailable</span>
-                <span class="badge bg-secondary text-white">@((scholarship.IsActive) ? "Active" : "Inactive")</span>
+                @if (scholarship != null)
+                {
+                    <span class="badge bg-primary text-white me-2">@scholarship.ApplicationDeadline.ToString("MMM dd, yyyy")</span>
+                }
+                <span class="badge bg-info text-dark me-2">Slots: @(scholarship != null ? scholarship.SlotsAvailable : 0)</span>
+                <span class="badge bg-secondary text-white">@(scholarship != null && scholarship.IsActive ? "Active" : "Inactive")</span>
             </div>
         </div>
     </div>
@@ -228,7 +272,7 @@ else
                     <div class="alert alert-primary mb-2">@successMessage</div>
                 }
 
-                @if (!isEditMode)
+                @if (!isEditMode && scholarship?.BenefactorProfileId != null && currentBenefactorProfileId != null && scholarship.BenefactorProfileId == currentBenefactorProfileId)
                 {
                     <button class="btn btn-primary mb-2 animate__animated animate__pulse animate__infinite" @onclick="EnterEditMode">Edit</button>
                 }
@@ -241,9 +285,9 @@ else
                         <div class="card-header bg-primary text-white fw-bold py-2 px-3" style="font-size: 1rem;">Basic Information</div>
                         <div class="card-body bg-white text-dark py-2 px-3">
                             <div class="mb-2"><strong>Provider:</strong>
-                                @(!string.IsNullOrEmpty(scholarship.Institution?.InstitutionName)
+                                @(scholarship != null && !string.IsNullOrEmpty(scholarship.Institution?.InstitutionName)
                                     ? scholarship.Institution.InstitutionName
-                                    : scholarship.Benefactor?.OrganizationName ?? "Unknown")
+                                    : scholarship?.Benefactor?.OrganizationName ?? "Unknown")
                             </div>
                             @if (isEditMode)
                             {
@@ -270,12 +314,12 @@ else
                             }
                             else
                             {
-                                @if (!string.IsNullOrWhiteSpace(scholarship.Description))
+                                @if (scholarship != null && !string.IsNullOrWhiteSpace(scholarship.Description))
                                 {
                                     <div class="mb-2"><strong>Description:</strong><p class="mb-1">@scholarship.Description</p></div>
                                 }
-                                <div class="mb-2"><strong>Benefits:</strong> <p class="mb-1">@scholarship.Benefits</p></div>
-                                <div class="mb-2"><strong>Status:</strong> @(scholarship.IsActive ? "🟢 Active" : "🔴 Inactive")</div>
+                                <div class="mb-2"><strong>Benefits:</strong> <p class="mb-1">@(scholarship != null ? scholarship.Benefits : "")</p></div>
+                                <div class="mb-2"><strong>Status:</strong> @(scholarship != null && scholarship.IsActive ? "🟢 Active" : "🔴 Inactive")</div>
                             }
                         </div>
                     </div>
@@ -309,10 +353,10 @@ else
                             }
                             else
                             {
-                                <div class="mb-2"><strong>Requirements:</strong> <p class="mb-1">@scholarship.Requirements</p></div>
-                                <div class="mb-2"><strong>Application Deadline:</strong> @scholarship.ApplicationDeadline.ToString("MMMM dd, yyyy")</div>
-                                <div class="mb-2"><strong>Slots Available:</strong> @scholarship.SlotsAvailable</div>
-                                <div class="mb-2"><strong>Minimum GPA:</strong> @scholarship.MinimumGPA</div>
+                                <div class="mb-2"><strong>Requirements:</strong> <p class="mb-1">@(scholarship != null ? scholarship.Requirements : "")</p></div>
+                                <div class="mb-2"><strong>Application Deadline:</strong> @(scholarship != null ? scholarship.ApplicationDeadline.ToString("MMMM dd, yyyy") : "")</div>
+                                <div class="mb-2"><strong>Slots Available:</strong> @(scholarship != null ? scholarship.SlotsAvailable : 0)</div>
+                                <div class="mb-2"><strong>Minimum GPA:</strong> @(scholarship != null ? scholarship.MinimumGPA : 0)</div>
                             }
                         </div>
                     </div>
@@ -341,9 +385,9 @@ else
                             }
                             else
                             {
-                                <div class="mb-2"><strong>Required Course:</strong> @scholarship.RequiredCourse</div>
-                                <div class="mb-2"><strong>Required Year Level:</strong> @scholarship.RequiredYearLevel</div>
-                                <div class="mb-2"><strong>Required University:</strong> @scholarship.RequiredUniversity</div>
+                                <div class="mb-2"><strong>Required Course:</strong> @(scholarship != null ? scholarship.RequiredCourse : "")</div>
+                                <div class="mb-2"><strong>Required Year Level:</strong> @(scholarship != null ? scholarship.RequiredYearLevel : 0)</div>
+                                <div class="mb-2"><strong>Required University:</strong> @(scholarship != null ? scholarship.RequiredUniversity : "")</div>
                             }
                         </div>
                     </div>
@@ -361,7 +405,7 @@ else
                                     <small class="form-text text-muted">Leave empty for internal applications only</small>
                                 </div>
                             }
-                            else if (!string.IsNullOrWhiteSpace(scholarship.ExternalApplicationUrl))
+                            else if (scholarship != null && !string.IsNullOrWhiteSpace(scholarship.ExternalApplicationUrl))
                             {
                                 <div class="mb-2">
                                     <strong>Apply Externally:</strong>
@@ -388,11 +432,32 @@ else
                     }
                 </EditForm>
 
-                <a class="btn btn-secondary mt-2 animate__animated animate__fadeIn btn-sm" href="/dashboard/benefactor/scholarships">⬅ Back to List</a>
+
             </div>
 
-            <!-- 👥 Student Applicants (Right Column, toggled by button) -->
+            <!-- 👥 Students Helped & Applicants (Right Column, toggled by button) -->
             <div class="col-lg-4 mb-5 animate__animated animate__fadeInRight">
+                <div class="card shadow-sm border-0 animate__animated animate__fadeIn mb-4">
+                    <div class="card-header bg-success text-white fw-bold py-2 px-3" style="font-size: 1rem;">Students Helped</div>
+                    <div class="card-body bg-white text-dark py-2 px-3" style="max-height: 250px; overflow-y: auto;">
+                        @if (!acceptedStudents.Any())
+                        {
+                            <p class="text-muted">No students have been accepted yet.</p>
+                        }
+                        else
+                        {
+                            <ul class="list-group list-group-flush">
+                                @foreach (var application in acceptedStudents)
+                                {
+                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                        <span class="fw-semibold">@application.Student?.FirstName @application.Student?.LastName</span>
+                                        <NavLink class="btn btn-sm btn-success text-white" href="@($"/dashboard/benefactor/applications/review/{application.ScholarshipApplicationId}")">View</NavLink>
+                                    </li>
+                                }
+                            </ul>
+                        }
+                    </div>
+                </div>
                 <button class="btn btn-primary w-100 mb-2" @onclick="() => showStudentList = !showStudentList">
                     @if (showStudentList)
                     {
