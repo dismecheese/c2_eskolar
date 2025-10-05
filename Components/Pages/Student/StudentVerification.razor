@@ -94,7 +94,10 @@
                         <small>PNG, JPG or PDF (max. 5MB)</small>
                         @if (!string.IsNullOrEmpty(CorFileName))
                         {
-                            <div style="font-size:0.9em;">@CorFileName</div>
+                            <div style="font-size:0.9em; display:flex; align-items:center; gap:0.5em;">
+                                <span>@CorFileName</span>
+                                <button type="button" class="btn btn-sm btn-danger" @onclick="RemoveCorDocument" style="margin-left:0.5em;">Remove</button>
+                            </div>
                         }
                         @if (!string.IsNullOrEmpty(CorUploadUrl))
                         {
@@ -252,6 +255,31 @@
     </div>
 
     @code {
+        private async Task RemoveCorDocument()
+        {
+            if (string.IsNullOrEmpty(CorUploadUrl)) return;
+            try
+            {
+                // Extract filename from URL (after last '/')
+                var uri = new Uri(CorUploadUrl);
+                var fileName = uri.Segments[^1];
+                var response = await Http.DeleteAsync($"/api/document/{fileName}");
+                if (response.IsSuccessStatusCode)
+                {
+                    CorFileName = null;
+                    CorUploadUrl = null;
+                    CorUploadStatus = null;
+                }
+                else
+                {
+                    CorUploadStatus = "Remove failed.";
+                }
+            }
+            catch (Exception ex)
+            {
+                CorUploadStatus = $"Error: {ex.Message}";
+            }
+        }
         private async Task RemoveStudentIdDocument()
         {
             if (string.IsNullOrEmpty(StudentIdUploadUrl)) return;
