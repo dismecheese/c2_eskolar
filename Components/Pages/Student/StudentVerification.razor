@@ -69,7 +69,10 @@
                         <small>PNG, JPG or PDF (max. 5MB)</small>
                         @if (!string.IsNullOrEmpty(StudentIdFileName))
                         {
-                            <div style="font-size:0.9em;">@StudentIdFileName</div>
+                            <div style="font-size:0.9em; display:flex; align-items:center; gap:0.5em;">
+                                <span>@StudentIdFileName</span>
+                                <button type="button" class="btn btn-sm btn-danger" @onclick="RemoveStudentIdDocument" style="margin-left:0.5em;">Remove</button>
+                            </div>
                         }
                         @if (!string.IsNullOrEmpty(StudentIdUploadUrl))
                         {
@@ -249,6 +252,31 @@
     </div>
 
     @code {
+        private async Task RemoveStudentIdDocument()
+        {
+            if (string.IsNullOrEmpty(StudentIdUploadUrl)) return;
+            try
+            {
+                // Extract filename from URL (after last '/')
+                var uri = new Uri(StudentIdUploadUrl);
+                var fileName = uri.Segments[^1];
+                var response = await Http.DeleteAsync($"/api/document/{fileName}");
+                if (response.IsSuccessStatusCode)
+                {
+                    StudentIdFileName = null;
+                    StudentIdUploadUrl = null;
+                    StudentIdUploadStatus = null;
+                }
+                else
+                {
+                    StudentIdUploadStatus = "Remove failed.";
+                }
+            }
+            catch (Exception ex)
+            {
+                StudentIdUploadStatus = $"Error: {ex.Message}";
+            }
+        }
         // Upload status and file names
         private string? StudentIdFileName;
         private string? CorFileName;

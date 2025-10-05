@@ -42,5 +42,23 @@ namespace c2_eskolar.Controllers
         {
             public string Url { get; set; }
         }
+
+        /// <summary>
+        /// Deletes a document from Azure Blob Storage.
+        /// </summary>
+        /// <param name="fileName">The name of the file to delete.</param>
+        /// <returns>200 OK if deleted, 404 if not found, 400 if invalid input.</returns>
+        [HttpDelete("{fileName}")]
+        public async Task<IActionResult> DeleteDocument(string fileName)
+        {
+            if (string.IsNullOrWhiteSpace(fileName))
+                return BadRequest("No fileName provided.");
+
+            var deleted = await _blobStorageService.DeleteDocumentAsync(fileName);
+            if (deleted)
+                return Ok();
+            else
+                return NotFound();
+        }
     }
 }
