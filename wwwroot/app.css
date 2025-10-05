@@ -1,3 +1,4 @@
+
 /* Import Inter font from Google Fonts */
 @import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
 
@@ -999,4 +1000,28 @@ button.dashboard-profile-absolute:hover svg * {
 
 .text-decoration-none {
     text-decoration: none !important;
+}
+
+/* Global modal overlay and popup styles for student verification modal */
+.sv-modal {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100vw; height: 100vh;
+    background: rgba(0,0,0,0.35);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.sv-modal-content {
+    position: relative;
+    background: #fff;
+    border-radius: 18px;
+    box-shadow: 0 4px 32px 0 rgba(30,40,90,0.08);
+    padding: 32px 28px 18px 28px;
+    max-width: 90vw;
+    max-height: 90vh;
+    overflow-y: auto;
+    z-index: 1001;
 }

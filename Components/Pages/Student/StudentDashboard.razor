@@ -8,13 +8,37 @@
 @using c2_eskolar.Data
 @using Microsoft.EntityFrameworkCore
 @using Microsoft.AspNetCore.Identity
+
 @inject IDbContextFactory<ApplicationDbContext> DbContextFactory
 @inject AuthenticationStateProvider AuthStateProvider
 @inject StudentProfileService StudentProfileService
 @inject UserManager<IdentityUser> UserManager
 @inject NavigationManager Navigation
-
 @inject IJSRuntime JS
+
+@using Microsoft.AspNetCore.Components.Authorization
+@using System.Security.Claims
+
+
+
+
+@if (showVerificationModal)
+{
+    <div class="sv-modal sv-modal-backdrop">
+        <div class="sv-modal-content">
+            <div class="sv-modal-header">
+                <h2 class="sv-modal-title">Verify your account</h2>
+            </div>
+            <div class="sv-modal-body">
+                <p>To access all features and apply for scholarships, please verify your student account.</p>
+            </div>
+            <div class="sv-modal-footer" style="display:flex;gap:16px;justify-content:flex-end;">
+                <button class="sv-btn sv-btn-primary" @onclick="GoToVerification">Verify</button>
+                <button class="sv-btn sv-btn-secondary" @onclick="SkipVerification">Skip</button>
+            </div>
+        </div>
+    </div>
+}
 
 <div class="dashboard-center-container">
 
@@ -463,11 +487,30 @@
 </div>
 
 @code {
+    // --- Modal State for Verification ---
+    private bool showVerificationModal = false;
+    private bool? isVerified = null;
+    private string? verificationStatus = null;
+    private string? userId;
+
     // --- Scholarship Search Bar State ---
     private string scholarshipSearchBarQuery = string.Empty;
     private bool showScholarshipDropdown = false;
     private List<Scholarship> allScholarshipBarResults = new();
     private List<Scholarship> filteredScholarshipBarResults = new();
+
+
+
+    private void GoToVerification()
+    {
+        showVerificationModal = false;
+        Navigation.NavigateTo("/student/verification");
+    }
+
+    private void SkipVerification()
+    {
+        showVerificationModal = false;
+    }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -588,6 +631,21 @@
         if (query.TryGetValue("tab", out var tabValue) && int.TryParse(tabValue, out var tabIndex))
         {
             activeTab = tabIndex;
+        }
+
+        // Modal verification logic
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        userId = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        if (!string.IsNullOrEmpty(userId))
+        {
+            var profile = await StudentProfileService.GetProfileByUserIdAsync(userId);
+            isVerified = profile?.IsVerified;
+            verificationStatus = profile?.VerificationStatus;
+            // Show modal if not verified (null or false) or status is not "Verified"
+            if (isVerified != true && (string.IsNullOrEmpty(verificationStatus) || verificationStatus != "Verified"))
+            {
+                showVerificationModal = true;
+            }
         }
 
         await LoadStudentProfile();
