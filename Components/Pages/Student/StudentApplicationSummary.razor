@@ -6,9 +6,11 @@
 @using Microsoft.AspNetCore.Components.Authorization
 @using Microsoft.EntityFrameworkCore
 
+
 @inject IDbContextFactory<ApplicationDbContext> DbContextFactory
 @inject AuthenticationStateProvider AuthProvider
 @inject NavigationManager Navigation
+@inject c2_eskolar.Services.BlobStorageService BlobStorageService
 
 @attribute [Authorize(Roles = "Student,SuperAdmin")]
 
@@ -95,12 +97,47 @@
                                         <ul class="list-unstyled mb-0">
                                         @foreach (var file in files)
                                         {
-                                            var fileName = System.IO.Path.GetFileName(file);
-                                            var displayName = fileName.Contains('_') ? fileName.Substring(fileName.IndexOf('_') + 1) : fileName;
-                                            <li class="mb-1">
-                                                <a href="@file" target="_blank" class="text-decoration-none text-primary" style="transition: color 0.2s;">
-                                                    <i class="bi bi-paperclip me-1"></i>@displayName
-                                                </a>
+                                            // file is the full blob URL or unique name
+                                            string blobName;
+                                            if (file.Contains("/"))
+                                            {
+                                                // Extract blob name from URL (after last '/')
+                                                blobName = file.Substring(file.LastIndexOf('/') + 1);
+                                            }
+                                            else
+                                            {
+                                                blobName = file;
+                                            }
+                                            var displayName = blobName.Contains('_') ? blobName.Substring(blobName.IndexOf('_') + 1) : blobName;
+                                            var ext = System.IO.Path.GetExtension(blobName).ToLowerInvariant();
+                                            string iconClass = ext switch
+                                            {
+                                                ".pdf" => "bi bi-file-earmark-pdf text-danger",
+                                                ".doc" or ".docx" => "bi bi-file-earmark-word text-primary",
+                                                ".jpg" or ".jpeg" or ".png" => "bi bi-file-earmark-image text-success",
+                                                _ => "bi bi-paperclip text-secondary"
+                                            };
+                                            string? sasUrl = null;
+                                            try
+                                            {
+                                                sasUrl = BlobStorageService.GetDocumentSasUrl(blobName);
+                                            }
+                                            catch
+                                            {
+                                                sasUrl = null;
+                                            }
+                                            <li class="mb-1 d-flex align-items-center">
+                                                <i class="@iconClass me-2" style="font-size: 1.2em;"></i>
+                                                @if (!string.IsNullOrEmpty(sasUrl))
+                                                {
+                                                    <a href="@sasUrl" target="_blank" rel="noopener noreferrer" class="text-decoration-none text-primary" style="transition: color 0.2s;">
+                                                        @displayName
+                                                    </a>
+                                                }
+                                                else
+                                                {
+                                                    <span class="text-danger">@displayName (link error)</span>
+                                                }
                                             </li>
                                         }
                                         </ul>

@@ -1,5 +1,8 @@
+
+
 using Azure.Storage.Blobs;
 using Azure.Storage.Blobs.Models;
+using Azure.Storage.Sas;
 using Microsoft.Extensions.Configuration;
 using System;
 using System.IO;
@@ -19,54 +22,93 @@ namespace c2_eskolar.Services
 
         public BlobStorageService(IConfiguration config)
         {
-            _connectionString = config["AzureBlobStorage:ConnectionString"];
-            _documentsContainer = config["AzureBlobStorage:DocumentsContainer"];
-            _photosContainer = config["AzureBlobStorage:PhotosContainer"];
+            _connectionString = config["AzureBlobStorage:ConnectionString"] ?? throw new ArgumentNullException("AzureBlobStorage:ConnectionString is missing in configuration.");
+            _documentsContainer = config["AzureBlobStorage:DocumentsContainer"] ?? throw new ArgumentNullException("AzureBlobStorage:DocumentsContainer is missing in configuration.");
+            _photosContainer = config["AzureBlobStorage:PhotosContainer"] ?? throw new ArgumentNullException("AzureBlobStorage:PhotosContainer is missing in configuration.");
         }
 
         private BlobContainerClient GetContainerClient(string containerName)
         {
             var client = new BlobContainerClient(_connectionString, containerName);
-            client.CreateIfNotExists(PublicAccessType.Blob);
+            client.CreateIfNotExists(PublicAccessType.None);
             return client;
         }
 
-        public async Task<string> UploadDocumentAsync(Stream fileStream, string fileName, string contentType)
+        /// <summary>
+        /// Uploads a file to the specified container.
+        /// </summary>
+        /// <param name="containerName">The blob container name.</param>
+        /// <param name="fileStream">The file stream to upload.</param>
+        /// <param name="fileName">The name of the file in blob storage.</param>
+        /// <param name="contentType">The MIME type of the file.</param>
+        /// <returns>The URI of the uploaded blob.</returns>
+        private async Task<string> UploadFileAsync(string containerName, Stream fileStream, string fileName, string contentType)
         {
-            var containerClient = GetContainerClient(_documentsContainer);
-            var blobClient = containerClient.GetBlobClient(fileName);
-            // Delete if exists to simulate overwrite
-            await blobClient.DeleteIfExistsAsync();
-            await blobClient.UploadAsync(fileStream, new BlobHttpHeaders { ContentType = contentType });
-            return blobClient.Uri.ToString();
+            try
+            {
+                var containerClient = GetContainerClient(containerName);
+                var blobClient = containerClient.GetBlobClient(fileName);
+                await blobClient.DeleteIfExistsAsync();
+                await blobClient.UploadAsync(fileStream, new BlobHttpHeaders { ContentType = contentType });
+                return blobClient.Uri.ToString();
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException($"Failed to upload file '{fileName}' to container '{containerName}'.", ex);
+            }
         }
 
-        public async Task<string> UploadPhotoAsync(Stream fileStream, string fileName, string contentType)
+        /// <summary>
+        /// Downloads a file from the specified container.
+        /// </summary>
+        /// <param name="containerName">The blob container name.</param>
+        /// <param name="fileName">The name of the file in blob storage.</param>
+        /// <returns>A stream containing the file contents. Caller is responsible for disposing the stream.</returns>
+        private async Task<Stream> DownloadFileAsync(string containerName, string fileName)
         {
-            var containerClient = GetContainerClient(_photosContainer);
-            var blobClient = containerClient.GetBlobClient(fileName);
-            // Delete if exists to simulate overwrite
-            await blobClient.DeleteIfExistsAsync();
-            await blobClient.UploadAsync(fileStream, new BlobHttpHeaders { ContentType = contentType });
-            return blobClient.Uri.ToString();
+            try
+            {
+                var containerClient = GetContainerClient(containerName);
+                var blobClient = containerClient.GetBlobClient(fileName);
+                var response = await blobClient.DownloadAsync();
+                return response.Value.Content;
+            }
+            catch (Exception ex)
+            {
+                throw new FileNotFoundException($"Failed to download file '{fileName}' from container '{containerName}'.", ex);
+            }
         }
 
-        public async Task<Stream> DownloadDocumentAsync(string fileName)
-        {
-            var containerClient = GetContainerClient(_documentsContainer);
-            var blobClient = containerClient.GetBlobClient(fileName);
-            var response = await blobClient.DownloadAsync();
-            return response.Value.Content;
-        }
 
-        public async Task<Stream> DownloadPhotoAsync(string fileName)
-        {
-            var containerClient = GetContainerClient(_photosContainer);
-            var blobClient = containerClient.GetBlobClient(fileName);
-            var response = await blobClient.DownloadAsync();
-            return response.Value.Content;
-        }
+        /// <summary>
+        /// Uploads a document to the documents container.
+        /// </summary>
+        public Task<string> UploadDocumentAsync(Stream fileStream, string fileName, string contentType)
+            => UploadFileAsync(_documentsContainer, fileStream, fileName, contentType);
 
+        /// <summary>
+        /// Uploads a photo to the photos container.
+        /// </summary>
+        public Task<string> UploadPhotoAsync(Stream fileStream, string fileName, string contentType)
+            => UploadFileAsync(_photosContainer, fileStream, fileName, contentType);
+
+        /// <summary>
+        /// Downloads a document from the documents container. Caller must dispose the returned stream.
+        /// </summary>
+        public Task<Stream> DownloadDocumentAsync(string fileName)
+            => DownloadFileAsync(_documentsContainer, fileName);
+
+        /// <summary>
+        /// Downloads a photo from the photos container. Caller must dispose the returned stream.
+        /// </summary>
+        public Task<Stream> DownloadPhotoAsync(string fileName)
+            => DownloadFileAsync(_photosContainer, fileName);
+
+
+
+        /// <summary>
+        /// Gets the public URL for a document (without SAS).
+        /// </summary>
         public string GetDocumentUrl(string fileName)
         {
             var containerClient = GetContainerClient(_documentsContainer);
@@ -74,6 +116,42 @@ namespace c2_eskolar.Services
             return blobClient.Uri.ToString();
         }
 
+        /// <summary>
+        /// Generates a SAS URL for a document, valid for the specified duration (default 1 hour).
+        /// </summary>
+        /// <param name="fileName">The blob file name.</param>
+        /// <param name="expiryMinutes">How long the SAS should be valid for (default 60 minutes).</param>
+        /// <returns>The SAS URL for the blob.</returns>
+
+        /// <summary>
+        /// Generates a SAS URL for a document, valid for the specified duration (default 1 hour).
+        /// </summary>
+        /// <param name="fileName">The blob file name.</param>
+        /// <param name="expiryMinutes">How long the SAS should be valid for (default 60 minutes).</param>
+        /// <returns>The SAS URL for the blob.</returns>
+        public string GetDocumentSasUrl(string fileName, int expiryMinutes = 60)
+        {
+            var containerClient = GetContainerClient(_documentsContainer);
+            var blobClient = containerClient.GetBlobClient(fileName);
+            if (!blobClient.CanGenerateSasUri)
+                throw new InvalidOperationException("BlobClient cannot generate SAS URI. Ensure you are using a key credential.");
+
+            var sasBuilder = new BlobSasBuilder
+            {
+                BlobContainerName = _documentsContainer,
+                BlobName = fileName,
+                Resource = "b",
+                ExpiresOn = DateTimeOffset.UtcNow.AddMinutes(expiryMinutes)
+            };
+            sasBuilder.SetPermissions(BlobSasPermissions.Read);
+
+            var sasUri = blobClient.GenerateSasUri(sasBuilder);
+            return sasUri.ToString();
+        }
+
+        /// <summary>
+        /// Gets the public URL for a photo (without SAS).
+        /// </summary>
         public string GetPhotoUrl(string fileName)
         {
             var containerClient = GetContainerClient(_photosContainer);

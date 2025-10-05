@@ -17,6 +17,7 @@
 @inject NavigationManager Navigation
 @inject Blazored.LocalStorage.ILocalStorageService LocalStorage
 @inject IWebHostEnvironment Env
+@inject c2_eskolar.Services.BlobStorageService BlobStorageService
 @inject Microsoft.Extensions.Logging.ILogger<StudentScholarshipApplication> Logger
 
 
@@ -457,12 +458,9 @@
                 return;
             }
 
-            // Save uploaded files
-            var savedPaths = new List<string>();
-            // Save files to a protected folder under ContentRootPath (not wwwroot)
-            var secureUploadRoot = Path.Combine(Env.ContentRootPath ?? AppContext.BaseDirectory, "secure-uploads", "student_documents");
-            Directory.CreateDirectory(secureUploadRoot);
 
+            // Save uploaded files to Azure Blob Storage
+            var savedUrls = new List<string>();
             long accumulated = 0;
             foreach (var file in selectedFiles)
             {
@@ -477,24 +475,21 @@
                     throw new InvalidOperationException($"Total upload size exceeds limit.");
 
                 var uniqueName = $"{Guid.NewGuid()}_{Path.GetFileName(file.Name)}";
-                var filePath = Path.Combine(secureUploadRoot, uniqueName);
                 try
                 {
-                    await using var stream = File.Create(filePath);
-                    await file.OpenReadStream(perFileMaxBytes).CopyToAsync(stream);
-                    // For now store only the file name so that a secure download endpoint can later map it
-                    savedPaths.Add(uniqueName);
+                    await using var stream = file.OpenReadStream(perFileMaxBytes);
+                    var url = await BlobStorageService.UploadDocumentAsync(stream, uniqueName, file.ContentType);
+                    savedUrls.Add(url);
                     accumulated += file.Size;
                 }
                 catch (Exception ex)
                 {
-                    Logger?.LogError(ex, "Failed saving uploaded file {FileName} for scholarship {ScholarshipId}", file.Name, ScholarshipId);
+                    Logger?.LogError(ex, "Failed uploading file {FileName} to Azure Blob Storage for scholarship {ScholarshipId}", file.Name, ScholarshipId);
                     throw;
                 }
             }
-            // Store only the saved filenames (not client paths)
-            application.UploadedDocuments = string.Join(",", savedPaths);
-            application.UploadedDocuments = string.Join(",", savedPaths);
+            // Store the blob URLs (or you can store uniqueName if you want to keep it private)
+            application.UploadedDocuments = string.Join(",", savedUrls);
 
             DbContext.ScholarshipApplications.Add(application);
             await DbContext.SaveChangesAsync();
