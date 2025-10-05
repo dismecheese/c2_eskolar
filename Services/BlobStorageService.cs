@@ -27,7 +27,7 @@ namespace c2_eskolar.Services
         private BlobContainerClient GetContainerClient(string containerName)
         {
             var client = new BlobContainerClient(_connectionString, containerName);
-            client.CreateIfNotExists(PublicAccessType.Blob);
+            client.CreateIfNotExists(PublicAccessType.None);
             return client;
         }
 

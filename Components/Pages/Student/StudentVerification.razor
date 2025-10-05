@@ -57,39 +57,47 @@
         <div class="sv-section-title">Document Upload</div>
         <div class="sv-upload-grid">
             <div class="sv-upload-field">
-                <label for="idUpload" class="sv-field-label">Student ID <span class="sv-required">*</span></label>
+                <label for="idUploadInput" class="sv-field-label">Student ID <span class="sv-required">*</span></label>
                 <div class="sv-upload-area">
-                    <input type="file" id="idUpload" class="sv-file-input" accept="image/*,.pdf" />
-                    <div class="sv-upload-placeholder">
+                    <InputFile id="idUploadInput" style="display:none" accept="image/*,.pdf" OnChange="OnStudentIdFileChange" />
+                    <label for="idUploadInput" class="sv-upload-placeholder" style="cursor:pointer;">
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                             <path d="M12 16L16 12H13V8H11V12H8L12 16Z" fill="currentColor"/>
                             <path d="M20 6H16L14 4H10L8 6H4C2.9 6 2 6.9 2 8V18C2 19.1 2.9 20 4 20H20C21.1 20 22 19.1 22 18V8C22 6.9 21.1 6 20 6Z" fill="currentColor"/>
                         </svg>
-                        <span>Click to upload or drag and drop</span>
+                        <span>@(StudentIdUploadStatus ?? "Click to upload or drag and drop")</span>
                         <small>PNG, JPG or PDF (max. 5MB)</small>
-                    </div>
-                </div>
-                <div class="sv-upload-preview" style="display:none;">
-                    <img src="" alt="ID Preview" />
-                    <button type="button" class="sv-remove-btn">Remove</button>
+                        @if (!string.IsNullOrEmpty(StudentIdFileName))
+                        {
+                            <div style="font-size:0.9em;">@StudentIdFileName</div>
+                        }
+                        @if (!string.IsNullOrEmpty(StudentIdUploadUrl))
+                        {
+                            <div style="color:green;font-size:0.9em;">Uploaded!</div>
+                        }
+                    </label>
                 </div>
             </div>
             <div class="sv-upload-field">
-                <label for="corUpload" class="sv-field-label">Certificate of Registration (COR) <span class="sv-required">*</span></label>
+                <label for="corUploadInput" class="sv-field-label">Certificate of Registration (COR) <span class="sv-required">*</span></label>
                 <div class="sv-upload-area">
-                    <input type="file" id="corUpload" class="sv-file-input" accept="image/*,.pdf" />
-                    <div class="sv-upload-placeholder">
+                    <InputFile id="corUploadInput" style="display:none" accept="image/*,.pdf" OnChange="OnCorFileChange" />
+                    <label for="corUploadInput" class="sv-upload-placeholder" style="cursor:pointer;">
                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                             <path d="M12 16L16 12H13V8H11V12H8L12 16Z" fill="currentColor"/>
                             <path d="M20 6H16L14 4H10L8 6H4C2.9 6 2 6.9 2 8V18C2 19.1 2.9 20 4 20H20C21.1 20 22 19.1 22 18V8C22 6.9 21.1 6 20 6Z" fill="currentColor"/>
                         </svg>
-                        <span>Click to upload or drag and drop</span>
+                        <span>@(CorUploadStatus ?? "Click to upload or drag and drop")</span>
                         <small>PNG, JPG or PDF (max. 5MB)</small>
-                    </div>
-                </div>
-                <div class="sv-upload-preview" style="display:none;">
-                    <img src="" alt="COR Preview" />
-                    <button type="button" class="sv-remove-btn">Remove</button>
+                        @if (!string.IsNullOrEmpty(CorFileName))
+                        {
+                            <div style="font-size:0.9em;">@CorFileName</div>
+                        }
+                        @if (!string.IsNullOrEmpty(CorUploadUrl))
+                        {
+                            <div style="color:green;font-size:0.9em;">Uploaded!</div>
+                        }
+                    </label>
                 </div>
             </div>
         </div>
@@ -126,7 +134,7 @@
                                     var sexFemale = "Female";
                                     var sexOther = "Other";
                                 }
-                                <li class="sv-custom-select-item @(string.IsNullOrEmpty(SelectedSex) ? "selected" : null)" @onmousedown="() => SelectSex(sexNone)">Select sex</li>
+                                <li class="sv-custom-select-item @(string.IsNullOrEmpty(SelectedSex) ? "selected" : null)" @onmousedown="() => SelectSex(sexNone)">Select</li>
                                 <li class="sv-custom-select-item @(SelectedSex == sexMale ? "selected" : null)" @onmousedown="() => SelectSex(sexMale)">Male</li>
                                 <li class="sv-custom-select-item @(SelectedSex == sexFemale ? "selected" : null)" @onmousedown="() => SelectSex(sexFemale)">Female</li>
                                 <li class="sv-custom-select-item @(SelectedSex == sexOther ? "selected" : null)" @onmousedown="() => SelectSex(sexOther)">Other</li>
@@ -199,7 +207,7 @@
                                 var yl5 = "5th Year";
                                 var ylOther = "Other";
                             }
-                            <li class="sv-custom-select-item @(string.IsNullOrEmpty(SelectedYearLevel) ? "selected" : null)" @onmousedown="() => SelectYearLevel(ylNone)">Select year level</li>
+                            <li class="sv-custom-select-item @(string.IsNullOrEmpty(SelectedYearLevel) ? "selected" : null)" @onmousedown="() => SelectYearLevel(ylNone)">Select</li>
                             <li class="sv-custom-select-item @(SelectedYearLevel == yl1 ? "selected" : null)" @onmousedown="() => SelectYearLevel(yl1)">1st Year</li>
                             <li class="sv-custom-select-item @(SelectedYearLevel == yl2 ? "selected" : null)" @onmousedown="() => SelectYearLevel(yl2)">2nd Year</li>
                             <li class="sv-custom-select-item @(SelectedYearLevel == yl3 ? "selected" : null)" @onmousedown="() => SelectYearLevel(yl3)">3rd Year</li>
@@ -241,6 +249,79 @@
     </div>
 
     @code {
+        // Upload status and file names
+        private string? StudentIdFileName;
+        private string? CorFileName;
+        private string? StudentIdUploadUrl;
+        private string? CorUploadUrl;
+        private string? StudentIdUploadStatus;
+        private string? CorUploadStatus;
+
+
+        [Inject] private HttpClient Http { get; set; } = default!;
+
+        private async Task OnStudentIdFileChange(Microsoft.AspNetCore.Components.Forms.InputFileChangeEventArgs e)
+        {
+            var file = e.File;
+            if (file == null) return;
+            StudentIdFileName = file.Name;
+            StudentIdUploadStatus = "Uploading...";
+            try
+            {
+                var content = new MultipartFormDataContent();
+                var stream = file.OpenReadStream(5 * 1024 * 1024); // 5MB limit
+                content.Add(new StreamContent(stream), "file", file.Name);
+                content.Add(new StringContent("StudentID"), "docType");
+                var response = await Http.PostAsync("/api/document/upload", content);
+                if (response.IsSuccessStatusCode)
+                {
+                    var result = await response.Content.ReadFromJsonAsync<UploadResult>();
+                    StudentIdUploadUrl = result?.url;
+                    StudentIdUploadStatus = "Uploaded!";
+                }
+                else
+                {
+                    StudentIdUploadStatus = "Upload failed.";
+                }
+            }
+            catch (Exception ex)
+            {
+                StudentIdUploadStatus = $"Error: {ex.Message}";
+            }
+        }
+
+        private async Task OnCorFileChange(Microsoft.AspNetCore.Components.Forms.InputFileChangeEventArgs e)
+        {
+            var file = e.File;
+            if (file == null) return;
+            CorFileName = file.Name;
+            CorUploadStatus = "Uploading...";
+            try
+            {
+                var content = new MultipartFormDataContent();
+                var stream = file.OpenReadStream(5 * 1024 * 1024); // 5MB limit
+                content.Add(new StreamContent(stream), "file", file.Name);
+                content.Add(new StringContent("COR"), "docType");
+                var response = await Http.PostAsync("/api/document/upload", content);
+                if (response.IsSuccessStatusCode)
+                {
+                    var result = await response.Content.ReadFromJsonAsync<UploadResult>();
+                    CorUploadUrl = result?.url;
+                    CorUploadStatus = "Uploaded!";
+                }
+                else
+                {
+                    CorUploadStatus = "Upload failed.";
+                }
+            }
+            catch (Exception ex)
+            {
+                CorUploadStatus = $"Error: {ex.Message}";
+            }
+        }
+
+        public class UploadResult { public string? url { get; set; } }
+
         // Institution Check
         private bool IsInstitutionAffiliated = true;
         private void SetInstitutionCheck(bool affiliated)
@@ -266,7 +347,7 @@
             ShowInstitutionDropdown = false;
         }
 
-    // Sex Dropdown
+        // Sex Dropdown
         private bool ShowSexDropdown = false;
         private string SelectedSex = string.Empty;
         private string SelectedSexText => string.IsNullOrEmpty(SelectedSex) ? "Select sex" : SelectedSex;
