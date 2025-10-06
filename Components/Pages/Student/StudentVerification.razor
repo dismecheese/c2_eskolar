@@ -1,156 +1,577 @@
-
+@using System.ComponentModel.DataAnnotations;
 @page "/student/verification"
+@layout Layout.StudentDashLayout
 
-<div class="sv-container sv-modal-content">
-        <div class="sv-header">
-            <h2 id="sv-modal-title">Student Verification</h2>
-            <div class="sv-divider"></div>
+<EditForm Model="verificationModel" OnValidSubmit="HandleValidSubmit">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+    <div class="dashboard-center-container">
+    <div class="sv-header">
+        <h2 id="sv-modal-title">Student Verification</h2>
+        <div class="sv-divider"></div>
+    </div>
+
+    <!-- Institution Check Section -->
+    <section class="sv-card sv-card-elevated">
+        <div class="sv-section-title">Institution Check</div>
+        <div class="sv-institution-check">
+            <div class="sv-field sv-field-vertical">
+                <label class="sv-field-label">Are you affiliated with a partner institution?</label>
+                <div class="sv-radio-group">
+                    <label for="instYes" class="sv-radio-label">
+                        <input type="radio" id="instYes" name="institutionCheck" value="Yes" @onchange="() => SetInstitutionCheck(true)" checked="@IsInstitutionAffiliated" />
+                        Yes
+                    </label>
+                    <label for="instNo" class="sv-radio-label">
+                        <input type="radio" id="instNo" name="institutionCheck" value="No" @onchange="() => SetInstitutionCheck(false)" checked="@(!IsInstitutionAffiliated)" />
+                        No
+                    </label>
+                </div>
+            </div>
+            <div class="sv-field sv-field-vertical">
+                <label for="institutionDropdown" class="sv-field-label">Select Institution</label>
+                <div class="sv-custom-select @(IsInstitutionDropdownDisabled ? "sv-custom-select-disabled" : null)" tabindex="0"
+                     @onclick="() => { if (!IsInstitutionDropdownDisabled) ToggleInstitutionDropdown(); }"
+                     @onblur="CloseInstitutionDropdown"
+                     style="@(IsInstitutionDropdownDisabled ? "pointer-events: none; opacity: 0.6;" : null)">
+                    <span class="sv-custom-select-value">@SelectedInstitutionText</span>
+                    <svg class="sv-custom-select-arrow" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+                    @if (ShowInstitutionDropdown && !IsInstitutionDropdownDisabled)
+                    {
+                        <ul class="sv-custom-select-list">
+                            @{
+                                var instNone = string.Empty;
+                                var instA = "Institution A";
+                                var instB = "Institution B";
+                                var instC = "Institution C";
+                            }
+                            <li class="sv-custom-select-item @(string.IsNullOrEmpty(SelectedInstitution) ? "selected" : null)" @onmousedown="() => SelectInstitution(instNone)">Select an institution</li>
+                            <li class="sv-custom-select-item @(SelectedInstitution == instA ? "selected" : null)" @onmousedown="() => SelectInstitution(instA)">Institution A</li>
+                            <li class="sv-custom-select-item @(SelectedInstitution == instB ? "selected" : null)" @onmousedown="() => SelectInstitution(instB)">Institution B</li>
+                            <li class="sv-custom-select-item @(SelectedInstitution == instC ? "selected" : null)" @onmousedown="() => SelectInstitution(instC)">Institution C</li>
+                        </ul>
+                    }
+                </div>
+            </div>
         </div>
-        <!-- Personal Information Section -->
-        <section class="sv-card sv-card-elevated">
-            <div class="sv-section-title">Personal Information</div>
-            <div class="sv-fields sv-fields-3">
-                <div class="sv-field">
-                    <label for="firstName">First Name</label>
-                    <input id="firstName" class="sv-input sv-input-medium" />
-                </div>
-                <div class="sv-field">
-                    <label for="middleName">Middle Name</label>
-                    <input id="middleName" class="sv-input sv-input-medium" />
-                </div>
-                <div class="sv-field">
-                    <label for="lastName">Last Name</label>
-                    <input id="lastName" class="sv-input sv-input-medium" />
-                </div>
-            </div>
-            <div class="sv-fields sv-fields-3">
-                <div class="sv-field">
-                    <label for="sex">Sex</label>
-                    <select id="sex" class="sv-input sv-input-short">
-                        <option value="">Select</option>
-                        <option>Male</option>
-                        <option>Female</option>
-                        <option>Other</option>
-                    </select>
-                </div>
-                <div class="sv-field">
-                    <label for="bday">Birthday</label>
-                    <input id="bday" type="date" class="sv-input sv-input-short" />
-                </div>
-                <div class="sv-field">
-                    <label for="nationality">Nationality</label>
-                    <input id="nationality" class="sv-input sv-input-medium" />
-                </div>
-            </div>
-            <div class="sv-fields sv-fields-2">
-                <div class="sv-field">
-                    <label for="number">Contact Number</label>
-                    <input id="number" class="sv-input sv-input-short" />
-                </div>
-                <div class="sv-field">
-                    <label for="email">Email</label>
-                    <input id="email" readonly class="sv-input sv-input-medium" />
-                </div>
-            </div>
-            <div class="sv-fields sv-fields-1">
-                <div class="sv-field">
-                    <label for="address">Address</label>
-                    <input id="address" class="sv-input sv-input-long" />
-                </div>
-            </div>
-        </section>
-        <!-- Educational Info Section -->
-        <section class="sv-card sv-card-elevated">
-            <div class="sv-section-title">Educational Information</div>
-            <div class="sv-fields sv-fields-2">
-                <div class="sv-field">
-                    <label for="university">University</label>
-                    <input id="university" class="sv-input sv-input-long" />
-                </div>
-                <div class="sv-field">
-                    <label for="studentNumber">Student Number</label>
-                    <input id="studentNumber" class="sv-input sv-input-medium" />
-                </div>
-            </div>
-            <div class="sv-fields sv-fields-3">
-                <div class="sv-field">
-                    <label for="program">Program</label>
-                    <input id="program" class="sv-input sv-input-medium" />
-                </div>
-                <div class="sv-field">
-                    <label for="yearLevel">Year Level</label>
-                    <select id="yearLevel" class="sv-input sv-input-short">
-                        <option value="">Select</option>
-                        <option>1st Year</option>
-                        <option>2nd Year</option>
-                        <option>3rd Year</option>
-                        <option>4th Year</option>
-                        <option>5th Year</option>
-                        <option>Other</option>
-                    </select>
-                </div>
-                <div class="sv-field">
-                    <label for="status">Status</label>
-                    <input id="status" readonly value="Pending" class="sv-input sv-input-short" />
-                </div>
-            </div>
-        </section>
+    </section>
+
         <!-- Document Upload Section -->
-        <section class="sv-card sv-card-elevated">
-            <div class="sv-section-title">Document Upload</div>
-            <div class="sv-fields sv-fields-2">
-                <div class="sv-field">
-                    <label for="idUpload">Student ID</label>
-                    <input type="file" id="idUpload" class="sv-input sv-input-medium" />
-                    <div class="sv-upload-preview">
-                        <img src="" alt="ID Preview" style="display:none;" />
-                        <button type="button" disabled>Remove</button>
-                    </div>
-                </div>
-                <div class="sv-field">
-                    <label for="corUpload">Certificate of Registration (COR)</label>
-                    <input type="file" id="corUpload" class="sv-input sv-input-medium" />
-                    <div class="sv-upload-preview">
-                        <img src="" alt="COR Preview" style="display:none;" />
-                        <button type="button" disabled>Remove</button>
-                    </div>
-                </div>
-            </div>
-        </section>
-        <!-- Institution Check Section -->
-        <section class="sv-card sv-card-elevated">
-            <div class="sv-section-title">Institution Check</div>
-            <div class="sv-fields sv-fields-2">
-                <div class="sv-field sv-radio-group">
-                    <label>Are you affiliated with a partner institution?</label>
-                    <div>
-                        <input type="radio" id="instYes" name="institutionCheck" />
-                        <label for="instYes">Yes</label>
-                        <input type="radio" id="instNo" name="institutionCheck" />
-                        <label for="instNo">No</label>
-                    </div>
-                </div>
-                <div class="sv-field">
-                    <label for="institutionDropdown">Select Institution</label>
-                    <select id="institutionDropdown" class="sv-input sv-input-medium">
-                        <option value="">Select</option>
-                        <option>Institution A</option>
-                        <option>Institution B</option>
-                        <option>Institution C</option>
-                    </select>
+    <section class="sv-card sv-card-elevated">
+        <div class="sv-section-title">Document Upload</div>
+        <div class="sv-upload-grid">
+            <div class="sv-upload-field">
+                <label for="idUploadInput" class="sv-field-label">Student ID <span class="sv-required">*</span></label>
+                <div class="sv-upload-area">
+                    <InputFile id="idUploadInput" style="display:none" accept="image/*,.pdf" OnChange="OnStudentIdFileChange" />
+                    <label for="idUploadInput" class="sv-upload-placeholder" style="cursor:pointer;">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12 16L16 12H13V8H11V12H8L12 16Z" fill="currentColor"/>
+                            <path d="M20 6H16L14 4H10L8 6H4C2.9 6 2 6.9 2 8V18C2 19.1 2.9 20 4 20H20C21.1 20 22 19.1 22 18V8C22 6.9 21.1 6 20 6Z" fill="currentColor"/>
+                        </svg>
+                        <span>@(StudentIdUploadStatus ?? "Click to upload or drag and drop")</span>
+                        <small>PNG, JPG or PDF (max. 5MB)</small>
+                        @if (!string.IsNullOrEmpty(StudentIdFileName))
+                        {
+                            <div style="font-size:0.9em; display:flex; align-items:center; gap:0.5em;">
+                                <span>@StudentIdFileName</span>
+                                <button type="button" class="btn btn-sm btn-danger" @onclick="RemoveStudentIdDocument" style="margin-left:0.5em;">Remove</button>
+                            </div>
+                        }
+                        @if (!string.IsNullOrEmpty(StudentIdUploadUrl))
+                        {
+                            <div style="color:green;font-size:0.9em;">Uploaded!</div>
+                        }
+                    </label>
                 </div>
             </div>
-        </section>
-        <!-- Actions and Status/Feedback Section -->
-        <div class="sv-actions-row">
-            <button class="sv-btn sv-btn-primary" disabled>Submit</button>
-            <button class="sv-btn sv-btn-secondary" disabled>Skip for now</button>
-            <div class="sv-status">
-                <span class="sv-status-info">Status message placeholder</span>
-                <span class="sv-status-error">Error message placeholder</span>
+            <div class="sv-upload-field">
+                <label for="corUploadInput" class="sv-field-label">Certificate of Registration (COR) <span class="sv-required">*</span></label>
+                <div class="sv-upload-area">
+                    <InputFile id="corUploadInput" style="display:none" accept="image/*,.pdf" OnChange="OnCorFileChange" />
+                    <label for="corUploadInput" class="sv-upload-placeholder" style="cursor:pointer;">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12 16L16 12H13V8H11V12H8L12 16Z" fill="currentColor"/>
+                            <path d="M20 6H16L14 4H10L8 6H4C2.9 6 2 6.9 2 8V18C2 19.1 2.9 20 4 20H20C21.1 20 22 19.1 22 18V8C22 6.9 21.1 6 20 6Z" fill="currentColor"/>
+                        </svg>
+                        <span>@(CorUploadStatus ?? "Click to upload or drag and drop")</span>
+                        <small>PNG, JPG or PDF (max. 5MB)</small>
+                        @if (!string.IsNullOrEmpty(CorFileName))
+                        {
+                            <div style="font-size:0.9em; display:flex; align-items:center; gap:0.5em;">
+                                <span>@CorFileName</span>
+                                <button type="button" class="btn btn-sm btn-danger" @onclick="RemoveCorDocument" style="margin-left:0.5em;">Remove</button>
+                            </div>
+                        }
+                        @if (!string.IsNullOrEmpty(CorUploadUrl))
+                        {
+                            <div style="color:green;font-size:0.9em;">Uploaded!</div>
+                        }
+                    </label>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Personal Information Section -->
+    <section class="sv-card sv-card-elevated">
+        <div class="sv-section-title">Personal Information</div>
+        <div class="sv-form-grid">
+            <div class="sv-field sv-field-vertical sv-field-full">
+                <label for="firstName" class="sv-field-label">First Name <span class="sv-required">*</span></label>
+                <InputText id="firstName" class="sv-input" placeholder="Enter your first name" @bind-Value="verificationModel.FirstName" />
+                <ValidationMessage For="@(() => verificationModel.FirstName)" />
+            </div>
+            <div class="sv-field sv-field-vertical sv-field-full">
+                <label for="middleName" class="sv-field-label">Middle Name</label>
+                <InputText id="middleName" class="sv-input" placeholder="Enter your middle name" @bind-Value="verificationModel.MiddleName" />
+                <ValidationMessage For="@(() => verificationModel.MiddleName)" />
+            </div>
+            <div class="sv-field sv-field-vertical sv-field-full">
+                <label for="lastName" class="sv-field-label">Last Name <span class="sv-required">*</span></label>
+                <InputText id="lastName" class="sv-input" placeholder="Enter your last name" @bind-Value="verificationModel.LastName" />
+                <ValidationMessage For="@(() => verificationModel.LastName)" />
+            </div>
+            <div class="sv-field-full sv-row-2col">
+                <div class="sv-field sv-field-vertical">
+                    <label for="sex" class="sv-field-label">Sex <span class="sv-required">*</span></label>
+                    <InputSelect id="sex" class="sv-input" @bind-Value="verificationModel.Sex">
+                        <option value="">Select sex</option>
+                        <option value="Male">Male</option>
+                        <option value="Female">Female</option>
+                        <option value="Other">Other</option>
+                    </InputSelect>
+                    <ValidationMessage For="@(() => verificationModel.Sex)" />
+                </div>
+                <div class="sv-field sv-field-vertical">
+                    <label for="bday" class="sv-field-label">Birthday <span class="sv-required">*</span></label>
+                    <InputDate id="bday" class="sv-input" @bind-Value="verificationModel.BirthDate" />
+                    <ValidationMessage For="@(() => verificationModel.BirthDate)" />
+                </div>
+            </div>
+            <div class="sv-field-full sv-row-2col">
+                <div class="sv-field sv-field-vertical">
+                    <label for="nationality" class="sv-field-label">Nationality <span class="sv-required">*</span></label>
+                    <InputText id="nationality" class="sv-input" placeholder="Enter your nationality" @bind-Value="verificationModel.Nationality" />
+                    <ValidationMessage For="@(() => verificationModel.Nationality)" />
+                </div>
+                <div class="sv-field sv-field-vertical">
+                    <label for="number" class="sv-field-label">Contact Number <span class="sv-required">*</span></label>
+                    <InputText id="number" class="sv-input" placeholder="Enter your contact number" @bind-Value="verificationModel.Phone" />
+                    <ValidationMessage For="@(() => verificationModel.Phone)" />
+                </div>
+            </div>
+            <div class="sv-field sv-field-vertical sv-field-full">
+                <label for="address" class="sv-field-label">Address <span class="sv-required">*</span></label>
+                <InputText id="address" class="sv-input" placeholder="Enter your complete address" @bind-Value="verificationModel.PermanentAddress" />
+                <ValidationMessage For="@(() => verificationModel.PermanentAddress)" />
+            </div>
+            <div class="sv-field sv-field-vertical sv-field-full">
+                <label for="personalEmail" class="sv-field-label">Personal Email <span class="sv-required">*</span></label>
+                <InputText id="personalEmail" class="sv-input" placeholder="Enter your personal email" @bind-Value="verificationModel.Email" />
+                <ValidationMessage For="@(() => verificationModel.Email)" />
+            </div>
+            <div class="sv-field sv-field-vertical sv-field-full">
+                <label for="institutionalEmail" class="sv-field-label">Institutional Email</label>
+                <InputText id="institutionalEmail" class="sv-input" placeholder="Enter your institutional email" @bind-Value="verificationModel.InstitutionalEmail" />
+                <ValidationMessage For="@(() => verificationModel.InstitutionalEmail)" />
+            </div>
+        </div>
+    </section>
+
+
+
+    <!-- Educational Information Section -->
+    <section class="sv-card sv-card-elevated">
+        <div class="sv-section-title">Educational Information</div>
+        <div class="sv-form-grid">
+            <div class="sv-field sv-field-vertical">
+                <label for="university" class="sv-field-label">University <span class="sv-required">*</span></label>
+                <InputText id="university" class="sv-input" placeholder="Enter your university" @bind-Value="verificationModel.University" />
+                <ValidationMessage For="@(() => verificationModel.University)" />
+            </div>
+            <div class="sv-field sv-field-vertical">
+                <label for="studentNumber" class="sv-field-label">Student Number <span class="sv-required">*</span></label>
+                <InputText id="studentNumber" class="sv-input" placeholder="Enter your student number" @bind-Value="verificationModel.StudentNumber" />
+                <ValidationMessage For="@(() => verificationModel.StudentNumber)" />
+            </div>
+            <div class="sv-field sv-field-vertical">
+                <label for="program" class="sv-field-label">Program <span class="sv-required">*</span></label>
+                <InputText id="program" class="sv-input" placeholder="BS Information Technology" @bind-Value="verificationModel.Program" />
+                <ValidationMessage For="@(() => verificationModel.Program)" />
+            </div>
+            <div class="sv-field sv-field-vertical">
+                <label for="yearLevel" class="sv-field-label">Year Level <span class="sv-required">*</span></label>
+                <InputSelect id="yearLevel" class="sv-input" @bind-Value="verificationModel.YearLevel">
+                    <option value="">Select year level</option>
+                    <option value="1st Year">1st Year</option>
+                    <option value="2nd Year">2nd Year</option>
+                    <option value="3rd Year">3rd Year</option>
+                    <option value="4th Year">4th Year</option>
+                    <option value="5th Year">5th Year</option>
+                    <option value="Other">Other</option>
+                </InputSelect>
+                <ValidationMessage For="@(() => verificationModel.YearLevel)" />
+            </div>
+            <div class="sv-field sv-field-vertical">
+                <label for="status" class="sv-field-label">Status</label>
+                <div class="sv-status-badge sv-status-pending">Pending Verification</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Actions Section -->
+    <div class="sv-actions-container">
+        <div class="sv-actions-buttons">
+            <button type="button" class="sv-btn sv-btn-secondary">Skip for now</button>
+            <button type="submit" class="sv-btn sv-btn-primary" disabled="@(IsSubmitting)">Submit Verification</button>
+        </div>
+        <div class="sv-status-messages">
+            <div class="sv-status-info" style="display:none;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" fill="currentColor"/>
+                </svg>
+                <span>Status message placeholder</span>
+            </div>
+            <div class="sv-status-error" style="display:none;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" fill="currentColor"/>
+                </svg>
+                <span>Error message placeholder</span>
             </div>
         </div>
     </div>
+
+    @code {
+        // Validation model for the form
+        public class StudentVerificationModel
+        {
+            [Required(ErrorMessage = "First name is required.")]
+            public string FirstName { get; set; } = string.Empty;
+
+            public string? MiddleName { get; set; }
+
+            [Required(ErrorMessage = "Last name is required.")]
+            public string LastName { get; set; } = string.Empty;
+
+            [Required(ErrorMessage = "Sex is required.")]
+            public string Sex { get; set; } = string.Empty;
+
+            [Required(ErrorMessage = "Birthdate is required.")]
+            public DateTime? BirthDate { get; set; }
+
+            [Required(ErrorMessage = "Nationality is required.")]
+            public string Nationality { get; set; } = string.Empty;
+
+            [Required(ErrorMessage = "Address is required.")]
+            public string PermanentAddress { get; set; } = string.Empty;
+
+            [Required(ErrorMessage = "Personal email is required.")]
+            [EmailAddress(ErrorMessage = "Invalid email address.")]
+            public string Email { get; set; } = string.Empty;
+
+            public string? InstitutionalEmail { get; set; }
+
+            [Required(ErrorMessage = "Contact number is required.")]
+            public string Phone { get; set; } = string.Empty;
+
+            [Required(ErrorMessage = "University is required.")]
+            public string University { get; set; } = string.Empty;
+
+            [Required(ErrorMessage = "Student number is required.")]
+            public string StudentNumber { get; set; } = string.Empty;
+
+            [Required(ErrorMessage = "Program is required.")]
+            public string Program { get; set; } = string.Empty;
+
+            [Required(ErrorMessage = "Year level is required.")]
+            public string YearLevel { get; set; } = string.Empty;
+        }
+
+        private StudentVerificationModel verificationModel = new StudentVerificationModel();
+
+    private bool IsSubmitting = false;
+
+    private async Task HandleValidSubmit()
+        {
+            if (IsSubmitting) return;
+            IsSubmitting = true;
+            ProfileErrorMessage = "";
+            try
+            {
+                var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+                var userId = authState.User?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+                if (string.IsNullOrWhiteSpace(userId))
+                {
+                    ProfileErrorMessage = "User not found.";
+                    IsSubmitting = false;
+                    return;
+                }
+
+                var studentProfile = await StudentProfileService.GetProfileByUserIdAsync(userId) ?? new c2_eskolar.Models.StudentProfile {
+                    UserId = userId,
+                    FirstName = verificationModel.FirstName,
+                    LastName = verificationModel.LastName
+                };
+
+                studentProfile.FirstName = verificationModel.FirstName;
+                studentProfile.MiddleName = verificationModel.MiddleName;
+                studentProfile.LastName = verificationModel.LastName;
+                studentProfile.Sex = verificationModel.Sex;
+                studentProfile.BirthDate = verificationModel.BirthDate ?? DateTime.Now;
+                studentProfile.Nationality = verificationModel.Nationality;
+                studentProfile.PermanentAddress = verificationModel.PermanentAddress;
+                studentProfile.Email = verificationModel.Email;
+                studentProfile.MobileNumber = verificationModel.Phone;
+                studentProfile.UniversityName = verificationModel.University;
+                studentProfile.StudentNumber = verificationModel.StudentNumber;
+                studentProfile.Course = verificationModel.Program;
+                studentProfile.YearLevel = ParseYearLevel(verificationModel.YearLevel);
+                studentProfile.VerificationStatus = "Pending";
+                studentProfile.StudentIdDocumentPath = StudentIdUploadUrl;
+                studentProfile.CorDocumentPath = CorUploadUrl;
+
+                await StudentProfileService.SaveProfileAsync(studentProfile, studentProfile.Email);
+                ProfileErrorMessage = "Verification submitted successfully!";
+            }
+            catch (Exception ex)
+            {
+                ProfileErrorMessage = $"Error submitting verification: {ex.Message}";
+            }
+            IsSubmitting = false;
+        }
+
+        private int? ParseYearLevel(string yearLevelStr)
+        {
+            if (string.IsNullOrWhiteSpace(yearLevelStr)) return null;
+            var digits = new string(yearLevelStr.TakeWhile(char.IsDigit).ToArray());
+            if (int.TryParse(digits, out var yl)) return yl;
+            if (yearLevelStr.Contains("1")) return 1;
+            if (yearLevelStr.Contains("2")) return 2;
+            if (yearLevelStr.Contains("3")) return 3;
+            if (yearLevelStr.Contains("4")) return 4;
+            if (yearLevelStr.Contains("5")) return 5;
+            return null;
+        }
+    // Remove old field properties (now using verificationModel)
+    private string Status = "Pending";
+    private string ProfileErrorMessage = "";
+
+        [Inject] private Services.StudentProfileService StudentProfileService { get; set; } = default!;
+        [Inject] private AuthenticationStateProvider AuthenticationStateProvider { get; set; } = default!;
+
+        protected override async Task OnInitializedAsync()
+        {
+            await LoadStudentProfileData();
+        }
+
+        private async Task LoadStudentProfileData()
+        {
+            try
+            {
+                var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+                var userId = authState.User?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+                if (!string.IsNullOrWhiteSpace(userId))
+                {
+                    var studentProfile = await StudentProfileService.GetProfileByUserIdAsync(userId);
+                    if (studentProfile != null)
+                    {
+                        verificationModel.FirstName = studentProfile.FirstName ?? "";
+                        verificationModel.MiddleName = studentProfile.MiddleName ?? "";
+                        verificationModel.LastName = studentProfile.LastName ?? "";
+                        verificationModel.Sex = studentProfile.Sex ?? "";
+                        verificationModel.Nationality = studentProfile.Nationality ?? "";
+                        verificationModel.PermanentAddress = studentProfile.PermanentAddress ?? "";
+                        verificationModel.BirthDate = studentProfile.BirthDate ?? DateTime.Now;
+                        verificationModel.Phone = studentProfile.MobileNumber ?? "";
+                        verificationModel.Email = studentProfile.Email ?? verificationModel.Email;
+                        verificationModel.University = studentProfile.UniversityName ?? "";
+                        verificationModel.StudentNumber = studentProfile.StudentNumber ?? "";
+                        verificationModel.Program = studentProfile.Course ?? "";
+                        verificationModel.YearLevel = studentProfile.YearLevel.HasValue ? $"{studentProfile.YearLevel} year" : "";
+                        Status = studentProfile.VerificationStatus ?? "Pending";
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                ProfileErrorMessage = $"Error loading profile: {ex.Message}";
+            }
+        }
+        private async Task RemoveCorDocument()
+        {
+            if (string.IsNullOrEmpty(CorUploadUrl)) return;
+            try
+            {
+                // Extract filename from URL (after last '/')
+                var uri = new Uri(CorUploadUrl);
+                var fileName = uri.Segments[^1];
+                var response = await Http.DeleteAsync($"/api/document/{fileName}");
+                if (response.IsSuccessStatusCode)
+                {
+                    CorFileName = null;
+                    CorUploadUrl = null;
+                    CorUploadStatus = null;
+                }
+                else
+                {
+                    CorUploadStatus = "Remove failed.";
+                }
+            }
+            catch (Exception ex)
+            {
+                CorUploadStatus = $"Error: {ex.Message}";
+            }
+        }
+        private async Task RemoveStudentIdDocument()
+        {
+            if (string.IsNullOrEmpty(StudentIdUploadUrl)) return;
+            try
+            {
+                // Extract filename from URL (after last '/')
+                var uri = new Uri(StudentIdUploadUrl);
+                var fileName = uri.Segments[^1];
+                var response = await Http.DeleteAsync($"/api/document/{fileName}");
+                if (response.IsSuccessStatusCode)
+                {
+                    StudentIdFileName = null;
+                    StudentIdUploadUrl = null;
+                    StudentIdUploadStatus = null;
+                }
+                else
+                {
+                    StudentIdUploadStatus = "Remove failed.";
+                }
+            }
+            catch (Exception ex)
+            {
+                StudentIdUploadStatus = $"Error: {ex.Message}";
+            }
+        }
+        // Upload status and file names
+        private string? StudentIdFileName;
+        private string? CorFileName;
+        private string? StudentIdUploadUrl;
+        private string? CorUploadUrl;
+        private string? StudentIdUploadStatus;
+        private string? CorUploadStatus;
+
+
+        [Inject] private HttpClient Http { get; set; } = default!;
+
+        private async Task OnStudentIdFileChange(Microsoft.AspNetCore.Components.Forms.InputFileChangeEventArgs e)
+        {
+            var file = e.File;
+            if (file == null) return;
+            StudentIdFileName = file.Name;
+            StudentIdUploadStatus = "Uploading...";
+            try
+            {
+                var content = new MultipartFormDataContent();
+                var stream = file.OpenReadStream(5 * 1024 * 1024); // 5MB limit
+                content.Add(new StreamContent(stream), "file", file.Name);
+                content.Add(new StringContent("StudentID"), "docType");
+                var response = await Http.PostAsync("/api/document/upload", content);
+                if (response.IsSuccessStatusCode)
+                {
+                    var result = await response.Content.ReadFromJsonAsync<UploadResult>();
+                    StudentIdUploadUrl = result?.url;
+                    StudentIdUploadStatus = "Uploaded!";
+                }
+                else
+                {
+                    StudentIdUploadStatus = "Upload failed.";
+                }
+            }
+            catch (Exception ex)
+            {
+                StudentIdUploadStatus = $"Error: {ex.Message}";
+            }
+        }
+
+        private async Task OnCorFileChange(Microsoft.AspNetCore.Components.Forms.InputFileChangeEventArgs e)
+        {
+            var file = e.File;
+            if (file == null) return;
+            CorFileName = file.Name;
+            CorUploadStatus = "Uploading...";
+            try
+            {
+                var content = new MultipartFormDataContent();
+                var stream = file.OpenReadStream(5 * 1024 * 1024); // 5MB limit
+                content.Add(new StreamContent(stream), "file", file.Name);
+                content.Add(new StringContent("COR"), "docType");
+                var response = await Http.PostAsync("/api/document/upload", content);
+                if (response.IsSuccessStatusCode)
+                {
+                    var result = await response.Content.ReadFromJsonAsync<UploadResult>();
+                    CorUploadUrl = result?.url;
+                    CorUploadStatus = "Uploaded!";
+                }
+                else
+                {
+                    CorUploadStatus = "Upload failed.";
+                }
+            }
+            catch (Exception ex)
+            {
+                CorUploadStatus = $"Error: {ex.Message}";
+            }
+        }
+
+        public class UploadResult { public string? url { get; set; } }
+
+        // Institution Check
+        private bool IsInstitutionAffiliated = true;
+        private void SetInstitutionCheck(bool affiliated)
+        {
+            IsInstitutionAffiliated = affiliated;
+            if (!affiliated)
+            {
+                SelectedInstitution = string.Empty;
+                ShowInstitutionDropdown = false;
+            }
+        }
+
+        // Institution Dropdown
+        private bool ShowInstitutionDropdown = false;
+        private string SelectedInstitution = string.Empty;
+        private string SelectedInstitutionText => string.IsNullOrEmpty(SelectedInstitution) ? "Select an institution" : SelectedInstitution;
+        private bool IsInstitutionDropdownDisabled => !IsInstitutionAffiliated;
+        private void ToggleInstitutionDropdown() { if (!IsInstitutionDropdownDisabled) ShowInstitutionDropdown = !ShowInstitutionDropdown; }
+        private void CloseInstitutionDropdown() => ShowInstitutionDropdown = false;
+        private void SelectInstitution(string value)
+        {
+            SelectedInstitution = value;
+            ShowInstitutionDropdown = false;
+        }
+
+        // Sex Dropdown
+        private bool ShowSexDropdown = false;
+        private string SelectedSex = string.Empty;
+        private string SelectedSexText => string.IsNullOrEmpty(SelectedSex) ? "Select sex" : SelectedSex;
+        private void ToggleSexDropdown() => ShowSexDropdown = !ShowSexDropdown;
+        private void CloseSexDropdown() => ShowSexDropdown = false;
+        private void SelectSex(string value)
+        {
+            SelectedSex = value;
+            ShowSexDropdown = false;
+        }
+
+        // Year Level Dropdown
+        private bool ShowYearLevelDropdown = false;
+        private string SelectedYearLevel = string.Empty;
+        private string SelectedYearLevelText => string.IsNullOrEmpty(SelectedYearLevel) ? "Select year level" : SelectedYearLevel;
+        private void ToggleYearLevelDropdown() => ShowYearLevelDropdown = !ShowYearLevelDropdown;
+        private void CloseYearLevelDropdown() => ShowYearLevelDropdown = false;
+        private void SelectYearLevel(string value)
+        {
+            SelectedYearLevel = value;
+            ShowYearLevelDropdown = false;
+        }
+    }
+    </div>
+</EditForm>
 
 
 

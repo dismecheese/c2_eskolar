@@ -158,5 +158,18 @@ namespace c2_eskolar.Services
             var blobClient = containerClient.GetBlobClient(fileName);
             return blobClient.Uri.ToString();
         }
+
+        /// <summary>
+        /// Deletes a document from the documents container in Azure Blob Storage.
+        /// </summary>
+        /// <param name="fileName">The name of the file to delete.</param>
+        /// <returns>True if the file was deleted, false if it did not exist.</returns>
+        public async Task<bool> DeleteDocumentAsync(string fileName)
+        {
+            var containerClient = GetContainerClient(_documentsContainer);
+            var blobClient = containerClient.GetBlobClient(fileName);
+            var response = await blobClient.DeleteIfExistsAsync();
+            return response.Value;
+        }
     }
 }

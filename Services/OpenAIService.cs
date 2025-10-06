@@ -1,5 +1,6 @@
 
 using Azure.AI.OpenAI;
+using OpenAI.Chat;
 using Microsoft.Extensions.Configuration;
 using Microsoft.AspNetCore.Identity;
 using System;
@@ -13,7 +14,7 @@ namespace c2_eskolar.Services
 {
     public class OpenAIService
     {
-        private readonly OpenAIClient _client;
+        private readonly AzureOpenAIClient _client;
         private readonly string _deploymentName;
         private readonly ProfileSummaryService _profileSummaryService;
         private readonly ScholarshipRecommendationService _scholarshipRecommendationService;
@@ -26,7 +27,7 @@ namespace c2_eskolar.Services
             var apiKey = config["AzureOpenAI:ApiKey"] ?? throw new ArgumentNullException("AzureOpenAI:ApiKey");
             var endpoint = config["AzureOpenAI:Endpoint"] ?? throw new ArgumentNullException("AzureOpenAI:Endpoint");
             _deploymentName = config["AzureOpenAI:DeploymentName"] ?? throw new ArgumentNullException("AzureOpenAI:DeploymentName");
-            _client = new OpenAIClient(new Uri(endpoint), new Azure.AzureKeyCredential(apiKey));
+            _client = new AzureOpenAIClient(new Uri(endpoint), new Azure.AzureKeyCredential(apiKey));
             _profileSummaryService = profileSummaryService;
             _scholarshipRecommendationService = scholarshipRecommendationService;
             _announcementRecommendationService = announcementRecommendationService;
@@ -36,13 +37,13 @@ namespace c2_eskolar.Services
 
         public async Task<string> GetChatCompletionAsync(string userMessage)
         {
-            var chatOptions = new ChatCompletionsOptions()
+            var chatClient = _client.GetChatClient(_deploymentName);
+            var messages = new[]
             {
-                DeploymentName = _deploymentName,
-                Messages = { new ChatRequestUserMessage(userMessage) }
+                new UserChatMessage(userMessage)
             };
-            var response = await _client.GetChatCompletionsAsync(chatOptions);
-            return response.Value.Choices[0].Message.Content.Trim();
+            var response = await chatClient.CompleteChatAsync(messages);
+            return response.Value.Content[0].Text.Trim();
         }
 
         // Enhanced method: includes user profile and current page context
@@ -109,13 +110,14 @@ namespace c2_eskolar.Services
                   $"When they ask about announcements, news, or updates, use the announcement recommendations provided below " +
                   $"and explain why each announcement is relevant to them. Present announcements by relevance.\n\n" +
                   $"Always be friendly, professional, and specific when referencing their profile data. Use emojis to make responses engaging and readable."
+                
                 : $"You are an AI assistant for eSkolar, a scholarship platform. " +
                   $"I don't have access to your profile information yet, but I'm here to help with general questions about scholarships and the platform. " +
                   $"Please use clear formatting with emojis and bullet points when presenting information.";
 
-            var messages = new List<ChatRequestMessage>
+            var messages = new List<ChatMessage>
             {
-                new ChatRequestSystemMessage(systemPrompt)
+                new SystemChatMessage(systemPrompt)
             };
 
             if (profileSummary != null)
@@ -128,7 +130,7 @@ namespace c2_eskolar.Services
                                    $"• Use simple bullet points for multiple items\n" +
                                    $"• Highlight important details like GPA, verification status\n" +
                                    $"• Present information in a conversational but organized way\n";
-                messages.Add(new ChatRequestSystemMessage(profileContext));
+                messages.Add(new SystemChatMessage(profileContext));
 
                 // Add scholarship recommendations if this is a scholarship-related query or user is a student
                 if (profileSummary.Role == "Student" && (isScholarshipQuery || isFirstMessage || scholarshipRecommendations.Any()))
@@ -136,7 +138,7 @@ namespace c2_eskolar.Services
                     var scholarshipContext = _contextGenerationService.GenerateScholarshipContext(scholarshipRecommendations);
                     if (!string.IsNullOrEmpty(scholarshipContext))
                     {
-                        messages.Add(new ChatRequestSystemMessage(scholarshipContext));
+                        messages.Add(new SystemChatMessage(scholarshipContext));
                     }
                 }
 
@@ -146,24 +148,16 @@ namespace c2_eskolar.Services
                     var announcementContext = _contextGenerationService.GenerateAnnouncementContext(announcementRecommendations);
                     if (!string.IsNullOrEmpty(announcementContext))
                     {
-                        messages.Add(new ChatRequestSystemMessage(announcementContext));
+                        messages.Add(new SystemChatMessage(announcementContext));
                     }
                 }
             }
             
-            messages.Add(new ChatRequestUserMessage(userMessage));
+            messages.Add(new UserChatMessage(userMessage));
 
-            var chatOptions = new ChatCompletionsOptions()
-            {
-                DeploymentName = _deploymentName,
-                Messages = { }
-            };
-            foreach (var msg in messages)
-            {
-                chatOptions.Messages.Add(msg);
-            }
-            var response = await _client.GetChatCompletionsAsync(chatOptions);
-            string aiResponse = response.Value.Choices[0].Message.Content.Trim();
+            var chatClient = _client.GetChatClient(_deploymentName);
+            var response = await chatClient.CompleteChatAsync(messages);
+            string aiResponse = response.Value.Content[0].Text.Trim();
             
             // Combine greeting with AI response if this is the first message
             if (isFirstMessage && !string.IsNullOrEmpty(greeting))
