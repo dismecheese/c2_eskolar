@@ -31,11 +31,11 @@ namespace c2_eskolar.Services.AI
             // Convert line breaks to HTML first
             formatted = formatted.Replace("\n", "<br>");
 
-            // Handle ALL **label:** patterns (scholarships, announcements, and any other content)
+            // Handle ALL **label:** patterns (scholarships, announcements, and any other content), robust to whitespace, <br>, and line breaks
             formatted = Regex.Replace(
                 formatted,
-                @"\*\*([^*]+?):\*\*\s*(.+?)(?=<br>|$)",
-                match => $"<strong>{match.Groups[1].Value}:</strong> {match.Groups[2].Value}",
+                @"\*\*\s*([^*<]+?)\s*:\s*\*\*\s*(.+?)(?=<br>|<div|$)",
+                match => $"<strong>{match.Groups[1].Value.Trim()}:</strong> {match.Groups[2].Value.Trim()}",
                 RegexOptions.Multiline | RegexOptions.Singleline);
 
             // Handle remaining **text** patterns (general bold for any other content)

@@ -27,41 +27,33 @@ namespace c2_eskolar.Services.AI
                 var urgencyEmoji = daysUntilDeadline <= 7 ? "🚨" : daysUntilDeadline <= 30 ? "⚠️" : "📅";
                 
                 context += $"{i + 1}. {scholarship.Title}\n";
-                context += $"📊 **Match Score:** {rec.MatchScore}% {new string('★', rec.MatchScore / 20)}\n";
-                context += $"💰 **Benefits:** {scholarship.Benefits}\n";
+                context += $"\uD83D\uDCCA **Match Score:** {rec.MatchScore}% {new string('★', rec.MatchScore / 20)}\n";
+                context += $"\uD83D\uDCB0 **Benefits:** {scholarship.Benefits}\n";
                 context += $"{urgencyEmoji} **Deadline:** {scholarship.ApplicationDeadline:MMMM dd, yyyy}";
-                
                 if (daysUntilDeadline <= 30)
                 {
                     context += $" ({daysUntilDeadline} days remaining!)";
                 }
                 context += "\n";
-                
                 if (scholarship.MinimumGPA.HasValue)
-                    context += $"� **Min GPA:** {scholarship.MinimumGPA:F2}\n";
-                
+                    context += $"\uD83D\uDD09 **Min GPA:** {scholarship.MinimumGPA:F2}\n";
                 if (!string.IsNullOrEmpty(scholarship.RequiredCourse))
-                    context += $"📖 **Course:** {scholarship.RequiredCourse}\n";
-                
+                    context += $"\uD83D\uDCD6 **Course:** {scholarship.RequiredCourse}\n";
                 if (scholarship.RequiredYearLevel.HasValue)
-                    context += $"🎯 **Year Level:** {scholarship.RequiredYearLevel}\n";
-                
+                    context += $"\uD83C\uDFAF **Year Level:** {scholarship.RequiredYearLevel}\n";
                 if (!string.IsNullOrEmpty(scholarship.RequiredUniversity))
-                    context += $"🏫 **University:** {scholarship.RequiredUniversity}\n";
-                
+                    context += $"\uD83C\uDFEB **University:** {scholarship.RequiredUniversity}\n";
                 if (rec.MatchReasons.Any())
                 {
                     context += $"✅ **Why It Matches:** {string.Join(", ", rec.MatchReasons)}\n";
                 }
-                
                 if (!string.IsNullOrEmpty(scholarship.Description))
                 {
                     var shortDesc = scholarship.Description.Length > 150 
                         ? scholarship.Description.Substring(0, 150) + "..." 
                         : scholarship.Description;
-                    context += $"📝 **Description:** {shortDesc}\n";
+                    context += $"\uD83D\uDCDD **Description:** {shortDesc}\n";
                 }
-                
                 context += "----\n";
             }
 
