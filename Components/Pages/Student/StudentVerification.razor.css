@@ -489,22 +489,7 @@
     border: 1px solid #ef4444;
 }
 
-/* Custom 2-column row for paired fields in personal info section */
-.sv-row-2col {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1rem;
-    width: 100%;
-    box-sizing: border-box;
-}
-/* Custom 3-column row for personal info section */
-.sv-row-3col {
-    display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
-    gap: 1rem;
-    width: 100%;
-    box-sizing: border-box;
-}
+
 
 /* Responsive Design */
 @media (max-width: 768px) {

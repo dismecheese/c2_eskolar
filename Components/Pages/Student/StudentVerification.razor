@@ -1,7 +1,11 @@
+@using System.ComponentModel.DataAnnotations;
 @page "/student/verification"
 @layout Layout.StudentDashLayout
 
-<div class="dashboard-center-container">
+<EditForm Model="verificationModel" OnValidSubmit="HandleValidSubmit">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+    <div class="dashboard-center-container">
     <div class="sv-header">
         <h2 id="sv-modal-title">Student Verification</h2>
         <div class="sv-divider"></div>
@@ -115,65 +119,62 @@
         <div class="sv-form-grid">
             <div class="sv-field sv-field-vertical sv-field-full">
                 <label for="firstName" class="sv-field-label">First Name <span class="sv-required">*</span></label>
-                <input id="firstName" class="sv-input" type="text" placeholder="Enter your first name" />
+                <InputText id="firstName" class="sv-input" placeholder="Enter your first name" @bind-Value="verificationModel.FirstName" />
+                <ValidationMessage For="@(() => verificationModel.FirstName)" />
             </div>
             <div class="sv-field sv-field-vertical sv-field-full">
                 <label for="middleName" class="sv-field-label">Middle Name</label>
-                <input id="middleName" class="sv-input" type="text" placeholder="Enter your middle name" />
+                <InputText id="middleName" class="sv-input" placeholder="Enter your middle name" @bind-Value="verificationModel.MiddleName" />
+                <ValidationMessage For="@(() => verificationModel.MiddleName)" />
             </div>
             <div class="sv-field sv-field-vertical sv-field-full">
                 <label for="lastName" class="sv-field-label">Last Name <span class="sv-required">*</span></label>
-                <input id="lastName" class="sv-input" type="text" placeholder="Enter your last name" />
+                <InputText id="lastName" class="sv-input" placeholder="Enter your last name" @bind-Value="verificationModel.LastName" />
+                <ValidationMessage For="@(() => verificationModel.LastName)" />
             </div>
             <div class="sv-field-full sv-row-2col">
                 <div class="sv-field sv-field-vertical">
                     <label for="sex" class="sv-field-label">Sex <span class="sv-required">*</span></label>
-                    <div class="sv-custom-select" tabindex="0" @onclick="ToggleSexDropdown" @onblur="CloseSexDropdown">
-                        <span class="sv-custom-select-value">@SelectedSexText</span>
-                        <svg class="sv-custom-select-arrow" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
-                        @if (ShowSexDropdown)
-                        {
-                            <ul class="sv-custom-select-list">
-                                @{
-                                    var sexNone = string.Empty;
-                                    var sexMale = "Male";
-                                    var sexFemale = "Female";
-                                    var sexOther = "Other";
-                                }
-                                <li class="sv-custom-select-item @(string.IsNullOrEmpty(SelectedSex) ? "selected" : null)" @onmousedown="() => SelectSex(sexNone)">Select</li>
-                                <li class="sv-custom-select-item @(SelectedSex == sexMale ? "selected" : null)" @onmousedown="() => SelectSex(sexMale)">Male</li>
-                                <li class="sv-custom-select-item @(SelectedSex == sexFemale ? "selected" : null)" @onmousedown="() => SelectSex(sexFemale)">Female</li>
-                                <li class="sv-custom-select-item @(SelectedSex == sexOther ? "selected" : null)" @onmousedown="() => SelectSex(sexOther)">Other</li>
-                            </ul>
-                        }
-                    </div>
+                    <InputSelect id="sex" class="sv-input" @bind-Value="verificationModel.Sex">
+                        <option value="">Select sex</option>
+                        <option value="Male">Male</option>
+                        <option value="Female">Female</option>
+                        <option value="Other">Other</option>
+                    </InputSelect>
+                    <ValidationMessage For="@(() => verificationModel.Sex)" />
                 </div>
                 <div class="sv-field sv-field-vertical">
                     <label for="bday" class="sv-field-label">Birthday <span class="sv-required">*</span></label>
-                    <input id="bday" type="date" class="sv-input" />
+                    <InputDate id="bday" class="sv-input" @bind-Value="verificationModel.BirthDate" />
+                    <ValidationMessage For="@(() => verificationModel.BirthDate)" />
                 </div>
             </div>
             <div class="sv-field-full sv-row-2col">
                 <div class="sv-field sv-field-vertical">
                     <label for="nationality" class="sv-field-label">Nationality <span class="sv-required">*</span></label>
-                    <input id="nationality" class="sv-input" type="text" placeholder="Enter your nationality" />
+                    <InputText id="nationality" class="sv-input" placeholder="Enter your nationality" @bind-Value="verificationModel.Nationality" />
+                    <ValidationMessage For="@(() => verificationModel.Nationality)" />
                 </div>
                 <div class="sv-field sv-field-vertical">
                     <label for="number" class="sv-field-label">Contact Number <span class="sv-required">*</span></label>
-                    <input id="number" class="sv-input" type="tel" placeholder="Enter your contact number" />
+                    <InputText id="number" class="sv-input" placeholder="Enter your contact number" @bind-Value="verificationModel.Phone" />
+                    <ValidationMessage For="@(() => verificationModel.Phone)" />
                 </div>
             </div>
             <div class="sv-field sv-field-vertical sv-field-full">
                 <label for="address" class="sv-field-label">Address <span class="sv-required">*</span></label>
-                <input id="address" class="sv-input" type="text" placeholder="Enter your complete address" />
+                <InputText id="address" class="sv-input" placeholder="Enter your complete address" @bind-Value="verificationModel.PermanentAddress" />
+                <ValidationMessage For="@(() => verificationModel.PermanentAddress)" />
             </div>
             <div class="sv-field sv-field-vertical sv-field-full">
                 <label for="personalEmail" class="sv-field-label">Personal Email <span class="sv-required">*</span></label>
-                <input id="personalEmail" class="sv-input" type="email" placeholder="Enter your personal email" />
+                <InputText id="personalEmail" class="sv-input" placeholder="Enter your personal email" @bind-Value="verificationModel.Email" />
+                <ValidationMessage For="@(() => verificationModel.Email)" />
             </div>
             <div class="sv-field sv-field-vertical sv-field-full">
                 <label for="institutionalEmail" class="sv-field-label">Institutional Email</label>
-                <input id="institutionalEmail" class="sv-input" type="email" placeholder="Enter your institutional email" />
+                <InputText id="institutionalEmail" class="sv-input" placeholder="Enter your institutional email" @bind-Value="verificationModel.InstitutionalEmail" />
+                <ValidationMessage For="@(() => verificationModel.InstitutionalEmail)" />
             </div>
         </div>
     </section>
@@ -186,43 +187,31 @@
         <div class="sv-form-grid">
             <div class="sv-field sv-field-vertical">
                 <label for="university" class="sv-field-label">University <span class="sv-required">*</span></label>
-                <input id="university" class="sv-input" type="text" placeholder="Enter your university" />
+                <InputText id="university" class="sv-input" placeholder="Enter your university" @bind-Value="verificationModel.University" />
+                <ValidationMessage For="@(() => verificationModel.University)" />
             </div>
             <div class="sv-field sv-field-vertical">
                 <label for="studentNumber" class="sv-field-label">Student Number <span class="sv-required">*</span></label>
-                <input id="studentNumber" class="sv-input" type="text" placeholder="Enter your student number" />
+                <InputText id="studentNumber" class="sv-input" placeholder="Enter your student number" @bind-Value="verificationModel.StudentNumber" />
+                <ValidationMessage For="@(() => verificationModel.StudentNumber)" />
             </div>
             <div class="sv-field sv-field-vertical">
                 <label for="program" class="sv-field-label">Program <span class="sv-required">*</span></label>
-                <input id="program" class="sv-input" type="text" placeholder="BS Information Technology" />
+                <InputText id="program" class="sv-input" placeholder="BS Information Technology" @bind-Value="verificationModel.Program" />
+                <ValidationMessage For="@(() => verificationModel.Program)" />
             </div>
             <div class="sv-field sv-field-vertical">
                 <label for="yearLevel" class="sv-field-label">Year Level <span class="sv-required">*</span></label>
-                <div class="sv-custom-select" tabindex="0" @onclick="ToggleYearLevelDropdown" @onblur="CloseYearLevelDropdown">
-                    <span class="sv-custom-select-value">@SelectedYearLevelText</span>
-                    <svg class="sv-custom-select-arrow" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
-                    @if (ShowYearLevelDropdown)
-                    {
-                        <ul class="sv-custom-select-list">
-                            @{
-                                var ylNone = string.Empty;
-                                var yl1 = "1st Year";
-                                var yl2 = "2nd Year";
-                                var yl3 = "3rd Year";
-                                var yl4 = "4th Year";
-                                var yl5 = "5th Year";
-                                var ylOther = "Other";
-                            }
-                            <li class="sv-custom-select-item @(string.IsNullOrEmpty(SelectedYearLevel) ? "selected" : null)" @onmousedown="() => SelectYearLevel(ylNone)">Select</li>
-                            <li class="sv-custom-select-item @(SelectedYearLevel == yl1 ? "selected" : null)" @onmousedown="() => SelectYearLevel(yl1)">1st Year</li>
-                            <li class="sv-custom-select-item @(SelectedYearLevel == yl2 ? "selected" : null)" @onmousedown="() => SelectYearLevel(yl2)">2nd Year</li>
-                            <li class="sv-custom-select-item @(SelectedYearLevel == yl3 ? "selected" : null)" @onmousedown="() => SelectYearLevel(yl3)">3rd Year</li>
-                            <li class="sv-custom-select-item @(SelectedYearLevel == yl4 ? "selected" : null)" @onmousedown="() => SelectYearLevel(yl4)">4th Year</li>
-                            <li class="sv-custom-select-item @(SelectedYearLevel == yl5 ? "selected" : null)" @onmousedown="() => SelectYearLevel(yl5)">5th Year</li>
-                            <li class="sv-custom-select-item @(SelectedYearLevel == ylOther ? "selected" : null)" @onmousedown="() => SelectYearLevel(ylOther)">Other</li>
-                        </ul>
-                    }
-                </div>
+                <InputSelect id="yearLevel" class="sv-input" @bind-Value="verificationModel.YearLevel">
+                    <option value="">Select year level</option>
+                    <option value="1st Year">1st Year</option>
+                    <option value="2nd Year">2nd Year</option>
+                    <option value="3rd Year">3rd Year</option>
+                    <option value="4th Year">4th Year</option>
+                    <option value="5th Year">5th Year</option>
+                    <option value="Other">Other</option>
+                </InputSelect>
+                <ValidationMessage For="@(() => verificationModel.YearLevel)" />
             </div>
             <div class="sv-field sv-field-vertical">
                 <label for="status" class="sv-field-label">Status</label>
@@ -234,9 +223,8 @@
     <!-- Actions Section -->
     <div class="sv-actions-container">
         <div class="sv-actions-buttons">
-
             <button type="button" class="sv-btn sv-btn-secondary">Skip for now</button>
-            <button type="submit" class="sv-btn sv-btn-primary" disabled>Submit Verification</button>
+            <button type="submit" class="sv-btn sv-btn-primary" disabled="@(IsSubmitting)">Submit Verification</button>
         </div>
         <div class="sv-status-messages">
             <div class="sv-status-info" style="display:none;">
@@ -255,6 +243,161 @@
     </div>
 
     @code {
+        // Validation model for the form
+        public class StudentVerificationModel
+        {
+            [Required(ErrorMessage = "First name is required.")]
+            public string FirstName { get; set; } = string.Empty;
+
+            public string? MiddleName { get; set; }
+
+            [Required(ErrorMessage = "Last name is required.")]
+            public string LastName { get; set; } = string.Empty;
+
+            [Required(ErrorMessage = "Sex is required.")]
+            public string Sex { get; set; } = string.Empty;
+
+            [Required(ErrorMessage = "Birthdate is required.")]
+            public DateTime? BirthDate { get; set; }
+
+            [Required(ErrorMessage = "Nationality is required.")]
+            public string Nationality { get; set; } = string.Empty;
+
+            [Required(ErrorMessage = "Address is required.")]
+            public string PermanentAddress { get; set; } = string.Empty;
+
+            [Required(ErrorMessage = "Personal email is required.")]
+            [EmailAddress(ErrorMessage = "Invalid email address.")]
+            public string Email { get; set; } = string.Empty;
+
+            public string? InstitutionalEmail { get; set; }
+
+            [Required(ErrorMessage = "Contact number is required.")]
+            public string Phone { get; set; } = string.Empty;
+
+            [Required(ErrorMessage = "University is required.")]
+            public string University { get; set; } = string.Empty;
+
+            [Required(ErrorMessage = "Student number is required.")]
+            public string StudentNumber { get; set; } = string.Empty;
+
+            [Required(ErrorMessage = "Program is required.")]
+            public string Program { get; set; } = string.Empty;
+
+            [Required(ErrorMessage = "Year level is required.")]
+            public string YearLevel { get; set; } = string.Empty;
+        }
+
+        private StudentVerificationModel verificationModel = new StudentVerificationModel();
+
+    private bool IsSubmitting = false;
+
+    private async Task HandleValidSubmit()
+        {
+            if (IsSubmitting) return;
+            IsSubmitting = true;
+            ProfileErrorMessage = "";
+            try
+            {
+                var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+                var userId = authState.User?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+                if (string.IsNullOrWhiteSpace(userId))
+                {
+                    ProfileErrorMessage = "User not found.";
+                    IsSubmitting = false;
+                    return;
+                }
+
+                var studentProfile = await StudentProfileService.GetProfileByUserIdAsync(userId) ?? new c2_eskolar.Models.StudentProfile {
+                    UserId = userId,
+                    FirstName = verificationModel.FirstName,
+                    LastName = verificationModel.LastName
+                };
+
+                studentProfile.FirstName = verificationModel.FirstName;
+                studentProfile.MiddleName = verificationModel.MiddleName;
+                studentProfile.LastName = verificationModel.LastName;
+                studentProfile.Sex = verificationModel.Sex;
+                studentProfile.BirthDate = verificationModel.BirthDate ?? DateTime.Now;
+                studentProfile.Nationality = verificationModel.Nationality;
+                studentProfile.PermanentAddress = verificationModel.PermanentAddress;
+                studentProfile.Email = verificationModel.Email;
+                studentProfile.MobileNumber = verificationModel.Phone;
+                studentProfile.UniversityName = verificationModel.University;
+                studentProfile.StudentNumber = verificationModel.StudentNumber;
+                studentProfile.Course = verificationModel.Program;
+                studentProfile.YearLevel = ParseYearLevel(verificationModel.YearLevel);
+                studentProfile.VerificationStatus = "Pending";
+                studentProfile.StudentIdDocumentPath = StudentIdUploadUrl;
+                studentProfile.CorDocumentPath = CorUploadUrl;
+
+                await StudentProfileService.SaveProfileAsync(studentProfile, studentProfile.Email);
+                ProfileErrorMessage = "Verification submitted successfully!";
+            }
+            catch (Exception ex)
+            {
+                ProfileErrorMessage = $"Error submitting verification: {ex.Message}";
+            }
+            IsSubmitting = false;
+        }
+
+        private int? ParseYearLevel(string yearLevelStr)
+        {
+            if (string.IsNullOrWhiteSpace(yearLevelStr)) return null;
+            var digits = new string(yearLevelStr.TakeWhile(char.IsDigit).ToArray());
+            if (int.TryParse(digits, out var yl)) return yl;
+            if (yearLevelStr.Contains("1")) return 1;
+            if (yearLevelStr.Contains("2")) return 2;
+            if (yearLevelStr.Contains("3")) return 3;
+            if (yearLevelStr.Contains("4")) return 4;
+            if (yearLevelStr.Contains("5")) return 5;
+            return null;
+        }
+    // Remove old field properties (now using verificationModel)
+    private string Status = "Pending";
+    private string ProfileErrorMessage = "";
+
+        [Inject] private Services.StudentProfileService StudentProfileService { get; set; } = default!;
+        [Inject] private AuthenticationStateProvider AuthenticationStateProvider { get; set; } = default!;
+
+        protected override async Task OnInitializedAsync()
+        {
+            await LoadStudentProfileData();
+        }
+
+        private async Task LoadStudentProfileData()
+        {
+            try
+            {
+                var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+                var userId = authState.User?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+                if (!string.IsNullOrWhiteSpace(userId))
+                {
+                    var studentProfile = await StudentProfileService.GetProfileByUserIdAsync(userId);
+                    if (studentProfile != null)
+                    {
+                        verificationModel.FirstName = studentProfile.FirstName ?? "";
+                        verificationModel.MiddleName = studentProfile.MiddleName ?? "";
+                        verificationModel.LastName = studentProfile.LastName ?? "";
+                        verificationModel.Sex = studentProfile.Sex ?? "";
+                        verificationModel.Nationality = studentProfile.Nationality ?? "";
+                        verificationModel.PermanentAddress = studentProfile.PermanentAddress ?? "";
+                        verificationModel.BirthDate = studentProfile.BirthDate ?? DateTime.Now;
+                        verificationModel.Phone = studentProfile.MobileNumber ?? "";
+                        verificationModel.Email = studentProfile.Email ?? verificationModel.Email;
+                        verificationModel.University = studentProfile.UniversityName ?? "";
+                        verificationModel.StudentNumber = studentProfile.StudentNumber ?? "";
+                        verificationModel.Program = studentProfile.Course ?? "";
+                        verificationModel.YearLevel = studentProfile.YearLevel.HasValue ? $"{studentProfile.YearLevel} year" : "";
+                        Status = studentProfile.VerificationStatus ?? "Pending";
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                ProfileErrorMessage = $"Error loading profile: {ex.Message}";
+            }
+        }
         private async Task RemoveCorDocument()
         {
             if (string.IsNullOrEmpty(CorUploadUrl)) return;
@@ -427,7 +570,8 @@
             ShowYearLevelDropdown = false;
         }
     }
-</div>
+    </div>
+</EditForm>
 
 
 
