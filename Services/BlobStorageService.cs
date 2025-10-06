@@ -14,6 +14,7 @@ namespace c2_eskolar.Services
     /// Service for uploading and downloading files to Azure Blob Storage.
     /// Supports separate containers for documents and photos as configured in appsettings.json.
     /// </summary>
+
     public class BlobStorageService
     {
         private readonly string _connectionString;
@@ -54,6 +55,8 @@ namespace c2_eskolar.Services
             }
             catch (Exception ex)
             {
+                // Log error (replace with your logger if available)
+                Console.WriteLine($"[BlobStorageService] UploadFileAsync error: {ex.Message}");
                 throw new InvalidOperationException($"Failed to upload file '{fileName}' to container '{containerName}'.", ex);
             }
         }
@@ -75,6 +78,8 @@ namespace c2_eskolar.Services
             }
             catch (Exception ex)
             {
+                // Log error
+                Console.WriteLine($"[BlobStorageService] DownloadFileAsync error: {ex.Message}");
                 throw new FileNotFoundException($"Failed to download file '{fileName}' from container '{containerName}'.", ex);
             }
         }
@@ -83,26 +88,34 @@ namespace c2_eskolar.Services
         /// <summary>
         /// Uploads a document to the documents container.
         /// </summary>
-        public Task<string> UploadDocumentAsync(Stream fileStream, string fileName, string contentType)
-            => UploadFileAsync(_documentsContainer, fileStream, fileName, contentType);
+        public async Task<string> UploadDocumentAsync(Stream fileStream, string fileName, string contentType)
+        {
+            return await UploadFileAsync(_documentsContainer, fileStream, fileName, contentType);
+        }
 
         /// <summary>
         /// Uploads a photo to the photos container.
         /// </summary>
-        public Task<string> UploadPhotoAsync(Stream fileStream, string fileName, string contentType)
-            => UploadFileAsync(_photosContainer, fileStream, fileName, contentType);
+        public async Task<string> UploadPhotoAsync(Stream fileStream, string fileName, string contentType)
+        {
+            return await UploadFileAsync(_photosContainer, fileStream, fileName, contentType);
+        }
 
         /// <summary>
         /// Downloads a document from the documents container. Caller must dispose the returned stream.
         /// </summary>
-        public Task<Stream> DownloadDocumentAsync(string fileName)
-            => DownloadFileAsync(_documentsContainer, fileName);
+        public async Task<Stream> DownloadDocumentAsync(string fileName)
+        {
+            return await DownloadFileAsync(_documentsContainer, fileName);
+        }
 
         /// <summary>
         /// Downloads a photo from the photos container. Caller must dispose the returned stream.
         /// </summary>
-        public Task<Stream> DownloadPhotoAsync(string fileName)
-            => DownloadFileAsync(_photosContainer, fileName);
+        public async Task<Stream> DownloadPhotoAsync(string fileName)
+        {
+            return await DownloadFileAsync(_photosContainer, fileName);
+        }
 
 
 
@@ -133,8 +146,16 @@ namespace c2_eskolar.Services
         {
             var containerClient = GetContainerClient(_documentsContainer);
             var blobClient = containerClient.GetBlobClient(fileName);
+            // Check if blob exists before generating SAS
+            if (!blobClient.Exists())
+                throw new FileNotFoundException($"Blob '{fileName}' does not exist in container '{_documentsContainer}'.");
+
             if (!blobClient.CanGenerateSasUri)
+            {
+                // Log diagnostic info
+                Console.WriteLine($"[BlobStorageService] Cannot generate SAS URI for blob '{fileName}'.");
                 throw new InvalidOperationException("BlobClient cannot generate SAS URI. Ensure you are using a key credential.");
+            }
 
             var sasBuilder = new BlobSasBuilder
             {
@@ -166,10 +187,18 @@ namespace c2_eskolar.Services
         /// <returns>True if the file was deleted, false if it did not exist.</returns>
         public async Task<bool> DeleteDocumentAsync(string fileName)
         {
-            var containerClient = GetContainerClient(_documentsContainer);
-            var blobClient = containerClient.GetBlobClient(fileName);
-            var response = await blobClient.DeleteIfExistsAsync();
-            return response.Value;
+            try
+            {
+                var containerClient = GetContainerClient(_documentsContainer);
+                var blobClient = containerClient.GetBlobClient(fileName);
+                var response = await blobClient.DeleteIfExistsAsync();
+                return response.Value;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[BlobStorageService] DeleteDocumentAsync error: {ex.Message}");
+                throw new InvalidOperationException($"Failed to delete blob '{fileName}' from container '{_documentsContainer}'.", ex);
+            }
         }
     }
 }

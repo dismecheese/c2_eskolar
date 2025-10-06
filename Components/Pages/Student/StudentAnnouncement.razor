@@ -8,9 +8,14 @@
 
 <PageTitle>Announcements</PageTitle>
 
-<div class="container-fluid" style="min-height: 100vh;">
-    <div class="row justify-content-center">
-        <div class="col-12 col-lg-10">
+<div style="padding: 2.5rem; min-height: 100vh; background: var(--blue-bg);">
+    <div class="announcement-banner mb-3">
+        <i class="bi bi-megaphone-fill"></i>
+        <span>Announcement</span>
+    </div>
+    <div class="container-fluid" style="min-height: 100vh; padding: 2rem;">
+        <div class="row justify-content-center">
+            <div class="col-12 col-lg-10 px-2 px-lg-4 main-content-area">
             <!-- Search and Header -->
             <div class="d-flex flex-column flex-md-row align-items-md-center mb-4 gap-3 mt-5">
                 <div class="flex-grow-1">
@@ -54,9 +59,9 @@
                 </div>
             </div>
 
-            <div class="row">
+            <div class="row gx-4 gy-4">
                 <!-- Announcements List -->
-                <div class="col-lg-8">
+                <div class="col-lg-8 mb-4 mb-lg-0">
                     @if (isLoading)
                     {
                         <div class="d-flex justify-content-center py-5">
@@ -71,10 +76,10 @@
                             <h5 class="text-muted">@GetTabDescription()</h5>
                         </div>
 
-                        <div class="d-flex flex-column gap-3">
+                        <div class="d-flex flex-column gap-4">
                             @foreach (var announcement in filteredAnnouncements.OrderByDescending(a => a.IsPinned).ThenByDescending(a => a.CreatedAt))
                             {
-                                <div class="card shadow-sm border-0 @(announcement.IsPinned ? "border-warning border-2" : "")">
+                                <div class="card shadow-sm border-0 announcement-card @(announcement.IsPinned ? "border-warning border-2" : "")">
                                     <div class="card-body">
                                         <!-- Header with badges -->
                                         <div class="d-flex justify-content-between align-items-start mb-2">
@@ -170,7 +175,7 @@
 
                 <!-- Category Sidebar -->
                 <div class="col-lg-4 mt-4 mt-lg-0">
-                    <div class="card shadow-sm border-0">
+                    <div class="card shadow-sm border-0 sidebar-card mb-4">
                         <div class="card-body">
                             <div class="fw-bold mb-3">Statistics for @activeTab</div>
                             <div class="list-group list-group-flush">
@@ -195,7 +200,7 @@
                     </div>
 
                     <!-- Tab Information -->
-                    <div class="card shadow-sm border-0 mt-3">
+                    <div class="card shadow-sm border-0 sidebar-card">
                         <div class="card-body">
                             <div class="fw-bold mb-3">About @activeTab</div>
                             <p class="text-muted small">@GetTabInfo()</p>
@@ -209,16 +214,89 @@
                     </div>
                 </div>
             </div>
-        </div>
-    </div>
-</div>
+            </div> <!-- /.col-12 col-lg-10 main-content-area -->
+        </div> <!-- /.row justify-content-center -->
+    </div> <!-- /.container-fluid -->
+</div> <!-- outer padded div -->
 
 <style>
+    .main-content-area {
+        margin-right: 0;
+    }
+    @@media (min-width: 992px) {
+        .main-content-area {
+            margin-right: 6rem;
+        }
+    }
+    .announcement-card {
+        margin-bottom: 0.5rem;
+        padding: 0.5rem 0.5rem 0.5rem 0.5rem;
+    }
+    .sidebar-card {
+        margin-bottom: 1.5rem;
+        padding: 1.25rem 1.25rem 1.25rem 1.25rem;
+    }
+    .container-fluid {
+        padding-top: 1.5rem;
+        padding-bottom: 1.5rem;
+    }
     .modern-tabs {
-        background: #f8f9fa;
-        border-radius: 12px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-        padding: 0.75rem 1rem;
+        margin-bottom: 2rem !important;
+    }
+    .mb-4 {
+        margin-bottom: 2rem !important;
+    }
+    .mb-3 {
+        margin-bottom: 1.25rem !important;
+    }
+    .mt-4 {
+        margin-top: 2rem !important;
+    }
+    .mt-5 {
+        margin-top: 2.5rem !important;
+    }
+    .gx-4 {
+        --bs-gutter-x: 2rem;
+    }
+    .gy-4 {
+        --bs-gutter-y: 2rem;
+    }
+    .announcement-banner {
+        width: 100%;
+        background: var(--blue-gradient);
+        color: #fff;
+        font-size: 1.35rem;
+        font-weight: 600;
+        letter-spacing: 0.03em;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 1.1rem 0 1.1rem 2.2rem;
+        border-radius: 0 0 18px 18px;
+        box-shadow: 0 2px 12px rgba(37,99,235,0.10);
+        margin-bottom: 1.5rem;
+        margin-right: 0;
+    }
+    .announcement-banner i {
+        font-size: 1.7rem;
+        margin-right: 0.5rem;
+    }
+    :root {
+        --blue-main: #2563eb;
+        --blue-light: #3b82f6;
+        --blue-bg: #e0e7ff;
+        --blue-gradient: linear-gradient(90deg, #2563eb 0%, #3b82f6 100%);
+        --blue-badge: #2563eb;
+        --blue-badge-light: #3b82f6;
+        --blue-border: #2563eb33;
+        --blue-shadow: 0 2px 8px rgba(37,99,235,0.08);
+    }
+    .modern-tabs {
+        background: var(--blue-bg);
+        border-radius: 14px;
+        box-shadow: var(--blue-shadow);
+        padding: 0.85rem 1.2rem;
+        border: 1.5px solid var(--blue-border);
     }
     .tab-pills {
         display: flex;
@@ -226,28 +304,30 @@
     }
     .tab-pill {
         background: #fff;
-        border: 1px solid #e0e0e0;
+        border: 2px solid transparent;
         border-radius: 24px;
         padding: 0.5rem 1.25rem;
         font-weight: 500;
-        color: #333;
+        color: var(--blue-main);
         display: flex;
         align-items: center;
         gap: 0.5rem;
-        box-shadow: 0 1px 4px rgba(0,0,0,0.03);
-        transition: background 0.2s, color 0.2s, box-shadow 0.2s;
+        box-shadow: 0 1px 6px rgba(37,99,235,0.07);
+        transition: background 0.2s, color 0.2s, box-shadow 0.2s, border 0.2s;
         cursor: pointer;
-        border: none;
         outline: none;
+        position: relative;
     }
     .tab-pill.active {
-        background: #2563eb;
+        background: var(--blue-gradient);
         color: #fff;
-        box-shadow: 0 2px 8px rgba(37,99,235,0.08);
+        border: 2px solid var(--blue-main);
+        box-shadow: 0 2px 12px rgba(37,99,235,0.13);
     }
     .tab-pill:hover:not(.active) {
-        background: #e0e7ff;
-        color: #2563eb;
+        background: var(--blue-bg);
+        color: var(--blue-main);
+        border: 2px solid var(--blue-main);
     }
     .tab-pill i {
         font-size: 1.1rem;
@@ -256,15 +336,85 @@
         border-radius: 24px;
         font-size: 0.95rem;
         padding-left: 1rem;
+        border: 1.5px solid var(--blue-border);
+        background: #fff;
+        color: var(--blue-main);
+    }
+    .card.shadow-sm {
+        box-shadow: 0 2px 12px rgba(37,99,235,0.07), 0 1.5px 4px rgba(0,0,0,0.03);
+        border-radius: 16px;
+    }
+    .card-body {
+        border-radius: 14px;
+    }
+    .badge.bg-primary, .badge.bg-success, .badge.bg-info, .badge.bg-warning, .badge.bg-light {
+        font-size: 0.92em;
+        padding: 0.45em 0.9em;
+        border-radius: 16px;
+        font-weight: 500;
+        letter-spacing: 0.01em;
+    }
+    .badge.bg-primary {
+        background: var(--blue-main)!important;
+        color: #fff!important;
+    }
+    .badge.bg-success {
+        background: var(--blue-light)!important;
+        color: #fff!important;
+    }
+    .badge.bg-info {
+        background: #60a5fa!important;
+        color: #fff!important;
+    }
+    .badge.bg-warning {
+        background: #fbbf24!important;
+        color: #1e293b!important;
+    }
+    .badge.bg-light {
+        background: #f1f5f9!important;
+        color: var(--blue-main)!important;
+        border: 1px solid var(--blue-border);
+    }
+    .btn-outline-primary {
+        color: var(--blue-main);
+        border-color: var(--blue-main);
+        background: #fff;
+        transition: background 0.2s, color 0.2s, border 0.2s;
+    }
+    .btn-outline-primary:hover, .btn-outline-primary:focus {
+        background: var(--blue-gradient);
+        color: #fff;
+        border-color: var(--blue-main);
+    }
+    .pagination .page-link {
+        color: var(--blue-main);
+        border-radius: 12px;
+        border: 1.5px solid var(--blue-border);
+        transition: background 0.2s, color 0.2s;
+    }
+    .pagination .page-item.active .page-link {
+        background: var(--blue-gradient);
+        color: #fff;
+        border: 1.5px solid var(--blue-main);
+    }
+    .pagination .page-link:hover {
+        background: var(--blue-bg);
+        color: var(--blue-main);
+    }
+    .list-group-item {
+        background: transparent;
     }
 </style>
 
 @code {
+    // Announcements data
     private List<Announcement>? allAnnouncements;
     private List<Announcement>? filteredAnnouncements;
     private bool isLoading = true;
-    private string searchTerm = "";
-    private string _selectedCategory = "";
+
+    // Filtering and UI state
+    private string searchTerm = string.Empty;
+    private string _selectedCategory = string.Empty;
     private string selectedCategory
     {
         get => _selectedCategory;
@@ -273,151 +423,128 @@
             if (_selectedCategory != value)
             {
                 _selectedCategory = value;
+                currentPage = 1;
                 ApplyFilters();
             }
         }
     }
-    private string activeTab = "All"; // Default to All tab to show all announcements
-    
+    private string activeTab = "All";
+
     // Pagination
     private int currentPage = 1;
-    private int pageSize = 10;
+    private const int pageSize = 10;
     private int totalAnnouncements = 0;
     private int totalPages => (int)Math.Ceiling((double)totalAnnouncements / pageSize);
-    
+
     // Statistics
     private int institutionCount = 0;
     private int benefactorCount = 0;
     private int pinnedCount = 0;
 
-    // Mock data for student's scholarships (in a real app, this would come from the database)
-    private List<string> studentScholarshipApplications = new() { "Tech Excellence Scholarship", "STEM Leadership Grant" };
-    private List<string> studentCurrentGrants = new() { "Academic Merit Scholarship", "Community Service Award" };
+    // Mock data for student's scholarships (replace with real data in production)
+    private readonly List<string> studentScholarshipApplications = new() { "Tech Excellence Scholarship", "STEM Leadership Grant" };
+    private readonly List<string> studentCurrentGrants = new() { "Academic Merit Scholarship", "Community Service Award" };
 
     protected override async Task OnInitializedAsync()
     {
         await LoadAnnouncements();
     }
 
+    // Loads announcements from the service
     private async Task LoadAnnouncements()
     {
         isLoading = true;
         try
         {
             allAnnouncements = await AnnouncementService.GetActiveAnnouncementsAsync();
-            UpdateStatistics();
-            ApplyFilters();
         }
         catch (Exception ex)
         {
             Console.WriteLine($"Error loading announcements: {ex.Message}");
             allAnnouncements = new List<Announcement>();
-            filteredAnnouncements = new List<Announcement>();
         }
         finally
         {
             isLoading = false;
+            ApplyFilters();
         }
     }
 
-    private void UpdateStatistics()
+    // Applies all filters and updates statistics
+    private void ApplyFilters()
     {
-        if (allAnnouncements != null)
+        var tabAnnouncements = GetAnnouncementsForTab(activeTab);
+        IEnumerable<Announcement> filtered = tabAnnouncements;
+
+        if (!string.IsNullOrWhiteSpace(searchTerm))
         {
-            var tabFiltered = GetAnnouncementsForTab(activeTab);
-            totalAnnouncements = tabFiltered.Count;
-            institutionCount = tabFiltered.Count(a => a.AuthorType == UserRole.Institution);
-            benefactorCount = tabFiltered.Count(a => a.AuthorType == UserRole.Benefactor);
-            pinnedCount = tabFiltered.Count(a => a.IsPinned);
+            filtered = filtered.Where(a =>
+                a.Title.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
+                a.Content.Contains(searchTerm, StringComparison.OrdinalIgnoreCase));
         }
+        if (!string.IsNullOrWhiteSpace(selectedCategory))
+        {
+            filtered = filtered.Where(a => a.Category != null && a.Category.Contains(selectedCategory, StringComparison.OrdinalIgnoreCase));
+        }
+
+        totalAnnouncements = filtered.Count();
+        filteredAnnouncements = filtered.Skip((currentPage - 1) * pageSize).Take(pageSize).ToList();
+        UpdateStatistics(tabAnnouncements);
     }
 
+    // Updates statistics for the sidebar
+    private void UpdateStatistics(List<Announcement> tabFiltered)
+    {
+        institutionCount = tabFiltered.Count(a => a.AuthorType == UserRole.Institution);
+        benefactorCount = tabFiltered.Count(a => a.AuthorType == UserRole.Benefactor);
+        pinnedCount = tabFiltered.Count(a => a.IsPinned);
+    }
+
+    // Returns announcements for the selected tab
     private List<Announcement> GetAnnouncementsForTab(string tab)
     {
-        if (allAnnouncements == null) return new List<Announcement>();
-
+        if (allAnnouncements == null) return new();
         return tab switch
         {
             "All" => allAnnouncements.ToList(),
             "Institution" => allAnnouncements.Where(a => a.AuthorType == UserRole.Institution && IsGeneralInstitutionAnnouncement(a)).ToList(),
-            "Application" => allAnnouncements.Where(a => IsApplicationRelated(a)).ToList(),
-            "Grants" => allAnnouncements.Where(a => IsGrantRelated(a)).ToList(),
+            "Application" => allAnnouncements.Where(IsApplicationRelated).ToList(),
+            "Grants" => allAnnouncements.Where(IsGrantRelated).ToList(),
             "Benefactor" => allAnnouncements.Where(a => a.AuthorType == UserRole.Benefactor).ToList(),
             _ => allAnnouncements.ToList()
         };
     }
 
-    private bool IsGeneralInstitutionAnnouncement(Announcement announcement)
-    {
-        // General announcements from institutions (not specific to student's applications/grants)
-        return !IsApplicationRelated(announcement) && !IsGrantRelated(announcement);
-    }
+    // Helper: Is a general institution announcement?
+    private bool IsGeneralInstitutionAnnouncement(Announcement a) => !IsApplicationRelated(a) && !IsGrantRelated(a);
 
-    private bool IsApplicationRelated(Announcement announcement)
-    {
-        // Check if announcement is related to scholarships the student has applied for
-        // In a real app, you'd check against the student's application records
-        return studentScholarshipApplications.Any(scholarship => 
-            announcement.Title.Contains(scholarship, StringComparison.OrdinalIgnoreCase) ||
-            announcement.Content.Contains(scholarship, StringComparison.OrdinalIgnoreCase) ||
-            announcement.Category == "Applications");
-    }
+    // Helper: Is announcement related to student's applications?
+    private bool IsApplicationRelated(Announcement a) =>
+        studentScholarshipApplications.Any(s => a.Title.Contains(s, StringComparison.OrdinalIgnoreCase) || a.Content.Contains(s, StringComparison.OrdinalIgnoreCase))
+        || a.Category == "Applications";
 
-    private bool IsGrantRelated(Announcement announcement)
-    {
-        // Check if announcement is related to scholarships the student currently has
-        // In a real app, you'd check against the student's current grants/scholarships
-        return studentCurrentGrants.Any(grant => 
-            announcement.Title.Contains(grant, StringComparison.OrdinalIgnoreCase) ||
-            announcement.Content.Contains(grant, StringComparison.OrdinalIgnoreCase)) ||
-            announcement.Category == "Funding";
-    }
+    // Helper: Is announcement related to student's current grants?
+    private bool IsGrantRelated(Announcement a) =>
+        studentCurrentGrants.Any(g => a.Title.Contains(g, StringComparison.OrdinalIgnoreCase) || a.Content.Contains(g, StringComparison.OrdinalIgnoreCase))
+        || a.Category == "Funding";
 
-    private void ApplyFilters()
-    {
-        var tabAnnouncements = GetAnnouncementsForTab(activeTab);
-        var filtered = tabAnnouncements.AsEnumerable();
-
-        // Apply search filter
-        if (!string.IsNullOrEmpty(searchTerm))
-        {
-            filtered = filtered.Where(a => 
-                a.Title.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
-                a.Content.Contains(searchTerm, StringComparison.OrdinalIgnoreCase));
-        }
-
-        // Apply category filter
-        if (!string.IsNullOrEmpty(selectedCategory))
-        {
-            filtered = filtered.Where(a => a.Category != null && a.Category.Contains(selectedCategory, StringComparison.OrdinalIgnoreCase));
-        }
-
-        // Apply pagination
-        var skip = (currentPage - 1) * pageSize;
-        filteredAnnouncements = filtered.Skip(skip).Take(pageSize).ToList();
-        
-        // Update total count for pagination
-        var filteredCount = filtered.Count();
-        totalAnnouncements = filteredCount;
-        
-        UpdateStatistics();
-    }
-
+    // UI event handlers
     private async Task OnSearchChanged(ChangeEventArgs e)
     {
-        searchTerm = e.Value?.ToString() ?? "";
+        searchTerm = e.Value?.ToString() ?? string.Empty;
         currentPage = 1;
         ApplyFilters();
         await InvokeAsync(StateHasChanged);
     }
-
     private void SetActiveTab(string tab)
     {
-        activeTab = tab;
-        currentPage = 1;
-        ApplyFilters();
+        if (activeTab != tab)
+        {
+            activeTab = tab;
+            currentPage = 1;
+            ApplyFilters();
+        }
     }
-
     private void ChangePage(int page)
     {
         if (page >= 1 && page <= totalPages)
@@ -426,128 +553,86 @@
             ApplyFilters();
         }
     }
-
     private void ClearFilters()
     {
-        searchTerm = "";
-        selectedCategory = "";
+        searchTerm = string.Empty;
+        selectedCategory = string.Empty;
         currentPage = 1;
         ApplyFilters();
     }
+    private async Task RefreshAnnouncements() => await LoadAnnouncements();
 
-    private async Task RefreshAnnouncements()
+    // UI helpers
+    private string GetAuthorBadgeClass(UserRole authorType) => authorType switch
     {
-        await LoadAnnouncements();
-    }
-
-    private string GetAuthorBadgeClass(UserRole authorType)
+        UserRole.Institution => "bg-success",
+        UserRole.Benefactor => "bg-info",
+        _ => "bg-secondary"
+    };
+    private string GetAuthorIcon(UserRole authorType) => authorType switch
     {
-        return authorType switch
-        {
-            UserRole.Institution => "bg-success",
-            UserRole.Benefactor => "bg-info",
-            _ => "bg-secondary"
-        };
-    }
-
-    private string GetAuthorIcon(UserRole authorType)
-    {
-        return authorType switch
-        {
-            UserRole.Institution => "bi bi-building",
-            UserRole.Benefactor => "bi bi-globe",
-            _ => "bi bi-person-circle"
-        };
-
-    }
-
-    private string GetAnnouncementSource(Announcement announcement)
+        UserRole.Institution => "bi bi-building",
+        UserRole.Benefactor => "bi bi-globe",
+        _ => "bi bi-person-circle"
+    };
+    private string GetAnnouncementSource(Announcement a)
     {
         if (activeTab == "Application")
         {
-            var matchingApp = studentScholarshipApplications.FirstOrDefault(app => 
-                announcement.Title.Contains(app, StringComparison.OrdinalIgnoreCase) ||
-                announcement.Content.Contains(app, StringComparison.OrdinalIgnoreCase));
-            return matchingApp ?? "Application Related";
+            var match = studentScholarshipApplications.FirstOrDefault(app => a.Title.Contains(app, StringComparison.OrdinalIgnoreCase) || a.Content.Contains(app, StringComparison.OrdinalIgnoreCase));
+            return match ?? "Application Related";
         }
-        else if (activeTab == "Grants")
+        if (activeTab == "Grants")
         {
-            var matchingGrant = studentCurrentGrants.FirstOrDefault(grant => 
-                announcement.Title.Contains(grant, StringComparison.OrdinalIgnoreCase) ||
-                announcement.Content.Contains(grant, StringComparison.OrdinalIgnoreCase));
-            return matchingGrant ?? "Grant Related";
+            var match = studentCurrentGrants.FirstOrDefault(grant => a.Title.Contains(grant, StringComparison.OrdinalIgnoreCase) || a.Content.Contains(grant, StringComparison.OrdinalIgnoreCase));
+            return match ?? "Grant Related";
         }
-        return announcement.AuthorName ?? "Institution";
+        return a.AuthorName ?? "Institution";
     }
-
-    private string GetTabDescription()
+    private string GetTabDescription() => activeTab switch
     {
-        return activeTab switch
-        {
-            "All" => "All announcements from all sources",
-            "Institution" => "General announcements from educational institutions",
-            "Application" => "Updates related to your scholarship applications",
-            "Grants" => "Announcements about your current scholarships and grants",
-            "Benefactor" => "Announcements from scholarship benefactors and donors",
-            _ => "All announcements"
-        };
-    }
-
-    private string GetTabInfo()
+        "All" => "All announcements from all sources",
+        "Institution" => "General announcements from educational institutions",
+        "Application" => "Updates related to your scholarship applications",
+        "Grants" => "Announcements about your current scholarships and grants",
+        "Benefactor" => "Announcements from scholarship benefactors and donors",
+        _ => "All announcements"
+    };
+    private string GetTabInfo() => activeTab switch
     {
-        return activeTab switch
-        {
-            "All" => "This view shows all announcements from institutions, benefactors, and other sources. Use this to get a comprehensive overview of all available announcements.",
-            "Institution" => "These are general announcements from educational institutions that may be relevant to all students.",
-            "Application" => "These announcements are specifically related to scholarships you have applied for. Keep an eye on application deadlines and updates.",
-            "Grants" => "These announcements are related to scholarships and grants you currently have. Stay informed about requirements and opportunities.",
-            "Benefactor" => "These announcements are from scholarship benefactors and donors. They may include information about new opportunities, events, or program updates.",
-            _ => ""
-        };
-    }
-
-    private string GetEmptyStateIcon()
+        "All" => "This view shows all announcements from institutions, benefactors, and other sources. Use this to get a comprehensive overview of all available announcements.",
+        "Institution" => "These are general announcements from educational institutions that may be relevant to all students.",
+        "Application" => "These announcements are specifically related to scholarships you have applied for. Keep an eye on application deadlines and updates.",
+        "Grants" => "These announcements are related to scholarships and grants you currently have. Stay informed about requirements and opportunities.",
+        "Benefactor" => "These announcements are from scholarship benefactors and donors. They may include information about new opportunities, events, or program updates.",
+        _ => string.Empty
+    };
+    private string GetEmptyStateIcon() => activeTab switch
     {
-        return activeTab switch
-        {
-            "All" => "bi bi-megaphone",
-            "Institution" => "bi bi-building",
-            "Application" => "bi bi-file-earmark-text",
-            "Grants" => "bi bi-award",
-            "Benefactor" => "bi bi-globe",
-            _ => "bi bi-megaphone"
-        };
-    }
-
-    private string GetEmptyStateTitle()
+        "All" => "bi bi-megaphone",
+        "Institution" => "bi bi-building",
+        "Application" => "bi bi-file-earmark-text",
+        "Grants" => "bi bi-award",
+        "Benefactor" => "bi bi-globe",
+        _ => "bi bi-megaphone"
+    };
+    private string GetEmptyStateTitle() => activeTab switch
     {
-        return activeTab switch
-        {
-            "All" => "No Announcements Available",
-            "Institution" => "No Institution Announcements",
-            "Application" => "No Application Updates",
-            "Grants" => "No Grant Announcements",
-            "Benefactor" => "No Benefactor Announcements",
-            _ => "No Announcements Found"
-        };
-    }
-
-    private string GetEmptyStateMessage()
+        "All" => "No Announcements Available",
+        "Institution" => "No Institution Announcements",
+        "Application" => "No Application Updates",
+        "Grants" => "No Grant Announcements",
+        "Benefactor" => "No Benefactor Announcements",
+        _ => "No Announcements Found"
+    };
+    private string GetEmptyStateMessage() => activeTab switch
     {
-        return activeTab switch
-        {
-            "All" => "There are no announcements available at the moment. Check back later for updates.",
-            "Institution" => "There are no general announcements from institutions at the moment.",
-            "Application" => "No updates available for your scholarship applications.",
-            "Grants" => "No announcements related to your current grants and scholarships.",
-            "Benefactor" => "There are no announcements from benefactors at the moment.",
-            _ => "No announcements match your current filters."
-        };
-    }
-
-    private int GetTabCount()
-    {
-        if (allAnnouncements == null) return 0;
-        return GetAnnouncementsForTab(activeTab).Count;
-    }
+        "All" => "There are no announcements available at the moment. Check back later for updates.",
+        "Institution" => "There are no general announcements from institutions at the moment.",
+        "Application" => "No updates available for your scholarship applications.",
+        "Grants" => "No announcements related to your current grants and scholarships.",
+        "Benefactor" => "There are no announcements from benefactors at the moment.",
+        _ => "No announcements match your current filters."
+    };
+    private int GetTabCount() => GetAnnouncementsForTab(activeTab).Count;
 }

@@ -1,3 +1,48 @@
+/* StudentApplicationSummary styles */
+.doc-link:hover, .doc-link:focus {
+    background: linear-gradient(90deg, #2563eb 0%, #3b82f6 100%);
+    color: #fff !important;
+    text-decoration: none;
+    box-shadow: 0 2px 8px rgba(37,99,235,0.10);
+}
+.app-btn:hover, .app-btn:focus {
+    background: linear-gradient(90deg, #2563eb 0%, #3b82f6 100%);
+    color: #fff !important;
+    border-color: #2563eb;
+    box-shadow: 0 2px 8px rgba(37,99,235,0.10);
+}
+.app-summary-banner {
+    width: 100%;
+    background: linear-gradient(90deg, #2563eb 0%, #3b82f6 100%);
+    color: #fff;
+    font-size: 2.2rem;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1.3rem 0 1.3rem 2.5rem;
+    border-radius: 0 0 22px 22px;
+    box-shadow: 0 2px 12px rgba(37,99,235,0.10);
+    margin-bottom: 2.5rem;
+}
+.app-summary-banner i {
+    font-size: 2.2rem;
+    margin-right: 0.7rem;
+}
+.card-body {
+    font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+    font-size: 1.25rem;
+    font-weight: 500;
+    line-height: 1.85;
+    color: #222;
+}
+/* Announcement Banner Responsive Margin */
+@media (min-width: 992px) {
+    .announcement-banner {
+        margin-right: 6rem;
+    }
+}
 /* Blazor Student Verification Form Custom Input Styles */
 .sv-input,
 .sv-input input,

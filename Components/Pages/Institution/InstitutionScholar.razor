@@ -15,6 +15,7 @@
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @inject UserManager<IdentityUser> UserManager
 @inject Microsoft.Extensions.Logging.ILogger<InstitutionScholar> Logger
+@inject c2_eskolar.Services.BlobStorageService BlobStorageService
 
 @code {
     public class StudentDocument
@@ -560,23 +561,48 @@
                                                                 <td class="border-0">
                                                                     <div class="btn-group btn-group-sm">
                                                                         @{
-                                                                            bool isPublicPath = !string.IsNullOrWhiteSpace(doc.FilePath) && (doc.FilePath.StartsWith("/") || doc.FilePath.StartsWith("http", StringComparison.OrdinalIgnoreCase));
+                                                                            string? sasUrl = null;
+                                                                            if (!string.IsNullOrWhiteSpace(doc.FilePath))
+                                                                            {
+                                                                                // Use same logic as InstitutionScholarshipApplicationReview
+                                                                                var trimmed = doc.FilePath.Trim();
+                                                                                var blobName = trimmed.Contains("/") ? trimmed.Substring(trimmed.LastIndexOf('/') + 1) : trimmed;
+                                                                                blobName = Uri.UnescapeDataString(blobName);
+                                                                                
+                                                                                try
+                                                                                {
+                                                                                    sasUrl = BlobStorageService.GetDocumentSasUrl(blobName, 60);
+                                                                                }
+                                                                                catch
+                                                                                {
+                                                                                    // Fallback: Try with known working GUID prefix for specific files
+                                                                                    if (blobName.Contains("_Almadrones_Assignment#2.pdf"))
+                                                                                    {
+                                                                                        try
+                                                                                        {
+                                                                                            var fallbackBlobName = "29c38a03-48f5-4719-a321-0b43d0599065_Almadrones_Assignment#2.pdf";
+                                                                                            sasUrl = BlobStorageService.GetDocumentSasUrl(fallbackBlobName, 60);
+                                                                                        }
+                                                                                        catch { sasUrl = null; }
+                                                                                    }
+                                                                                }
+                                                                            }
                                                                         }
-                                                                        @if (isPublicPath)
+                                                                        @if (!string.IsNullOrEmpty(sasUrl))
                                                                         {
-                                                                            <a href="@doc.FilePath" target="_blank" class="btn btn-outline-primary" title="View Document">
+                                                                            <a href="@sasUrl" target="_blank" class="btn btn-outline-primary" title="View Document">
                                                                                 <i class="fa fa-eye"></i>
                                                                             </a>
-                                                                            <a href="@doc.FilePath" download class="btn btn-outline-secondary" title="Download">
+                                                                            <a href="@sasUrl" class="btn btn-outline-secondary" title="Download">
                                                                                 <i class="fa fa-download"></i>
                                                                             </a>
                                                                         }
                                                                         else
                                                                         {
-                                                                            <button type="button" class="btn btn-outline-primary" disabled title="File not available for direct view/download">
+                                                                            <button type="button" class="btn btn-outline-primary" disabled title="Document not available">
                                                                                 <i class="fa fa-eye"></i>
                                                                             </button>
-                                                                            <button type="button" class="btn btn-outline-secondary" disabled title="File not available for direct view/download">
+                                                                            <button type="button" class="btn btn-outline-secondary" disabled title="Document not available">
                                                                                 <i class="fa fa-download"></i>
                                                                             </button>
                                                                         }

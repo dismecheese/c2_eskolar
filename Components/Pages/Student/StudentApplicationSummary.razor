@@ -5,6 +5,7 @@
 @using c2_eskolar.Models
 @using Microsoft.AspNetCore.Components.Authorization
 @using Microsoft.EntityFrameworkCore
+@using System.Web
 
 
 @inject IDbContextFactory<ApplicationDbContext> DbContextFactory
@@ -16,18 +17,15 @@
 
 <PageTitle>Application Summary</PageTitle>
 
+<!-- Styles moved to wwwroot/app.css -->
 
-
-<div class="container-fluid py-5" style="background: linear-gradient(135deg, #f8fafc 60%, #e9ecef 100%); min-height: 100vh; margin-top: 40px;">
+<div class="container-fluid py-5" style="background: linear-gradient(135deg, #e0e7ff 60%, #f8fafc 100%); min-height: 100vh; margin-top: 40px;">
     <div class="container px-2 px-md-4">
         <div class="row justify-content-center">
             <div class="col-12 col-md-10 col-lg-8">
-                <div class="d-flex align-items-center justify-content-between mb-4" style="gap: 1rem; margin-top: 32px;">
-                    <h2 class="fw-bold mb-0" style="letter-spacing: 0.5px;">Application Summary</h2>
-                    <div style="min-width: 120px; text-align: right;">
-                        <!-- Profile button space -->
-                        <span class="d-inline-block" style="width: 48px; height: 48px; background: #e9ecef; border-radius: 50%;"></span>
-                    </div>
+                <div class="app-summary-banner mb-4">
+                    <i class="bi bi-journal-text"></i>
+                    <span>Application Summary</span>
                 </div>
                 @if (isLoading)
                 {
@@ -43,20 +41,21 @@
                 }
                 else
                 {
-                    <div class="card shadow-sm border-0 mx-auto mb-5" style="border-radius: 18px; max-width: 700px; background: #fff; margin-top: 24px;">
-                        <div class="card-body p-4 p-md-5" style="margin-bottom: 8px;">
+                    <div class="card shadow-sm border-0 mx-auto mb-5" style="border-radius: 18px; max-width: 700px; background: linear-gradient(90deg, #2563eb 0%, #3b82f6 100%); color: #fff; margin-top: 24px; box-shadow: 0 2px 12px rgba(37,99,235,0.10);">
+                        <div class="card-body p-4 p-md-5" style="margin-bottom: 8px; background: rgba(255,255,255,0.85); border-radius: 14px; color: #222;">
                             <dl class="row mb-0" style="margin-bottom: 0;">
-                                <dt class="col-sm-4 text-muted small" style="margin-bottom: 0.5rem;">Scholarship</dt>
-                                <dd class="col-sm-8 fw-semibold fs-5 mb-3" style="margin-bottom: 1.25rem;">@application.Scholarship?.Title ?? "(No Title)"</dd>
+                                <dt class="col-sm-4 text-primary" style="margin-bottom: 0.5rem; font-size: 1.25rem; font-weight: 500;">Scholarship</dt>
+                                <dd class="col-sm-8 mb-3" style="margin-bottom: 1.25rem; color: #2563eb; font-size: 1.25rem; font-weight: 500;">
+                                    @(application?.Scholarship != null && !string.IsNullOrWhiteSpace(application.Scholarship.Title) ? application.Scholarship.Title : "(No Title)")
+                                </dd>
 
-                                <dt class="col-sm-4 text-muted small" style="margin-bottom: 0.5rem;">Provider</dt>
-                                <dd class="col-sm-8 mb-3" style="margin-bottom: 1.25rem;">
-                                    <span class="fw-semibold">
-                                    @if (application.Scholarship?.Institution != null && !string.IsNullOrEmpty(application.Scholarship.Institution.InstitutionName))
+                                <dt class="col-sm-4 text-primary" style="margin-bottom: 0.5rem; font-size: 1.25rem; font-weight: 500;">Provider</dt>
+                                <dd class="col-sm-8 mb-3" style="margin-bottom: 1.25rem; color: #2563eb; font-size: 1.25rem; font-weight: 500;">
+                                    @if (application?.Scholarship?.Institution != null && !string.IsNullOrEmpty(application.Scholarship.Institution.InstitutionName))
                                     {
                                         @application.Scholarship.Institution.InstitutionName
                                     }
-                                    else if (application.Scholarship?.Benefactor != null && !string.IsNullOrEmpty(application.Scholarship.Benefactor.OrganizationName))
+                                    else if (application?.Scholarship?.Benefactor != null && !string.IsNullOrEmpty(application.Scholarship.Benefactor.OrganizationName))
                                     {
                                         @application.Scholarship.Benefactor.OrganizationName
                                     }
@@ -64,80 +63,58 @@
                                     {
                                         <span>Unknown Provider</span>
                                     }
-                                    </span>
                                 </dd>
 
-                                <dt class="col-sm-4 text-muted small" style="margin-bottom: 0.5rem;">Date Applied</dt>
-                                <dd class="col-sm-8 mb-3" style="margin-bottom: 1.25rem;">@application.ApplicationDate.ToString("MMM dd, yyyy")</dd>
+                                <dt class="col-sm-4 text-primary" style="margin-bottom: 0.5rem; font-size: 1.25rem; font-weight: 500;">Date Applied</dt>
+                                <dd class="col-sm-8 mb-3" style="margin-bottom: 1.25rem; color: #2563eb; font-size: 1.25rem; font-weight: 500;">
+                                    @(application?.ApplicationDate != null ? application.ApplicationDate.ToString("MMM dd, yyyy") : "N/A")
+                                </dd>
 
-                                @if (application.Status == "Rejected")
+                                @if (GetStatus(application?.Status) == ApplicationStatus.Rejected)
                                 {
-                                    <dt class="col-sm-4 text-muted small" style="margin-bottom: 0.5rem;">Status</dt>
-                                    <dd class="col-sm-8 mb-3" style="margin-bottom: 1.25rem;">
-                                        <span class="badge px-3 py-2 fs-6 @GetStatusClass(application.Status)" style="font-size: 1rem; letter-spacing: 0.5px;">
+                                    <dt class="col-sm-4 text-muted" style="margin-bottom: 0.5rem; font-size: 1.25rem; font-weight: 500;">Status</dt>
+                                    <dd class="col-sm-8 mb-3" style="margin-bottom: 1.25rem; font-size: 1.25rem; font-weight: 500;">
+                                        <span class="badge px-3 py-2 fs-6 @GetStatusClass(ApplicationStatus.Rejected) text-light" style="font-size: 1rem; letter-spacing: 0.5px; background: #2563eb; color: #fff;">
                                             Rejected
                                         </span>
                                     </dd>
                                 }
 
-                                @if (!string.IsNullOrEmpty(application.ReviewNotes))
+                                @if (!string.IsNullOrEmpty(application?.ReviewNotes))
                                 {
-                                    <dt class="col-sm-4 text-muted small" style="margin-bottom: 0.5rem;">Institution Review</dt>
-                                    <dd class="col-sm-8 mb-3" style="margin-bottom: 1.25rem;">@application.ReviewNotes</dd>
+                                    <dt class="col-sm-4 text-primary" style="margin-bottom: 0.5rem; font-size: 1.25rem; font-weight: 500;">Institution Review</dt>
+                                    <dd class="col-sm-8 mb-3" style="margin-bottom: 1.25rem; color: #2563eb; font-size: 1.25rem; font-weight: 500;">@application.ReviewNotes</dd>
                                 }
 
-                                <dt class="col-sm-4 text-muted small" style="margin-bottom: 0.5rem;">Personal Statement</dt>
-                                <dd class="col-sm-8 mb-3" style="white-space: pre-line; margin-bottom: 1.25rem;">@application.PersonalStatement</dd>
+                                <dt class="col-sm-4 text-primary" style="margin-bottom: 0.5rem; font-size: 1.25rem; font-weight: 500;">Personal Statement</dt>
+                                <dd class="col-sm-8 mb-3" style="white-space: pre-line; margin-bottom: 1.25rem; color: #2563eb; font-size: 1.25rem; font-weight: 500;">@(application?.PersonalStatement ?? "N/A")</dd>
 
-                                <dt class="col-sm-4 text-muted small" style="margin-bottom: 0.5rem;">Uploaded Documents</dt>
-                                <dd class="col-sm-8" style="margin-bottom: 1.25rem;">
-                                    @if (!string.IsNullOrEmpty(application.UploadedDocuments))
+                                <dt class="col-sm-4 text-primary" style="margin-bottom: 0.5rem; font-size: 1.25rem; font-weight: 500;">Uploaded Documents</dt>
+                                <dd class="col-sm-8" style="margin-bottom: 1.25rem; color: #2563eb; font-size: 1.25rem; font-weight: 500;">
+                                    @if (documentLinks != null && documentLinks.Count > 0)
                                     {
-                                        var files = application.UploadedDocuments.Split(',', System.StringSplitOptions.RemoveEmptyEntries);
                                         <ul class="list-unstyled mb-0">
-                                        @foreach (var file in files)
+                                        @foreach (var doc in documentLinks)
                                         {
-                                            // file is the full blob URL or unique name
-                                            string blobName;
-                                            if (file.Contains("/"))
-                                            {
-                                                // Extract blob name from URL (after last '/')
-                                                blobName = file.Substring(file.LastIndexOf('/') + 1);
-                                            }
-                                            else
-                                            {
-                                                blobName = file;
-                                            }
-                                            var displayName = blobName.Contains('_') ? blobName.Substring(blobName.IndexOf('_') + 1) : blobName;
-                                            var ext = System.IO.Path.GetExtension(blobName).ToLowerInvariant();
-                                            string iconClass = ext switch
-                                            {
-                                                ".pdf" => "bi bi-file-earmark-pdf text-danger",
-                                                ".doc" or ".docx" => "bi bi-file-earmark-word text-primary",
-                                                ".jpg" or ".jpeg" or ".png" => "bi bi-file-earmark-image text-success",
-                                                _ => "bi bi-paperclip text-secondary"
-                                            };
-                                            string? sasUrl = null;
-                                            try
-                                            {
-                                                sasUrl = BlobStorageService.GetDocumentSasUrl(blobName);
-                                            }
-                                            catch
-                                            {
-                                                sasUrl = null;
-                                            }
-                                            <li class="mb-1 d-flex align-items-center">
-                                                <i class="@iconClass me-2" style="font-size: 1.2em;"></i>
-                                                @if (!string.IsNullOrEmpty(sasUrl))
-                                                {
-                                                    <a href="@sasUrl" target="_blank" rel="noopener noreferrer" class="text-decoration-none text-primary" style="transition: color 0.2s;">
-                                                        @displayName
-                                                    </a>
-                                                }
-                                                else
-                                                {
-                                                    <span class="text-danger">@displayName (link error)</span>
-                                                }
+                                            <li class="mb-1 d-flex flex-column">
+                                                <div class="d-flex align-items-center">
+                                                    <i class="@doc.IconClass me-2" style="font-size: 1.2em;"></i>
+                                                    @if (!string.IsNullOrEmpty(doc.SasUrl))
+                                                    {
+                                                        <a href="@doc.SasUrl" target="_blank" rel="noopener noreferrer" class="text-decoration-none doc-link" style="transition: color 0.2s; color: #2563eb; font-weight: 500;" aria-label="Open document @doc.DisplayName in new tab">
+                                                            @doc.DisplayName
+                                                        </a>
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="text-danger" style="color: #ef4444;">
+                                                            <i class="bi bi-exclamation-circle-fill me-1" title="File not found"></i>
+                                                            @doc.DisplayName
+                                                            <span class="ms-1" title="@doc.ErrorText">(File not found)</span>
+                                                        </span>
+                                                    }
+                                                </div>
+                                                <!-- Debug URLs removed for production -->
                                             </li>
                                         }
                                         </ul>
@@ -150,7 +127,7 @@
                             </dl>
                             <hr class="my-4" />
                             <div class="d-flex justify-content-end" style="margin-top: 16px;">
-                                <button class="btn btn-outline-secondary px-4 py-2" @onclick="GoBack">
+                                <button class="btn btn-outline-primary px-4 py-2 app-btn" style="border-color: #2563eb; color: #2563eb; background: #fff; font-weight: 500;" @onclick="GoBack" aria-label="Back to Applications">
                                     <i class="bi bi-arrow-left me-2"></i>Back to Applications
                                 </button>
                             </div>
@@ -169,6 +146,56 @@
     private bool isLoading = true;
     private string? errorMessage;
 
+    // Document link info model
+    private List<DocumentLinkInfo> documentLinks = new();
+
+    // Helper class for document link info
+    public class DocumentLinkInfo
+    {
+        public string BlobName { get; set; } = string.Empty;
+        public string DisplayName { get; set; } = string.Empty;
+        public string IconClass { get; set; } = "bi bi-paperclip text-secondary";
+        public string? SasUrl { get; set; }
+        public string RawUrl { get; set; } = string.Empty;
+        public string ErrorText { get; set; } = string.Empty;
+    }
+
+    // Helper method to process document links
+    private List<DocumentLinkInfo> GetDocumentLinks(string? uploadedDocuments)
+    {
+        var links = new List<DocumentLinkInfo>();
+        if (string.IsNullOrEmpty(uploadedDocuments)) return links;
+        var files = uploadedDocuments.Split(',', System.StringSplitOptions.RemoveEmptyEntries);
+        foreach (var file in files)
+        {
+            var doc = new DocumentLinkInfo();
+            doc.BlobName = file.Contains("/") ? file.Substring(file.LastIndexOf('/') + 1) : file;
+            doc.BlobName = Uri.UnescapeDataString(doc.BlobName);
+            doc.DisplayName = doc.BlobName.Contains('_') ? doc.BlobName.Substring(doc.BlobName.IndexOf('_') + 1) : doc.BlobName;
+            var ext = System.IO.Path.GetExtension(doc.BlobName).ToLowerInvariant();
+            doc.IconClass = ext switch
+            {
+                ".pdf" => "bi bi-file-earmark-pdf text-danger",
+                ".doc" or ".docx" => "bi bi-file-earmark-word text-primary",
+                ".jpg" or ".jpeg" or ".png" => "bi bi-file-earmark-image text-success",
+                _ => "bi bi-paperclip text-secondary"
+            };
+            doc.RawUrl = BlobStorageService.GetDocumentUrl(doc.BlobName);
+            try
+            {
+                doc.SasUrl = BlobStorageService.GetDocumentSasUrl(doc.BlobName);
+            }
+            catch (Exception ex)
+            {
+                doc.SasUrl = null;
+                doc.ErrorText = $"(link error: {ex.Message})";
+            }
+            links.Add(doc);
+        }
+        return links;
+    }
+
+    private CancellationTokenSource _cts = new();
     protected override async Task OnInitializedAsync()
     {
         try
@@ -186,7 +213,7 @@
             using var db = DbContextFactory.CreateDbContext();
 
             // Find the student's profile
-            var studentProfile = await db.StudentProfiles.FirstOrDefaultAsync(sp => sp.UserId == userId);
+            var studentProfile = await db.StudentProfiles.FirstOrDefaultAsync(sp => sp.UserId == userId, _cts.Token);
             if (studentProfile == null)
             {
                 errorMessage = "Student profile not found.";
@@ -203,7 +230,10 @@
                     .ThenInclude(s => s.Institution)
                 .Include(a => a.Scholarship)
                     .ThenInclude(s => s.Benefactor)
-                .FirstOrDefaultAsync();
+                .FirstOrDefaultAsync(_cts.Token);
+
+            // Precompute document links
+            documentLinks = GetDocumentLinks(application?.UploadedDocuments);
         }
         catch (Exception ex)
         {
@@ -215,18 +245,44 @@
         }
     }
 
-    private void GoBack()
+    public void Dispose()
     {
-        Navigation.NavigateTo("/dashboard/student/applications");
+        _cts.Cancel();
+        _cts.Dispose();
     }
 
-    private string GetStatusClass(string? status)
+    private const string ApplicationsRoute = "/dashboard/student/applications";
+    private void GoBack()
+    {
+        Navigation.NavigateTo(ApplicationsRoute);
+    }
+
+    public enum ApplicationStatus
+    {
+        Pending,
+        Approved,
+        Rejected,
+        Unknown
+    }
+
+    private ApplicationStatus GetStatus(string? status)
     {
         return status switch
         {
-            "Pending" => "bg-warning text-dark",
-            "Approved" => "bg-success",
-            "Rejected" => "bg-danger",
+            "Pending" => ApplicationStatus.Pending,
+            "Approved" => ApplicationStatus.Approved,
+            "Rejected" => ApplicationStatus.Rejected,
+            _ => ApplicationStatus.Unknown
+        };
+    }
+
+    private string GetStatusClass(ApplicationStatus status)
+    {
+        return status switch
+        {
+            ApplicationStatus.Pending => "bg-warning text-dark",
+            ApplicationStatus.Approved => "bg-success",
+            ApplicationStatus.Rejected => "bg-danger",
             _ => "bg-secondary"
         };
     }
