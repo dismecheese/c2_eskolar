@@ -1,0 +1,64 @@
+/* Professional bubble/frame styling for Terms and Conditions and Privacy Policy (global for modals) */
+.terms-bubble {
+  max-width: 800px;
+  margin: 40px auto 60px auto;
+  background: #fff;
+  border-radius: 18px;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.10), 0 1.5px 6px rgba(0,0,0,0.08);
+  padding: 2.5rem 2.5rem 2rem 2.5rem;
+  border: 1.5px solid #e0e0e0;
+  font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+  color: #232323;
+  text-align: left !important; /* Force left alignment for all content */
+}
+.terms-bubble h1 {
+  display: block !important;
+  text-align: center !important;
+  font-size: 2.3rem !important;
+  font-weight: 800 !important;
+  margin-bottom: 1.5rem !important;
+  color: #1a1a1a !important;
+  font-family: 'Inter', 'Segoe UI', Arial, sans-serif !important;
+  letter-spacing: -0.5px !important;
+}
+.terms-bubble h2 {
+  text-align: left !important;
+  font-size: 1.22rem !important;
+  font-weight: 700 !important;
+  margin-top: 1.7rem !important;
+  margin-bottom: 0.7rem !important;
+  color: #1976d2 !important;
+  font-family: 'Inter', 'Segoe UI', Arial, sans-serif !important;
+  letter-spacing: 0.01em !important;
+}
+.terms-bubble ul {
+  margin-left: 1.2rem;
+  margin-bottom: 1.2rem;
+  font-size: 1.04rem;
+  font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+}
+.terms-bubble li {
+  margin-bottom: 0.5rem;
+  line-height: 1.7;
+  font-size: 1.04rem;
+  font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+  color: #232323 !important; /* Strong readable color, override if needed */
+  text-align: left !important;
+}
+.terms-bubble p {
+  margin-bottom: 1.1rem;
+  color: #333;
+  font-size: 1.07rem;
+  font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+  color: #232323 !important; /* Strong readable color, override if needed */
+  text-align: left !important;
+}
+.terms-bubble a {
+  color: #1976d2 !important;
+  text-decoration: underline !important;
+  font-weight: 500 !important;
+  font-family: 'Inter', 'Segoe UI', Arial, sans-serif !important;
+}
+.terms-bubble a:hover {
+  color: #0d47a1 !important;
+}
