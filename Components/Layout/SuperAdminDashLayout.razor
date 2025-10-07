@@ -1,0 +1,303 @@
+@inherits LayoutComponentBase
+@implements IDisposable
+
+@inject NavigationManager Navigation
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject UserManager<IdentityUser> UserManager
+@inject IJSRuntime JSRuntime
+
+@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.AspNetCore.Identity
+@using Microsoft.JSInterop
+
+@rendermode InteractiveServer
+
+<div class="superadmin-layout">
+    <div class="container-fluid p-0">
+        <!-- --- SIDEBAR --- -->
+        <nav class="sidebar d-flex flex-column justify-content-between"
+             style="width: 260px; background: linear-gradient(180deg, #1560d4 0%, #0d387e 100%); padding: 2rem 1.5rem 1rem 1.5rem;">
+            
+            <div>
+                <!-- Logo Section -->
+                <div class="sidebar-brand-container text-center">
+                    <a class="eskolar-logo" href="/dashboard/superadmin">
+                        <img src="images/main/eSkolar-White.svg" alt="eSkolar Logo" class="eskolar-logo-img" />
+                    </a>
+                </div>
+                
+                <!-- Navigation Links -->
+                <ul class="nav flex-column gap-1">
+                    <li class="nav-item">
+                        <a href="/dashboard/superadmin" class="@GetSidebarLinkClass("/dashboard/superadmin")">
+                            <i class="fa fa-tachometer-alt"></i> Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="/admin/webscraping" class="@GetSidebarLinkClass("/admin/webscraping")">
+                            <i class="fa fa-spider"></i> Web Scraping
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="/admin/users" class="@GetSidebarLinkClass("/admin/users")">
+                            <i class="fa fa-users"></i> User Management
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="/admin/scholarships" class="@GetSidebarLinkClass("/admin/scholarships")">
+                            <i class="fa fa-graduation-cap"></i> Scholarships
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="/admin/system" class="@GetSidebarLinkClass("/admin/system")">
+                            <i class="fa fa-cogs"></i> System Settings
+                        </a>
+                    </li>
+                </ul>
+                
+                <!-- Logout Button in Main Navigation -->
+                <div class="sidebar-logout-section mt-4 pt-3" style="border-top: 1px solid rgba(255,255,255,0.2);">
+                    <button class="sidebar-link logout-link w-100 border-0 text-start" 
+                            @onclick="() => ShowLogoutModal()"
+                            style="background: transparent; color: rgba(255,255,255,0.8); padding: 12px 16px; border-radius: 8px; transition: all 0.3s ease;">
+                        <i class="fa fa-sign-out-alt"></i> Logout
+                    </button>
+                </div>
+            </div>
+
+            <!-- Help Box Button -->
+            <button class="help-box-bottom" type="button">
+                <div class="help-box-content">
+                    <img src="images/NeedHelp.svg" alt="Help" class="help-box-img" />
+                    <div class="help-box-text">
+                        <div class="help-box-title">Need help?</div>
+                        <div class="help-box-desc">Having trouble using eSkolar?<br />We're here to assist you!</div>
+                    </div>
+                </div>
+            </button>
+        </nav>
+
+        <!-- --- PROFILE SIDEBAR (Bootstrap Offcanvas) --- -->
+        <button class="dashboard-profile-absolute mt-3" type="button" data-bs-toggle="offcanvas" data-bs-target="#rightSidebar" aria-controls="rightSidebar">
+            <svg width="32" height="32" fill="none" viewBox="0 0 24 24">
+                <circle cx="12" cy="8" r="4" stroke="#222" stroke-width="2"/>
+                <circle cx="12" cy="12" r="11" stroke="#222" stroke-width="2"/>
+                <path d="M4 20c1.5-3 5.5-5 8-5s6.5 2 8 5" stroke="#222" stroke-width="2"/>
+            </svg>
+        </button>
+
+        <!-- Profile Sidebar Content -->
+        <div class="offcanvas offcanvas-end" tabindex="-1" id="rightSidebar" aria-labelledby="rightSidebarLabel" data-bs-backdrop="false">
+            <div class="offcanvas-header">
+                <h5 class="offcanvas-title" id="rightSidebarLabel">SuperAdmin Profile</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+            </div>
+
+            <div class="offcanvas-body">
+                <!-- Sidebar Profile Section -->
+                <div class="sidebar-profile">
+                    <div class="user-avatar-large">
+                        <i class="fas fa-crown" style="font-size: 2rem; color: #FFD700;"></i>
+                    </div>
+                    <div class="sidebar-profile-name">@currentUserName</div>
+                    <div class="sidebar-profile-role">SuperAdmin</div>
+                    <div class="sidebar-profile-email">@currentUserEmail</div>
+                </div>
+                </div>
+                
+                <!-- System Status -->
+                <div class="sidebar-calendar">
+                    <div style="background: #fff; padding: 20px; border-radius: 12px; margin: 0 0 18px 0; box-shadow: 0 2px 8px rgba(0,0,0,0.06); text-align: center;">
+                        <h6 style="margin-bottom: 10px; color: #333;">System Status</h6>
+                        <div style="color: #28a745; font-weight: 600;">
+                            <i class="fas fa-circle" style="font-size: 8px; margin-right: 5px;"></i>
+                            All Systems Operational
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Actions -->
+                <div class="sidebar-notifications">
+                    <div class="sidebar-notifications-header">
+                        Quick Actions
+                    </div>
+                    <div class="sidebar-notification-list">
+                        <div class="sidebar-notification">
+                            <div class="sidebar-notification-title">Web Scraping</div>
+                            <div class="sidebar-notification-desc">Monitor and manage scraping operations</div>
+                        </div>
+                        <div class="sidebar-notification">
+                            <div class="sidebar-notification-title">User Management</div>
+                            <div class="sidebar-notification-desc">Manage system users and permissions</div>
+                        </div>
+                        <div class="sidebar-notification">
+                            <div class="sidebar-notification-title">System Settings</div>
+                            <div class="sidebar-notification-desc">Configure system parameters</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- --- MAIN CONTENT AREA --- -->
+        <main class="main-content" style="flex:1; min-width:0; background: #f5f6fa;">
+            @Body
+        </main>
+    </div>
+
+<!-- Logout Confirmation Modal -->
+<div class="modal fade" id="logoutModal" tabindex="-1" aria-labelledby="logoutModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header border-0">
+                <h5 class="modal-title text-danger" id="logoutModalLabel">
+                    <i class="fas fa-sign-out-alt me-2"></i>
+                    Confirm Logout
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center py-4">
+                <i class="fas fa-exclamation-triangle text-warning mb-3" style="font-size: 3rem;"></i>
+                <h6>Are you sure you want to logout?</h6>
+                <p class="text-muted mb-0">You will be redirected to the login page.</p>
+            </div>
+            <div class="modal-footer border-0 justify-content-center">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-2"></i>Cancel
+                </button>
+                <button type="button" class="btn btn-danger" @onclick="LogOut" data-bs-dismiss="modal">
+                    <i class="fas fa-sign-out-alt me-2"></i>Yes, Logout
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .user-avatar-large {
+        width: 80px;
+        height: 80px;
+        background: linear-gradient(135deg, #1560d4, #0d387e);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 15px auto;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    
+    .sidebar-profile-email {
+        font-size: 0.9rem;
+        color: #666;
+        margin-bottom: 15px;
+        text-align: center;
+    }
+</style>
+
+@code {
+    private string currentUserName = "Loading...";
+    private string currentUserEmail = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadUserInfo();
+    }
+
+    private async Task LoadUserInfo()
+    {
+        try
+        {
+            var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+            var user = authState.User;
+
+            if (user.Identity?.IsAuthenticated == true)
+            {
+                var identityUser = await UserManager.GetUserAsync(user);
+                if (identityUser != null)
+                {
+                    currentUserEmail = identityUser.Email ?? "";
+                    currentUserName = identityUser.Email?.Split('@')[0] ?? "SuperAdmin";
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading user info: {ex.Message}");
+            currentUserName = "SuperAdmin";
+        }
+    }
+
+    private string GetSidebarLinkClass(string href)
+    {
+        var currentPath = Navigation.ToBaseRelativePath(Navigation.Uri).Split('?')[0].TrimEnd('/');
+        var linkPath = href.TrimStart('/').TrimEnd('/');
+        
+        // Exact match
+        if (currentPath == linkPath)
+            return "nav-link d-flex align-items-center gap-2 sidebar-link active";
+            
+        return "nav-link d-flex align-items-center gap-2 sidebar-link";
+    }
+
+    private string GetPageTitle()
+    {
+        var currentUrl = Navigation.ToBaseRelativePath(Navigation.Uri);
+        return currentUrl switch
+        {
+            "dashboard/superadmin" => "SuperAdmin Dashboard",
+            "admin/webscraping" => "Web Scraping Management",
+            "demo/scraping" => "Scraping Demo",
+            "admin/users" => "User Management",
+            "admin/scholarships" => "Scholarship Management",
+            "admin/system" => "System Settings",
+            _ => "SuperAdmin Panel"
+        };
+    }
+
+    private string GetPageSubtitle()
+    {
+        var currentUrl = Navigation.ToBaseRelativePath(Navigation.Uri);
+        return currentUrl switch
+        {
+            "dashboard/superadmin" => "System overview and statistics",
+            "admin/webscraping" => "Configure and monitor web scraping operations",
+            "demo/scraping" => "Test scraping functionality with real websites",
+            "admin/users" => "Manage system users and permissions",
+            "admin/scholarships" => "Oversee scholarship listings and applications",
+            "admin/system" => "Configure system settings and maintenance",
+            _ => "Administrative functions and system control"
+        };
+    }
+
+    private void LogOut()
+    {
+        try
+        {
+            Navigation.NavigateTo("/api/auth/logout", forceLoad: true);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Logout error: {ex.Message}");
+        }
+    }
+
+    private async Task ShowLogoutModal()
+    {
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("new bootstrap.Modal", "#logoutModal").ConfigureAwait(false);
+            await JSRuntime.InvokeVoidAsync("eval", "new bootstrap.Modal(document.getElementById('logoutModal')).show()");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Modal error: {ex.Message}");
+            // Fallback to direct logout if modal fails
+            LogOut();
+        }
+    }
+
+    public void Dispose()
+    {
+        // Cleanup if needed
+    }
+}
