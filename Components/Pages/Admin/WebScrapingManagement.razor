@@ -2,6 +2,7 @@
 @attribute [Authorize(Roles = "SuperAdmin")]
 @layout Layout.SuperAdminDashLayout
 @inject c2_eskolar.Services.WebScraping.IWebScrapingService WebScrapingService
+@inject c2_eskolar.Services.WebScraping.IEnhancedWebScrapingService EnhancedWebScrapingService
 @inject IJSRuntime JSRuntime
 @inject ILogger<WebScrapingManagement> Logger
 @using c2_eskolar.Services.WebScraping
@@ -46,7 +47,8 @@
     <!-- Dashboard Tabs -->
     <div class="dashboard-tabs">
         <button class="dashboard-tab @(activeTab == 0 ? "active" : "")" @onclick="() => SetTab(0)">Scholarship Scraping</button>
-        <button class="dashboard-tab @(activeTab == 1 ? "active" : "")" @onclick="() => SetTab(1)">Institution & Organization Verification</button>
+        <button class="dashboard-tab @(activeTab == 1 ? "active" : "")" @onclick="() => SetTab(1)">AI-Enhanced Scraping</button>
+        <button class="dashboard-tab @(activeTab == 2 ? "active" : "")" @onclick="() => SetTab(2)">Institution & Organization Verification</button>
     </div>
 
     @if (activeTab == 0)
@@ -143,6 +145,149 @@
         </div>
     }
     else if (activeTab == 1)
+    {
+        <!-- AI-Enhanced Scraping Tab -->
+        <div class="scraping-section">
+            <div class="row g-4">
+                <div class="col-lg-8">
+                    <div class="scraping-card">
+                        <div class="scraping-card-header">
+                            <div class="scraping-card-icon scholarship">
+                                <i class="bi bi-robot"></i>
+                            </div>
+                            <div>
+                                <h5>AI-Enhanced Scholarship Scraping</h5>
+                                <p class="mb-0">Intelligent parsing with OpenAI GPT-4</p>
+                            </div>
+                        </div>
+                        <div class="scraping-card-body">
+                            <div class="mb-3">
+                                <label class="form-label">Website URL</label>
+                                <input type="url" class="form-control scraping-input" @bind="enhancedScholarshipUrl" placeholder="https://scholarships.example.com">
+                            </div>
+                            <div class="scraping-actions">
+                                <button class="btn-scraping btn-primary" @onclick="ScrapeWithAI" disabled="@isLoading">
+                                    @if (isLoading)
+                                    {
+                                        <span class="spinner-border spinner-border-sm me-2"></span>
+                                    }
+                                    <i class="bi bi-brain me-2"></i>Scrape with AI
+                                </button>
+                                <button class="btn-scraping btn-success" @onclick="ExportEnhancedCsv" disabled="@(enhancedScholarships.Count == 0)">
+                                    <i class="bi bi-file-earmark-csv me-2"></i>Export CSV
+                                </button>
+                            </div>
+                            <div class="scraping-help mt-3">
+                                <i class="bi bi-info-circle me-2"></i>
+                                AI will automatically extract and structure scholarship data into database-ready format
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-4">
+                    <div class="scraping-stats">
+                        <div class="stat-item">
+                            <div class="stat-value">@enhancedScholarships.Count</div>
+                            <div class="stat-label">AI Parsed Scholarships</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value">@(enhancedScholarships.Count > 0 ? (enhancedScholarships.Average(s => s.ParsingConfidence) * 100).ToString("F1") + "%" : "0%")</div>
+                            <div class="stat-label">Average Confidence</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value">@lastEnhancedScrapeTime</div>
+                            <div class="stat-label">Last AI Scrape</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Enhanced Scraped Scholarships Table -->
+            @if (enhancedScholarships.Any())
+            {
+                <div class="scraped-data-card mt-4">
+                    <div class="scraped-data-header">
+                        <div class="scraped-data-icon">
+                            <i class="bi bi-table"></i>
+                        </div>
+                        <div>
+                            <h5>AI-Parsed Scholarship Data</h5>
+                            <p class="mb-0">@enhancedScholarships.Count scholarships ready for database import</p>
+                        </div>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table scraped-data-table">
+                            <thead>
+                                <tr>
+                                    <th>Title</th>
+                                    <th>Monetary Value</th>
+                                    <th>Deadline</th>
+                                    <th>GPA Requirement</th>
+                                    <th>Confidence</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var scholarship in enhancedScholarships.Take(10))
+                                {
+                                    <tr>
+                                        <td>
+                                            <strong>@scholarship.Title</strong>
+                                            @if (!string.IsNullOrEmpty(scholarship.RequiredCourse))
+                                            {
+                                                <br><small class="text-muted">Course: @scholarship.RequiredCourse</small>
+                                            }
+                                        </td>
+                                        <td>
+                                            @if (scholarship.MonetaryValue.HasValue)
+                                            {
+                                                <span class="badge bg-success">₱@scholarship.MonetaryValue.Value.ToString("N0")</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted">N/A</span>
+                                            }
+                                        </td>
+                                        <td>
+                                            @if (scholarship.ApplicationDeadline.HasValue)
+                                            {
+                                                @scholarship.ApplicationDeadline.Value.ToString("MMM dd, yyyy")
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted">Not specified</span>
+                                            }
+                                        </td>
+                                        <td>
+                                            @if (scholarship.MinimumGPA.HasValue)
+                                            {
+                                                @scholarship.MinimumGPA.Value.ToString("F2")
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted">N/A</span>
+                                            }
+                                        </td>
+                                        <td>
+                                            <span class="badge @(scholarship.ParsingConfidence >= 0.7 ? "bg-success" : scholarship.ParsingConfidence >= 0.4 ? "bg-warning" : "bg-danger")">
+                                                @((scholarship.ParsingConfidence * 100).ToString("F0"))%
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <button class="btn btn-sm btn-outline-primary" @onclick="() => ViewScholarshipDetails(scholarship)">
+                                                <i class="bi bi-eye"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+    else if (activeTab == 2)
     {
         <!-- Institution & Organization Verification Tab -->
         <div class="scraping-section">
@@ -299,10 +444,238 @@
         </div>
     }
 
+    <!-- Scholarship Details Modal -->
+    @if (selectedScholarship != null)
+    {
+        <div class="modal fade show" style="display: block; background-color: rgba(0,0,0,0.5);" tabindex="-1">
+            <div class="modal-dialog modal-lg modal-dialog-scrollable">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">
+                            <i class="bi bi-mortarboard me-2"></i>
+                            Scholarship Details
+                        </h5>
+                        <button type="button" class="btn-close" @onclick="CloseModal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="scholarship-details">
+                            <!-- Basic Information -->
+                            <div class="detail-section">
+                                <h6 class="detail-section-title">
+                                    <i class="bi bi-info-circle me-2"></i>Basic Information
+                                </h6>
+                                <div class="detail-grid">
+                                    <div class="detail-item">
+                                        <label>Title:</label>
+                                        <span class="detail-value">@selectedScholarship.Title</span>
+                                    </div>
+                                    <div class="detail-item">
+                                        <label>Source URL:</label>
+                                        <span class="detail-value">
+                                            <a href="@selectedScholarship.SourceUrl" target="_blank" class="text-decoration-none">
+                                                @GetSourceHost(selectedScholarship.SourceUrl)
+                                                <i class="bi bi-box-arrow-up-right ms-1"></i>
+                                            </a>
+                                        </span>
+                                    </div>
+                                    <div class="detail-item">
+                                        <label>Scraped At:</label>
+                                        <span class="detail-value">@selectedScholarship.ScrapedAt.ToString("MMM dd, yyyy HH:mm")</span>
+                                    </div>
+                                    <div class="detail-item">
+                                        <label>AI Confidence:</label>
+                                        <span class="detail-value">
+                                            <span class="badge @(selectedScholarship.ParsingConfidence >= 0.7 ? "bg-success" : selectedScholarship.ParsingConfidence >= 0.4 ? "bg-warning" : "bg-danger")">
+                                                @((selectedScholarship.ParsingConfidence * 100).ToString("F1"))%
+                                            </span>
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Financial Information -->
+                            <div class="detail-section">
+                                <h6 class="detail-section-title">
+                                    <i class="bi bi-currency-dollar me-2"></i>Financial Information
+                                </h6>
+                                <div class="detail-grid">
+                                    <div class="detail-item">
+                                        <label>Benefits:</label>
+                                        <span class="detail-value">@(string.IsNullOrWhiteSpace(selectedScholarship.Benefits) ? "Not specified" : selectedScholarship.Benefits)</span>
+                                    </div>
+                                    <div class="detail-item">
+                                        <label>Monetary Value:</label>
+                                        <span class="detail-value">
+                                            @if (selectedScholarship.MonetaryValue.HasValue)
+                                            {
+                                                <span class="text-success fw-bold">₱@selectedScholarship.MonetaryValue.Value.ToString("N0")</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted">Not specified</span>
+                                            }
+                                        </span>
+                                    </div>
+                                    <div class="detail-item">
+                                        <label>Available Slots:</label>
+                                        <span class="detail-value">
+                                            @(selectedScholarship.SlotsAvailable?.ToString() ?? "Not specified")
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Application Information -->
+                            <div class="detail-section">
+                                <h6 class="detail-section-title">
+                                    <i class="bi bi-calendar-event me-2"></i>Application Information
+                                </h6>
+                                <div class="detail-grid">
+                                    <div class="detail-item">
+                                        <label>Application Deadline:</label>
+                                        <span class="detail-value">
+                                            @if (selectedScholarship.ApplicationDeadline.HasValue)
+                                            {
+                                                <span class="text-warning fw-bold">@selectedScholarship.ApplicationDeadline.Value.ToString("MMMM dd, yyyy")</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted">Not specified</span>
+                                            }
+                                        </span>
+                                    </div>
+                                    <div class="detail-item">
+                                        <label>External Application URL:</label>
+                                        <span class="detail-value">
+                                            @if (!string.IsNullOrWhiteSpace(selectedScholarship.ExternalApplicationUrl))
+                                            {
+                                                <a href="@selectedScholarship.ExternalApplicationUrl" target="_blank" class="text-decoration-none">
+                                                    Apply Here <i class="bi bi-box-arrow-up-right ms-1"></i>
+                                                </a>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted">Not available</span>
+                                            }
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Eligibility Requirements -->
+                            <div class="detail-section">
+                                <h6 class="detail-section-title">
+                                    <i class="bi bi-check-circle me-2"></i>Eligibility Requirements
+                                </h6>
+                                <div class="detail-grid">
+                                    <div class="detail-item">
+                                        <label>Minimum GPA:</label>
+                                        <span class="detail-value">
+                                            @(selectedScholarship.MinimumGPA?.ToString("F2") ?? "Not specified")
+                                        </span>
+                                    </div>
+                                    <div class="detail-item">
+                                        <label>Required Course:</label>
+                                        <span class="detail-value">
+                                            @(string.IsNullOrWhiteSpace(selectedScholarship.RequiredCourse) ? "Any course" : selectedScholarship.RequiredCourse)
+                                        </span>
+                                    </div>
+                                    <div class="detail-item">
+                                        <label>Required Year Level:</label>
+                                        <span class="detail-value">
+                                            @if (selectedScholarship.RequiredYearLevel.HasValue)
+                                            {
+                                                @($"Year {selectedScholarship.RequiredYearLevel.Value}")
+                                            }
+                                            else
+                                            {
+                                                <span class="text-muted">Any year level</span>
+                                            }
+                                        </span>
+                                    </div>
+                                    <div class="detail-item">
+                                        <label>Required University:</label>
+                                        <span class="detail-value">
+                                            @(string.IsNullOrWhiteSpace(selectedScholarship.RequiredUniversity) ? "Any university" : selectedScholarship.RequiredUniversity)
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Full Description -->
+                            @if (!string.IsNullOrWhiteSpace(selectedScholarship.Description))
+                            {
+                                <div class="detail-section">
+                                    <h6 class="detail-section-title">
+                                        <i class="bi bi-file-text me-2"></i>Description
+                                    </h6>
+                                    <div class="detail-description">
+                                        @selectedScholarship.Description
+                                    </div>
+                                </div>
+                            }
+
+                            <!-- Requirements -->
+                            @if (!string.IsNullOrWhiteSpace(selectedScholarship.Requirements))
+                            {
+                                <div class="detail-section">
+                                    <h6 class="detail-section-title">
+                                        <i class="bi bi-list-check me-2"></i>Requirements
+                                    </h6>
+                                    <div class="detail-description">
+                                        @selectedScholarship.Requirements
+                                    </div>
+                                </div>
+                            }
+
+                            <!-- AI Parsing Notes -->
+                            @if (selectedScholarship.ParsingNotes.Any())
+                            {
+                                <div class="detail-section">
+                                    <h6 class="detail-section-title">
+                                        <i class="bi bi-robot me-2"></i>AI Parsing Notes
+                                    </h6>
+                                    <div class="parsing-notes">
+                                        @foreach (var note in selectedScholarship.ParsingNotes)
+                                        {
+                                            <span class="badge bg-info me-1">@note</span>
+                                        }
+                                    </div>
+                                </div>
+                            }
+
+                            <!-- Raw Text (Collapsible) -->
+                            <div class="detail-section">
+                                <h6 class="detail-section-title">
+                                    <button class="btn btn-link p-0 text-decoration-none" @onclick="ToggleRawText">
+                                        <i class="bi bi-@(showRawText ? "chevron-down" : "chevron-right") me-2"></i>Raw Scraped Text
+                                    </button>
+                                </h6>
+                                @if (showRawText)
+                                {
+                                    <div class="raw-text-container">
+                                        <pre class="raw-text">@selectedScholarship.RawText</pre>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" @onclick="CloseModal">Close</button>
+                        <button type="button" class="btn btn-primary" @onclick="ExportSingleScholarship">
+                            <i class="bi bi-download me-2"></i>Export as CSV
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+
 </div>
 
 @code {
     private string scholarshipUrl = "";
+    private string enhancedScholarshipUrl = "";
     private string institutionName = "";
     private string institutionWebsite = "";
     private string organizationName = "";
@@ -315,11 +688,16 @@
     // Statistics
     private int scrapedScholarshipsCount = 0;
     private string lastScrapeTime = "Never";
+    private string lastEnhancedScrapeTime = "Never";
     
     // Data Lists
     private List<ScrapedScholarship> scrapedScholarships = new();
+    private List<EnhancedScrapedScholarship> enhancedScholarships = new();
     private List<VerifiedInstitution> verifiedInstitutionsList = new();
     private List<VerifiedOrganization> verifiedOrganizationsList = new();
+    
+    // Selected scholarship for details view
+    private EnhancedScrapedScholarship? selectedScholarship = null;
     
     // Data Models
     public class ScrapedScholarship
@@ -522,6 +900,117 @@
             isLoading = false;
         }
     }
+
+    // Enhanced AI Scraping Methods
+    private async Task ScrapeWithAI()
+    {
+        if (string.IsNullOrWhiteSpace(enhancedScholarshipUrl))
+        {
+            errorMessage = "Please enter a valid URL for AI scraping.";
+            return;
+        }
+
+        isLoading = true;
+        errorMessage = "";
+        successMessage = "";
+        
+        try
+        {
+            var newScholarships = await EnhancedWebScrapingService.ScrapeAndParseScholarshipsAsync(enhancedScholarshipUrl);
+            
+            enhancedScholarships.AddRange(newScholarships);
+            lastEnhancedScrapeTime = DateTime.Now.ToString("MMM dd, HH:mm");
+            successMessage = $"Successfully scraped and parsed {newScholarships.Count} scholarships with AI from {new Uri(enhancedScholarshipUrl).Host}";
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error in AI-enhanced scraping");
+            errorMessage = $"Failed to scrape with AI: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task ExportEnhancedCsv()
+    {
+        try
+        {
+            var csvContent = await EnhancedWebScrapingService.GenerateScholarshipCsvAsync(enhancedScholarships);
+            var fileName = $"ai_scholarships_{DateTime.Now:yyyyMMdd_HHmmss}.csv";
+            
+            // Convert to base64 for download
+            var csvBytes = System.Text.Encoding.UTF8.GetBytes(csvContent);
+            var base64Content = Convert.ToBase64String(csvBytes);
+            
+            await JSRuntime.InvokeVoidAsync("downloadFile", fileName, base64Content);
+            successMessage = $"Exported {enhancedScholarships.Count} scholarships to CSV file";
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error exporting enhanced CSV");
+            errorMessage = $"Failed to export CSV: {ex.Message}";
+        }
+    }
+
+    private void ViewScholarshipDetails(EnhancedScrapedScholarship scholarship)
+    {
+        selectedScholarship = scholarship;
+        StateHasChanged();
+    }
+
+    // Modal support properties and methods
+    private bool showRawText = false;
+
+    private void CloseModal()
+    {
+        selectedScholarship = null;
+        showRawText = false;
+        StateHasChanged();
+    }
+
+    private void ToggleRawText()
+    {
+        showRawText = !showRawText;
+        StateHasChanged();
+    }
+
+    private async Task ExportSingleScholarship()
+    {
+        if (selectedScholarship == null) return;
+
+        try
+        {
+            var singleScholarshipList = new List<EnhancedScrapedScholarship> { selectedScholarship };
+            var csvContent = await EnhancedWebScrapingService.GenerateScholarshipCsvAsync(singleScholarshipList);
+            var fileName = $"scholarship_{selectedScholarship.Title.Replace(" ", "_").Replace("/", "_").Replace("\\", "_")}_{DateTime.Now:yyyyMMdd_HHmmss}.csv";
+            
+            // Convert to base64 for download
+            var csvBytes = System.Text.Encoding.UTF8.GetBytes(csvContent);
+            var base64Content = Convert.ToBase64String(csvBytes);
+            
+            await JSRuntime.InvokeVoidAsync("downloadFile", fileName, base64Content);
+            successMessage = $"Exported scholarship '{selectedScholarship.Title}' to CSV file";
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error exporting single scholarship CSV");
+            errorMessage = $"Failed to export scholarship CSV: {ex.Message}";
+        }
+    }
+
+    private string GetSourceHost(string url)
+    {
+        try
+        {
+            return new Uri(url).Host;
+        }
+        catch
+        {
+            return url;
+        }
+    }
 }
 
 <script>
@@ -532,7 +1021,16 @@
             byteNumbers[i] = byteCharacters.charCodeAt(i);
         }
         const byteArray = new Uint8Array(byteNumbers);
-        const blob = new Blob([byteArray], { type: 'application/json' });
+        
+        // Determine content type based on file extension
+        let mimeType = 'application/octet-stream';
+        if (filename.endsWith('.csv')) {
+            mimeType = 'text/csv;charset=utf-8;';
+        } else if (filename.endsWith('.json')) {
+            mimeType = 'application/json';
+        }
+        
+        const blob = new Blob([byteArray], { type: mimeType });
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
@@ -967,6 +1465,102 @@
         
         .data-actions {
             flex-direction: column;
+        }
+    }
+
+    /* Modal Styles */
+    .scholarship-details {
+        margin: 0;
+    }
+
+    .detail-section {
+        margin-bottom: 24px;
+        border-radius: 8px;
+        background: #f7fafc;
+        padding: 16px;
+        border: 1px solid #e2e8f0;
+    }
+
+    .detail-section-title {
+        color: #2d3748;
+        font-weight: 600;
+        margin-bottom: 12px;
+        display: flex;
+        align-items: center;
+        font-size: 1rem;
+    }
+
+    .detail-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 12px;
+    }
+
+    .detail-item {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .detail-item label {
+        font-weight: 600;
+        color: #4a5568;
+        font-size: 0.85rem;
+        margin-bottom: 0;
+    }
+
+    .detail-value {
+        color: #2d3748;
+        font-size: 0.95rem;
+        word-wrap: break-word;
+    }
+
+    .detail-description {
+        background: white;
+        border: 1px solid #e2e8f0;
+        border-radius: 6px;
+        padding: 12px;
+        color: #2d3748;
+        font-size: 0.95rem;
+        line-height: 1.5;
+        white-space: pre-wrap;
+        word-wrap: break-word;
+    }
+
+    .parsing-notes {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+    }
+
+    .raw-text-container {
+        margin-top: 8px;
+    }
+
+    .raw-text {
+        background: white;
+        border: 1px solid #e2e8f0;
+        border-radius: 6px;
+        padding: 12px;
+        font-size: 0.8rem;
+        color: #4a5568;
+        max-height: 300px;
+        overflow-y: auto;
+        white-space: pre-wrap;
+        word-wrap: break-word;
+    }
+
+    .modal-dialog-scrollable {
+        max-height: 90vh;
+    }
+
+    @@media (max-width: 576px) {
+        .detail-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .modal-dialog {
+            margin: 0.5rem;
         }
     }
 </style>
