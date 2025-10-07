@@ -1,5 +1,5 @@
 @page "/dashboard/institution/profile"
-@attribute [Authorize(Roles = "Institution")] 
+@attribute [Authorize(Roles = "Institution,SuperAdmin")]
 @layout Layout.InstitutionDashLayout
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @inject UserManager<IdentityUser> UserManager

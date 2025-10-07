@@ -57,6 +57,9 @@
     color: #111;
     text-align: left;
     font-family: 'Inter', 'Helvetica Neue', Helvetica, Arial, sans-serif; 
+    outline: none;
+    border: none;
+    box-shadow: none;
 }
 
 /* Subtitle under title */

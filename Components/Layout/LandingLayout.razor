@@ -85,10 +85,90 @@
         <!-- Footer bottom links -->
         <div class="footer-bottom-row">
             <div class="footer-links">
-                <a href="#">Privacy Policy</a>
-                <a href="#" data-bs-toggle="modal" data-bs-target="#termsModal" role="button">
-                Terms &amp; Conditions
+                <a href="#" data-bs-toggle="modal" data-bs-target="#privacyModal" role="button">
+                    Privacy Policy
                 </a>
+                <a href="#" data-bs-toggle="modal" data-bs-target="#termsModal" role="button">
+                    Terms &amp; Conditions
+                </a>
+<!-- ---------------- PRIVACY POLICY MODAL ---------------- -->
+<div class="modal fade" id="privacyModal" tabindex="-1" aria-labelledby="privacyModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="privacyModalLabel">Privacy Policy</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="terms-bubble">
+                        <h4>1. Introduction</h4>
+                        <p>eSkolar is committed to protecting your privacy and ensuring the security of your personal and academic information. This Privacy Policy explains how we collect, use, store, and protect your data when you use our platform. By accessing or using eSkolar, you consent to the practices described in this policy.</p>
+
+                        <h4>2. Information We Collect</h4>
+                        <ul>
+                                <li><strong>Personal Information:</strong> Name, email address, contact details, date of birth, and other information provided during registration or profile updates.</li>
+                                <li><strong>Academic Information:</strong> School, course, grades, documents (e.g., IDs, grade reports), and scholarship application data.</li>
+                                <li><strong>Usage Data:</strong> Log data, device information, browser type, IP address, and interactions with the platform.</li>
+                                <li><strong>Institution/Benefactor Data:</strong> Organization details, posted scholarships, announcements, and partnership information.</li>
+                        </ul>
+
+                        <h4>3. How We Use Your Information</h4>
+                        <ul>
+                                <li>To provide, operate, and improve the eSkolar platform and its services.</li>
+                                <li>To process scholarship applications, manage user accounts, and facilitate communication between students, institutions, and benefactors.</li>
+                                <li>To verify user identity and eligibility for scholarships or platform features.</li>
+                                <li>To comply with legal obligations and institutional policies.</li>
+                                <li>To analyze usage trends and enhance user experience.</li>
+                                <li>To send important notifications, updates, and support communications.</li>
+                        </ul>
+
+                        <h4>4. Data Sharing and Disclosure</h4>
+                        <ul>
+                                <li>We do <strong>not</strong> sell or rent your personal information to third parties.</li>
+                                <li>Information may be shared with authorized institutions and benefactors for scholarship processing and verification, subject to your consent.</li>
+                                <li>We may disclose information if required by law, regulation, or legal process, or to protect the rights, property, or safety of eSkolar, its users, or others.</li>
+                        </ul>
+
+                        <h4>5. Data Storage and Security</h4>
+                        <ul>
+                                <li>Your personal information and uploaded documents are securely stored using Microsoft Azure cloud services. Data is encrypted both in transit and at rest, following industry best practices.</li>
+                                <li>We implement industry-standard security measures, including role-based access control (RBAC), multi-factor authentication (MFA), firewalls, and regular security audits.</li>
+                                <li>Automated daily backups and geo-replication are used to prevent data loss and support recovery.</li>
+                                <li>Azure’s global infrastructure and compliance certifications help ensure your data is protected and managed according to international and Philippine data privacy standards.</li>
+                        </ul>
+
+                        <h4>6. Data Retention</h4>
+                        <p>We retain your personal and academic information only as long as necessary to fulfill the purposes described in this policy, comply with legal requirements, and support platform operations. You may request deletion of your account and data at any time, subject to applicable laws and institutional policies.</p>
+
+                        <h4>7. Your Rights</h4>
+                        <ul>
+                                <li>You have the right to access, correct, update, or request deletion of your personal data.</li>
+                                <li>You may withdraw consent for data processing or object to certain uses of your information.</li>
+                                <li>To exercise your rights, contact us at <a href="mailto:eskolarph@gmail.com">eskolarph@gmail.com</a> or use the support features on the platform.</li>
+                        </ul>
+
+                        <h4>8. Cookies and Tracking Technologies</h4>
+                        <p>eSkolar uses cookies and similar technologies to enhance your experience, remember preferences, and analyze platform usage. You may manage cookie preferences through your browser settings. For more details, see our <a href="/cookie-policy">Cookie Policy</a>.</p>
+
+                        <h4>9. Children’s Privacy</h4>
+                        <p>Users under 18 must have parental or guardian consent to use eSkolar. We do not knowingly collect personal information from children without appropriate consent.</p>
+
+                        <h4>10. Data Privacy Act Compliance</h4>
+                        <p>eSkolar complies with the Philippine Data Privacy Act of 2012 (RA 10173) and other applicable data protection laws. We are committed to upholding your rights and safeguarding your information.</p>
+
+                        <h4>11. Changes to This Policy</h4>
+                        <p>We may update this Privacy Policy from time to time. Significant changes will be communicated through the platform or via email. Continued use of eSkolar after changes means you accept the updated policy.</p>
+
+                        <h4>12. Contact Us</h4>
+                        <p>If you have questions, concerns, or requests regarding this Privacy Policy or your data, please contact us at <a href="mailto:eskolarph@gmail.com">eskolarph@gmail.com</a>.</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" data-bs-dismiss="modal">I Understand</button>
+            </div>
+        </div>
+    </div>
+</div>
                 <a href="#">Site Map</a>
             </div>
         </div>
@@ -112,30 +192,97 @@
       <div class="modal-body">
 
         <!-- Terms and Conditions content for eSkolar -->
-        <p>
-            Welcome to eSkolar! By accessing or using our platform, you agree to comply with and be bound by the following terms and conditions. Please read them carefully.
-        </p>
-        <ul>
-            <li><strong>Eligibility:</strong> eSkolar is available to students, educational institutions, benefactors, and parents/guardians. You must provide accurate and complete information during registration.</li>
-            <li><strong>Account Security:</strong> You are responsible for maintaining the confidentiality of your account credentials. Do not share your password with others.</li>
-            <li><strong>Acceptable Use:</strong> Use eSkolar only for lawful purposes. Do not misuse the platform, attempt unauthorized access, or disrupt service for others.</li>
-            <li><strong>Privacy:</strong> Your data is protected under the Data Privacy Act of 2012 (RA 10173). We use encryption and security best practices to safeguard your information.</li>
-            <li><strong>Content:</strong> You are responsible for any content you submit. Do not upload false, misleading, or inappropriate material.</li>
-            <li><strong>Scholarship Applications:</strong> Application requirements and selection are determined by benefactors and institutions. eSkolar is not responsible for the outcome of applications.</li>
-            <li><strong>Changes to Terms:</strong> eSkolar may update these terms at any time. Continued use of the platform means you accept any changes.</li>
-            <li><strong>Termination:</strong> We reserve the right to suspend or terminate accounts that violate these terms or engage in harmful behavior.</li>
-            <li><strong>Support:</strong> For questions or support, contact us at <b>eskolarph@gmail.com</b>.</li>
-        </ul>
-        <p>
-            By using eSkolar, you acknowledge that you have read, understood, and agree to these terms and conditions.
-        </p>
 
-        <!-- Checkbox for acceptance -->
-        <div class="form-check mt-3">
-            <input class="form-check-input" type="checkbox" id="acceptTerms" @bind="acceptedTerms" />
-            <label class="form-check-label" for="acceptTerms">
-                I have read and accept the terms and conditions.
-            </label>
+        <div class="terms-bubble">
+            <h4>1. Introduction</h4>
+            <p>Welcome to eSkolar. By accessing or using our platform, you agree to these Terms and Conditions (“Terms”). Please read them carefully.</p>
+
+            <h4>2. Acceptance of Terms</h4>
+            <p>By registering for an account or using our services, you agree to comply with and be bound by these Terms. If you do not agree, please do not use the platform.</p>
+
+            <h4>3. User Eligibility</h4>
+            <p>You must be at least 18 years old or have parental/guardian consent to use this platform. By using eSkolar, you confirm that you meet these requirements.</p>
+
+            <h4>4. Account Registration and Security</h4>
+            <ul>
+                <li>You must provide accurate and complete information during registration.</li>
+                <li>You are responsible for maintaining the confidentiality of your account credentials.</li>
+                <li>Notify us immediately of any unauthorized use of your account.</li>
+            </ul>
+
+            <h4>5. User Roles and Responsibilities</h4>
+            <ul>
+                <li><strong>Students:</strong> May view and apply for scholarships, upload required documents, and manage their profiles.</li>
+                <li><strong>Institutions and Benefactors:</strong> May post scholarships and announcements, manage applications, and view applicant data.</li>
+                <li><strong>Admins:</strong> Oversee platform operations, approve postings, and manage compliance.</li>
+            </ul>
+
+            <h4>6. Scholarship and Announcement Posting</h4>
+            <ul>
+                <li>Only authorized institutions and benefactors may post scholarships and announcements.</li>
+                <li>All postings must be accurate, lawful, and not misleading.</li>
+                <li>We reserve the right to review, approve, edit, or remove any posting at our discretion.</li>
+            </ul>
+
+            <h4>7. Document Uploads and Profile Information</h4>
+            <ul>
+                <li>Students may upload documents (e.g., IDs, grade reports) for application and verification purposes.</li>
+                <li>All users are responsible for the accuracy and legality of the information and documents they provide.</li>
+                <li>Uploaded documents may be processed using OCR (Optical Character Recognition) to auto-fill forms.</li>
+            </ul>
+
+            <h4>8. Privacy and Data Protection</h4>
+            <ul>
+                <li>We collect and process personal and academic information in accordance with the Philippine Data Privacy Act of 2012 (RA 10173).</li>
+                <li>By using the platform, you consent to our collection, use, and storage of your data as described in our Privacy Policy.</li>
+                <li>You have the right to access, correct, or request deletion of your personal data.</li>
+            </ul>
+
+            <h4>9. Acceptable Use</h4>
+            <ul>
+                <li>You agree not to use the platform for any unlawful, harmful, or fraudulent activity.</li>
+                <li>You may not upload viruses, attempt to gain unauthorized access, or disrupt the platform’s operation.</li>
+            </ul>
+
+            <h4>10. Intellectual Property</h4>
+            <ul>
+                <li>All content and software on c2_eskolar are owned by us or our licensors, except for user-uploaded documents and postings.</li>
+                <li>You may not copy, modify, or distribute platform content without permission.</li>
+            </ul>
+
+            <h4>11. Disclaimers and Limitation of Liability</h4>
+            <ul>
+                <li>We provide the platform “as is” and do not guarantee uninterrupted or error-free service.</li>
+                <li>We are not responsible for the accuracy of scholarship postings or user-provided information.</li>
+                <li>To the extent permitted by law, we are not liable for any damages arising from your use of the platform.</li>
+            </ul>
+
+            <h4>12. Termination and Suspension</h4>
+            <ul>
+                <li>We may suspend or terminate your account if you violate these Terms or applicable laws.</li>
+                <li>You may close your account at any time by contacting support.</li>
+            </ul>
+
+            <h4>13. Governing Law and Dispute Resolution</h4>
+            <ul>
+                <li>These Terms are governed by the laws of the Republic of the Philippines.</li>
+                <li>Any disputes will be resolved through amicable negotiation or, if necessary, by the appropriate courts in the Philippines.</li>
+            </ul>
+
+            <h4>14. Changes to Terms</h4>
+            <ul>
+                <li>We may update these Terms from time to time. We will notify users of significant changes.</li>
+                <li>Continued use of the platform after changes means you accept the new Terms.</li>
+            </ul>
+
+            <h4>15. Contact Information</h4>
+            <p>For questions or concerns, contact us at [insert contact email or support link].</p>
+
+            <h4>16. Links to Other Policies</h4>
+            <ul>
+                <li><a href="/privacy-policy">Privacy Policy</a></li>
+                <li><a href="/cookie-policy">Cookie Policy</a></li>
+            </ul>
         </div>
       </div>
 

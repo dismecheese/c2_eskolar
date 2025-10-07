@@ -1,5 +1,5 @@
 @page "/dashboard/student/apply/{ScholarshipId:int}"
-@attribute [Authorize(Roles = "Student")]
+@attribute [Authorize(Roles = "Student,SuperAdmin")]
 @layout Layout.StudentDashLayout
 
 @using c2_eskolar.Data
@@ -16,6 +16,9 @@
 @inject UserManager<IdentityUser> UserManager
 @inject NavigationManager Navigation
 @inject Blazored.LocalStorage.ILocalStorageService LocalStorage
+@inject IWebHostEnvironment Env
+@inject c2_eskolar.Services.BlobStorageService BlobStorageService
+@inject Microsoft.Extensions.Logging.ILogger<StudentScholarshipApplication> Logger
 
 
 <PageTitle>Scholarship Application</PageTitle>
@@ -240,33 +243,125 @@
     private List<IBrowserFile> selectedFiles = new();
     // Document intelligence fields removed
     private const string LocalStorageKey = "student-scholarship-application";
+    // Debounce token for LocalStorage writes
+    private CancellationTokenSource? debounceCts;
+
+    // Upload policy
+    private readonly string[] allowedExtensions = new[] { ".pdf", ".docx", ".doc", ".jpg", ".jpeg", ".png" };
+    private const long perFileMaxBytes = 5 * 1024 * 1024; // 5 MB
+    private const long totalMaxBytes = 20 * 1024 * 1024; // 20 MB total per submission
 
     private async Task OnFilesSelected(InputFileChangeEventArgs e)
     {
-        selectedFiles = e.GetMultipleFiles().ToList();
-        uploadedFileNames = selectedFiles.Select(f => f.Name).ToList();
-        // Document intelligence logic removed
-        await SaveFormStateAsync();
+        var files = e.GetMultipleFiles();
+        var validFiles = new List<IBrowserFile>();
+        var validFileNames = new List<string>();
+        long currentTotal = 0;
+
+        foreach (var file in files)
+        {
+            var ext = Path.GetExtension(file.Name).ToLowerInvariant();
+            if (!allowedExtensions.Contains(ext))
+            {
+                errorMessage = $"One or more files have unsupported types. Allowed: {string.Join(", ", allowedExtensions)}";
+                StateHasChanged();
+                return;
+            }
+
+            if (file.Size > perFileMaxBytes)
+            {
+                errorMessage = $"File '{file.Name}' exceeds the per-file limit of {perFileMaxBytes / (1024 * 1024)} MB.";
+                StateHasChanged();
+                return;
+            }
+
+            if (currentTotal + file.Size > totalMaxBytes)
+            {
+                errorMessage = $"Total upload size exceeds the {totalMaxBytes / (1024 * 1024)} MB limit.";
+                StateHasChanged();
+                return;
+            }
+
+            currentTotal += file.Size;
+            validFiles.Add(file);
+            validFileNames.Add(file.Name);
+        }
+
+        selectedFiles = validFiles;
+        uploadedFileNames = validFileNames;
+        errorMessage = null;
+
+        // Persist a minimal safe state
+        await DebouncedSaveFormStateAsync();
     }
 
     private async Task SaveFormStateAsync()
     {
-        // Only save serializable data
+        // Persist only safe, non-PII fields
         var state = new PersistedApplicationState
         {
-            Application = application,
+            PersonalStatement = application?.PersonalStatement,
+            FirstSemesterGrades = application?.FirstSemesterGrades,
+            SecondSemesterGrades = application?.SecondSemesterGrades,
+            GWA = application?.GWA,
+            IsExternalApplication = application?.IsExternalApplication,
+            ExternalApplicationUrl = application?.ExternalApplicationUrl,
+            HasAppliedExternally = application?.HasAppliedExternally,
             UploadedFileNames = uploadedFileNames
         };
-        await LocalStorage.SetItemAsync(LocalStorageKey + ScholarshipId, state);
+        try
+        {
+            await LocalStorage.SetItemAsync(LocalStorageKey + ScholarshipId, state);
+            Logger?.LogDebug("Saved application draft for scholarship {ScholarshipId}", ScholarshipId);
+        }
+        catch (Exception ex)
+        {
+            // Do not surface LocalStorage errors to users; log and continue
+            Logger?.LogWarning(ex, "Failed to persist application draft for scholarship {ScholarshipId}", ScholarshipId);
+        }
+    }
+
+    private async Task DebouncedSaveFormStateAsync(int delayMs = 800)
+    {
+        try
+        {
+            debounceCts?.Cancel();
+        }
+        catch { }
+        debounceCts = new CancellationTokenSource();
+        var token = debounceCts.Token;
+        try
+        {
+            await Task.Delay(delayMs, token);
+            if (!token.IsCancellationRequested)
+            {
+                await InvokeAsync(SaveFormStateAsync);
+            }
+        }
+        catch (TaskCanceledException) { }
     }
 
     private async Task RestoreFormStateAsync()
     {
-        var state = await LocalStorage.GetItemAsync<PersistedApplicationState>(LocalStorageKey + ScholarshipId);
-        if (state != null)
+        try
         {
-            application = state.Application ?? new ScholarshipApplication();
-            uploadedFileNames = state.UploadedFileNames ?? new List<string>();
+            var state = await LocalStorage.GetItemAsync<PersistedApplicationState>(LocalStorageKey + ScholarshipId);
+            if (state != null)
+            {
+                // Restore only non-PII fields
+                application.PersonalStatement = state.PersonalStatement ?? application.PersonalStatement;
+                application.FirstSemesterGrades = state.FirstSemesterGrades ?? application.FirstSemesterGrades;
+                application.SecondSemesterGrades = state.SecondSemesterGrades ?? application.SecondSemesterGrades;
+                application.GWA = state.GWA ?? application.GWA;
+                application.IsExternalApplication = state.IsExternalApplication ?? application.IsExternalApplication;
+                application.ExternalApplicationUrl = state.ExternalApplicationUrl ?? application.ExternalApplicationUrl;
+                application.HasAppliedExternally = state.HasAppliedExternally ?? application.HasAppliedExternally;
+                uploadedFileNames = state.UploadedFileNames ?? new List<string>();
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger?.LogWarning(ex, "Failed to restore application draft for scholarship {ScholarshipId}", ScholarshipId);
         }
     }
 
@@ -277,7 +372,7 @@
 
     private async Task OnFieldChanged()
     {
-        await SaveFormStateAsync();
+        await DebouncedSaveFormStateAsync();
     }
 
     protected override async Task OnInitializedAsync()
@@ -342,6 +437,7 @@
 
         try
         {
+            Logger?.LogInformation("Starting submission for scholarship {ScholarshipId} by student {StudentProfileId}", ScholarshipId, application.StudentProfileId);
             isSubmitting = true;
             errorMessage = null;
 
@@ -352,34 +448,67 @@
                 return;
             }
 
-            // Save uploaded files
-            var savedPaths = new List<string>();
-            var uploadPath = Path.Combine("wwwroot", "uploads", "student_documents");
-            Directory.CreateDirectory(uploadPath);
+            // Prevent duplicate applications
+            var exists = await DbContext.ScholarshipApplications
+                .AnyAsync(a => a.ScholarshipId == application.ScholarshipId && a.StudentProfileId == application.StudentProfileId);
+            if (exists)
+            {
+                Logger?.LogWarning("Duplicate application prevented for scholarship {ScholarshipId} student {StudentProfileId}", ScholarshipId, application.StudentProfileId);
+                errorMessage = "You have already applied to this scholarship.";
+                return;
+            }
+
+
+            // Save uploaded files to Azure Blob Storage
+            var savedUrls = new List<string>();
+            long accumulated = 0;
             foreach (var file in selectedFiles)
             {
+                var ext = Path.GetExtension(file.Name).ToLowerInvariant();
+                if (!allowedExtensions.Contains(ext))
+                    throw new InvalidOperationException($"Unsupported file type: {ext}");
+
+                if (file.Size > perFileMaxBytes)
+                    throw new InvalidOperationException($"File {file.Name} exceeds per-file size limit.");
+
+                if (accumulated + file.Size > totalMaxBytes)
+                    throw new InvalidOperationException($"Total upload size exceeds limit.");
+
                 var uniqueName = $"{Guid.NewGuid()}_{Path.GetFileName(file.Name)}";
-                var filePath = Path.Combine(uploadPath, uniqueName);
-                using (var stream = File.Create(filePath))
+                try
                 {
-                    await file.OpenReadStream(20 * 1024 * 1024).CopyToAsync(stream); // 20MB max per file
+                    await using var stream = file.OpenReadStream(perFileMaxBytes);
+                    var url = await BlobStorageService.UploadDocumentAsync(stream, uniqueName, file.ContentType);
+                    savedUrls.Add(url);
+                    accumulated += file.Size;
                 }
-                savedPaths.Add($"/uploads/student_documents/{uniqueName}");
+                catch (Exception ex)
+                {
+                    Logger?.LogError(ex, "Failed uploading file {FileName} to Azure Blob Storage for scholarship {ScholarshipId}", file.Name, ScholarshipId);
+                    throw;
+                }
             }
-            application.UploadedDocuments = string.Join(",", savedPaths);
+            // Store the blob URLs (or you can store uniqueName if you want to keep it private)
+            application.UploadedDocuments = string.Join(",", savedUrls);
 
             DbContext.ScholarshipApplications.Add(application);
             await DbContext.SaveChangesAsync();
 
-            successMessage = $"✅ Application submitted successfully! Reference ID: {application.ScholarshipApplicationId}";
+            successMessage = $"Application submitted successfully! Reference ID: {application.ScholarshipApplicationId}";
             uploadedFileNames.Clear();
             selectedFiles.Clear();
             await ClearFormStateAsync();
             showSubmittedModal = true;
         }
+        catch (InvalidOperationException ioe)
+        {
+            Logger?.LogWarning(ioe, "Validation/upload error during application submit for scholarship {ScholarshipId}", ScholarshipId);
+            errorMessage = ioe.Message;
+        }
         catch (Exception ex)
         {
-            errorMessage = $"❌ Something went wrong: {ex.Message}";
+            Logger?.LogError(ex, "Unhandled error during application submit for scholarship {ScholarshipId}", ScholarshipId);
+            errorMessage = "Something went wrong while submitting your application. Please try again later.";
         }
         finally
         {
@@ -402,7 +531,14 @@
     // Helper class for persisting state
     public class PersistedApplicationState
     {
-        public ScholarshipApplication? Application { get; set; }
+        // Only non-PII fields
+        public string? PersonalStatement { get; set; }
+        public string? FirstSemesterGrades { get; set; }
+        public string? SecondSemesterGrades { get; set; }
+    public double? GWA { get; set; }
+        public bool? IsExternalApplication { get; set; }
+        public string? ExternalApplicationUrl { get; set; }
+        public bool? HasAppliedExternally { get; set; }
         public List<string>? UploadedFileNames { get; set; }
     }
 

@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using System.Linq;
 using System.Threading.Tasks;
+using c2_eskolar.Services.AI;
 
 namespace c2_eskolar.Controllers
 {
@@ -11,10 +12,10 @@ namespace c2_eskolar.Controllers
     public class ChatbotController : ControllerBase
     {
         private readonly UserManager<IdentityUser> _userManager;
-        private readonly Services.ProfileSummaryService _profileSummaryService;
-        private readonly Services.OpenAIService _openAIService;
+        private readonly ProfileSummaryService _profileSummaryService;
+        private readonly c2_eskolar.Services.OpenAIService _openAIService;
 
-        public ChatbotController(UserManager<IdentityUser> userManager, Services.ProfileSummaryService profileSummaryService, Services.OpenAIService openAIService)
+        public ChatbotController(UserManager<IdentityUser> userManager, ProfileSummaryService profileSummaryService, c2_eskolar.Services.OpenAIService openAIService)
         {
             _userManager = userManager;
             _profileSummaryService = profileSummaryService;
@@ -31,7 +32,8 @@ namespace c2_eskolar.Controllers
                 return Unauthorized();
             if (string.IsNullOrWhiteSpace(request?.Message))
                 return BadRequest("Message is required.");
-            var aiResponse = await _openAIService.GetChatCompletionWithProfileAsync(request.Message, user, request.IsFirstMessage);
+            // Use the enhanced method, passing null for context (API context not available)
+            var aiResponse = await _openAIService.GetChatCompletionWithProfileAndContextAsync(request.Message, user, null, request.IsFirstMessage);
             return Ok(new { response = aiResponse });
         }
 

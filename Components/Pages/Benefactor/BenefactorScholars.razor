@@ -1,6 +1,6 @@
-@page "/dashboard/institution/scholars"
-@attribute [Authorize(Roles = "Institution,SuperAdmin")]
-@layout Layout.InstitutionDashLayout
+@page "/dashboard/benefactor/scholars"
+@attribute [Authorize(Roles = "Benefactor,SuperAdmin")]
+@layout Layout.BenefactorDashLayout
 
 @using c2_eskolar.Data
 @using c2_eskolar.Models
@@ -10,12 +10,10 @@
 
 @inject c2_eskolar.Services.StudentProfileService StudentProfileService
 @inject c2_eskolar.Services.VerificationDocumentService VerificationDocumentService
-@inject c2_eskolar.Services.InstitutionProfileService InstitutionProfileService
+@inject c2_eskolar.Services.BenefactorProfileService BenefactorProfileService
 @inject IDbContextFactory<ApplicationDbContext> DbContextFactory
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @inject UserManager<IdentityUser> UserManager
-@inject Microsoft.Extensions.Logging.ILogger<InstitutionScholar> Logger
-@inject c2_eskolar.Services.BlobStorageService BlobStorageService
 
 @code {
     public class StudentDocument
@@ -41,18 +39,18 @@
         public List<StudentDocument> Documents { get; set; } = new List<StudentDocument>();
     }
 
-    private List<Student> affiliatedStudents = new List<Student>();
-    private List<Student> externalScholars = new List<Student>();
-    private string activeTab = "affiliated";
-    private string currentInstitutionName = "";
+    private List<Student> fundedStudents = new List<Student>();
+    private List<Student> externalApplicants = new List<Student>();
+    private string activeTab = "funded";
+    private Guid? currentBenefactorProfileId = null;
 
     protected override async Task OnInitializedAsync()
     {
-        await LoadCurrentInstitution();
+        await LoadCurrentBenefactor();
         await LoadStudentsAndScholars();
     }
 
-    private async Task LoadCurrentInstitution()
+    private async Task LoadCurrentBenefactor()
     {
         try
         {
@@ -62,110 +60,80 @@
                 var user = await UserManager.GetUserAsync(authState.User);
                 if (user != null)
                 {
-                    var institutionProfile = await InstitutionProfileService.GetProfileByUserIdAsync(user.Id);
-                    currentInstitutionName = institutionProfile?.InstitutionName ?? "";
+                    var benefactorProfile = await BenefactorProfileService.GetProfileByUserIdAsync(user.Id);
+                    currentBenefactorProfileId = benefactorProfile?.BenefactorProfileId;
                 }
             }
         }
         catch (Exception ex)
         {
-            Logger?.LogWarning(ex, "Error loading institution profile");
+            Console.WriteLine($"Error loading benefactor: {ex.Message}");
         }
     }
 
     private async Task LoadStudentsAndScholars()
     {
         var profiles = await StudentProfileService.GetAllProfilesAsync();
-        affiliatedStudents = new List<Student>();
-        externalScholars = new List<Student>();
-
+        fundedStudents = new List<Student>();
+        externalApplicants = new List<Student>();
+        
         using var dbContext = await DbContextFactory.CreateDbContextAsync();
-
-        // Get the current institution's profile ID and scholarships
-        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
-        var currentUserId = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-        var currentInstitutionProfile = await dbContext.InstitutionProfiles
-            .FirstOrDefaultAsync(ip => ip.UserId == currentUserId);
-        if (currentInstitutionProfile == null)
+        
+        // Get the current benefactor's profile ID
+        if (currentBenefactorProfileId == null)
         {
-            Logger?.LogInformation("No current institution profile found for user {UserId}", currentUserId);
-            return;
+            return; // Exit if no benefactor profile found
         }
-
-        var currentInstitutionScholarshipIds = await dbContext.Scholarships
-            .Where(s => s.InstitutionProfileId == currentInstitutionProfile.InstitutionProfileId)
+        var benefactorScholarshipIds = await dbContext.Scholarships
+            .Where(s => s.BenefactorProfileId == currentBenefactorProfileId)
             .Select(s => s.ScholarshipId)
             .ToListAsync();
-
-        // Batch fetch scholarship applications for all profiles in one go and group by student
-        var studentProfileIds = profiles.Select(p => p.StudentProfileId).ToList();
-        var allApplications = await dbContext.ScholarshipApplications
-            .Include(a => a.Scholarship)
-            .Include(a => a.Documents)
-            .Where(a => studentProfileIds.Contains(a.StudentProfileId))
-            .ToListAsync();
-
-        var applicationsByStudent = allApplications.GroupBy(a => a.StudentProfileId)
-            .ToDictionary(g => g.Key, g => g.ToList());
-
-        // Batch fetch verification documents grouped by user id using DbContext (avoid missing service API)
-        var studentUserIds = profiles.Select(p => p.UserId).Where(id => !string.IsNullOrWhiteSpace(id)).ToList();
-        var allVerificationDocs = new List<c2_eskolar.Models.VerificationDocument>();
-        if (studentUserIds.Any())
-        {
-            allVerificationDocs = await dbContext.VerificationDocuments
-                .Where(d => studentUserIds.Contains(d.UserId))
-                .ToListAsync();
-        }
-        var verificationByUser = allVerificationDocs.GroupBy(d => d.UserId).ToDictionary(g => g.Key, g => g.ToList());
-
+        
         foreach (var profile in profiles)
         {
             var allDocuments = new List<StudentDocument>();
-
-            // Map verification docs if available
-            if (verificationByUser.TryGetValue(profile.UserId, out var vDocs))
+            // Get verification documents
+            var verificationDocs = await VerificationDocumentService.GetDocumentsByUserIdAsync(profile.UserId);
+            var mappedVerificationDocs = verificationDocs.Select(d => new StudentDocument
             {
-                var mappedVerificationDocs = vDocs.Select(d => new StudentDocument
-                {
-                    Name = d.DocumentType ?? "Document",
-                    DateUploaded = d.UploadedAt?.ToString("MM/dd/yyyy") ?? "",
-                    Status = d.Status ?? "Pending",
-                    StatusClass = d.Status == "Approved" ? "text-success" : d.Status == "Pending" ? "text-warning" : d.Status == "Needs Revision" ? "text-danger" : "text-info",
-                    FileType = d.FilePath?.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase) == true ? "PDF" : d.FilePath?.EndsWith(".docx", StringComparison.OrdinalIgnoreCase) == true ? "DOCX" : "Other",
-                    FilePath = d.FilePath ?? "",
-                    DocumentSource = "Verification",
-                    ApplicationTitle = ""
-                }).ToList();
-
-                allDocuments.AddRange(mappedVerificationDocs);
-            }
-
-            // Map application documents
-            var applications = applicationsByStudent.TryGetValue(profile.StudentProfileId, out var apps) ? apps : new List<ScholarshipApplication>();
-            var hasAppliedToCurrentInstitution = applications.Any(a => currentInstitutionScholarshipIds.Contains(a.ScholarshipId));
-
+                Name = d.DocumentType ?? "Document",
+                DateUploaded = d.UploadedAt?.ToString("MM/dd/yyyy") ?? "",
+                Status = d.Status ?? "Pending",
+                StatusClass = d.Status == "Approved" ? "text-success" : d.Status == "Pending" ? "text-warning" : d.Status == "Needs Revision" ? "text-danger" : "text-info",
+                FileType = d.FilePath?.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase) == true ? "PDF" : d.FilePath?.EndsWith(".docx", StringComparison.OrdinalIgnoreCase) == true ? "DOCX" : "Other",
+                FilePath = d.FilePath ?? "",
+                DocumentSource = "Verification",
+                ApplicationTitle = ""
+            }).ToList();
+            allDocuments.AddRange(mappedVerificationDocs);
+            // Get scholarship applications and their documents
+            var applications = await dbContext.ScholarshipApplications
+                .Include(a => a.Scholarship)
+                .Include(a => a.Documents)
+                .Where(a => a.StudentProfileId == profile.StudentProfileId)
+                .ToListAsync();
+            // Check if this student has been funded by this benefactor
+            bool isFundedByBenefactor = applications.Any(a => 
+                benefactorScholarshipIds.Contains(a.ScholarshipId) && a.Status == "Approved");
+            // Check if this student has applied to any scholarships from this benefactor
+            bool hasAppliedToBenefactor = applications.Any(a => 
+                benefactorScholarshipIds.Contains(a.ScholarshipId));
             foreach (var application in applications)
             {
-                // Documents collection
-                if (application.Documents != null)
+                // Add documents from the Documents collection
+                var appDocuments = application.Documents.Select(d => new StudentDocument
                 {
-                    var appDocuments = application.Documents.Select(d => new StudentDocument
-                    {
-                        Name = d.FileName,
-                        DateUploaded = d.UploadedAt.ToString("MM/dd/yyyy"),
-                        Status = "Submitted",
-                        StatusClass = "text-info",
-                        FileType = GetFileTypeFromPath(d.FilePath),
-                        FilePath = d.FilePath,
-                        DocumentSource = "Application",
-                        ApplicationTitle = application.Scholarship?.Title ?? "Unknown Scholarship"
-                    }).ToList();
-
-                    allDocuments.AddRange(appDocuments);
-                }
-
-                // UploadedDocuments property
+                    Name = d.FileName,
+                    DateUploaded = d.UploadedAt.ToString("MM/dd/yyyy"),
+                    Status = "Submitted", // Application documents don't have individual status
+                    StatusClass = "text-info",
+                    FileType = GetFileTypeFromPath(d.FilePath),
+                    FilePath = d.FilePath,
+                    DocumentSource = "Application",
+                    ApplicationTitle = application.Scholarship?.Title ?? "Unknown Scholarship"
+                }).ToList();
+                allDocuments.AddRange(appDocuments);
+                // Add documents from UploadedDocuments property (comma-separated paths)
                 if (!string.IsNullOrEmpty(application.UploadedDocuments))
                 {
                     var uploadedDocPaths = application.UploadedDocuments.Split(',', StringSplitOptions.RemoveEmptyEntries);
@@ -180,11 +148,9 @@
                         DocumentSource = "Application",
                         ApplicationTitle = application.Scholarship?.Title ?? "Unknown Scholarship"
                     }).ToList();
-
                     allDocuments.AddRange(uploadedDocs);
                 }
             }
-
             var student = new Student
             {
                 Id = profile.StudentProfileId,
@@ -195,14 +161,14 @@
                 Year = profile.YearLevel.HasValue ? $"{profile.YearLevel} Year" : "N/A",
                 Documents = allDocuments
             };
-
-            if (!string.IsNullOrWhiteSpace(profile.UniversityName) && !string.IsNullOrWhiteSpace(currentInstitutionName) && profile.UniversityName.Equals(currentInstitutionName, StringComparison.OrdinalIgnoreCase))
+            // Categorize students
+            if (isFundedByBenefactor)
             {
-                affiliatedStudents.Add(student);
+                fundedStudents.Add(student);
             }
-            else if (hasAppliedToCurrentInstitution)
+            else if (hasAppliedToBenefactor)
             {
-                externalScholars.Add(student);
+                externalApplicants.Add(student);
             }
         }
     }
@@ -234,19 +200,19 @@
 
     private List<Student> GetCurrentStudentList()
     {
-        return activeTab == "affiliated" ? affiliatedStudents : externalScholars;
+        return activeTab == "funded" ? fundedStudents : externalApplicants;
     }
 
     private string GetCurrentTabTitle()
     {
-        return activeTab == "affiliated" ? "Affiliated Students" : "External Scholars";
+        return activeTab == "funded" ? "Funded Students" : "External Applicants";
     }
 
     private string GetCurrentTabDescription()
     {
-        return activeTab == "affiliated" 
-            ? "Students who are enrolled in your institution" 
-            : "Students from other institutions who applied for your scholarships";
+        return activeTab == "funded" 
+            ? "Students who have received funding from your scholarships" 
+            : "Students who applied to your scholarships but are not affiliated";
     }
 }
 
@@ -255,27 +221,27 @@
         <div class="col-12 col-xl-10">
             
             <!-- Header Section -->
-            <div class="card border-0 shadow-sm mb-4" style="background: linear-gradient(135deg, #1976d2 0%, #2196f3 100%);">
+            <div class="card border-0 shadow-sm mb-4" style="background: linear-gradient(135deg, #059669 0%, #10b981 100%);">
                 <div class="card-body text-white">
                     <div class="row align-items-center">
                         <div class="col-md-8">
                             <h2 class="fw-bold mb-2">
                                 <i class="fa fa-graduation-cap me-2"></i>Scholar Management
                             </h2>
-                            <p class="mb-0 opacity-90">Monitor and manage scholarship recipients and their documentation</p>
+                            <p class="mb-0 opacity-90">Monitor and manage your funded students and applicants</p>
                         </div>
                         <div class="col-md-4 text-end">
                             <div class="d-flex justify-content-end gap-3">
                                 <div class="text-center">
-                                    <div class="fs-4 fw-bold">@affiliatedStudents.Count</div>
-                                    <small class="opacity-90">Affiliated</small>
+                                    <div class="fs-4 fw-bold">@fundedStudents.Count</div>
+                                    <small class="opacity-90">Funded</small>
                                 </div>
                                 <div class="text-center">
-                                    <div class="fs-4 fw-bold">@externalScholars.Count</div>
-                                    <small class="opacity-90">External</small>
+                                    <div class="fs-4 fw-bold">@externalApplicants.Count</div>
+                                    <small class="opacity-90">Applicants</small>
                                 </div>
                                 <div class="text-center">
-                                    <div class="fs-4 fw-bold">@(affiliatedStudents.Count + externalScholars.Count)</div>
+                                    <div class="fs-4 fw-bold">@(fundedStudents.Count + externalApplicants.Count)</div>
                                     <small class="opacity-90">Total</small>
                                 </div>
                             </div>
@@ -288,19 +254,19 @@
             <div class="card border-0 shadow-sm mb-4">
                 <div class="card-body p-0">
                     <nav class="nav nav-tabs border-0" id="scholarTabs" role="tablist">
-                        <button class="nav-link @(activeTab == "affiliated" ? "active" : "") fw-semibold px-4 py-3 border-0" 
-                                type="button" @onclick="@(() => activeTab = "affiliated")"
-                                style="@(activeTab == "affiliated" ? "background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%); color: #1976d2; border-bottom: 3px solid #1976d2 !important;" : "background: transparent; color: #666;")">
-                            <i class="fa fa-university me-2"></i>
-                            Affiliated Students
-                            <span class="badge @(activeTab == "affiliated" ? "bg-primary" : "bg-secondary") ms-2">@affiliatedStudents.Count</span>
+                        <button class="nav-link @(activeTab == "funded" ? "active" : "") fw-semibold px-4 py-3 border-0" 
+                                type="button" @onclick="@(() => activeTab = "funded")"
+                                style="@(activeTab == "funded" ? "background: linear-gradient(135deg, #e8f5e8 0%, #bbf7d0 100%); color: #059669; border-bottom: 3px solid #059669 !important;" : "background: transparent; color: #666;")">
+                            <i class="fa fa-money me-2"></i>
+                            Funded Students
+                            <span class="badge @(activeTab == "funded" ? "bg-success" : "bg-secondary") ms-2">@fundedStudents.Count</span>
                         </button>
                         <button class="nav-link @(activeTab == "external" ? "active" : "") fw-semibold px-4 py-3 border-0" 
                                 type="button" @onclick="@(() => activeTab = "external")"
-                                style="@(activeTab == "external" ? "background: linear-gradient(135deg, #e8f5e8 0%, #c8e6c9 100%); color: #388e3c; border-bottom: 3px solid #388e3c !important;" : "background: transparent; color: #666;")">
-                            <i class="fa fa-globe me-2"></i>
-                            External Scholars
-                            <span class="badge @(activeTab == "external" ? "bg-success" : "bg-secondary") ms-2">@externalScholars.Count</span>
+                                style="@(activeTab == "external" ? "background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%); color: #1976d2; border-bottom: 3px solid #1976d2 !important;" : "background: transparent; color: #666;")">
+                            <i class="fa fa-user-plus me-2"></i>
+                            External Applicants
+                            <span class="badge @(activeTab == "external" ? "bg-primary" : "bg-secondary") ms-2">@externalApplicants.Count</span>
                         </button>
                     </nav>
                 </div>
@@ -560,49 +526,21 @@
                                                                 </td>
                                                                 <td class="border-0">
                                                                     <div class="btn-group btn-group-sm">
-                                                                        @{
-                                                                            string? sasUrl = null;
-                                                                            if (!string.IsNullOrWhiteSpace(doc.FilePath))
-                                                                            {
-                                                                                // Use same logic as InstitutionScholarshipApplicationReview
-                                                                                var trimmed = doc.FilePath.Trim();
-                                                                                var blobName = trimmed.Contains("/") ? trimmed.Substring(trimmed.LastIndexOf('/') + 1) : trimmed;
-                                                                                blobName = Uri.UnescapeDataString(blobName);
-                                                                                
-                                                                                try
-                                                                                {
-                                                                                    sasUrl = BlobStorageService.GetDocumentSasUrl(blobName, 60);
-                                                                                }
-                                                                                catch
-                                                                                {
-                                                                                    // Fallback: Try with known working GUID prefix for specific files
-                                                                                    if (blobName.Contains("_Almadrones_Assignment#2.pdf"))
-                                                                                    {
-                                                                                        try
-                                                                                        {
-                                                                                            var fallbackBlobName = "29c38a03-48f5-4719-a321-0b43d0599065_Almadrones_Assignment#2.pdf";
-                                                                                            sasUrl = BlobStorageService.GetDocumentSasUrl(fallbackBlobName, 60);
-                                                                                        }
-                                                                                        catch { sasUrl = null; }
-                                                                                    }
-                                                                                }
-                                                                            }
-                                                                        }
-                                                                        @if (!string.IsNullOrEmpty(sasUrl))
+                                                                        @if (!string.IsNullOrEmpty(doc.FilePath))
                                                                         {
-                                                                            <a href="@sasUrl" target="_blank" class="btn btn-outline-primary" title="View Document">
+                                                                            <a href="@doc.FilePath" target="_blank" class="btn btn-outline-primary" title="View Document">
                                                                                 <i class="fa fa-eye"></i>
                                                                             </a>
-                                                                            <a href="@sasUrl" class="btn btn-outline-secondary" title="Download">
+                                                                            <a href="@doc.FilePath" download class="btn btn-outline-secondary" title="Download">
                                                                                 <i class="fa fa-download"></i>
                                                                             </a>
                                                                         }
                                                                         else
                                                                         {
-                                                                            <button type="button" class="btn btn-outline-primary" disabled title="Document not available">
+                                                                            <button type="button" class="btn btn-outline-primary" disabled title="No file path available">
                                                                                 <i class="fa fa-eye"></i>
                                                                             </button>
-                                                                            <button type="button" class="btn btn-outline-secondary" disabled title="Document not available">
+                                                                            <button type="button" class="btn btn-outline-secondary" disabled title="No file path available">
                                                                                 <i class="fa fa-download"></i>
                                                                             </button>
                                                                         }

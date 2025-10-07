@@ -1,5 +1,5 @@
 @page "/dashboard/student/scholarships-info/{ScholarshipId:int}"
-@attribute [Authorize(Roles = "Student")]
+@attribute [Authorize(Roles = "Student,SuperAdmin")]
 @layout Layout.StudentDashLayout
 
 @using Microsoft.EntityFrameworkCore
@@ -9,6 +9,7 @@
 @inject ApplicationDbContext DbContext
 @inject IJSRuntime JS
 @inject AuthenticationStateProvider AuthStateProvider
+@inject NavigationManager Navigation
 
 
 @code {
@@ -138,7 +139,14 @@ else
                         {
                             <div class="mb-2"><strong>Description:</strong><p class="mb-1">@scholarship.Description</p></div>
                         }
-                        <div class="mb-2"><strong>Status:</strong> <span class="ms-1">@(scholarship.IsActive ? "🟢 Active" : "🔴 Inactive")</span></div>
+                        <div class="mb-2"><strong>Status:</strong> <span class="ms-1">
+                            @{
+                                var takenCount = scholarship.Applications?.Count(a => a.Status != "Rejected" && a.Status != "Withdrawn") ?? 0;
+                                var totalSlots = (int)(scholarship.SlotsAvailable ?? 0);
+                                var slotsLeft = Math.Max(0, totalSlots - takenCount);
+                            }
+                            @(slotsLeft == 0 ? "🔴 Closed" : (scholarship.IsActive ? "🟢 Active" : "🔴 Inactive"))
+                        </span></div>
                     </div>
                 </div>
 
@@ -169,7 +177,9 @@ else
                     <div class="card-header bg-warning text-dark fw-bold" style="font-size: 1.12rem;">Application Details</div>
                     <div class="card-body">
                         <div class="mb-2"><strong>Application Deadline:</strong> <span class="ms-1">@scholarship.ApplicationDeadline.ToString("MMMM dd, yyyy")</span></div>
-                        <div class="mb-2"><strong>Slots Available:</strong> <span class="ms-1">@scholarship.SlotsAvailable</span></div>
+                        <div class="mb-2"><strong>Slots Available:</strong> <span class="ms-1">
+                            @slotsLeft<span class="text-secondary" style="font-size:0.95em;"> of @scholarship.SlotsAvailable</span>
+                        </span></div>
                         @if (!string.IsNullOrWhiteSpace(scholarship.ExternalApplicationUrl))
                         {
                             <div class="mb-2">
@@ -182,9 +192,30 @@ else
 
                 <!-- Actions -->
                 <div class="d-flex flex-wrap gap-2 mb-4">
-                    <a class="btn btn-outline-secondary px-4" href="/dashboard/student/scholarships">⬅ Back to List</a>
+                    <button type="button" class="btn btn-lg btn-primary fw-bold shadow-sm d-flex align-items-center gap-2 px-4 py-2"
+                            style="border-radius: 0.75rem; box-shadow: 0 2px 8px rgba(0,0,0,0.08);"
+                            @onclick="GoBack">
+                        <i class="bi bi-arrow-left-circle-fill" style="font-size: 1.3rem;"></i>
+                        <span>Back</span>
+                    </button>
                 </div>
             </div>
         </div>
     </div>
+}
+
+@code {
+    // ...existing code...
+    private async Task GoBack()
+    {
+        try
+        {
+            await JS.InvokeVoidAsync("history.back");
+        }
+        catch
+        {
+            // fallback: navigate to scholarships list if JS interop fails
+            Navigation.NavigateTo("/dashboard/student/scholarships");
+        }
+    }
 }

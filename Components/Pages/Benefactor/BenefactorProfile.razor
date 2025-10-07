@@ -1,5 +1,5 @@
 @page "/dashboard/benefactor/profile"
-@attribute [Authorize(Roles = "Benefactor")]
+@attribute [Authorize(Roles = "Benefactor,SuperAdmin")]
 @layout Layout.BenefactorDashLayout
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @inject UserManager<IdentityUser> UserManager
