@@ -1,0 +1,149 @@
+@page "/demo/scraping"
+@inject c2_eskolar.Services.WebScraping.IWebScrapingService WebScrapingService
+@inject IJSRuntime JSRuntime
+@using c2_eskolar.Services.WebScraping
+
+<div class="container-fluid p-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2 class="mb-0">Web Scraping Demo</h2>
+            <p class="text-muted">See how web scraping works with real examples</p>
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">How It Works</h5>
+        </div>
+        <div class="card-body">
+            <ol>
+                <li><strong>Target Website</strong>: We visit a scholarship website</li>
+                <li><strong>Parse HTML</strong>: Extract scholarship information using CSS selectors</li>
+                <li><strong>Process Data</strong>: Clean and validate the extracted data</li>
+                <li><strong>Save to Database</strong>: Store new scholarships in your system</li>
+            </ol>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Test Scholarship Scraping</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label">Test URL</label>
+                        <input type="url" class="form-control" @bind="testUrl" 
+                               placeholder="Enter a scholarship website URL" />
+                    </div>
+                    <button class="btn btn-primary" @onclick="TestScraping" disabled="@isLoading">
+                        @if (isLoading)
+                        {
+                            <span class="spinner-border spinner-border-sm me-2"></span>
+                        }
+                        Test Scraping
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">CSS Selector Guide</h5>
+                </div>
+                <div class="card-body">
+                    <small>
+                        <strong>Common Selectors:</strong><br>
+                        <code>.class-name</code> - Select by class<br>
+                        <code>#id-name</code> - Select by ID<br>
+                        <code>h1, h2, h3</code> - Select by tag<br>
+                        <code>.card .title</code> - Nested selection<br>
+                        <br>
+                        <strong>How to find them:</strong><br>
+                        1. Right-click on scholarship info<br>
+                        2. Select "Inspect Element"<br>
+                        3. Find the CSS class or ID<br>
+                        4. Use it in your configuration
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @if (!string.IsNullOrWhiteSpace(errorMessage))
+    {
+        <div class="alert alert-danger mt-3">
+            @errorMessage
+        </div>
+    }
+
+    @if (scrapedData != null && scrapedData.Any())
+    {
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="mb-0">Scraped Results (@scrapedData.Count scholarships found)</h5>
+            </div>
+            <div class="card-body">
+                @foreach (var scholarship in scrapedData.Take(5))
+                {
+                    <div class="border-bottom pb-3 mb-3">
+                        <h6>@scholarship.Title</h6>
+                        <p class="text-muted small mb-1">@scholarship.Description</p>
+                        <div class="row">
+                            <div class="col-sm-6">
+                                <strong>Amount:</strong> @scholarship.Amount
+                            </div>
+                            <div class="col-sm-6">
+                                <strong>Deadline:</strong> @scholarship.ApplicationDeadline
+                            </div>
+                        </div>
+                    </div>
+                }
+                @if (scrapedData.Count > 5)
+                {
+                    <p class="text-muted">... and @(scrapedData.Count - 5) more</p>
+                }
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private string testUrl = "";
+    private bool isLoading = false;
+    private string errorMessage = "";
+    private List<ScrapedScholarship>? scrapedData;
+
+    private async Task TestScraping()
+    {
+        if (string.IsNullOrWhiteSpace(testUrl))
+        {
+            errorMessage = "Please enter a URL to test";
+            return;
+        }
+
+        isLoading = true;
+        errorMessage = "";
+        scrapedData = null;
+
+        try
+        {
+            scrapedData = await WebScrapingService.ScrapeScholarshipsAsync(testUrl);
+            
+            if (!scrapedData.Any())
+            {
+                errorMessage = "No scholarships found. The website might not have the expected structure or may be blocking automated access.";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+}

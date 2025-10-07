@@ -80,6 +80,12 @@ builder.Services.AddScoped<StudentProfileService>();
 builder.Services.AddScoped<BenefactorProfileService>();
 builder.Services.AddScoped<InstitutionProfileService>();
 
+// Register web scraping services
+builder.Services.AddScoped<c2_eskolar.Services.WebScraping.IWebScrapingService, c2_eskolar.Services.WebScraping.WebScrapingService>();
+builder.Services.AddHostedService<c2_eskolar.Services.WebScraping.ScrapingBackgroundService>();
+builder.Services.Configure<c2_eskolar.Services.WebScraping.ScrapingConfiguration>(
+    builder.Configuration.GetSection("WebScraping"));
+
 // Register DocumentIntelligenceService
 // builder.Services.AddScoped<DocumentIntelligenceService>();
 builder.Services.AddScoped<VerificationDocumentService>();
