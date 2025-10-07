@@ -13,6 +13,19 @@
         <div class="sv-divider"></div>
     </div>
 
+    @if (!string.IsNullOrEmpty(ProfileErrorMessage))
+    {
+        <div class="alert @(ProfileErrorMessage.Contains("✅") ? "alert-success" : "alert-info")" role="alert">
+            @ProfileErrorMessage
+            @if (ProfileErrorMessage.Contains("✅"))
+            {
+                <button type="button" class="btn btn-sm btn-outline-secondary ms-2" @onclick="ClearAiExtractedData">
+                    Clear AI Data
+                </button>
+            }
+        </div>
+    }
+
     <!-- Institution Check Section -->
     <section class="sv-card sv-card-elevated">
         <div class="sv-section-title">Institution Check</div>
@@ -72,7 +85,7 @@
                             <path d="M20 6H16L14 4H10L8 6H4C2.9 6 2 6.9 2 8V18C2 19.1 2.9 20 4 20H20C21.1 20 22 19.1 22 18V8C22 6.9 21.1 6 20 6Z" fill="currentColor"/>
                         </svg>
                         <span>@(StudentIdUploadStatus ?? "Click to upload or drag and drop")</span>
-                        <small>PNG, JPG or PDF (max. 5MB)</small>
+                        <small>PNG, JPG or PDF (max. 5MB) - AI will extract your personal info</small>
                         @if (!string.IsNullOrEmpty(StudentIdFileName))
                         {
                             <div style="font-size:0.9em; display:flex; align-items:center; gap:0.5em;">
@@ -80,9 +93,23 @@
                                 <button type="button" class="btn btn-sm btn-danger" @onclick="RemoveStudentIdDocument" style="margin-left:0.5em;">Remove</button>
                             </div>
                         }
-                        @if (!string.IsNullOrEmpty(StudentIdUploadUrl))
+                        @if (StudentIdUploadStatus?.Contains("Processing") == true)
                         {
-                            <div style="color:green;font-size:0.9em;">Uploaded!</div>
+                            <div style="color:orange;font-size:0.9em;">
+                                <i class="fas fa-spinner fa-spin"></i> Processing with AI...
+                            </div>
+                        }
+                        else if (StudentIdUploadStatus?.Contains("Extracted") == true)
+                        {
+                            <div style="color:green;font-size:0.9em;">
+                                <i class="fas fa-check-circle"></i> Uploaded & Data Extracted!
+                            </div>
+                        }
+                        else if (!string.IsNullOrEmpty(StudentIdUploadUrl))
+                        {
+                            <div style="color:green;font-size:0.9em;">
+                                <i class="fas fa-check"></i> Uploaded!
+                            </div>
                         }
                     </label>
                 </div>
@@ -97,7 +124,7 @@
                             <path d="M20 6H16L14 4H10L8 6H4C2.9 6 2 6.9 2 8V18C2 19.1 2.9 20 4 20H20C21.1 20 22 19.1 22 18V8C22 6.9 21.1 6 20 6Z" fill="currentColor"/>
                         </svg>
                         <span>@(CorUploadStatus ?? "Click to upload or drag and drop")</span>
-                        <small>PNG, JPG or PDF (max. 5MB)</small>
+                        <small>PNG, JPG or PDF (max. 5MB) - AI will extract your academic info</small>
                         @if (!string.IsNullOrEmpty(CorFileName))
                         {
                             <div style="font-size:0.9em; display:flex; align-items:center; gap:0.5em;">
@@ -105,9 +132,23 @@
                                 <button type="button" class="btn btn-sm btn-danger" @onclick="RemoveCorDocument" style="margin-left:0.5em;">Remove</button>
                             </div>
                         }
-                        @if (!string.IsNullOrEmpty(CorUploadUrl))
+                        @if (CorUploadStatus?.Contains("Processing") == true)
                         {
-                            <div style="color:green;font-size:0.9em;">Uploaded!</div>
+                            <div style="color:orange;font-size:0.9em;">
+                                <i class="fas fa-spinner fa-spin"></i> Processing with AI...
+                            </div>
+                        }
+                        else if (CorUploadStatus?.Contains("Extracted") == true)
+                        {
+                            <div style="color:green;font-size:0.9em;">
+                                <i class="fas fa-check-circle"></i> Uploaded & Data Extracted!
+                            </div>
+                        }
+                        else if (!string.IsNullOrEmpty(CorUploadUrl))
+                        {
+                            <div style="color:green;font-size:0.9em;">
+                                <i class="fas fa-check"></i> Uploaded!
+                            </div>
                         }
                     </label>
                 </div>
@@ -390,6 +431,7 @@
 
         [Inject] private Services.StudentProfileService StudentProfileService { get; set; } = default!;
         [Inject] private AuthenticationStateProvider AuthenticationStateProvider { get; set; } = default!;
+        [Inject] private Services.DocumentIntelligenceService DocumentIntelligenceService { get; set; } = default!;
 
         protected override async Task OnInitializedAsync()
         {
@@ -492,65 +534,243 @@
 
         private async Task OnStudentIdFileChange(Microsoft.AspNetCore.Components.Forms.InputFileChangeEventArgs e)
         {
-            var file = e.File;
-            if (file == null) return;
-            StudentIdFileName = file.Name;
-            StudentIdUploadStatus = "Uploading...";
-            try
+        var file = e.File;
+        if (file == null)
+        {
+            StudentIdUploadStatus = "No file selected.";
+            StateHasChanged();
+            return;
+        }
+        // Validate file type and size before upload
+        var validExtensions = new[] { ".jpg", ".jpeg", ".png", ".pdf" };
+        var fileExt = System.IO.Path.GetExtension(file.Name).ToLowerInvariant();
+        if (!validExtensions.Contains(fileExt))
+        {
+            StudentIdUploadStatus = $"Invalid file type: {fileExt}. Allowed: {string.Join(", ", validExtensions)}";
+            StateHasChanged();
+            return;
+        }
+        if (file.Size > 5 * 1024 * 1024)
+        {
+            StudentIdUploadStatus = "File too large. Max 5MB.";
+            StateHasChanged();
+            return;
+        }
+        StudentIdFileName = file.Name;
+        StudentIdUploadStatus = "Uploading...";
+        StateHasChanged();
+        try
+        {
+            // Step 1: Upload the file
+            var content = new MultipartFormDataContent();
+            var stream = file.OpenReadStream(5 * 1024 * 1024);
+            content.Add(new StreamContent(stream), "file", file.Name);
+            content.Add(new StringContent("StudentID"), "docType");
+            var response = await Http.PostAsync("/api/document/upload", content);
+            if (response.IsSuccessStatusCode)
             {
-                var content = new MultipartFormDataContent();
-                var stream = file.OpenReadStream(5 * 1024 * 1024); // 5MB limit
-                content.Add(new StreamContent(stream), "file", file.Name);
-                content.Add(new StringContent("StudentID"), "docType");
-                var response = await Http.PostAsync("/api/document/upload", content);
-                if (response.IsSuccessStatusCode)
+                var result = await response.Content.ReadFromJsonAsync<UploadResult>();
+                StudentIdUploadUrl = result?.url;
+                StudentIdUploadStatus = "Processing with AI...";
+                StateHasChanged();
+                // Step 2: Analyze the document with Document Intelligence
+                try
                 {
-                    var result = await response.Content.ReadFromJsonAsync<UploadResult>();
-                    StudentIdUploadUrl = result?.url;
-                    StudentIdUploadStatus = "Uploaded!";
+                    var extractedData = await DocumentIntelligenceService.AnalyzeIdDocumentAsync(file);
+                    if (extractedData != null)
+                    {
+                        PrepopulateFromIdDocument(extractedData);
+                        StudentIdUploadStatus = "Uploaded & Data Extracted!";
+                    }
+                    else
+                    {
+                        StudentIdUploadStatus = "Uploaded! (AI extraction failed). Please check file clarity and type.";
+                    }
                 }
-                else
+                catch (Exception ex)
                 {
-                    StudentIdUploadStatus = "Upload failed.";
+                    StudentIdUploadStatus = $"AI extraction error: {ex.Message}";
                 }
             }
-            catch (Exception ex)
+            else
             {
-                StudentIdUploadStatus = $"Error: {ex.Message}";
+                var errorMsg = await response.Content.ReadAsStringAsync();
+                StudentIdUploadStatus = $"Upload failed: {errorMsg}";
             }
+        }
+        catch (Exception ex)
+        {
+            StudentIdUploadStatus = $"Error: {ex.Message}";
+        }
+        StateHasChanged();
         }
 
         private async Task OnCorFileChange(Microsoft.AspNetCore.Components.Forms.InputFileChangeEventArgs e)
         {
-            var file = e.File;
-            if (file == null) return;
-            CorFileName = file.Name;
-            CorUploadStatus = "Uploading...";
-            try
+        var file = e.File;
+        if (file == null)
+        {
+            CorUploadStatus = "No file selected.";
+            StateHasChanged();
+            return;
+        }
+        // Validate file type and size before upload
+        var validExtensions = new[] { ".jpg", ".jpeg", ".png", ".pdf" };
+        var fileExt = System.IO.Path.GetExtension(file.Name).ToLowerInvariant();
+        if (!validExtensions.Contains(fileExt))
+        {
+            CorUploadStatus = $"Invalid file type: {fileExt}. Allowed: {string.Join(", ", validExtensions)}";
+            StateHasChanged();
+            return;
+        }
+        if (file.Size > 5 * 1024 * 1024)
+        {
+            CorUploadStatus = "File too large. Max 5MB.";
+            StateHasChanged();
+            return;
+        }
+        CorFileName = file.Name;
+        CorUploadStatus = "Uploading...";
+        StateHasChanged();
+        try
+        {
+            // Step 1: Upload the file
+            var content = new MultipartFormDataContent();
+            var stream = file.OpenReadStream(5 * 1024 * 1024);
+            content.Add(new StreamContent(stream), "file", file.Name);
+            content.Add(new StringContent("COR"), "docType");
+            var response = await Http.PostAsync("/api/document/upload", content);
+            if (response.IsSuccessStatusCode)
             {
-                var content = new MultipartFormDataContent();
-                var stream = file.OpenReadStream(5 * 1024 * 1024); // 5MB limit
-                content.Add(new StreamContent(stream), "file", file.Name);
-                content.Add(new StringContent("COR"), "docType");
-                var response = await Http.PostAsync("/api/document/upload", content);
-                if (response.IsSuccessStatusCode)
+                var result = await response.Content.ReadFromJsonAsync<UploadResult>();
+                CorUploadUrl = result?.url;
+                CorUploadStatus = "Processing with AI...";
+                StateHasChanged();
+                // Step 2: Analyze the document with Document Intelligence
+                try
                 {
-                    var result = await response.Content.ReadFromJsonAsync<UploadResult>();
-                    CorUploadUrl = result?.url;
-                    CorUploadStatus = "Uploaded!";
+                    var extractedData = await DocumentIntelligenceService.AnalyzeCorDocumentAsync(file);
+                    if (extractedData != null)
+                    {
+                        PrepopulateFromCorDocument(extractedData);
+                        CorUploadStatus = "Uploaded & Data Extracted!";
+                    }
+                    else
+                    {
+                        CorUploadStatus = "Uploaded! (AI extraction failed). Please check file clarity and type.";
+                    }
                 }
-                else
+                catch (Exception ex)
                 {
-                    CorUploadStatus = "Upload failed.";
+                    CorUploadStatus = $"AI extraction error: {ex.Message}";
                 }
             }
-            catch (Exception ex)
+            else
             {
-                CorUploadStatus = $"Error: {ex.Message}";
+                var errorMsg = await response.Content.ReadAsStringAsync();
+                CorUploadStatus = $"Upload failed: {errorMsg}";
             }
+        }
+        catch (Exception ex)
+        {
+            CorUploadStatus = $"Error: {ex.Message}";
+        }
+        StateHasChanged();
         }
 
         public class UploadResult { public string? url { get; set; } }
+
+        private void PrepopulateFromIdDocument(Services.ExtractedIdData extractedData)
+        {
+            // Prepopulate personal information fields
+            if (!string.IsNullOrEmpty(extractedData.FirstName))
+                verificationModel.FirstName = extractedData.FirstName;
+                
+            if (!string.IsNullOrEmpty(extractedData.MiddleName))
+                verificationModel.MiddleName = extractedData.MiddleName;
+                
+            if (!string.IsNullOrEmpty(extractedData.LastName))
+                verificationModel.LastName = extractedData.LastName;
+                
+            if (!string.IsNullOrEmpty(extractedData.Sex))
+            {
+                verificationModel.Sex = extractedData.Sex;
+                SelectedSex = extractedData.Sex; // Update the dropdown selection
+            }
+                
+            if (extractedData.DateOfBirth.HasValue)
+                verificationModel.BirthDate = extractedData.DateOfBirth;
+                
+            if (!string.IsNullOrEmpty(extractedData.Address))
+                verificationModel.PermanentAddress = extractedData.Address;
+                
+            if (!string.IsNullOrEmpty(extractedData.Nationality))
+                verificationModel.Nationality = extractedData.Nationality;
+
+            // Show success message
+            ProfileErrorMessage = "Personal information has been automatically filled from your ID document. Please review and complete any missing fields.";
+            
+            StateHasChanged();
+        }
+
+        private void PrepopulateFromCorDocument(Services.ExtractedCorData extractedData)
+        {
+            // Prepopulate educational information fields
+            if (!string.IsNullOrEmpty(extractedData.StudentNumber))
+                verificationModel.StudentNumber = extractedData.StudentNumber;
+                
+            if (!string.IsNullOrEmpty(extractedData.Program))
+                verificationModel.Program = extractedData.Program;
+                
+            if (!string.IsNullOrEmpty(extractedData.University))
+                verificationModel.University = extractedData.University;
+                
+            if (!string.IsNullOrEmpty(extractedData.YearLevel))
+            {
+                verificationModel.YearLevel = extractedData.YearLevel;
+                SelectedYearLevel = extractedData.YearLevel; // Update the dropdown selection
+            }
+
+            // If student name is found and our current form is empty, prepopulate it
+            if (!string.IsNullOrEmpty(extractedData.StudentName) && 
+                string.IsNullOrEmpty(verificationModel.FirstName))
+            {
+                var nameParts = extractedData.StudentName.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                if (nameParts.Length >= 2)
+                {
+                    verificationModel.FirstName = nameParts[0];
+                    if (nameParts.Length == 2)
+                    {
+                        verificationModel.LastName = nameParts[1];
+                    }
+                    else if (nameParts.Length >= 3)
+                    {
+                        verificationModel.MiddleName = string.Join(" ", nameParts.Skip(1).Take(nameParts.Length - 2));
+                        verificationModel.LastName = nameParts[^1];
+                    }
+                }
+            }
+
+            // Show success message
+            ProfileErrorMessage = "Educational information has been automatically filled from your COR document. Please review and complete any missing fields.";
+            
+            StateHasChanged();
+        }
+
+        private void ClearAiExtractedData()
+        {
+            // Clear all form fields to allow user to start fresh
+            verificationModel = new StudentVerificationModel();
+            
+            // Reset dropdown selections
+            SelectedSex = string.Empty;
+            SelectedYearLevel = string.Empty;
+            
+            // Clear the success message
+            ProfileErrorMessage = "";
+            
+            StateHasChanged();
+        }
 
         // Institution Check
         private bool IsInstitutionAffiliated = true;

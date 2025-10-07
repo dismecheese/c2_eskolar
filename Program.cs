@@ -84,7 +84,7 @@ builder.Services.AddScoped<InstitutionProfileService>();
 builder.Services.AddScoped<BlobStorageService>();
 
 // Register DocumentIntelligenceService
-// builder.Services.AddScoped<DocumentIntelligenceService>();
+builder.Services.AddScoped<DocumentIntelligenceService>();
 builder.Services.AddScoped<VerificationDocumentService>();
 
 // Register AI Services
