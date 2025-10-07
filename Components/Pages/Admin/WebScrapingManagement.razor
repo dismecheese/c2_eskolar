@@ -7,147 +7,298 @@
 @using c2_eskolar.Services.WebScraping
 @using Microsoft.AspNetCore.Authorization
 
-<div class="container-fluid p-4">
-    <div class="row mb-4">
-        <div class="col-12">
-            <h2 class="mb-0">Web Scraping Management</h2>
-            <p class="text-muted">Manage scholarship and news scraping operations</p>
+<div class="dashboard-center-container">
+    <!-- Top Bar -->
+    <div class="dashboard-topbar">
+        <div style="position: relative; flex: 1; max-width: 500px;">
+            <i class="bi bi-search" style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: #64748b; z-index: 1;"></i>
+            <input class="university-input" type="text" placeholder="Search scraping operations..." 
+                   style="padding-left: 45px; padding-right: 18px;" readonly />
         </div>
+        <span class="dashboard-date">@DateTime.Now.ToString("dd MMM yyyy, ddd")</span>
     </div>
 
+    <!-- Welcome Banner -->
+    <div class="dashboard-banner-centered">
+        <div class="banner-text">
+            <h2>Web Scraping Management</h2>
+            <p>Configure and monitor automated data collection operations</p>
+        </div>
+        <img src="images/eskolar_books.svg" alt="Books" class="banner-img" />
+    </div>
+
+    <!-- Alert Messages -->
     @if (!string.IsNullOrWhiteSpace(errorMessage))
     {
-        <div class="alert alert-danger alert-dismissible fade show" role="alert">
-            <i class="fas fa-exclamation-triangle me-2"></i>@errorMessage
+        <div class="alert alert-danger alert-dismissible fade show mb-4" role="alert">
+            <i class="bi bi-exclamation-triangle me-2"></i>@errorMessage
             <button type="button" class="btn-close" @onclick="() => errorMessage = string.Empty"></button>
         </div>
     }
     @if (!string.IsNullOrWhiteSpace(successMessage))
     {
-        <div class="alert alert-success alert-dismissible fade show" role="alert">
-            <i class="fas fa-check-circle me-2"></i>@successMessage
+        <div class="alert alert-success alert-dismissible fade show mb-4" role="alert">
+            <i class="bi bi-check-circle me-2"></i>@successMessage
             <button type="button" class="btn-close" @onclick="() => successMessage = string.Empty"></button>
         </div>
     }
 
-    <div class="row">
-        <!-- Manual Scholarship Scraping -->
-        <div class="col-lg-6 mb-4">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="mb-0"><i class="fas fa-graduation-cap me-2"></i>Scholarship Scraping</h5>
-                </div>
-                <div class="card-body">
-                    <div class="mb-3">
-                        <label class="form-label">Target URL</label>
-                        <input type="url" class="form-control" @bind="scholarshipUrl" 
-                               placeholder="https://example.com/scholarships" />
-                    </div>
-                    <button class="btn btn-primary" @onclick="ScrapeScholarships" disabled="@isLoading">
-                        @if (isLoading)
-                        {
-                            <span class="spinner-border spinner-border-sm me-2"></span>
-                        }
-                        <i class="fas fa-search me-2"></i>Scrape Scholarships
-                    </button>
-                </div>
-            </div>
-        </div>
-
-        <!-- Institution Verification -->
-        <div class="col-lg-6 mb-4">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="mb-0"><i class="fas fa-university me-2"></i>Institution Verification</h5>
-                </div>
-                <div class="card-body">
-                    <div class="mb-3">
-                        <label class="form-label">Institution Name</label>
-                        <input type="text" class="form-control" @bind="institutionName" 
-                               placeholder="University of Example" />
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Website (Optional)</label>
-                        <input type="url" class="form-control" @bind="institutionWebsite" 
-                               placeholder="https://university.edu" />
-                    </div>
-                    <button class="btn btn-info" @onclick="VerifyInstitution" disabled="@isLoading">
-                        @if (isLoading)
-                        {
-                            <span class="spinner-border spinner-border-sm me-2"></span>
-                        }
-                        <i class="fas fa-check me-2"></i>Verify Institution
-                    </button>
-                </div>
-            </div>
-        </div>
+    <!-- Dashboard Tabs -->
+    <div class="dashboard-tabs">
+        <button class="dashboard-tab @(activeTab == 0 ? "active" : "")" @onclick="() => SetTab(0)">Scholarship Scraping</button>
+        <button class="dashboard-tab @(activeTab == 1 ? "active" : "")" @onclick="() => SetTab(1)">Institution & Organization Verification</button>
     </div>
 
-    <div class="row">
-        <!-- News Scraping -->
-        <div class="col-lg-6 mb-4">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="mb-0"><i class="fas fa-newspaper me-2"></i>News Scraping</h5>
-                </div>
-                <div class="card-body">
-                    <p class="text-muted">Scrape latest scholarship-related news from configured sources.</p>
-                    <button class="btn btn-success" @onclick="ScrapeNews" disabled="@isLoading">
-                        @if (isLoading)
-                        {
-                            <span class="spinner-border spinner-border-sm me-2"></span>
-                        }
-                        <i class="fas fa-sync me-2"></i>Scrape News
-                    </button>
-                </div>
-            </div>
-        </div>
-
-        <!-- Organization Verification -->
-        <div class="col-lg-6 mb-4">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="mb-0"><i class="fas fa-building me-2"></i>Organization Verification</h5>
-                </div>
-                <div class="card-body">
-                    <div class="mb-3">
-                        <label class="form-label">Organization Name</label>
-                        <input type="text" class="form-control" @bind="organizationName" 
-                               placeholder="Example Foundation" />
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Website</label>
-                        <input type="url" class="form-control" @bind="organizationWebsite" 
-                               placeholder="https://foundation.org" />
-                    </div>
-                    <button class="btn btn-warning" @onclick="VerifyOrganization" disabled="@isLoading">
-                        @if (isLoading)
-                        {
-                            <span class="spinner-border spinner-border-sm me-2"></span>
-                        }
-                        <i class="fas fa-shield-alt me-2"></i>Verify Organization
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Results Section -->
-    @if (lastResults != null)
+    @if (activeTab == 0)
     {
-        <div class="row">
-            <div class="col-12">
-                <div class="card">
-                    <div class="card-header">
-                        <h5 class="mb-0"><i class="fas fa-chart-bar me-2"></i>Last Operation Results</h5>
+        <!-- Scholarship Scraping Tab -->
+        <div class="scraping-section">
+            <div class="row g-4">
+                <div class="col-lg-8">
+                    <div class="scraping-card">
+                        <div class="scraping-card-header">
+                            <div class="scraping-card-icon scholarship">
+                                <i class="bi bi-mortarboard"></i>
+                            </div>
+                            <div>
+                                <h5>Manual Scholarship Scraping</h5>
+                                <p class="mb-0">Extract scholarship data from specific URLs</p>
+                            </div>
+                        </div>
+                        <div class="scraping-card-body">
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold">Target Website URL</label>
+                                <input type="url" class="form-control scraping-input" @bind="scholarshipUrl" 
+                                       placeholder="https://university.edu/scholarships" />
+                            </div>
+                            <div class="scraping-actions">
+                                <button class="btn-scraping btn-primary" @onclick="ScrapeScholarships" disabled="@isLoading">
+                                    @if (isLoading)
+                                    {
+                                        <span class="spinner-border spinner-border-sm me-2"></span>
+                                    }
+                                    <i class="bi bi-download me-2"></i>Start Scraping
+                                </button>
+                                <div class="scraping-help">
+                                    <i class="bi bi-info-circle me-1"></i>
+                                    <small>Supports Philippine university and scholarship websites</small>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    <div class="card-body">
-                        <pre class="bg-light p-3 rounded">@lastResults</pre>
+                </div>
+                <div class="col-lg-4">
+                    <div class="scraping-stats">
+                        <div class="stat-item">
+                            <div class="stat-value">@scrapedScholarshipsCount</div>
+                            <div class="stat-label">Scholarships Found</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value">@lastScrapeTime</div>
+                            <div class="stat-label">Last Scrape</div>
+                        </div>
                     </div>
                 </div>
             </div>
+            
+            <!-- Scraped Scholarships Table -->
+            @if (scrapedScholarships.Any())
+            {
+                <div class="scraped-data-section mt-4">
+                    <div class="scraped-data-header">
+                        <h5><i class="bi bi-table me-2"></i>Scraped Scholarships Data</h5>
+                        <div class="data-actions">
+                            <button class="btn-scraping btn-outline-primary btn-sm" @onclick="() => ExportScholarshipData()">
+                                <i class="bi bi-download me-1"></i>Export
+                            </button>
+                        </div>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-hover scraped-data-table">
+                            <thead>
+                                <tr>
+                                    <th>Title</th>
+                                    <th>Source</th>
+                                    <th>Amount</th>
+                                    <th>Deadline</th>
+                                    <th>Scraped At</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var scholarship in scrapedScholarships)
+                                {
+                                    <tr>
+                                        <td>@scholarship.Title</td>
+                                        <td>@scholarship.Source</td>
+                                        <td>@scholarship.Amount</td>
+                                        <td>@scholarship.DeadlineDate</td>
+                                        <td>@scholarship.ScrapedAt.ToString("MMM dd, yyyy HH:mm")</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            }
         </div>
     }
+    else if (activeTab == 1)
+    {
+        <!-- Institution & Organization Verification Tab -->
+        <div class="scraping-section">
+            <div class="row g-4">
+                <div class="col-lg-6">
+                    <div class="scraping-card">
+                        <div class="scraping-card-header">
+                            <div class="scraping-card-icon institution">
+                                <i class="bi bi-building"></i>
+                            </div>
+                            <div>
+                                <h5>Institution Verification</h5>
+                                <p class="mb-0">Verify educational institutions</p>
+                            </div>
+                        </div>
+                        <div class="scraping-card-body">
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold">Institution Name</label>
+                                <input type="text" class="form-control scraping-input" @bind="institutionName" 
+                                       placeholder="University of the Philippines" />
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold">Website (Optional)</label>
+                                <input type="url" class="form-control scraping-input" @bind="institutionWebsite" 
+                                       placeholder="https://up.edu.ph" />
+                            </div>
+                            <button class="btn-scraping btn-info" @onclick="VerifyInstitution" disabled="@isLoading">
+                                @if (isLoading)
+                                {
+                                    <span class="spinner-border spinner-border-sm me-2"></span>
+                                }
+                                <i class="bi bi-check2-circle me-2"></i>Verify Institution
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-6">
+                    <div class="scraping-card">
+                        <div class="scraping-card-header">
+                            <div class="scraping-card-icon organization">
+                                <i class="bi bi-bank"></i>
+                            </div>
+                            <div>
+                                <h5>Organization Verification</h5>
+                                <p class="mb-0">Verify benefactor organizations</p>
+                            </div>
+                        </div>
+                        <div class="scraping-card-body">
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold">Organization Name</label>
+                                <input type="text" class="form-control scraping-input" @bind="organizationName" 
+                                       placeholder="Philippine Foundation" />
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold">Website</label>
+                                <input type="url" class="form-control scraping-input" @bind="organizationWebsite" 
+                                       placeholder="https://foundation.org.ph" />
+                            </div>
+                            <button class="btn-scraping btn-warning" @onclick="VerifyOrganization" disabled="@isLoading">
+                                @if (isLoading)
+                                {
+                                    <span class="spinner-border spinner-border-sm me-2"></span>
+                                }
+                                <i class="bi bi-shield-check me-2"></i>Verify Organization
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Verified Institutions Table -->
+            @if (verifiedInstitutionsList.Any())
+            {
+                <div class="scraped-data-section mt-4">
+                    <div class="scraped-data-header">
+                        <h5><i class="bi bi-building me-2"></i>Verified Institutions</h5>
+                        <div class="data-actions">
+                            <button class="btn-scraping btn-outline-primary btn-sm" @onclick="() => ExportInstitutionData()">
+                                <i class="bi bi-download me-1"></i>Export
+                            </button>
+                        </div>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-hover scraped-data-table">
+                            <thead>
+                                <tr>
+                                    <th>Institution Name</th>
+                                    <th>Website</th>
+                                    <th>Status</th>
+                                    <th>Verified At</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var institution in verifiedInstitutionsList)
+                                {
+                                    <tr>
+                                        <td>@institution.Name</td>
+                                        <td>@(string.IsNullOrEmpty(institution.Website) ? "N/A" : institution.Website)</td>
+                                        <td>
+                                            <span class="badge @(institution.IsVerified ? "bg-success" : "bg-danger")">
+                                                @(institution.IsVerified ? "✓ Verified" : "✗ Not Verified")
+                                            </span>
+                                        </td>
+                                        <td>@institution.VerifiedAt.ToString("MMM dd, yyyy HH:mm")</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            }
+            
+            <!-- Verified Organizations Table -->
+            @if (verifiedOrganizationsList.Any())
+            {
+                <div class="scraped-data-section mt-4">
+                    <div class="scraped-data-header">
+                        <h5><i class="bi bi-bank me-2"></i>Verified Organizations</h5>
+                        <div class="data-actions">
+                            <button class="btn-scraping btn-outline-primary btn-sm" @onclick="() => ExportOrganizationData()">
+                                <i class="bi bi-download me-1"></i>Export
+                            </button>
+                        </div>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-hover scraped-data-table">
+                            <thead>
+                                <tr>
+                                    <th>Organization Name</th>
+                                    <th>Website</th>
+                                    <th>Status</th>
+                                    <th>Verified At</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var organization in verifiedOrganizationsList)
+                                {
+                                    <tr>
+                                        <td>@organization.Name</td>
+                                        <td>@organization.Website</td>
+                                        <td>
+                                            <span class="badge @(organization.IsVerified ? "bg-success" : "bg-danger")">
+                                                @(organization.IsVerified ? "✓ Verified" : "✗ Not Verified")
+                                            </span>
+                                        </td>
+                                        <td>@organization.VerifiedAt.ToString("MMM dd, yyyy HH:mm")</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+
 </div>
 
 @code {
@@ -158,8 +309,93 @@
     private string organizationWebsite = "";
     private string errorMessage = "";
     private string successMessage = "";
-    private string? lastResults;
     private bool isLoading = false;
+    private int activeTab = 0;
+    
+    // Statistics
+    private int scrapedScholarshipsCount = 0;
+    private string lastScrapeTime = "Never";
+    
+    // Data Lists
+    private List<ScrapedScholarship> scrapedScholarships = new();
+    private List<VerifiedInstitution> verifiedInstitutionsList = new();
+    private List<VerifiedOrganization> verifiedOrganizationsList = new();
+    
+    // Data Models
+    public class ScrapedScholarship
+    {
+        public string Title { get; set; } = "";
+        public string Source { get; set; } = "";
+        public string Amount { get; set; } = "";
+        public string DeadlineDate { get; set; } = "";
+        public DateTime ScrapedAt { get; set; }
+    }
+    
+    public class VerifiedInstitution
+    {
+        public string Name { get; set; } = "";
+        public string? Website { get; set; }
+        public bool IsVerified { get; set; }
+        public DateTime VerifiedAt { get; set; }
+    }
+    
+    public class VerifiedOrganization
+    {
+        public string Name { get; set; } = "";
+        public string Website { get; set; } = "";
+        public bool IsVerified { get; set; }
+        public DateTime VerifiedAt { get; set; }
+    }
+
+    private void SetTab(int tab)
+    {
+        activeTab = tab;
+    }
+
+    private void ExportScholarshipData()
+    {
+        try
+        {
+            var json = System.Text.Json.JsonSerializer.Serialize(scrapedScholarships, new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
+            var fileName = $"scholarships-{DateTime.Now:yyyy-MM-dd-HH-mm}.json";
+            var fileContent = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(json));
+            JSRuntime.InvokeVoidAsync("downloadFile", fileName, fileContent);
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Failed to export scholarship data: {ex.Message}";
+        }
+    }
+    
+    private void ExportInstitutionData()
+    {
+        try
+        {
+            var json = System.Text.Json.JsonSerializer.Serialize(verifiedInstitutionsList, new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
+            var fileName = $"institutions-{DateTime.Now:yyyy-MM-dd-HH-mm}.json";
+            var fileContent = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(json));
+            JSRuntime.InvokeVoidAsync("downloadFile", fileName, fileContent);
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Failed to export institution data: {ex.Message}";
+        }
+    }
+    
+    private void ExportOrganizationData()
+    {
+        try
+        {
+            var json = System.Text.Json.JsonSerializer.Serialize(verifiedOrganizationsList, new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
+            var fileName = $"organizations-{DateTime.Now:yyyy-MM-dd-HH-mm}.json";
+            var fileContent = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(json));
+            JSRuntime.InvokeVoidAsync("downloadFile", fileName, fileContent);
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Failed to export organization data: {ex.Message}";
+        }
+    }
 
     private async Task ScrapeScholarships()
     {
@@ -176,13 +412,26 @@
         try
         {
             var scholarships = await WebScrapingService.ScrapeScholarshipsAsync(scholarshipUrl);
-            successMessage = $"Successfully scraped {scholarships.Count} scholarships.";
-            lastResults = System.Text.Json.JsonSerializer.Serialize(scholarships, new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
+            
+            // Convert to our display model
+            var newScholarships = scholarships.Select(s => new ScrapedScholarship
+            {
+                Title = s.Title ?? "Unknown Title",
+                Source = new Uri(scholarshipUrl).Host,
+                Amount = s.Amount ?? "Not specified",
+                DeadlineDate = s.ApplicationDeadline ?? "Not specified",
+                ScrapedAt = DateTime.Now
+            }).ToList();
+            
+            scrapedScholarships.AddRange(newScholarships);
+            scrapedScholarshipsCount = scholarships.Count;
+            lastScrapeTime = DateTime.Now.ToString("MMM dd, HH:mm");
+            successMessage = $"Successfully scraped {scholarships.Count} scholarships from {new Uri(scholarshipUrl).Host}";
         }
         catch (Exception ex)
         {
             Logger.LogError(ex, "Error scraping scholarships");
-            errorMessage = $"Error scraping scholarships: {ex.Message}";
+            errorMessage = $"Failed to scrape scholarships: {ex.Message}";
         }
         finally
         {
@@ -205,13 +454,25 @@
         try
         {
             var result = await WebScrapingService.VerifyInstitutionAsync(institutionName, institutionWebsite);
-            successMessage = $"Institution verification completed. Status: {(result.IsVerified ? "Verified" : "Not Verified")}";
-            lastResults = System.Text.Json.JsonSerializer.Serialize(result, new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
+            
+            verifiedInstitutionsList.Add(new VerifiedInstitution
+            {
+                Name = institutionName,
+                Website = institutionWebsite,
+                IsVerified = result.IsVerified,
+                VerifiedAt = DateTime.Now
+            });
+            
+            successMessage = $"Institution '{institutionName}' verification completed. Status: {(result.IsVerified ? "✓ Verified" : "✗ Not Verified")}";
+            
+            // Clear form
+            institutionName = "";
+            institutionWebsite = "";
         }
         catch (Exception ex)
         {
             Logger.LogError(ex, "Error verifying institution");
-            errorMessage = $"Error verifying institution: {ex.Message}";
+            errorMessage = $"Failed to verify institution: {ex.Message}";
         }
         finally
         {
@@ -219,28 +480,7 @@
         }
     }
 
-    private async Task ScrapeNews()
-    {
-        isLoading = true;
-        errorMessage = "";
-        successMessage = "";
-        
-        try
-        {
-            var news = await WebScrapingService.ScrapeScholarshipNewsAsync();
-            successMessage = $"Successfully scraped {news.Count} news articles.";
-            lastResults = System.Text.Json.JsonSerializer.Serialize(news, new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
-        }
-        catch (Exception ex)
-        {
-            Logger.LogError(ex, "Error scraping news");
-            errorMessage = $"Error scraping news: {ex.Message}";
-        }
-        finally
-        {
-            isLoading = false;
-        }
-    }
+
 
     private async Task VerifyOrganization()
     {
@@ -257,13 +497,25 @@
         try
         {
             var isVerified = await WebScrapingService.VerifyOrganizationAsync(organizationName, organizationWebsite);
-            successMessage = $"Organization verification completed. Status: {(isVerified ? "Verified" : "Not Verified")}";
-            lastResults = $"{{\"OrganizationName\": \"{organizationName}\", \"Website\": \"{organizationWebsite}\", \"IsVerified\": {isVerified.ToString().ToLower()}}}";
+            
+            verifiedOrganizationsList.Add(new VerifiedOrganization
+            {
+                Name = organizationName,
+                Website = organizationWebsite,
+                IsVerified = isVerified,
+                VerifiedAt = DateTime.Now
+            });
+            
+            successMessage = $"Organization '{organizationName}' verification completed. Status: {(isVerified ? "✓ Verified" : "✗ Not Verified")}";
+            
+            // Clear form
+            organizationName = "";
+            organizationWebsite = "";
         }
         catch (Exception ex)
         {
             Logger.LogError(ex, "Error verifying organization");
-            errorMessage = $"Error verifying organization: {ex.Message}";
+            errorMessage = $"Failed to verify organization: {ex.Message}";
         }
         finally
         {
@@ -271,3 +523,450 @@
         }
     }
 }
+
+<script>
+    window.downloadFile = function(filename, content) {
+        const byteCharacters = atob(content);
+        const byteNumbers = new Array(byteCharacters.length);
+        for (let i = 0; i < byteCharacters.length; i++) {
+            byteNumbers[i] = byteCharacters.charCodeAt(i);
+        }
+        const byteArray = new Uint8Array(byteNumbers);
+        const blob = new Blob([byteArray], { type: 'application/json' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+    };
+</script>
+
+<style>
+    /* Web Scraping Management Styles */
+    .scraping-section {
+        margin-bottom: 32px;
+    }
+
+    .scraping-card {
+        background: linear-gradient(135deg, #fff 0%, #f8fafc 100%);
+        border-radius: 16px;
+        padding: 24px;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+        border: 1px solid rgba(0,0,0,0.05);
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+        height: 100%;
+    }
+
+    .scraping-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, #1560d4, #0d387e);
+    }
+
+    .scraping-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+    }
+
+    .scraping-card-header {
+        display: flex;
+        align-items: center;
+        margin-bottom: 20px;
+    }
+
+    .scraping-card-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
+        color: white;
+        margin-right: 16px;
+        flex-shrink: 0;
+    }
+
+    .scraping-card-icon.scholarship { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+    .scraping-card-icon.institution { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
+    .scraping-card-icon.organization { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
+    .scraping-card-icon.news { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); }
+
+    .scraping-card-header h5 {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: #2d3748;
+        margin: 0 0 4px 0;
+    }
+
+    .scraping-card-header p {
+        color: #4a5568;
+        margin: 0;
+        font-size: 0.9rem;
+    }
+
+    .scraping-card-body {
+        flex: 1;
+    }
+
+    .scraping-input {
+        border: 2px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 12px 16px;
+        font-size: 0.95rem;
+        transition: all 0.3s ease;
+    }
+
+    .scraping-input:focus {
+        border-color: #1560d4;
+        box-shadow: 0 0 0 3px rgba(21, 96, 212, 0.1);
+        outline: none;
+    }
+
+    .scraping-actions {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        flex-wrap: wrap;
+    }
+
+    .btn-scraping {
+        padding: 12px 24px;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 0.95rem;
+        border: none;
+        transition: all 0.3s ease;
+        display: inline-flex;
+        align-items: center;
+        cursor: pointer;
+        text-decoration: none;
+    }
+
+    .btn-scraping.btn-primary {
+        background: linear-gradient(135deg, #1560d4, #0d387e);
+        color: white;
+    }
+
+    .btn-scraping.btn-primary:hover {
+        background: linear-gradient(135deg, #0d387e, #1560d4);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(21, 96, 212, 0.4);
+    }
+
+    .btn-scraping.btn-info {
+        background: linear-gradient(135deg, #4299e1, #3182ce);
+        color: white;
+    }
+
+    .btn-scraping.btn-info:hover {
+        background: linear-gradient(135deg, #3182ce, #4299e1);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(66, 153, 225, 0.4);
+    }
+
+    .btn-scraping.btn-warning {
+        background: linear-gradient(135deg, #fbbf24, #f59e0b);
+        color: white;
+    }
+
+    .btn-scraping.btn-warning:hover {
+        background: linear-gradient(135deg, #f59e0b, #d97706);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(245, 158, 11, 0.4);
+    }
+
+    .btn-scraping.btn-success {
+        background: linear-gradient(135deg, #48bb78, #38a169);
+        color: white;
+    }
+
+    .btn-scraping.btn-success:hover {
+        background: linear-gradient(135deg, #38a169, #48bb78);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(72, 187, 120, 0.4);
+    }
+
+    .btn-scraping.btn-outline-primary {
+        background: transparent;
+        border: 2px solid #1560d4;
+        color: #1560d4;
+    }
+
+    .btn-scraping.btn-outline-primary:hover {
+        background: #1560d4;
+        color: white;
+    }
+
+    .btn-scraping.btn-outline-secondary {
+        background: transparent;
+        border: 2px solid #6b7280;
+        color: #6b7280;
+    }
+
+    .btn-scraping.btn-outline-secondary:hover {
+        background: #6b7280;
+        color: white;
+    }
+
+    .scraping-help {
+        display: flex;
+        align-items: center;
+        color: #4a5568;
+        font-size: 0.85rem;
+    }
+
+    .scraping-stats {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+    }
+
+    .stat-item {
+        background: linear-gradient(135deg, #fff 0%, #f8fafc 100%);
+        border-radius: 12px;
+        padding: 20px;
+        text-align: center;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        border: 1px solid rgba(0,0,0,0.05);
+    }
+
+    .stat-value {
+        font-size: 2rem;
+        font-weight: 700;
+        color: #2d3748;
+        margin-bottom: 4px;
+    }
+
+    .stat-label {
+        font-size: 0.9rem;
+        color: #4a5568;
+        font-weight: 500;
+    }
+
+    .scraped-data-card {
+        background: linear-gradient(135deg, #fff 0%, #f8fafc 100%);
+        border-radius: 16px;
+        padding: 24px;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+        border: 1px solid rgba(0,0,0,0.05);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .scraped-data-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, #43e97b, #38f9d7);
+    }
+
+    .scraped-data-header {
+        display: flex;
+        align-items: center;
+        margin-bottom: 20px;
+    }
+
+    .scraped-data-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
+        color: white;
+        margin-right: 16px;
+    }
+
+    .scraped-data-header h5 {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: #2d3748;
+        margin: 0 0 4px 0;
+    }
+
+    .scraped-data-header p {
+        color: #4a5568;
+        margin: 0;
+        font-size: 0.9rem;
+    }
+
+    .data-preview {
+        background: #f7fafc;
+        border-radius: 8px;
+        border: 1px solid #e2e8f0;
+        margin-bottom: 16px;
+        max-height: 400px;
+        overflow-y: auto;
+    }
+
+    .data-content {
+        padding: 16px;
+        margin: 0;
+        font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+        font-size: 0.85rem;
+        line-height: 1.5;
+        color: #2d3748;
+        background: transparent;
+        border: none;
+    }
+
+    .data-actions {
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        color: #4a5568;
+    }
+
+    .empty-state-icon {
+        font-size: 4rem;
+        color: #cbd5e0;
+        margin-bottom: 20px;
+    }
+
+    .empty-state h5 {
+        color: #2d3748;
+        margin-bottom: 12px;
+        font-weight: 600;
+    }
+
+    .empty-state p {
+        margin-bottom: 24px;
+        font-size: 1rem;
+    }
+    
+    .scraped-data-section {
+        background: linear-gradient(135deg, #fff 0%, #f8fafc 100%);
+        border-radius: 12px;
+        padding: 20px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        border: 1px solid rgba(0,0,0,0.05);
+    }
+    
+    .scraped-data-header {
+        display: flex;
+        justify-content: between;
+        align-items: center;
+        margin-bottom: 16px;
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+    
+    .scraped-data-header h5 {
+        color: #2d3748;
+        font-weight: 600;
+        margin: 0;
+        flex: 1;
+    }
+    
+    .scraped-data-table {
+        margin-bottom: 0;
+    }
+    
+    .scraped-data-table thead th {
+        background: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%);
+        border: none;
+        color: #4a5568;
+        font-weight: 600;
+        padding: 12px;
+        border-bottom: 2px solid #e2e8f0;
+    }
+    
+    .scraped-data-table tbody td {
+        padding: 12px;
+        vertical-align: middle;
+        border-bottom: 1px solid #f0f0f0;
+    }
+    
+    .scraped-data-table tbody tr:hover {
+        background-color: #f7fafc;
+    }
+    
+    .btn-sm {
+        padding: 6px 12px;
+        font-size: 0.85rem;
+    }
+    
+    .badge {
+        font-size: 0.8rem;
+        padding: 4px 8px;
+    }
+
+    .dashboard-tabs {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 32px;
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+
+    .dashboard-tab {
+        background: linear-gradient(135deg, #fbbf24, #f59e0b);
+        color: white;
+        border: none;
+        padding: 12px 24px;
+        border-radius: 25px;
+        font-weight: 600;
+        font-size: 0.95rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        display: inline-block;
+    }
+
+    .dashboard-tab:hover {
+        background: linear-gradient(135deg, #f59e0b, #d97706);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(245, 158, 11, 0.4);
+        color: white;
+        text-decoration: none;
+    }
+
+    .dashboard-tab.active {
+        background: linear-gradient(135deg, #1560d4, #0d387e);
+        box-shadow: 0 4px 12px rgba(21, 96, 212, 0.4);
+    }
+
+    @@media (max-width: 768px) {
+        .scraping-actions {
+            flex-direction: column;
+            align-items: stretch;
+        }
+        
+        .btn-scraping {
+            justify-content: center;
+        }
+        
+        .dashboard-tabs {
+            flex-direction: column;
+            gap: 12px;
+        }
+        
+        .dashboard-tab {
+            width: 100%;
+        }
+        
+        .data-actions {
+            flex-direction: column;
+        }
+    }
+</style>
