@@ -1,23 +1,22 @@
 @page "/demo/scraping"
 @inject c2_eskolar.Services.WebScraping.IWebScrapingService WebScrapingService
-@inject IJSRuntime JSRuntime
 @using c2_eskolar.Services.WebScraping
 
 <div class="container-fluid p-4">
     <div class="row mb-4">
         <div class="col-12">
-            <h2 class="mb-0">🕷️ Web Scraping Demo</h2>
-            <p class="text-muted">Test scholarship scraping with real Philippine scholarship websites</p>
+            <h2 class="mb-0">Web Scraping Demo</h2>
+            <p class="text-muted">Test scholarship scraping with Philippine scholarship websites</p>
         </div>
     </div>
 
     <div class="card mb-4">
         <div class="card-header bg-primary text-white">
-            <h5 class="mb-0">🎯 How It Works</h5>
+            <h5 class="mb-0">How It Works</h5>
         </div>
         <div class="card-body">
             <ol>
-                <li><strong>Target Website</strong>: We visit a scholarship website (like DOST, CHED, etc.)</li>
+                <li><strong>Target Website</strong>: We visit a scholarship website</li>
                 <li><strong>Parse HTML</strong>: Extract scholarship information using CSS selectors</li>
                 <li><strong>Process Data</strong>: Clean and validate the extracted data</li>
                 <li><strong>Save to Database</strong>: Store new scholarships in your system</li>
@@ -29,29 +28,29 @@
         <div class="col-md-8">
             <div class="card">
                 <div class="card-header bg-success text-white">
-                    <h5 class="mb-0">🧪 Test Scholarship Scraping</h5>
+                    <h5 class="mb-0">Test Scholarship Scraping</h5>
                 </div>
                 <div class="card-body">
                     <div class="mb-3">
-                        <label class="form-label">Test URL (Try these Philippine scholarship sources):</label>
+                        <label class="form-label">Test URL:</label>
                         <input type="url" class="form-control" @bind="testUrl" 
                                placeholder="Enter a scholarship website URL" />
                         <small class="form-text text-muted">
                             Suggested URLs:<br>
-                            • <a href="#" @onclick="() => SetUrl(\"http://science-scholarships.ph/\")">DOST Science Scholarships</a><br>
-                            • <a href="#" @onclick="() => SetUrl(\"https://ched.gov.ph/\")">CHED Higher Education</a><br>
-                            • <a href="#" @onclick="() => SetUrl(\"https://unifast.gov.ph/\")">UNIFAST Scholarships</a>
+                            DOST Science Scholarships: http://science-scholarships.ph/<br>
+                            CHED Higher Education: https://ched.gov.ph/<br>
+                            UNIFAST Scholarships: https://unifast.gov.ph/
                         </small>
                     </div>
                     <button class="btn btn-primary btn-lg" @onclick="TestScraping" disabled="@isLoading">
                         @if (isLoading)
                         {
                             <span class="spinner-border spinner-border-sm me-2"></span>
-                            Scraping in progress...
+                            <text>Scraping...</text>
                         }
                         else
                         {
-                            <i class="fas fa-search me-2"></i>Start Scraping Test
+                            <text>Start Scraping Test</text>
                         }
                     </button>
                 </div>
@@ -61,7 +60,7 @@
         <div class="col-md-4">
             <div class="card">
                 <div class="card-header bg-info text-white">
-                    <h5 class="mb-0">📖 CSS Selector Guide</h5>
+                    <h5 class="mb-0">CSS Selector Guide</h5>
                 </div>
                 <div class="card-body">
                     <small>
@@ -69,13 +68,7 @@
                         <code>.class-name</code> - Select by class<br>
                         <code>#id-name</code> - Select by ID<br>
                         <code>h1, h2, h3</code> - Select by tag<br>
-                        <code>.card .title</code> - Nested selection<br>
-                        <br>
-                        <strong>How to find them:</strong><br>
-                        1. Right-click on scholarship info<br>
-                        2. Select "Inspect Element"<br>
-                        3. Find the CSS class or ID<br>
-                        4. Use it in your configuration
+                        <code>.card .title</code> - Nested selection
                     </small>
                 </div>
             </div>
@@ -85,7 +78,6 @@
     @if (!string.IsNullOrWhiteSpace(errorMessage))
     {
         <div class="alert alert-danger mt-3">
-            <i class="fas fa-exclamation-triangle me-2"></i>
             <strong>Error:</strong> @errorMessage
         </div>
     }
@@ -94,7 +86,7 @@
     {
         <div class="card mt-4">
             <div class="card-header bg-success text-white">
-                <h5 class="mb-0">✅ Scraped Results (@scrapedData.Count items found)</h5>
+                <h5 class="mb-0">Scraped Results (@scrapedData.Count items found)</h5>
             </div>
             <div class="card-body">
                 @foreach (var scholarship in scrapedData.Take(10))
@@ -109,7 +101,7 @@
                             <div class="col-sm-6">
                                 @if (!string.IsNullOrWhiteSpace(scholarship.Amount))
                                 {
-                                    <strong>💰 Amount:</strong> @scholarship.Amount
+                                    <strong>Amount:</strong> @scholarship.Amount
                                 }
                                 else
                                 {
@@ -119,7 +111,7 @@
                             <div class="col-sm-6">
                                 @if (!string.IsNullOrWhiteSpace(scholarship.ApplicationDeadline))
                                 {
-                                    <strong>📅 Deadline:</strong> @scholarship.ApplicationDeadline
+                                    <strong>Deadline:</strong> @scholarship.ApplicationDeadline
                                 }
                                 else
                                 {
@@ -127,45 +119,31 @@
                                 }
                             </div>
                         </div>
-                        @if (!string.IsNullOrWhiteSpace(scholarship.Eligibility))
-                        {
-                            <div class="mt-2">
-                                <strong>📋 Eligibility:</strong> @scholarship.Eligibility
-                            </div>
-                        }
                         <small class="text-muted">
-                            <i class="fas fa-clock me-1"></i>Scraped at: @scholarship.ScrapedAt.ToString("yyyy-MM-dd HH:mm:ss")
+                            Scraped at: @scholarship.ScrapedAt.ToString("yyyy-MM-dd HH:mm:ss")
                         </small>
                     </div>
                 }
                 @if (scrapedData.Count > 10)
                 {
                     <div class="alert alert-info">
-                        <i class="fas fa-info-circle me-2"></i>
                         Showing first 10 results. Total found: <strong>@scrapedData.Count</strong> items.
                     </div>
                 }
             </div>
         </div>
     }
-    else if (!isLoading && !string.IsNullOrWhiteSpace(testUrl) && string.IsNullOrWhiteSpace(errorMessage))
-    {
-        <div class="alert alert-warning mt-3">
-            <i class="fas fa-exclamation-triangle me-2"></i>
-            No scholarship data found. The website might not have the expected structure or may be blocking automated access.
-        </div>
-    }
 
     <div class="card mt-4">
         <div class="card-header bg-warning text-dark">
-            <h5 class="mb-0">⚠️ Important Notes</h5>
+            <h5 class="mb-0">Important Notes</h5>
         </div>
         <div class="card-body">
             <ul class="mb-0">
                 <li><strong>Respect website policies</strong> - Always check robots.txt and terms of service</li>
                 <li><strong>Rate limiting</strong> - The system automatically delays between requests</li>
                 <li><strong>Website changes</strong> - CSS selectors may need updates when websites are redesigned</li>
-                <li><strong>Testing only</strong> - This demo is for testing purposes. Production use requires proper configuration</li>
+                <li><strong>Testing only</strong> - This demo is for testing purposes</li>
             </ul>
         </div>
     </div>
@@ -176,13 +154,6 @@
     private bool isLoading = false;
     private string errorMessage = "";
     private List<ScrapedScholarship>? scrapedData;
-
-    private void SetUrl(string url)
-    {
-        testUrl = url;
-        errorMessage = "";
-        scrapedData = null;
-    }
 
     private async Task TestScraping()
     {
@@ -195,20 +166,20 @@
         isLoading = true;
         errorMessage = "";
         scrapedData = null;
+        StateHasChanged();
 
         try
         {
-            await InvokeAsync(StateHasChanged);
             scrapedData = await WebScrapingService.ScrapeScholarshipsAsync(testUrl);
             
             if (!scrapedData.Any())
             {
-                errorMessage = "No scholarships found. The website might not have the expected structure or may be blocking automated access.";
+                errorMessage = "No scholarships found. The website might not have the expected structure.";
             }
         }
         catch (HttpRequestException ex)
         {
-            errorMessage = $"Network error: {ex.Message}. The website might be blocking requests or temporarily unavailable.";
+            errorMessage = $"Network error: {ex.Message}";
         }
         catch (Exception ex)
         {
@@ -217,7 +188,7 @@
         finally
         {
             isLoading = false;
-            await InvokeAsync(StateHasChanged);
+            StateHasChanged();
         }
     }
 }
