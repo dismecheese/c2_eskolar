@@ -60,6 +60,17 @@
         Navigation.NavigateTo("/dashboard/institution/profile");
     }
 
+    // --- LOGOUT FUNCTIONALITY ---
+    private void LogOut()
+    {
+        Navigation.NavigateTo("/api/auth/logout", forceLoad: true);
+    }
+
+    private async Task ShowLogoutModal()
+    {
+        await JSRuntime.InvokeVoidAsync("eval", "new bootstrap.Modal(document.getElementById('logoutModal')).show();");
+    }
+
     // --- CHATBOT STATE ---
     private bool ShowChatbot = false;
     private void OpenChatbot() => ShowChatbot = true;
@@ -78,7 +89,7 @@
         <div>
             <!-- Logo Section -->
             <div class="sidebar-brand-container text-center">
-                <a class="eskolar-logo" href="/">
+                <a class="eskolar-logo" href="/dashboard/institution">
                     <img src="images/main/eSkolar-White.svg" alt="eSkolar Logo" class="eskolar-logo-img" />
                 </a>
             </div>
@@ -168,6 +179,7 @@
     <div class="sidebar-profile-name">@((adminFirstName ?? "Institution") + (string.IsNullOrWhiteSpace(adminLastName) ? "" : $" {adminLastName}"))</div>
     <div class="sidebar-profile-role">Institution Admin</div>
     <button class="sidebar-profile-btn" @onclick="NavigateToInstitutionProfile" data-bs-dismiss="offcanvas">Profile</button>
+    <button class="sidebar-profile-btn logout-btn" @onclick="ShowLogoutModal" data-bs-dismiss="offcanvas">Log Out</button>
     </div>
     
     <!-- Sidebar Calendar -->
@@ -204,6 +216,25 @@
         <ChatBot CloseChatbot="CloseChatbot" MinimizeChatbot="MinimizeChatbot" />
     }
 
+</div>
+
+<!-- Logout Confirmation Modal -->
+<div class="modal fade" id="logoutModal" tabindex="-1" aria-labelledby="logoutModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="logoutModalLabel">Confirm Logout</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                Are you sure you want to log out?
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" @onclick="LogOut">Log Out</button>
+            </div>
+        </div>
+    </div>
 </div>
 
 <!-- JavaScript helper to close Bootstrap offcanvas programmatically -->

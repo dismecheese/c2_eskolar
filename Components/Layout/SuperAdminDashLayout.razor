@@ -74,7 +74,9 @@
             <div class="col-md-3 col-lg-2 superadmin-sidebar">
                 <div class="p-4">
                     <div class="text-center mb-4">
-                        <img src="/images/eSkolarLight.svg" alt="eSkolar" style="height: 40px;" class="mb-2">
+                        <a href="/dashboard/superadmin">
+                            <img src="/images/eSkolarLight.svg" alt="eSkolar" style="height: 40px;" class="mb-2">
+                        </a>
                         <h5 class="text-white mb-0">SuperAdmin</h5>
                         <small class="text-white-50">System Control</small>
                     </div>
@@ -131,7 +133,7 @@
                             </li>
                             <li class="nav-item mt-3">
                                 <hr style="border-color: rgba(255,255,255,0.2);">
-                                <a class="nav-link text-warning" href="/" @onclick="LogOut">
+                                <a class="nav-link text-warning" href="#" @onclick="() => ShowLogoutModal()">
                                     <i class="fas fa-sign-out-alt me-2"></i>
                                     Logout
                                 </a>
@@ -176,6 +178,29 @@
             </div>
         </div>
     </div>
+
+<!-- Logout Confirmation Modal -->
+<div class="modal fade" id="logoutModal" tabindex="-1" aria-labelledby="logoutModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold text-dark" id="logoutModalLabel">
+                    <i class="fa fa-sign-out-alt me-2 text-primary"></i>Confirm Logout
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body pt-2">
+                <p class="text-muted mb-0">Are you sure you want to logout from your account?</p>
+            </div>
+            <div class="modal-footer border-0 pt-2">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" @onclick="LogOut" data-bs-dismiss="modal">
+                    <i class="fa fa-sign-out-alt me-1"></i>Logout
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 
     <div id="blazor-error-ui">
         An unhandled error has occurred.
@@ -257,7 +282,7 @@
         };
     }
 
-    private async Task LogOut()
+    private void LogOut()
     {
         try
         {
@@ -266,6 +291,20 @@
         catch (Exception ex)
         {
             Console.WriteLine($"Logout error: {ex.Message}");
+        }
+    }
+
+    private async Task ShowLogoutModal()
+    {
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("eval", "new bootstrap.Modal(document.getElementById('logoutModal')).show()");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Modal error: {ex.Message}");
+            // Fallback to direct logout if modal fails
+            LogOut();
         }
     }
 
