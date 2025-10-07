@@ -6,8 +6,40 @@
 @inject BenefactorProfileService BenefactorProfileService
 @using Microsoft.AspNetCore.Components.Authorization
 @using Microsoft.AspNetCore.Identity
+@using Microsoft.AspNetCore.Components.Forms
+@using Microsoft.EntityFrameworkCore
+@implements IDisposable
 
 <div class="container-fluid p-5 benefactor-profile-bg">
+    <!-- Error/Success Messages -->
+    @if (!string.IsNullOrWhiteSpace(_errorMessage))
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="fas fa-exclamation-triangle me-2"></i>@_errorMessage
+            <button type="button" class="btn-close" @onclick="() => _errorMessage = string.Empty"></button>
+        </div>
+    }
+    @if (!string.IsNullOrWhiteSpace(_successMessage))
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="fas fa-check-circle me-2"></i>@_successMessage
+            <button type="button" class="btn-close" @onclick="() => _successMessage = string.Empty"></button>
+        </div>
+    }
+    @if (!string.IsNullOrWhiteSpace(_benefactorErrorMessage))
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="fas fa-exclamation-triangle me-2"></i>@_benefactorErrorMessage
+            <button type="button" class="btn-close" @onclick="() => _benefactorErrorMessage = string.Empty"></button>
+        </div>
+    }
+    @if (!string.IsNullOrWhiteSpace(_benefactorSuccessMessage))
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="fas fa-check-circle me-2"></i>@_benefactorSuccessMessage
+            <button type="button" class="btn-close" @onclick="() => _benefactorSuccessMessage = string.Empty"></button>
+        </div>
+    }
     <div class="row mb-4">
         <div class="col-12">
             <h2 class="mb-0 profile-title">My Profile</h2>
@@ -35,18 +67,34 @@
             <div class="card shadow-sm mb-4">
                 <div class="card-body text-center">
                     <div class="position-relative d-inline-block mb-3">
-                        @if (string.IsNullOrWhiteSpace(ProfilePicture) || ProfilePicture == "https://via.placeholder.com/120")
+                        @if (IsEditMode && !string.IsNullOrWhiteSpace(_previewProfilePicture))
                         {
-                            <!-- Blank SVG avatar (same as student profile) -->
-                            <svg width="120" height="120" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg" class="profile-image">
+                            <img src="@_previewProfilePicture" class="profile-image shadow" alt="Profile Preview" width="120" height="120" />
+                        }
+                        else if (string.IsNullOrWhiteSpace(_previewProfilePicture) && (string.IsNullOrWhiteSpace(ProfilePicture) || ProfilePicture == "https://via.placeholder.com/120"))
+                        {
+                            <!-- Blank person silhouette SVG -->
+                            <svg class="rounded-circle profile-image shadow" width="120" height="120" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
                                 <circle cx="60" cy="60" r="60" fill="#eaf1fb"/>
-                                <circle cx="60" cy="54" r="28" fill="#cfd8dc"/>
-                                <ellipse cx="60" cy="94" rx="36" ry="18" fill="#cfd8dc"/>
+                                <ellipse cx="60" cy="54" rx="28" ry="26" fill="#b3c6e6"/>
+                                <ellipse cx="60" cy="92" rx="36" ry="18" fill="#b3c6e6"/>
                             </svg>
                         }
                         else
                         {
-                            <img src="@ProfilePicture" class="profile-image shadow" alt="Profile Picture" width="120" height="120" />
+                            <img src="@PreviewProfilePicture" class="rounded-circle profile-image shadow" alt="Profile Picture" width="120" height="120" />
+                        }
+                        @if (IsEditMode)
+                        {
+                            <div class="d-flex flex-row justify-content-center gap-2 mt-2">
+                                <label class="btn btn-sm btn-primary rounded-circle profile-img-btn profile-upload-label">
+                                    <i class="fas fa-camera profile-upload-icon"></i>
+                                    <InputFile OnChange="OnProfileImageChange" accept="image/*" style="display:none;" />
+                                </label>
+                                <button class="btn btn-sm btn-danger rounded-circle profile-img-btn" type="button" title="Remove Profile Picture" @onclick="RemoveProfileImageAsync">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
                         }
                     </div>
                     <h4 class="card-title mb-1 profile-name">@FullName</h4>
@@ -57,6 +105,7 @@
                     <div class="text-start mt-3">
                         <div class="mb-2"><span class="profile-label-bold">Role:</span> <span>@Role</span></div>
                         <div class="mb-2"><span class="profile-label-bold">Phone:</span> <span>@ContactNumber</span></div>
+                        <div class="mb-2"><span class="profile-label-bold">Organization:</span> <span>@BenefactorOrganizationName</span></div>
                         <div class="mb-2"><span class="profile-label-bold">Location:</span> <span>@Address</span></div>
                         <div class="mb-0"><span class="profile-label-bold">Member since:</span> <span>@CreatedDate.ToString("MMM yyyy")</span></div>
                     </div>
@@ -134,15 +183,27 @@
                         <div class="row mb-2">
                             <div class="col-md-6 mb-3">
                                 <label class="profile-label-bold">First Name</label>
-                                <input class="form-control" @bind="AdminFirstName" />
+                                <input class="form-control @GetPersonalValidationErrorClass("AdminFirstName")" @bind="AdminFirstName" required />
+                                @if (!string.IsNullOrWhiteSpace(GetPersonalValidationMessage("AdminFirstName")))
+                                {
+                                    <div class="invalid-feedback d-block">@GetPersonalValidationMessage("AdminFirstName")</div>
+                                }
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label class="profile-label-bold">Middle Name</label>
-                                <input class="form-control" @bind="AdminMiddleName" />
+                                <input class="form-control @GetPersonalValidationErrorClass("AdminMiddleName")" @bind="AdminMiddleName" />
+                                @if (!string.IsNullOrWhiteSpace(GetPersonalValidationMessage("AdminMiddleName")))
+                                {
+                                    <div class="invalid-feedback d-block">@GetPersonalValidationMessage("AdminMiddleName")</div>
+                                }
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label class="profile-label-bold">Last Name</label>
-                                <input class="form-control" @bind="AdminLastName" />
+                                <input class="form-control @GetPersonalValidationErrorClass("AdminLastName")" @bind="AdminLastName" required />
+                                @if (!string.IsNullOrWhiteSpace(GetPersonalValidationMessage("AdminLastName")))
+                                {
+                                    <div class="invalid-feedback d-block">@GetPersonalValidationMessage("AdminLastName")</div>
+                                }
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label class="profile-label-bold">Sex</label>
@@ -154,15 +215,27 @@
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label class="profile-label-bold">Nationality</label>
-                                <input class="form-control" @bind="Nationality" />
+                                <input class="form-control @GetPersonalValidationErrorClass("Nationality")" @bind="Nationality" />
+                                @if (!string.IsNullOrWhiteSpace(GetPersonalValidationMessage("Nationality")))
+                                {
+                                    <div class="invalid-feedback d-block">@GetPersonalValidationMessage("Nationality")</div>
+                                }
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label class="profile-label-bold">Birth Date</label>
-                                <input type="date" class="form-control" @bind="BirthDate" />
+                                <input type="date" class="form-control @GetPersonalValidationErrorClass("BirthDate")" @bind="BirthDate" />
+                                @if (!string.IsNullOrWhiteSpace(GetPersonalValidationMessage("BirthDate")))
+                                {
+                                    <div class="invalid-feedback d-block">@GetPersonalValidationMessage("BirthDate")</div>
+                                }
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label class="profile-label-bold">Contact Number</label>
-                                <input class="form-control" @bind="ContactNumber" />
+                                <input class="form-control @GetPersonalValidationErrorClass("ContactNumber")" @bind="ContactNumber" required />
+                                @if (!string.IsNullOrWhiteSpace(GetPersonalValidationMessage("ContactNumber")))
+                                {
+                                    <div class="invalid-feedback d-block">@GetPersonalValidationMessage("ContactNumber")</div>
+                                }
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label class="profile-label-bold">Email</label>
@@ -170,7 +243,11 @@
                             </div>
                             <div class="col-md-12 mb-3">
                                 <label class="profile-label-bold">Address</label>
-                                <input class="form-control" @bind="Address" />
+                                <input class="form-control @GetPersonalValidationErrorClass("Address")" @bind="Address" />
+                                @if (!string.IsNullOrWhiteSpace(GetPersonalValidationMessage("Address")))
+                                {
+                                    <div class="invalid-feedback d-block">@GetPersonalValidationMessage("Address")</div>
+                                }
                             </div>
                         </div>
                     }
@@ -245,19 +322,35 @@
                         <div class="row mb-2">
                             <div class="col-md-6 mb-3">
                                 <label class="profile-label-bold">Organization Name</label>
-                                <input type="text" class="form-control" @bind="BenefactorOrganizationName" />
+                                <input type="text" class="form-control @GetBenefactorValidationErrorClass("BenefactorOrganizationName")" @bind="BenefactorOrganizationName" required />
+                                @if (!string.IsNullOrWhiteSpace(GetBenefactorValidationMessage("BenefactorOrganizationName")))
+                                {
+                                    <div class="invalid-feedback d-block">@GetBenefactorValidationMessage("BenefactorOrganizationName")</div>
+                                }
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label class="profile-label-bold">Organization Address</label>
-                                <input type="text" class="form-control" @bind="BenefactorOrganizationAddress" />
+                                <input type="text" class="form-control @GetBenefactorValidationErrorClass("BenefactorOrganizationAddress")" @bind="BenefactorOrganizationAddress" required />
+                                @if (!string.IsNullOrWhiteSpace(GetBenefactorValidationMessage("BenefactorOrganizationAddress")))
+                                {
+                                    <div class="invalid-feedback d-block">@GetBenefactorValidationMessage("BenefactorOrganizationAddress")</div>
+                                }
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label class="profile-label-bold">Contact Number</label>
-                                <input type="text" class="form-control" @bind="BenefactorContactNumber" />
+                                <input type="text" class="form-control @GetBenefactorValidationErrorClass("BenefactorContactNumber")" @bind="BenefactorContactNumber" />
+                                @if (!string.IsNullOrWhiteSpace(GetBenefactorValidationMessage("BenefactorContactNumber")))
+                                {
+                                    <div class="invalid-feedback d-block">@GetBenefactorValidationMessage("BenefactorContactNumber")</div>
+                                }
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label class="profile-label-bold">Email</label>
-                                <input type="email" class="form-control" @bind="BenefactorEmail" />
+                                <input type="email" class="form-control @GetBenefactorValidationErrorClass("BenefactorEmail")" @bind="BenefactorEmail" />
+                                @if (!string.IsNullOrWhiteSpace(GetBenefactorValidationMessage("BenefactorEmail")))
+                                {
+                                    <div class="invalid-feedback d-block">@GetBenefactorValidationMessage("BenefactorEmail")</div>
+                                }
                             </div>
                         </div>
                     }
@@ -289,12 +382,118 @@
 </div>
 
 @code {
-    private bool IsEditMode = false;
+    // Benefactor Information state
     private bool IsBenefactorEditMode = false;
     private string BenefactorOrganizationName = "";
     private string BenefactorOrganizationAddress = "";
     private string BenefactorContactNumber = "";
     private string BenefactorEmail = "";
+
+    // Timer variables for auto-dismiss notifications
+    private System.Threading.Timer? _errorTimer;
+    private System.Threading.Timer? _successTimer;
+    private System.Threading.Timer? _benefactorErrorTimer;
+    private System.Threading.Timer? _benefactorSuccessTimer;
+
+    private void ToggleBenefactorEditMode()
+    {
+        IsBenefactorEditMode = !IsBenefactorEditMode;
+        if (!IsBenefactorEditMode)
+        {
+            // Clear validation errors when canceling edit mode
+            BenefactorValidationErrors.Clear();
+            _benefactorErrorMessage = string.Empty;
+            _benefactorSuccessMessage = string.Empty;
+        }
+    }
+
+    private async Task SaveBenefactorInfo()
+    {
+        // Clear previous messages
+        _benefactorErrorMessage = string.Empty;
+        _benefactorSuccessMessage = string.Empty;
+        
+        // Step 1: Validate all benefactor fields before proceeding
+        if (!ValidateAllBenefactorFields())
+        {
+            SetBenefactorErrorMessageWithTimer("Please correct the validation errors before saving.");
+            StateHasChanged();
+            return;
+        }
+        
+        try
+        {
+            var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+            var user = await UserManager.GetUserAsync(authState.User);
+            if (user != null)
+            {
+                var profile = await BenefactorProfileService.GetProfileByUserIdAsync(user.Id);
+                if (profile != null)
+                {
+                    // Update organization information with trimmed and sanitized values
+                    profile.OrganizationName = BenefactorOrganizationName?.Trim() ?? "";
+                    profile.Address = string.IsNullOrWhiteSpace(BenefactorOrganizationAddress) ? null : BenefactorOrganizationAddress.Trim();
+                    profile.ContactNumber = string.IsNullOrWhiteSpace(BenefactorContactNumber) ? null : System.Text.RegularExpressions.Regex.Replace(BenefactorContactNumber.Trim(), @"[\s\-\(\)]", "");
+                    profile.ContactEmail = string.IsNullOrWhiteSpace(BenefactorEmail) ? null : BenefactorEmail.Trim();
+                    
+                    Console.WriteLine("Saving benefactor information...");
+                    await BenefactorProfileService.SaveProfileAsync(profile);
+                    Console.WriteLine("Benefactor profile saved successfully!");
+                    
+                    // Clear validation errors
+                    BenefactorValidationErrors.Clear();
+                    
+                    // Reload data to reflect changes in sidebar
+                    await LoadExtendedProfileData(user.Id);
+                    
+                    IsBenefactorEditMode = false;
+                    
+                    // Show success message
+                    SetBenefactorSuccessMessageWithTimer("Benefactor information updated successfully!");
+                    
+                    // Force UI update
+                    StateHasChanged();
+                    
+                    Console.WriteLine("Benefactor information updated successfully!");
+                }
+                else
+                {
+                    SetBenefactorErrorMessageWithTimer("Profile not found. Please refresh the page and try again.");
+                }
+            }
+            else
+            {
+                SetBenefactorErrorMessageWithTimer("User session expired. Please login again.");
+            }
+        }
+        catch (ArgumentException argEx)
+        {
+            Console.WriteLine($"Validation error: {argEx.Message}");
+            SetBenefactorErrorMessageWithTimer(argEx.Message);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error saving benefactor info: {ex.Message}");
+            Console.WriteLine($"Stack trace: {ex.StackTrace}");
+            SetBenefactorErrorMessageWithTimer("An unexpected error occurred while saving benefactor information. Please try again.");
+        }
+    }
+
+    // Error handling variables
+    private string _errorMessage = "";
+    private string _successMessage = "";
+    private string _benefactorErrorMessage = "";
+    private string _benefactorSuccessMessage = "";
+    
+    // Validation error properties (similar to Institution profile)
+    private Dictionary<string, string> ValidationErrors = new();
+    private Dictionary<string, string> BenefactorValidationErrors = new();
+    private bool IsValidating = false;
+    
+    // Edit mode state
+    private bool IsEditMode = false;
+    
+    // Benefactor Profile Info
     private string AdminFirstName = "";
     private string AdminMiddleName = "";
     private string AdminLastName = "";
@@ -309,6 +508,12 @@
     private string Status = "Active";
     private DateTime CreatedDate = DateTime.Now;
     private string ProfilePicture = "https://via.placeholder.com/120";
+
+    private IBrowserFile? UploadedProfileImage;
+    private string? _previewProfilePicture;
+    private string PreviewProfilePicture => _previewProfilePicture ?? ProfilePicture;
+
+    // Verification Status
     private bool EmailVerified = false;
     private bool PhoneVerified = false;
     private bool StudentIdVerified = false;
@@ -319,19 +524,36 @@
     private int Applications = 0;
     private string GPA = "0.00";
 
-    private void ToggleEditMode() => IsEditMode = !IsEditMode;
-    private void ToggleBenefactorEditMode() => IsBenefactorEditMode = !IsBenefactorEditMode;
-    private void SaveProfile() { IsEditMode = false; }
-    private void SaveBenefactorInfo() { IsBenefactorEditMode = false; }
-}
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadUserData();
+        StateHasChanged();
+    }
+
+    private async Task LoadUserData()
+    {
+        try
+        {
+            var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+            if (authState.User.Identity?.IsAuthenticated == true)
+            {
+                var user = await UserManager.GetUserAsync(authState.User);
+                if (user != null)
+                {
+                    // Load basic Identity data
+                    ContactEmail = user.Email ?? "";
+                    FullName = user.UserName ?? "Benefactor User";
+                    
+                    // Check email confirmation status
+                    EmailVerified = await UserManager.IsEmailConfirmedAsync(user);
+                    
                     // Set creation date from user registration
                     CreatedDate = user.LockoutEnd?.DateTime ?? DateTime.Now;
                     
-                    // Set last login (you may need to track this separately)
-                    LastLogin = DateTime.Now.AddHours(-1); // Placeholder
+                    // Set last login (placeholder)
+                    LastLogin = DateTime.Now.AddHours(-1);
                     
-                    // TODO: Load additional profile data from your custom database tables
-                    // Example: Load student-specific data from StudentProfile table
+                    // Load extended profile data from custom tables
                     await LoadExtendedProfileData(user.Id);
                 }
             }
@@ -339,9 +561,9 @@
         catch (Exception ex)
         {
             Console.WriteLine($"Error loading user data: {ex.Message}");
-            // Set default values
-            FullName = "Student User";
-            ContactEmail = "benefactor@example.com";
+            // Only set default values if we don't already have data
+            if (string.IsNullOrWhiteSpace(FullName))
+                FullName = "Benefactor User";
         }
     }
 
@@ -352,17 +574,22 @@
             var profile = await BenefactorProfileService.GetProfileByUserIdAsync(userId);
             if (profile != null)
             {
-                AdminFirstName = profile.AdminFirstName;
+                AdminFirstName = profile.AdminFirstName ?? "";
                 AdminMiddleName = profile.AdminMiddleName ?? "";
-                AdminLastName = profile.AdminLastName;
-                FullName = profile.AdminFullName;
-                Sex = profile.Sex ?? "";
+                AdminLastName = profile.AdminLastName ?? "";
+                FullName = profile.AdminFullName ?? FullName;
+                Sex = profile.Sex ?? "Male";
                 Nationality = profile.Nationality ?? "";
                 BirthDate = profile.BirthDate ?? DateTime.Now;
                 ContactNumber = profile.ContactNumber ?? "";
-                ContactEmail = profile.ContactEmail ?? ContactEmail;
                 Address = profile.Address ?? "";
-                // You can set other fields as needed
+                ProfilePicture = !string.IsNullOrWhiteSpace(profile.Logo) ? profile.Logo : "https://via.placeholder.com/120";
+                
+                // Load benefactor-specific organization data (separate from personal data)
+                BenefactorOrganizationName = profile.OrganizationName ?? "";
+                BenefactorOrganizationAddress = profile.Address ?? "";
+                BenefactorContactNumber = profile.ContactNumber ?? "";
+                BenefactorEmail = profile.ContactEmail ?? "";
             }
         }
         catch (Exception ex)
@@ -371,56 +598,507 @@
         }
     }
 
+    // Validation methods (similar to Institution profile)
+    private bool ValidatePersonalField(string fieldName, string value, string fieldDisplayName)
+    {
+        ValidationErrors.Remove(fieldName);
+        
+        switch (fieldName)
+        {
+            case "AdminFirstName":
+            case "AdminLastName":
+                if (string.IsNullOrWhiteSpace(value))
+                {
+                    ValidationErrors[fieldName] = $"{fieldDisplayName} is required.";
+                    return false;
+                }
+                if (!IsValidName(value))
+                {
+                    ValidationErrors[fieldName] = $"{fieldDisplayName} should only contain letters, spaces, hyphens, and apostrophes.";
+                    return false;
+                }
+                if (value.Length > 50)
+                {
+                    ValidationErrors[fieldName] = $"{fieldDisplayName} cannot exceed 50 characters.";
+                    return false;
+                }
+                break;
+                
+            case "AdminMiddleName":
+                if (!string.IsNullOrWhiteSpace(value) && !IsValidName(value))
+                {
+                    ValidationErrors[fieldName] = $"{fieldDisplayName} should only contain letters, spaces, hyphens, and apostrophes.";
+                    return false;
+                }
+                if (!string.IsNullOrWhiteSpace(value) && value.Length > 50)
+                {
+                    ValidationErrors[fieldName] = $"{fieldDisplayName} cannot exceed 50 characters.";
+                    return false;
+                }
+                break;
+                
+            case "ContactNumber":
+                if (string.IsNullOrWhiteSpace(value))
+                {
+                    ValidationErrors[fieldName] = "Contact Number is required.";
+                    return false;
+                }
+                if (!IsValidPhoneNumber(value))
+                {
+                    ValidationErrors[fieldName] = "Phone number should only contain numbers, spaces, hyphens, plus signs, and parentheses.";
+                    return false;
+                }
+                break;
+                
+            case "Nationality":
+                if (!string.IsNullOrWhiteSpace(value) && !IsValidName(value))
+                {
+                    ValidationErrors[fieldName] = "Nationality should only contain letters and spaces.";
+                    return false;
+                }
+                if (!string.IsNullOrWhiteSpace(value) && value.Length > 50)
+                {
+                    ValidationErrors[fieldName] = "Nationality cannot exceed 50 characters.";
+                    return false;
+                }
+                break;
+                
+            case "Address":
+                if (!string.IsNullOrWhiteSpace(value) && value.Length > 200)
+                {
+                    ValidationErrors[fieldName] = "Address cannot exceed 200 characters.";
+                    return false;
+                }
+                break;
+        }
+        
+        return true;
+    }
+    
+    private bool ValidateBenefactorField(string fieldName, string value, string fieldDisplayName)
+    {
+        BenefactorValidationErrors.Remove(fieldName);
+        
+        switch (fieldName)
+        {
+            case "BenefactorOrganizationName":
+                if (string.IsNullOrWhiteSpace(value))
+                {
+                    BenefactorValidationErrors[fieldName] = "Organization Name is required.";
+                    return false;
+                }
+                if (!IsValidOrganizationName(value))
+                {
+                    BenefactorValidationErrors[fieldName] = "Organization name contains invalid characters.";
+                    return false;
+                }
+                if (value.Length > 150)
+                {
+                    BenefactorValidationErrors[fieldName] = "Organization name cannot exceed 150 characters.";
+                    return false;
+                }
+                break;
+                
+            case "BenefactorOrganizationAddress":
+                if (string.IsNullOrWhiteSpace(value))
+                {
+                    BenefactorValidationErrors[fieldName] = "Organization Address is required.";
+                    return false;
+                }
+                if (value.Length > 255)
+                {
+                    BenefactorValidationErrors[fieldName] = "Organization address cannot exceed 255 characters.";
+                    return false;
+                }
+                break;
+                
+            case "BenefactorContactNumber":
+                if (!string.IsNullOrWhiteSpace(value) && !IsValidPhoneNumber(value))
+                {
+                    BenefactorValidationErrors[fieldName] = "Organization contact number format is invalid.";
+                    return false;
+                }
+                break;
+                
+            case "BenefactorEmail":
+                if (!string.IsNullOrWhiteSpace(value) && !IsValidEmail(value))
+                {
+                    BenefactorValidationErrors[fieldName] = "Organization email format is invalid.";
+                    return false;
+                }
+                if (!string.IsNullOrWhiteSpace(value) && value.Length > 100)
+                {
+                    BenefactorValidationErrors[fieldName] = "Organization email cannot exceed 100 characters.";
+                    return false;
+                }
+                break;
+        }
+        
+        return true;
+    }
+    
+    private bool IsValidName(string name)
+    {
+        if (string.IsNullOrWhiteSpace(name)) return false;
+        // Allow letters, spaces, hyphens, apostrophes, and periods
+        return System.Text.RegularExpressions.Regex.IsMatch(name.Trim(), @"^[a-zA-Z\s\-'\.]+$");
+    }
+    
+    private bool IsValidPhoneNumber(string phone)
+    {
+        if (string.IsNullOrWhiteSpace(phone)) return true; // Optional field
+        // Allow digits, spaces, hyphens, plus, parentheses
+        var cleanPhone = System.Text.RegularExpressions.Regex.Replace(phone, @"[\s\-\+\(\)]", "");
+        return System.Text.RegularExpressions.Regex.IsMatch(cleanPhone, @"^\d{7,15}$"); // 7-15 digits
+    }
+    
+    private bool IsValidEmail(string email)
+    {
+        if (string.IsNullOrWhiteSpace(email)) return true;
+        try
+        {
+            var addr = new System.Net.Mail.MailAddress(email);
+            return addr.Address == email;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+    
+    private bool IsValidOrganizationName(string name)
+    {
+        if (string.IsNullOrWhiteSpace(name)) return true;
+        // Allow letters, numbers, spaces, common punctuation for organization names
+        return System.Text.RegularExpressions.Regex.IsMatch(name.Trim(), @"^[a-zA-Z0-9\s\-'\.&,()]+$");
+    }
+    
+    private bool ValidateAllPersonalFields()
+    {
+        IsValidating = true;
+        ValidationErrors.Clear();
+        
+        var isValid = true;
+        
+        // Validate required fields
+        isValid &= ValidatePersonalField("AdminFirstName", AdminFirstName, "First Name");
+        isValid &= ValidatePersonalField("AdminLastName", AdminLastName, "Last Name");
+        isValid &= ValidatePersonalField("ContactNumber", ContactNumber, "Contact Number");
+        
+        // Validate optional fields
+        ValidatePersonalField("AdminMiddleName", AdminMiddleName, "Middle Name");
+        ValidatePersonalField("Nationality", Nationality, "Nationality");
+        ValidatePersonalField("Address", Address, "Address");
+        
+        // Additional business logic validations
+        if (!string.IsNullOrWhiteSpace(ContactNumber) && ContactNumber.Length < 7)
+        {
+            ValidationErrors["ContactNumber"] = "Contact number must be at least 7 digits.";
+            isValid = false;
+        }
+        
+        // Age validation for birth date
+        if (BirthDate != DateTime.MinValue)
+        {
+            var age = DateTime.Now.Year - BirthDate.Year;
+            if (DateTime.Now.DayOfYear < BirthDate.DayOfYear) age--;
+            
+            if (age < 18 || age > 100)
+            {
+                ValidationErrors["BirthDate"] = "Age must be between 18 and 100 years for benefactor administrators.";
+                isValid = false;
+            }
+        }
+        
+        return isValid;
+    }
+    
+    private bool ValidateAllBenefactorFields()
+    {
+        BenefactorValidationErrors.Clear();
+        
+        var isValid = true;
+        
+        // Validate required fields
+        isValid &= ValidateBenefactorField("BenefactorOrganizationName", BenefactorOrganizationName, "Organization Name");
+        isValid &= ValidateBenefactorField("BenefactorOrganizationAddress", BenefactorOrganizationAddress, "Organization Address");
+        
+        // Validate optional fields
+        ValidateBenefactorField("BenefactorContactNumber", BenefactorContactNumber, "Organization Contact Number");
+        ValidateBenefactorField("BenefactorEmail", BenefactorEmail, "Organization Email");
+        
+        return isValid;
+    }
+    
+    private string GetPersonalValidationErrorClass(string fieldName)
+    {
+        return ValidationErrors.ContainsKey(fieldName) ? "is-invalid" : "";
+    }
+    
+    private string GetBenefactorValidationErrorClass(string fieldName)
+    {
+        return BenefactorValidationErrors.ContainsKey(fieldName) ? "is-invalid" : "";
+    }
+    
+    private string GetPersonalValidationMessage(string fieldName)
+    {
+        return ValidationErrors.TryGetValue(fieldName, out var error) ? error : "";
+    }
+    
+    private string GetBenefactorValidationMessage(string fieldName)
+    {
+        return BenefactorValidationErrors.TryGetValue(fieldName, out var error) ? error : "";
+    }
+
+    // Auto-dismiss notification helper methods
+    private void SetErrorMessageWithTimer(string message)
+    {
+        _errorMessage = message;
+        _errorTimer?.Dispose();
+        _errorTimer = new System.Threading.Timer(_ => 
+        {
+            _errorMessage = "";
+            InvokeAsync(StateHasChanged);
+        }, null, TimeSpan.FromSeconds(5), Timeout.InfiniteTimeSpan);
+    }
+
+    private void SetSuccessMessageWithTimer(string message)
+    {
+        _successMessage = message;
+        _successTimer?.Dispose();
+        _successTimer = new System.Threading.Timer(_ => 
+        {
+            _successMessage = "";
+            InvokeAsync(StateHasChanged);
+        }, null, TimeSpan.FromSeconds(5), Timeout.InfiniteTimeSpan);
+    }
+
+    private void SetBenefactorErrorMessageWithTimer(string message)
+    {
+        _benefactorErrorMessage = message;
+        _benefactorErrorTimer?.Dispose();
+        _benefactorErrorTimer = new System.Threading.Timer(_ => 
+        {
+            _benefactorErrorMessage = "";
+            InvokeAsync(StateHasChanged);
+        }, null, TimeSpan.FromSeconds(5), Timeout.InfiniteTimeSpan);
+    }
+
+    private void SetBenefactorSuccessMessageWithTimer(string message)
+    {
+        _benefactorSuccessMessage = message;
+        _benefactorSuccessTimer?.Dispose();
+        _benefactorSuccessTimer = new System.Threading.Timer(_ => 
+        {
+            _benefactorSuccessMessage = "";
+            InvokeAsync(StateHasChanged);
+        }, null, TimeSpan.FromSeconds(5), Timeout.InfiniteTimeSpan);
+    }
+
+    public void Dispose()
+    {
+        _errorTimer?.Dispose();
+        _successTimer?.Dispose();
+        _benefactorErrorTimer?.Dispose();
+        _benefactorSuccessTimer?.Dispose();
+    }
+
     // Methods
     private void ToggleEditMode()
     {
         IsEditMode = !IsEditMode;
+        if (!IsEditMode)
+        {
+            // Clear validation errors when canceling edit mode
+            ValidationErrors.Clear();
+            _errorMessage = string.Empty;
+            _successMessage = string.Empty;
+        }
     }
 
     private async Task SaveProfile()
     {
+        // Clear previous messages
+        _errorMessage = string.Empty;
+        _successMessage = string.Empty;
+        
+        // Step 1: Validate all fields before proceeding
+        if (!ValidateAllPersonalFields())
+        {
+            SetErrorMessageWithTimer("Please correct the validation errors before saving.");
+            StateHasChanged();
+            return;
+        }
+        
         try
         {
+            Console.WriteLine("Starting SaveProfile...");
             var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
             var user = await UserManager.GetUserAsync(authState.User);
-            
             if (user != null)
             {
-                // TODO: Implement save functionality to database
-                // Save to your custom StudentProfile table
+                Console.WriteLine($"User found: {user.Id}");
+                var profile = await BenefactorProfileService.GetProfileByUserIdAsync(user.Id);
+                if (profile == null)
+                {
+                    Console.WriteLine("Creating new profile...");
+                    profile = new Models.BenefactorProfile
+                    {
+                        UserId = user.Id,
+                        AdminFirstName = AdminFirstName.Trim(),
+                        AdminMiddleName = string.IsNullOrWhiteSpace(AdminMiddleName) ? null : AdminMiddleName.Trim(),
+                        AdminLastName = AdminLastName.Trim(),
+                        OrganizationName = BenefactorOrganizationName ?? "Default Organization"
+                    };
+                }
+                else
+                {
+                    Console.WriteLine("Updating existing profile...");
+                }
+
+                // Update profile fields with trimmed and sanitized values
+                profile.AdminFirstName = AdminFirstName?.Trim() ?? "";
+                profile.AdminMiddleName = string.IsNullOrWhiteSpace(AdminMiddleName) ? null : AdminMiddleName.Trim();
+                profile.AdminLastName = AdminLastName?.Trim() ?? "";
+                profile.Sex = Sex;
+                profile.Nationality = string.IsNullOrWhiteSpace(Nationality) ? null : Nationality.Trim();
+                profile.BirthDate = BirthDate;
+                profile.ContactNumber = string.IsNullOrWhiteSpace(ContactNumber) ? null : System.Text.RegularExpressions.Regex.Replace(ContactNumber.Trim(), @"[\s\-\(\)]", "");
+                profile.Address = string.IsNullOrWhiteSpace(Address) ? null : Address.Trim();
+                profile.OrganizationName = BenefactorOrganizationName ?? "Default Organization";
+
+                // Handle file upload with additional validation
+                if (UploadedProfileImage != null)
+                {
+                    // Validate file type
+                    var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif" };
+                    var fileExtension = Path.GetExtension(UploadedProfileImage.Name).ToLower();
+                    
+                    if (!allowedExtensions.Contains(fileExtension))
+                    {
+                        SetErrorMessageWithTimer("Profile image must be a JPG, PNG, or GIF file.");
+                        StateHasChanged();
+                        return;
+                    }
+                    
+                    if (UploadedProfileImage.Size > 10 * 1024 * 1024)
+                    {
+                        SetErrorMessageWithTimer("Profile image exceeds the 10MB size limit. Please choose a smaller file.");
+                        StateHasChanged();
+                        return;
+                    }
+                    
+                    var fileName = $"benefactor_profile_{Guid.NewGuid()}{fileExtension}";
+                    var dirPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/images/profiles");
+                    if (!Directory.Exists(dirPath))
+                    {
+                        Directory.CreateDirectory(dirPath);
+                    }
+                    var savePath = Path.Combine(dirPath, fileName);
+                    await using (var stream = File.Create(savePath))
+                    {
+                        await UploadedProfileImage.OpenReadStream(10 * 1024 * 1024).CopyToAsync(stream);
+                    }
+                    profile.Logo = $"/images/profiles/{fileName}";
+                    ProfilePicture = profile.Logo;
+                }
+                else if (!string.IsNullOrWhiteSpace(ProfilePicture) && ProfilePicture != "https://via.placeholder.com/120")
+                {
+                    profile.Logo = ProfilePicture;
+                }
+
+                Console.WriteLine("Calling SaveProfileAsync...");
+                await BenefactorProfileService.SaveProfileAsync(profile);
+                Console.WriteLine("Profile saved successfully!");
                 
-                // Example:
-                // var studentProfile = await DbContext.StudentProfiles
-                //     .FirstOrDefaultAsync(sp => sp.UserId == user.Id);
+                // Clear upload state and validation errors
+                _previewProfilePicture = null;
+                UploadedProfileImage = null;
+                ValidationErrors.Clear();
                 
-                // if (studentProfile == null)
-                // {
-                //     studentProfile = new StudentProfile { UserId = user.Id };
-                //     DbContext.StudentProfiles.Add(studentProfile);
-                // }
-                
-                // studentProfile.FirstName = FullName.Split(' ').FirstOrDefault();
-                // studentProfile.LastName = FullName.Split(' ').LastOrDefault();
-                // studentProfile.Phone = Phone;
-                // studentProfile.Location = Location;
-                // studentProfile.University = University;
-                // studentProfile.Course = Course;
-                // studentProfile.YearLevel = YearLevel;
-                // studentProfile.Bio = Bio;
-                
-                // await DbContext.SaveChangesAsync();
+                // Reload profile data to update ProfilePicture and other fields
+                await LoadExtendedProfileData(user.Id);
                 
                 IsEditMode = false;
-                Console.WriteLine("Student profile updated successfully!");
                 
-                // Show success message to user
-                // You might want to add a toast notification here
+                // Show success message
+                SetSuccessMessageWithTimer("Personal profile updated successfully!");
+                
+                // Force UI update
+                StateHasChanged();
+                
+                Console.WriteLine("Benefactor profile updated successfully!");
             }
+            else
+            {
+                Console.WriteLine("No user found!");
+                SetErrorMessageWithTimer("User session expired. Please login again.");
+            }
+        }
+        catch (ArgumentException argEx)
+        {
+            Console.WriteLine($"Validation error: {argEx.Message}");
+            SetErrorMessageWithTimer(argEx.Message);
         }
         catch (Exception ex)
         {
             Console.WriteLine($"Error saving profile: {ex.Message}");
-            // Show error message to user
+            Console.WriteLine($"Stack trace: {ex.StackTrace}");
+            SetErrorMessageWithTimer("An unexpected error occurred while saving your profile. Please try again.");
         }
+    }
+
+    private async Task OnProfileImageChange(InputFileChangeEventArgs e)
+    {
+        UploadedProfileImage = e.File;
+        if (UploadedProfileImage != null)
+        {
+            if (UploadedProfileImage.Size > 10 * 1024 * 1024)
+            {
+                SetErrorMessageWithTimer("Profile image exceeds the 10MB size limit. Please choose a smaller file.");
+                _previewProfilePicture = null;
+                UploadedProfileImage = null;
+                return;
+            }
+            
+            // Validate file type
+            var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif" };
+            var fileExtension = Path.GetExtension(UploadedProfileImage.Name).ToLower();
+            if (!allowedExtensions.Contains(fileExtension))
+            {
+                SetErrorMessageWithTimer("Profile image must be a JPG, PNG, or GIF file.");
+                _previewProfilePicture = null;
+                UploadedProfileImage = null;
+                return;
+            }
+            
+            using var ms = new MemoryStream();
+            await UploadedProfileImage.OpenReadStream(10 * 1024 * 1024).CopyToAsync(ms);
+            var base64 = Convert.ToBase64String(ms.ToArray());
+            var mime = fileExtension == ".png" ? "image/png" : "image/jpeg";
+            _previewProfilePicture = $"data:{mime};base64,{base64}";
+        }
+    }
+
+    private async Task RemoveProfileImageAsync()
+    {
+        // Set to blank avatar
+        ProfilePicture = "https://via.placeholder.com/120";
+        _previewProfilePicture = null;
+        UploadedProfileImage = null;
+
+        // Optionally update in DB
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = await UserManager.GetUserAsync(authState.User);
+        if (user != null)
+        {
+            var profile = await BenefactorProfileService.GetProfileByUserIdAsync(user.Id);
+            if (profile != null)
+            {
+                profile.Logo = ProfilePicture;
+                await BenefactorProfileService.SaveProfileAsync(profile);
+            }
+        }
+        StateHasChanged();
     }
 }

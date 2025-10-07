@@ -199,3 +199,29 @@
 .profile-upload-label:hover .profile-upload-icon {
     background: #0d6efd;
 }
+
+/* Validation styling */
+.is-invalid {
+    border-color: #dc3545 !important;
+    box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25) !important;
+}
+
+.invalid-feedback {
+    color: #dc3545;
+    font-size: 0.875em;
+    margin-top: 0.25rem;
+}
+
+.text-danger {
+    color: #dc3545 !important;
+}
+
+.form-control:focus {
+    border-color: #1560d4;
+    box-shadow: 0 0 0 0.2rem rgba(21, 96, 212, 0.25);
+}
+
+.form-control.is-invalid:focus {
+    border-color: #dc3545;
+    box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
+}
