@@ -1,4 +1,6 @@
 @using System.ComponentModel.DataAnnotations;
+@using Microsoft.AspNetCore.Components;
+@using Microsoft.AspNetCore.Components.Forms;
 @page "/student/verification"
 @layout Layout.StudentDashLayout
 
@@ -139,13 +141,23 @@
             <!-- Compact Row: Sex and Birthday -->
             <div class="sv-field-compact-row">
                 <div class="sv-field sv-field-vertical sv-field-short">
-                    <label for="sex" class="sv-field-label">Sex <span class="sv-required">*</span></label>
-                    <InputSelect id="sex" class="sv-input" @bind-Value="verificationModel.Sex">
-                        <option value="">Select sex</option>
-                        <option value="Male">Male</option>
-                        <option value="Female">Female</option>
-                        <option value="Other">Other</option>
-                    </InputSelect>
+                    <label for="sexDropdown" class="sv-field-label">Sex <span class="sv-required">*</span></label>
+                    <div class="sv-custom-select @(ShowSexDropdown ? "sv-custom-select-open" : null)" tabindex="0"
+                         @onclick="ToggleSexDropdown"
+                         @onblur="CloseSexDropdown"
+                         id="sexDropdown">
+                        <span class="sv-custom-select-value">@SelectedSexText</span>
+                        <svg class="sv-custom-select-arrow" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+                        @if (ShowSexDropdown)
+                        {
+                            <ul class="sv-custom-select-list">
+                                <li class="sv-custom-select-item" @onclick='() => SelectSex("")'>Select sex</li>
+                                <li class="sv-custom-select-item" @onclick='() => SelectSex("Male")'>Male</li>
+                                <li class="sv-custom-select-item" @onclick='() => SelectSex("Female")'>Female</li>
+                                <li class="sv-custom-select-item" @onclick='() => SelectSex("Other")'>Other</li>
+                            </ul>
+                        }
+                    </div>
                     <ValidationMessage For="@(() => verificationModel.Sex)" />
                 </div>
                 <div class="sv-field sv-field-vertical">
@@ -210,16 +222,26 @@
                 <ValidationMessage For="@(() => verificationModel.Program)" />
             </div>
             <div class="sv-field sv-field-vertical">
-                <label for="yearLevel" class="sv-field-label">Year Level <span class="sv-required">*</span></label>
-                <InputSelect id="yearLevel" class="sv-input" @bind-Value="verificationModel.YearLevel">
-                    <option value="">Select year level</option>
-                    <option value="1st Year">1st Year</option>
-                    <option value="2nd Year">2nd Year</option>
-                    <option value="3rd Year">3rd Year</option>
-                    <option value="4th Year">4th Year</option>
-                    <option value="5th Year">5th Year</option>
-                    <option value="Other">Other</option>
-                </InputSelect>
+                <label for="yearLevelDropdown" class="sv-field-label">Year Level <span class="sv-required">*</span></label>
+                <div class="sv-custom-select @(ShowYearLevelDropdown ? "sv-custom-select-open" : null)" tabindex="0"
+                     @onclick="ToggleYearLevelDropdown"
+                     @onblur="CloseYearLevelDropdown"
+                     id="yearLevelDropdown">
+                    <span class="sv-custom-select-value">@SelectedYearLevelText</span>
+                    <svg class="sv-custom-select-arrow" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+                    @if (ShowYearLevelDropdown)
+                    {
+                        <ul class="sv-custom-select-list">
+                            <li class="sv-custom-select-item" @onclick='() => SelectYearLevel("")'>Select year level</li>
+                            <li class="sv-custom-select-item" @onclick='() => SelectYearLevel("1st Year")'>1st Year</li>
+                            <li class="sv-custom-select-item" @onclick='() => SelectYearLevel("2nd Year")'>2nd Year</li>
+                            <li class="sv-custom-select-item" @onclick='() => SelectYearLevel("3rd Year")'>3rd Year</li>
+                            <li class="sv-custom-select-item" @onclick='() => SelectYearLevel("4th Year")'>4th Year</li>
+                            <li class="sv-custom-select-item" @onclick='() => SelectYearLevel("5th Year")'>5th Year</li>
+                            <li class="sv-custom-select-item" @onclick='() => SelectYearLevel("Other")'>Other</li>
+                        </ul>
+                    }
+                </div>
                 <ValidationMessage For="@(() => verificationModel.YearLevel)" />
             </div>
             <div class="sv-field sv-field-vertical">
@@ -555,9 +577,16 @@
             ShowInstitutionDropdown = false;
         }
 
-        // Sex Dropdown
+        // Sex Dropdown (custom)
         private bool ShowSexDropdown = false;
-        private string SelectedSex = string.Empty;
+        private string SelectedSex
+        {
+            get => verificationModel.Sex;
+            set
+            {
+                verificationModel.Sex = value;
+            }
+        }
         private string SelectedSexText => string.IsNullOrEmpty(SelectedSex) ? "Select sex" : SelectedSex;
         private void ToggleSexDropdown() => ShowSexDropdown = !ShowSexDropdown;
         private void CloseSexDropdown() => ShowSexDropdown = false;
