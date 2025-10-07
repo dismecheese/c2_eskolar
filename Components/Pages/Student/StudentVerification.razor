@@ -116,24 +116,29 @@
     <!-- Personal Information Section -->
     <section class="sv-card sv-card-elevated">
         <div class="sv-section-title">Personal Information</div>
-        <div class="sv-form-grid">
-            <div class="sv-field sv-field-vertical sv-field-full">
-                <label for="firstName" class="sv-field-label">First Name <span class="sv-required">*</span></label>
-                <InputText id="firstName" class="sv-input" placeholder="Enter your first name" @bind-Value="verificationModel.FirstName" />
-                <ValidationMessage For="@(() => verificationModel.FirstName)" />
-            </div>
-            <div class="sv-field sv-field-vertical sv-field-full">
-                <label for="middleName" class="sv-field-label">Middle Name</label>
-                <InputText id="middleName" class="sv-input" placeholder="Enter your middle name" @bind-Value="verificationModel.MiddleName" />
-                <ValidationMessage For="@(() => verificationModel.MiddleName)" />
-            </div>
-            <div class="sv-field sv-field-vertical sv-field-full">
-                <label for="lastName" class="sv-field-label">Last Name <span class="sv-required">*</span></label>
-                <InputText id="lastName" class="sv-input" placeholder="Enter your last name" @bind-Value="verificationModel.LastName" />
-                <ValidationMessage For="@(() => verificationModel.LastName)" />
-            </div>
-            <div class="sv-field-full sv-row-2col">
+        <div class="sv-form-grid-personal">
+            <!-- Name Row: First Name (wider), Middle Name (shorter), Last Name (wider) -->
+            <div class="sv-field-name-row">
                 <div class="sv-field sv-field-vertical">
+                    <label for="firstName" class="sv-field-label">First Name <span class="sv-required">*</span></label>
+                    <InputText id="firstName" class="sv-input" placeholder="Enter your first name" @bind-Value="verificationModel.FirstName" />
+                    <ValidationMessage For="@(() => verificationModel.FirstName)" />
+                </div>
+                <div class="sv-field sv-field-vertical">
+                    <label for="middleName" class="sv-field-label">Middle Name</label>
+                    <InputText id="middleName" class="sv-input" placeholder="Middle name" @bind-Value="verificationModel.MiddleName" />
+                    <ValidationMessage For="@(() => verificationModel.MiddleName)" />
+                </div>
+                <div class="sv-field sv-field-vertical">
+                    <label for="lastName" class="sv-field-label">Last Name <span class="sv-required">*</span></label>
+                    <InputText id="lastName" class="sv-input" placeholder="Enter your last name" @bind-Value="verificationModel.LastName" />
+                    <ValidationMessage For="@(() => verificationModel.LastName)" />
+                </div>
+            </div>
+            
+            <!-- Compact Row: Sex and Birthday -->
+            <div class="sv-field-compact-row">
+                <div class="sv-field sv-field-vertical sv-field-short">
                     <label for="sex" class="sv-field-label">Sex <span class="sv-required">*</span></label>
                     <InputSelect id="sex" class="sv-input" @bind-Value="verificationModel.Sex">
                         <option value="">Select sex</option>
@@ -149,7 +154,9 @@
                     <ValidationMessage For="@(() => verificationModel.BirthDate)" />
                 </div>
             </div>
-            <div class="sv-field-full sv-row-2col">
+            
+            <!-- Contact Row: Nationality (wider) and Contact Number (shorter) -->
+            <div class="sv-field-contact-row">
                 <div class="sv-field sv-field-vertical">
                     <label for="nationality" class="sv-field-label">Nationality <span class="sv-required">*</span></label>
                     <InputText id="nationality" class="sv-input" placeholder="Enter your nationality" @bind-Value="verificationModel.Nationality" />
@@ -161,6 +168,8 @@
                     <ValidationMessage For="@(() => verificationModel.Phone)" />
                 </div>
             </div>
+            
+            <!-- Full Width Fields -->
             <div class="sv-field sv-field-vertical sv-field-full">
                 <label for="address" class="sv-field-label">Address <span class="sv-required">*</span></label>
                 <InputText id="address" class="sv-input" placeholder="Enter your complete address" @bind-Value="verificationModel.PermanentAddress" />

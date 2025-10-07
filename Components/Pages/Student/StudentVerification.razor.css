@@ -198,6 +198,43 @@
     grid-column: 1 / -1;
 }
 
+/* Field Layout Classes for Personal Information */
+.sv-form-grid-personal {
+    display: grid;
+    grid-template-columns: 2fr 1.5fr 2fr;
+    gap: 1.5rem 2rem;
+    align-items: start;
+    flex: 1;
+}
+
+.sv-form-grid-personal .sv-field-name-row {
+    display: contents;
+}
+
+.sv-form-grid-personal .sv-field-compact-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-column: 1 / -1;
+    gap: 2rem;
+    align-items: start;
+}
+
+.sv-form-grid-personal .sv-field-compact-row .sv-field-short {
+    min-width: 0;
+}
+
+.sv-form-grid-personal .sv-field-contact-row {
+    display: grid;
+    grid-template-columns: 1.5fr 1fr;
+    grid-column: 1 / -1;
+    gap: 2rem;
+    align-items: start;
+}
+
+.sv-form-grid-personal .sv-field-full {
+    grid-column: 1 / -1;
+}
+
 /* Fields */
 .sv-field-vertical {
     display: flex;
@@ -509,6 +546,17 @@
     }
     
     .sv-form-grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+    
+    .sv-form-grid-personal {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+    
+    .sv-form-grid-personal .sv-field-compact-row,
+    .sv-form-grid-personal .sv-field-contact-row {
         grid-template-columns: 1fr;
         gap: 1rem;
     }
