@@ -48,6 +48,7 @@ namespace c2_eskolar.Controllers
                         "Student" => "/dashboard/student",
                         "Benefactor" => "/dashboard/benefactor",
                         "Institution" => "/dashboard/institution",
+                        "SuperAdmin" => "/dashboard/superadmin",
                         _ => "/dashboard/student"
                     };
 
@@ -93,6 +94,21 @@ namespace c2_eskolar.Controllers
             {
                 Console.WriteLine($"[AuthController] Exception: {ex.Message}");
                 return Redirect("/login?error=exception");
+            }
+        }
+
+        [HttpGet("logout")]
+        public async Task<IActionResult> Logout()
+        {
+            try
+            {
+                await _authService.LogoutAsync();
+                return Redirect("/login?success=logged-out");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[AuthController] Logout error: {ex.Message}");
+                return Redirect("/login");
             }
         }
     }
