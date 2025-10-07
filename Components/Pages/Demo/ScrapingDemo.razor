@@ -1,6 +1,9 @@
 @page "/demo/scraping"
+@attribute [Authorize(Roles = "SuperAdmin")]
+@layout Layout.SuperAdminDashLayout
 @inject c2_eskolar.Services.WebScraping.IWebScrapingService WebScrapingService
 @using c2_eskolar.Services.WebScraping
+@using Microsoft.AspNetCore.Authorization
 
 <div class="container-fluid p-4">
     <div class="row mb-4">

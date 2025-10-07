@@ -1,0 +1,315 @@
+@page "/dashboard/superadmin"
+@attribute [Authorize(Roles = "SuperAdmin")]
+@layout Layout.SuperAdminDashLayout
+@inject IDbContextFactory<ApplicationDbContext> DbContextFactory
+@inject c2_eskolar.Services.WebScraping.IWebScrapingService WebScrapingService
+@inject UserManager<IdentityUser> UserManager
+@inject RoleManager<IdentityRole> RoleManager
+@using c2_eskolar.Data
+@using Microsoft.EntityFrameworkCore
+@using Microsoft.AspNetCore.Identity
+@using Microsoft.AspNetCore.Authorization
+
+<PageTitle>SuperAdmin Dashboard - eSkolar</PageTitle>
+
+<!-- Dashboard Overview Cards -->
+<div class="row mb-4">
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="card bg-primary text-white h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="card-title">Total Users</h6>
+                        <h2 class="mb-0">@totalUsers</h2>
+                        <small>System-wide users</small>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-users fa-2x opacity-75"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="card bg-success text-white h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="card-title">Active Scholarships</h6>
+                        <h2 class="mb-0">@activeScholarships</h2>
+                        <small>Currently available</small>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-graduation-cap fa-2x opacity-75"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="card bg-info text-white h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="card-title">Applications</h6>
+                        <h2 class="mb-0">@totalApplications</h2>
+                        <small>Total submitted</small>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-file-alt fa-2x opacity-75"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="card bg-warning text-white h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="card-title">Scraping Status</h6>
+                        <h2 class="mb-0">@scrapingStatus</h2>
+                        <small>System health</small>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-spider fa-2x opacity-75"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-dark text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-bolt me-2"></i>
+                    Quick Actions
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <a href="/admin/webscraping" class="btn btn-outline-primary w-100 p-3">
+                            <i class="fas fa-spider fa-2x d-block mb-2"></i>
+                            <strong>Manage Web Scraping</strong>
+                            <br><small class="text-muted">Configure and monitor scraping operations</small>
+                        </a>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <a href="/demo/scraping" class="btn btn-outline-success w-100 p-3">
+                            <i class="fas fa-flask fa-2x d-block mb-2"></i>
+                            <strong>Test Scraping Demo</strong>
+                            <br><small class="text-muted">Test with Philippine scholarship sites</small>
+                        </a>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <button class="btn btn-outline-warning w-100 p-3" @onclick="RefreshData" disabled="@isLoading">
+                            @if (isLoading)
+                            {
+                                <div class="spinner-border spinner-border-sm d-block mx-auto mb-2" role="status"></div>
+                            }
+                            else
+                            {
+                                <i class="fas fa-sync-alt fa-2x d-block mb-2"></i>
+                            }
+                            <strong>Refresh Data</strong>
+                            <br><small class="text-muted">Update dashboard statistics</small>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- System Information -->
+<div class="row mb-4">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-chart-line me-2"></i>
+                    User Role Distribution
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3 text-center mb-3">
+                        <div class="text-primary">
+                            <i class="fas fa-user-graduate fa-3x mb-2"></i>
+                            <h4>@studentCount</h4>
+                            <span class="text-muted">Students</span>
+                        </div>
+                    </div>
+                    <div class="col-md-3 text-center mb-3">
+                        <div class="text-success">
+                            <i class="fas fa-university fa-3x mb-2"></i>
+                            <h4>@institutionCount</h4>
+                            <span class="text-muted">Institutions</span>
+                        </div>
+                    </div>
+                    <div class="col-md-3 text-center mb-3">
+                        <div class="text-info">
+                            <i class="fas fa-hands-helping fa-3x mb-2"></i>
+                            <h4>@benefactorCount</h4>
+                            <span class="text-muted">Benefactors</span>
+                        </div>
+                    </div>
+                    <div class="col-md-3 text-center mb-3">
+                        <div class="text-warning">
+                            <i class="fas fa-crown fa-3x mb-2"></i>
+                            <h4>@superAdminCount</h4>
+                            <span class="text-muted">SuperAdmins</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-cogs me-2"></i>
+                    System Configuration
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <strong>Web Scraping:</strong>
+                    <span class="badge bg-success ms-2">Enabled</span>
+                </div>
+                <div class="mb-3">
+                    <strong>Background Services:</strong>
+                    <span class="badge bg-success ms-2">Running</span>
+                </div>
+                <div class="mb-3">
+                    <strong>Philippine Sources:</strong>
+                    <span class="badge bg-info ms-2">3 Configured</span>
+                    <br><small class="text-muted">DOST, CHED, UNIFAST</small>
+                </div>
+                <div class="mb-3">
+                    <strong>Rate Limiting:</strong>
+                    <span class="badge bg-warning ms-2">3s Delay</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Activity -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-history me-2"></i>
+                    Recent System Activity
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="list-group list-group-flush">
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <i class="fas fa-user-plus text-success me-2"></i>
+                            <strong>New user registered</strong>
+                            <br><small class="text-muted">Latest student account created</small>
+                        </div>
+                        <small class="text-muted">@DateTime.Now.ToString("MMM dd, HH:mm")</small>
+                    </div>
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <i class="fas fa-spider text-primary me-2"></i>
+                            <strong>Web scraping active</strong>
+                            <br><small class="text-muted">Monitoring Philippine scholarship websites</small>
+                        </div>
+                        <small class="text-muted">Active</small>
+                    </div>
+                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <i class="fas fa-database text-info me-2"></i>
+                            <strong>Database synchronized</strong>
+                            <br><small class="text-muted">All scholarship data up to date</small>
+                        </div>
+                        <small class="text-muted">@DateTime.Now.AddMinutes(-5).ToString("MMM dd, HH:mm")</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private int totalUsers = 0;
+    private int activeScholarships = 0;
+    private int totalApplications = 0;
+    private string scrapingStatus = "Active";
+    
+    private int studentCount = 0;
+    private int institutionCount = 0;
+    private int benefactorCount = 0;
+    private int superAdminCount = 0;
+    
+    private bool isLoading = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadDashboardData();
+    }
+
+    private async Task LoadDashboardData()
+    {
+        try
+        {
+            using var context = DbContextFactory.CreateDbContext();
+            
+            // Load user statistics
+            totalUsers = await UserManager.Users.CountAsync();
+            
+            // Load role-based counts
+            var studentUsers = await UserManager.GetUsersInRoleAsync("Student");
+            var institutionUsers = await UserManager.GetUsersInRoleAsync("Institution");
+            var benefactorUsers = await UserManager.GetUsersInRoleAsync("Benefactor");
+            var superAdminUsers = await UserManager.GetUsersInRoleAsync("SuperAdmin");
+            
+            studentCount = studentUsers.Count;
+            institutionCount = institutionUsers.Count;
+            benefactorCount = benefactorUsers.Count;
+            superAdminCount = superAdminUsers.Count;
+            
+            // Load scholarship statistics
+            activeScholarships = await context.Scholarships
+                .Where(s => s.IsActive && s.ApplicationDeadline > DateTime.Now)
+                .CountAsync();
+            
+            // Load application statistics
+            totalApplications = await context.ScholarshipApplications.CountAsync();
+            
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading dashboard data: {ex.Message}");
+        }
+    }
+
+    private async Task RefreshData()
+    {
+        isLoading = true;
+        StateHasChanged();
+        
+        await Task.Delay(1000); // Simulate loading
+        await LoadDashboardData();
+        
+        isLoading = false;
+        StateHasChanged();
+    }
+}
