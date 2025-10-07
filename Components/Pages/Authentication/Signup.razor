@@ -17,43 +17,29 @@
             <h2>Welcome to eSkolar!</h2>
             <p class="role-label">Please select your role:</p>
 
-            <div class="role-options-wrapper">
-                <div class="role-options">
-                    <!-- Student role -->
-                    <label class="role-option">
-                        <input type="radio" name="role" value="@UserRole.Student" 
-                                   @onchange="OnRoleChangedStudent"
-                                   checked="@(registerModel.UserRole == UserRole.Student)" />
-                        <span>Student</span>
-                    </label>
-
-                    <!-- Institution role -->
-                    <label class="role-option">
-                        <input type="radio" name="role" value="@UserRole.Institution" 
-                                   @onchange="OnRoleChangedInstitution"
-                                   checked="@(registerModel.UserRole == UserRole.Institution)" />
-                        <span>Institution</span>
-                    </label>
-
-                    <!-- Benefactor role -->
-                    <label class="role-option">
-                        <input type="radio" name="role" value="@UserRole.Benefactor" 
-                                   @onchange="OnRoleChangedBenefactor"
-                                   checked="@(registerModel.UserRole == UserRole.Benefactor)" />
-                        <span>Benefactor</span>
-                    </label>
-                </div>
-
-                @if (registerModel.UserRole == UserRole.Institution || registerModel.UserRole == UserRole.Benefactor)
-                {
-                    <div class="institution-note">
-                        <span class="info-icon" aria-label="Info">
-                            <svg width="16" height="16" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" style="vertical-align: middle; margin-right: 5px;"><circle cx="10" cy="10" r="9" stroke="#fff" stroke-width="2" fill="none"/><rect x="9" y="8" width="2" height="6" rx="1" fill="#fff"/><rect x="9" y="5" width="2" height="2" rx="1" fill="#fff"/></svg>
+                <div class="role-options-wrapper">
+                    <div class="form-group signup-dropdown-wrapper" style="position:relative;">
+                        <select class="signup-input signup-dropdown" @onchange="OnRoleDropdownChanged" value="@registerModel.UserRole">
+                            <option value="@UserRole.Student">Student</option>
+                            <option value="@UserRole.Institution">Institution</option>
+                            <option value="@UserRole.Benefactor">Benefactor</option>
+                        </select>
+                        <span class="dropdown-icon">
+                            <svg width="22" height="22" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M6 8l4 4 4-4" stroke="#6366f1" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
                         </span>
-                        <span>Only official organizational email addresses are eligible for registration.</span>
                     </div>
-                }
-            </div>
+                    @if (registerModel.UserRole == UserRole.Institution || registerModel.UserRole == UserRole.Benefactor)
+                    {
+                        <div class="institution-note">
+                            <span class="info-icon" aria-label="Info">
+                                <svg width="16" height="16" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" style="vertical-align: middle; margin-right: 5px;"><circle cx="10" cy="10" r="9" stroke="#fff" stroke-width="2" fill="none"/><rect x="9" y="8" width="2" height="6" rx="1" fill="#fff"/><rect x="9" y="5" width="2" height="2" rx="1" fill="#fff"/></svg>
+                            </span>
+                            <span>Only official organizational email addresses are eligible for registration.</span>
+                        </div>
+                    }
+                </div>
         </div>
 
          <!-- RIGHT SIDE: SIGNUP FORM -->
@@ -116,10 +102,28 @@
                                 alt="@(showPassword ? "Hide password" : "Show password")" />
                         </button>
                     </div>
+                    <ValidationMessage For="@(() => registerModel.Password)" />
+                </div>
+                <!-- Confirm Password with toggle -->
+                <div class="form-group">
+                    <div class="password-wrapper">
+                        <input class="signup-input @(IsConfirmPasswordValid ? "pw-valid" : (confirmPassword?.Length > 0 ? "pw-invalid" : ""))"
+                            type="@(showConfirmPassword ? "text" : "password")"
+                            placeholder="Confirm Password" 
+                            @bind="confirmPassword"
+                            @oninput="OnConfirmPasswordInput" />
+                        <button type="button" class="password-toggle" @onclick="ToggleConfirmPassword">
+                            <img src="@(showConfirmPassword ? "/images/eye.svg" : "/images/eyeX.svg")" 
+                                alt="@(showConfirmPassword ? "Hide password" : "Show password")" />
+                        </button>
+                    </div>
                     <div class="password-hint">
                         Password must be at least 6 characters, contain at least one digit and one uppercase letter.
                     </div>
-                    <ValidationMessage For="@(() => registerModel.Password)" />
+                    @if (!string.IsNullOrEmpty(confirmPassword) && !IsConfirmPasswordValid)
+                    {
+                        <div class="validation-message">Passwords do not match.</div>
+                    }
                 </div>
                 <!-- Terms and conditions -->
                 <label class="terms-label">
@@ -127,10 +131,13 @@
                     <span>
                         I agree to the
                         <a href="/terms-and-conditions" target="_blank" rel="noopener noreferrer">Terms &amp; Conditions</a>
+                        and
+                        <a href="/privacy-policy" target="_blank" rel="noopener noreferrer">Privacy Policy</a>
                     </span>
                 </label>
+
                 <!-- Submit button -->
-                <button type="submit" class="btn btn-primary signup-btn" disabled="@(!registerModel.AgreeToTerms || isLoading)">
+                <button type="submit" class="btn btn-primary signup-btn" disabled="@(!registerModel.AgreeToTerms || isLoading || !IsConfirmPasswordValid)">
                     @if (isLoading)
                     {
                         <span>Creating Account...</span>
@@ -154,15 +161,24 @@
     // True if institution email is valid and role is Institution
     private bool ShowInstitutionEmailValid => registerModel.UserRole == UserRole.Institution && !string.IsNullOrEmpty(registerModel.Email) && IsInstitutionEmail(registerModel.Email);
 
-    private void OnRoleChangedStudent(ChangeEventArgs e) => OnRoleChanged(UserRole.Student);
-    private void OnRoleChangedInstitution(ChangeEventArgs e) => OnRoleChanged(UserRole.Institution);
-    private void OnRoleChangedBenefactor(ChangeEventArgs e) => OnRoleChanged(UserRole.Benefactor);
+    // Dropdown change handler
+    private void OnRoleDropdownChanged(ChangeEventArgs e)
+    {
+        if (Enum.TryParse<UserRole>(e.Value?.ToString(), out var selectedRole))
+        {
+            OnRoleChanged(selectedRole);
+        }
+    }
     // Registration model bound to the form
     private RegisterViewModel registerModel = new();
     private EditContext? editContext;
     
     // Toggle password visibility
     private bool showPassword = false;
+    // Toggle confirm password visibility
+    private bool showConfirmPassword = false;
+    // Confirm password field
+    private string confirmPassword = string.Empty;
     // Track loading state
     private bool isLoading = false;
     // Store error messages
@@ -175,6 +191,9 @@
     private bool IsPasswordDigitValid => !string.IsNullOrEmpty(registerModel.Password) && registerModel.Password.Any(char.IsDigit);
     private bool IsPasswordUpperValid => !string.IsNullOrEmpty(registerModel.Password) && registerModel.Password.Any(char.IsUpper);
     private bool IsPasswordAllValid => IsPasswordLengthValid && IsPasswordDigitValid && IsPasswordUpperValid;
+    
+    // Confirm password validation
+    private bool IsConfirmPasswordValid => !string.IsNullOrEmpty(confirmPassword) && confirmPassword == registerModel.Password;
 
     // Institution email validation
     private bool ShowInstitutionEmailError => registerModel.UserRole == UserRole.Institution && !string.IsNullOrEmpty(registerModel.Email) && !IsInstitutionEmail(registerModel.Email);
@@ -210,6 +229,14 @@
         StateHasChanged();
     }
 
+    // Called on every confirm password input
+    private void OnConfirmPasswordInput(ChangeEventArgs e)
+    {
+        confirmPassword = e.Value?.ToString() ?? string.Empty;
+        // Trigger UI update for live feedback
+        StateHasChanged();
+    }
+
     // Method to clear all input fields except UserRole
     private void ClearRegisterModelFields()
     {
@@ -217,6 +244,7 @@
         registerModel.LastName = string.Empty;
         registerModel.Email = string.Empty;
         registerModel.Password = string.Empty;
+        confirmPassword = string.Empty;
         registerModel.AgreeToTerms = false;
         // Add any other fields that should be cleared here
     }
@@ -242,6 +270,12 @@
         showPassword = !showPassword;
     }
 
+    // Toggle confirm password visibility
+    private void ToggleConfirmPassword()
+    {
+        showConfirmPassword = !showConfirmPassword;
+    }
+
     // Handle form submission
     private async Task HandleRegistration()
     {
@@ -249,6 +283,13 @@
         if (registerModel.UserRole == UserRole.Institution && !IsInstitutionEmail(registerModel.Email))
         {
             errorMessage = "Please enter a valid institutional email address.";
+            return;
+        }
+        
+        // Prevent submission if passwords don't match
+        if (!IsConfirmPasswordValid)
+        {
+            errorMessage = "Passwords do not match.";
             return;
         }
         try
