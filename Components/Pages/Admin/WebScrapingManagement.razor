@@ -1,5 +1,5 @@
 @page "/admin/webscraping"
-@attribute [Authorize(Roles = "Admin")]
+@attribute [Authorize(Roles = "SuperAdmin")]
 @inject c2_eskolar.Services.WebScraping.IWebScrapingService WebScrapingService
 @inject IJSRuntime JSRuntime
 @inject ILogger<WebScrapingManagement> Logger

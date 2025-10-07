@@ -7,7 +7,7 @@ namespace c2_eskolar.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    [Authorize(Roles = "Admin")] // Only admins can trigger scraping
+    [Authorize(Roles = "SuperAdmin")] // Only super admins can trigger scraping
     public class ScrapingController : ControllerBase
     {
         private readonly IWebScrapingService _scrapingService;
