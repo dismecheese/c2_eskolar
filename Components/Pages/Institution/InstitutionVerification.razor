@@ -1,143 +1,425 @@
+@using System.ComponentModel.DataAnnotations
 @page "/institution/verification"
+@layout Layout.InstitutionDashLayout
 
-<div class="institution-verification-container">
-	<h2>Institution Verification</h2>
-	<p class="subtitle">Please complete the form below to verify your institution account.</p>
-
-	<!-- Email Verification Section -->
-	<div class="section">
-		<h3>Email Verification</h3>
-		<div class="form-group">
-			<span>Email Status: <strong>Unverified</strong></span>
-			<button class="btn btn-secondary" disabled>Verify Email</button>
-			<!-- Enable and wire up later -->
+<EditForm Model="verificationModel" OnValidSubmit="HandleValidSubmit">
+	<DataAnnotationsValidator />
+	<ValidationSummary />
+	<div class="dashboard-center-container">
+		<div class="sv-header">
+			<h2 id="sv-modal-title">Institution Verification</h2>
+			<div class="sv-divider"></div>
 		</div>
+
+		<!-- Institution Information Section -->
+		<section class="sv-card sv-card-elevated">
+			<div class="sv-section-title">Institution Information</div>
+			<div class="sv-form-grid">
+				<div class="sv-field sv-field-vertical sv-field-full">
+					<label for="institutionName" class="sv-field-label">Institution Name <span class="sv-required">*</span></label>
+					<InputText id="institutionName" class="sv-input" placeholder="Enter institution name" @bind-Value="verificationModel.InstitutionName" />
+					<ValidationMessage For="@(() => verificationModel.InstitutionName)" />
+				</div>
+				<div class="sv-field sv-field-vertical sv-field-full">
+					<label for="institutionType" class="sv-field-label">Type <span class="sv-required">*</span></label>
+					<InputSelect id="institutionType" class="sv-input" @bind-Value="verificationModel.InstitutionType">
+						<option value="">Select type</option>
+						<option value="University">University</option>
+						<option value="College">College</option>
+						<option value="Technical School">Technical School</option>
+						<option value="Other">Other</option>
+					</InputSelect>
+					<ValidationMessage For="@(() => verificationModel.InstitutionType)" />
+				</div>
+				<div class="sv-field sv-field-vertical sv-field-full">
+					<label for="address" class="sv-field-label">Address <span class="sv-required">*</span></label>
+					<InputText id="address" class="sv-input" placeholder="Enter address" @bind-Value="verificationModel.Address" />
+					<ValidationMessage For="@(() => verificationModel.Address)" />
+				</div>
+				<div class="sv-field sv-field-vertical sv-field-full">
+					<label for="contactNumber" class="sv-field-label">Contact Number <span class="sv-required">*</span></label>
+					<InputText id="contactNumber" class="sv-input" placeholder="Enter contact number" @bind-Value="verificationModel.ContactNumber" />
+					<ValidationMessage For="@(() => verificationModel.ContactNumber)" />
+				</div>
+				<div class="sv-field sv-field-vertical sv-field-full">
+					<label for="contactEmail" class="sv-field-label">Institution Contact Email <span class="sv-required">*</span></label>
+					<InputText id="contactEmail" class="sv-input" placeholder="Enter institution contact email" @bind-Value="verificationModel.ContactEmail" />
+					<ValidationMessage For="@(() => verificationModel.ContactEmail)" />
+				</div>
+				<div class="sv-field sv-field-vertical sv-field-full">
+					<label for="website" class="sv-field-label">Website</label>
+					<InputText id="website" class="sv-input" placeholder="Enter website URL" @bind-Value="verificationModel.Website" />
+					<ValidationMessage For="@(() => verificationModel.Website)" />
+				</div>
+				<div class="sv-field sv-field-vertical sv-field-full">
+					<label for="description" class="sv-field-label">Description</label>
+					<InputText id="description" class="sv-input" placeholder="Brief description/about institution" @bind-Value="verificationModel.Description" />
+					<ValidationMessage For="@(() => verificationModel.Description)" />
+				</div>
+			</div>
+		</section>
+
+		<!-- Admin Information Section -->
+		<section class="sv-card sv-card-elevated">
+			<div class="sv-section-title">Admin Information</div>
+			<div class="sv-form-grid">
+				<div class="sv-field sv-field-vertical sv-field-full">
+					<label for="adminFirstName" class="sv-field-label">Admin First Name <span class="sv-required">*</span></label>
+					<InputText id="adminFirstName" class="sv-input" placeholder="Enter admin first name" @bind-Value="verificationModel.AdminFirstName" />
+					<ValidationMessage For="@(() => verificationModel.AdminFirstName)" />
+				</div>
+				<div class="sv-field sv-field-vertical sv-field-full">
+					<label for="adminMiddleName" class="sv-field-label">Admin Middle Name</label>
+					<InputText id="adminMiddleName" class="sv-input" placeholder="Enter admin middle name" @bind-Value="verificationModel.AdminMiddleName" />
+					<ValidationMessage For="@(() => verificationModel.AdminMiddleName)" />
+				</div>
+				<div class="sv-field sv-field-vertical sv-field-full">
+					<label for="adminLastName" class="sv-field-label">Admin Last Name <span class="sv-required">*</span></label>
+					<InputText id="adminLastName" class="sv-input" placeholder="Enter admin last name" @bind-Value="verificationModel.AdminLastName" />
+					<ValidationMessage For="@(() => verificationModel.AdminLastName)" />
+				</div>
+				<div class="sv-field sv-field-vertical sv-field-full">
+					<label for="adminPosition" class="sv-field-label">Admin Position/Title</label>
+					<InputText id="adminPosition" class="sv-input" placeholder="Enter admin position/title" @bind-Value="verificationModel.AdminPosition" />
+					<ValidationMessage For="@(() => verificationModel.AdminPosition)" />
+				</div>
+				<div class="sv-field sv-field-vertical sv-field-full">
+					<label for="adminEmail" class="sv-field-label">Admin Email <span class="sv-required">*</span></label>
+					<InputText id="adminEmail" class="sv-input" placeholder="Enter admin email" @bind-Value="verificationModel.AdminEmail" />
+					<ValidationMessage For="@(() => verificationModel.AdminEmail)" />
+				</div>
+			</div>
+		</section>
+
+		<!-- Accreditation Section -->
+		<section class="sv-card sv-card-elevated">
+			<div class="sv-section-title">Accreditation</div>
+			<div class="sv-form-grid">
+				<div class="sv-field sv-field-vertical sv-field-full">
+					<label for="accreditation" class="sv-field-label">Accreditation</label>
+					<InputText id="accreditation" class="sv-input" placeholder="Accreditation (CHED, TESDA, etc.)" @bind-Value="verificationModel.Accreditation" />
+					<ValidationMessage For="@(() => verificationModel.Accreditation)" />
+				</div>
+			</div>
+		</section>
+
+		<!-- Document Upload Section -->
+		<section class="sv-card sv-card-elevated">
+			<div class="sv-section-title">Document Upload</div>
+			<div class="sv-upload-grid">
+				<div class="sv-upload-field">
+					<label for="adminValidationUploadInput" class="sv-field-label">Admin Validation Document <span class="sv-required">*</span></label>
+					<div class="sv-upload-area">
+						<InputFile id="adminValidationUploadInput" class="sv-file-input" accept="image/*,.pdf" OnChange="OnAdminValidationFileChange" />
+						<div class="sv-upload-placeholder">
+							<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+								<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+								<polyline points="14,2 14,8 20,8"></polyline>
+							</svg>
+							<span>@(AdminValidationUploadStatus ?? "Click to upload or drag and drop")</span>
+							<small>PNG, JPG or PDF (max. 5MB)</small>
+						</div>
+						@if (!string.IsNullOrEmpty(AdminValidationFileName))
+						{
+							<div class="sv-upload-preview">
+								<span>@AdminValidationFileName</span>
+								<button type="button" class="sv-remove-btn" @onclick="RemoveAdminValidationDocument">Remove</button>
+							</div>
+						}
+					</div>
+				</div>
+				<div class="sv-upload-field">
+					<label for="logoUploadInput" class="sv-field-label">Logo / Profile Picture <span class="sv-required">*</span></label>
+					<div class="sv-upload-area">
+						<InputFile id="logoUploadInput" class="sv-file-input" accept="image/*" OnChange="OnLogoFileChange" />
+						<div class="sv-upload-placeholder">
+							<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+								<path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+							</svg>
+							<span>@(LogoUploadStatus ?? "Click to upload or drag and drop")</span>
+							<small>PNG, JPG (max. 5MB)</small>
+						</div>
+						@if (!string.IsNullOrEmpty(LogoFileName))
+						{
+							<div class="sv-upload-preview">
+								@if (!string.IsNullOrEmpty(LogoUploadUrl))
+								{
+									<img src="@LogoUploadUrl" alt="Logo preview" />
+								}
+								<span>@LogoFileName</span>
+								<button type="button" class="sv-remove-btn" @onclick="RemoveLogoDocument">Remove</button>
+							</div>
+						}
+					</div>
+				</div>
+			</div>
+		</section>
+
+		<!-- Actions Section -->
+		<div class="sv-actions-container">
+			<div class="sv-actions-buttons">
+				<button type="submit" class="sv-btn sv-btn-primary" disabled="@(IsSubmitting || !IsFileUploadsValid)">Submit Verification</button>
+			</div>
+			<div class="sv-status-messages">
+				<div class="sv-status-info" style="display:none;">
+					<span>Status message placeholder</span>
+				</div>
+				<div class="sv-status-error" style="display:none;">
+					<span>Error message placeholder</span>
+				</div>
+			</div>
+		</div>
+
+		@code {
+			public class InstitutionVerificationModel
+			{
+				[Required(ErrorMessage = "Institution name is required.")]
+				public string InstitutionName { get; set; } = string.Empty;
+
+				public string? InstitutionType { get; set; } = string.Empty;
+
+				[Required(ErrorMessage = "Address is required.")]
+				public string Address { get; set; } = string.Empty;
+
+				public string? Website { get; set; } = string.Empty;
+
+				public string? Description { get; set; } = string.Empty;
+
+				[Required(ErrorMessage = "Contact number is required.")]
+				public string ContactNumber { get; set; } = string.Empty;
+
+				[Required(ErrorMessage = "Contact email is required.")]
+				[EmailAddress(ErrorMessage = "Invalid email address.")]
+				public string ContactEmail { get; set; } = string.Empty;
+
+				// Admin fields
+				[Required(ErrorMessage = "Admin first name is required.")]
+				public string AdminFirstName { get; set; } = string.Empty;
+
+				public string? AdminMiddleName { get; set; } = string.Empty;
+
+				[Required(ErrorMessage = "Admin last name is required.")]
+				public string AdminLastName { get; set; } = string.Empty;
+
+				public string? AdminPosition { get; set; } = string.Empty;
+
+				[Required(ErrorMessage = "Admin email is required.")]
+				[EmailAddress(ErrorMessage = "Invalid email address.")]
+				public string AdminEmail { get; set; } = string.Empty;
+
+				[Required(ErrorMessage = "Admin contact number is required.")]
+				public string AdminContactNumber { get; set; } = string.Empty;
+
+				public string? Accreditation { get; set; } = string.Empty;
+			}
+
+			private bool IsFileUploadsValid => !string.IsNullOrEmpty(AdminValidationUploadUrl) && !string.IsNullOrEmpty(LogoUploadUrl);
+
+			private InstitutionVerificationModel verificationModel = new InstitutionVerificationModel();
+			private bool IsSubmitting = false;
+			private string ProfileErrorMessage = "";
+
+			// Upload status and file names
+			private string? AdminValidationFileName;
+			private string? LogoFileName;
+			private string? AdminValidationUploadUrl;
+			private string? LogoUploadUrl;
+			private string? AdminValidationUploadStatus;
+			private string? LogoUploadStatus;
+
+			[Inject] private HttpClient Http { get; set; } = default!;
+			[Inject] private Services.InstitutionProfileService InstitutionProfileService { get; set; } = default!;
+			[Inject] private AuthenticationStateProvider AuthenticationStateProvider { get; set; } = default!;
+
+			private async Task HandleValidSubmit()
+			{
+				if (IsSubmitting) return;
+				IsSubmitting = true;
+				ProfileErrorMessage = "";
+				try
+				{
+					var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+					var userId = authState.User?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+					if (string.IsNullOrWhiteSpace(userId))
+					{
+						ProfileErrorMessage = "User not found.";
+						IsSubmitting = false;
+						return;
+					}
+
+					var institutionProfile = await InstitutionProfileService.GetProfileByUserIdAsync(userId) ?? new c2_eskolar.Models.InstitutionProfile {
+						UserId = userId,
+						InstitutionName = verificationModel.InstitutionName,
+						AdminFirstName = verificationModel.AdminFirstName,
+						AdminLastName = verificationModel.AdminLastName
+					};
+
+					institutionProfile.InstitutionName = verificationModel.InstitutionName;
+					institutionProfile.InstitutionType = verificationModel.InstitutionType;
+					institutionProfile.Address = verificationModel.Address;
+					institutionProfile.ContactNumber = verificationModel.ContactNumber;
+					institutionProfile.ContactEmail = verificationModel.ContactEmail;
+					institutionProfile.Website = verificationModel.Website;
+					institutionProfile.Description = verificationModel.Description;
+					institutionProfile.AdminFirstName = verificationModel.AdminFirstName;
+					institutionProfile.AdminMiddleName = verificationModel.AdminMiddleName;
+					institutionProfile.AdminLastName = verificationModel.AdminLastName;
+					institutionProfile.AdminPosition = verificationModel.AdminPosition;
+					institutionProfile.Accreditation = verificationModel.Accreditation;
+					institutionProfile.Logo = LogoUploadUrl;
+					institutionProfile.ProfilePicture = LogoUploadUrl;
+					institutionProfile.AdminValidationDocument = AdminValidationUploadUrl;
+					institutionProfile.VerificationStatus = "Pending";
+
+					await InstitutionProfileService.SaveProfileAsync(institutionProfile);
+					ProfileErrorMessage = "Verification submitted successfully!";
+				}
+				catch (Exception ex)
+				{
+					ProfileErrorMessage = $"Error submitting verification: {ex.Message}";
+				}
+				IsSubmitting = false;
+			}
+
+			private async Task RemoveAdminValidationDocument()
+			{
+				if (string.IsNullOrEmpty(AdminValidationUploadUrl)) return;
+				try
+				{
+					var uri = new Uri(AdminValidationUploadUrl);
+					var fileName = uri.Segments[^1];
+					var response = await Http.DeleteAsync($"/api/document/{fileName}");
+					if (response.IsSuccessStatusCode)
+					{
+						AdminValidationFileName = null;
+						AdminValidationUploadUrl = null;
+						AdminValidationUploadStatus = null;
+					}
+					else
+					{
+						AdminValidationUploadStatus = "Remove failed.";
+					}
+				}
+				catch (Exception ex)
+				{
+					AdminValidationUploadStatus = $"Error: {ex.Message}";
+				}
+			}
+			private async Task RemoveLogoDocument()
+			{
+				if (string.IsNullOrEmpty(LogoUploadUrl)) return;
+				try
+				{
+					var uri = new Uri(LogoUploadUrl);
+					var fileName = uri.Segments[^1];
+					var response = await Http.DeleteAsync($"/api/document/{fileName}");
+					if (response.IsSuccessStatusCode)
+					{
+						LogoFileName = null;
+						LogoUploadUrl = null;
+						LogoUploadStatus = null;
+					}
+					else
+					{
+						LogoUploadStatus = "Remove failed.";
+					}
+				}
+				catch (Exception ex)
+				{
+					LogoUploadStatus = $"Error: {ex.Message}";
+				}
+			}
+			private async Task OnAdminValidationFileChange(Microsoft.AspNetCore.Components.Forms.InputFileChangeEventArgs e)
+			{
+				var file = e.File;
+				if (file == null) return;
+				AdminValidationFileName = file.Name;
+				AdminValidationUploadStatus = "Uploading...";
+				try
+				{
+					var content = new MultipartFormDataContent();
+					var stream = file.OpenReadStream(5 * 1024 * 1024);
+					content.Add(new StreamContent(stream), "file", file.Name);
+					content.Add(new StringContent("AdminValidation"), "docType");
+					var response = await Http.PostAsync("/api/document/upload", content);
+					if (response.IsSuccessStatusCode)
+					{
+						var result = await response.Content.ReadFromJsonAsync<UploadResult>();
+						AdminValidationUploadUrl = result?.url;
+						AdminValidationUploadStatus = "Uploaded!";
+					}
+					else
+					{
+						AdminValidationUploadStatus = "Upload failed.";
+					}
+				}
+				catch (Exception ex)
+				{
+					AdminValidationUploadStatus = $"Error: {ex.Message}";
+				}
+			}
+			private async Task OnLogoFileChange(Microsoft.AspNetCore.Components.Forms.InputFileChangeEventArgs e)
+			{
+				var file = e.File;
+				if (file == null) return;
+				LogoFileName = file.Name;
+				LogoUploadStatus = "Uploading...";
+				try
+				{
+					var content = new MultipartFormDataContent();
+					var stream = file.OpenReadStream(5 * 1024 * 1024);
+					content.Add(new StreamContent(stream), "file", file.Name);
+					content.Add(new StringContent("Logo"), "docType");
+					var response = await Http.PostAsync("/api/document/upload", content);
+					if (response.IsSuccessStatusCode)
+					{
+						var result = await response.Content.ReadFromJsonAsync<UploadResult>();
+						LogoUploadUrl = result?.url;
+						LogoUploadStatus = "Uploaded!";
+					}
+					else
+					{
+						LogoUploadStatus = "Upload failed.";
+					}
+				}
+				catch (Exception ex)
+				{
+					LogoUploadStatus = $"Error: {ex.Message}";
+				}
+			}
+			public class UploadResult { public string? url { get; set; } }
+
+			protected override async Task OnInitializedAsync()
+			{
+				// Load existing institution profile data if available
+				var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+				var userId = authState.User?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+				if (!string.IsNullOrWhiteSpace(userId))
+				{
+					var profile = await InstitutionProfileService.GetProfileByUserIdAsync(userId);
+					if (profile != null)
+					{
+						// Pre-populate form with existing data
+						verificationModel.InstitutionName = profile.InstitutionName ?? string.Empty;
+						verificationModel.InstitutionType = profile.InstitutionType ?? string.Empty;
+						verificationModel.Address = profile.Address ?? string.Empty;
+						verificationModel.ContactNumber = profile.ContactNumber ?? string.Empty;
+						verificationModel.ContactEmail = profile.ContactEmail ?? string.Empty;
+						verificationModel.Website = profile.Website ?? string.Empty;
+						verificationModel.Description = profile.Description ?? string.Empty;
+						verificationModel.AdminFirstName = profile.AdminFirstName ?? string.Empty;
+						verificationModel.AdminMiddleName = profile.AdminMiddleName ?? string.Empty;
+						verificationModel.AdminLastName = profile.AdminLastName ?? string.Empty;
+						verificationModel.AdminPosition = profile.AdminPosition ?? string.Empty;
+						verificationModel.AdminEmail = profile.ContactEmail ?? string.Empty; // Use institution contact email as admin email default
+						verificationModel.Accreditation = profile.Accreditation ?? string.Empty;
+						
+						// Set upload URLs if documents exist
+						AdminValidationUploadUrl = profile.AdminValidationDocument;
+						LogoUploadUrl = profile.ProfilePicture;
+					}
+				}
+			}
+		}
 	</div>
-
-	<!-- Personal Info Section -->
-	<div class="section">
-		<h3>Personal Information</h3>
-		<div class="form-row">
-			<input class="input" type="text" placeholder="First Name" />
-			<input class="input" type="text" placeholder="Middle Name" />
-			<input class="input" type="text" placeholder="Last Name" />
-		</div>
-		<div class="form-row">
-			<input class="input" type="text" placeholder="Position/Title" />
-			<input class="input" type="email" placeholder="Contact Email" />
-			<input class="input" type="text" placeholder="Contact Number" />
-		</div>
-		<div class="form-row">
-			<label>Upload Government-issued ID
-				<input class="input" type="file" />
-			</label>
-		</div>
-	</div>
-
-	<!-- Institution Info Section -->
-	<div class="section">
-		<h3>Institution Information</h3>
-		<div class="form-row">
-			<input class="input" type="text" placeholder="Institution Name" />
-			<input class="input" type="text" placeholder="Official Address" />
-		</div>
-		<div class="form-row">
-			<select class="input">
-				<option value="">Type of Institution</option>
-				<option>University</option>
-				<option>College</option>
-				<option>High School</option>
-				<option>Other</option>
-			</select>
-			<input class="input" type="text" placeholder="Website" />
-			<input class="input" type="text" placeholder="Institution Contact Number" />
-		</div>
-		<div class="form-row">
-			<input class="input" type="text" placeholder="Dean/Head Name" />
-			<input class="input" type="email" placeholder="Dean/Head Official Email" />
-		</div>
-		<div class="form-row">
-			<textarea class="input" placeholder="Brief Description/About" rows="2"></textarea>
-		</div>
-	</div>
-
-	<!-- Document Uploads Section -->
-	<div class="section">
-		<h3>Document Uploads</h3>
-		<div class="form-row">
-			<label>Letter of Authorization (signed by dean/head)
-				<input class="input" type="file" />
-			</label>
-		</div>
-		<div class="form-row">
-			<label>Other Supporting Documents (optional)
-				<input class="input" type="file" multiple />
-			</label>
-		</div>
-	</div>
-
-	<!-- Declaration and Submit -->
-	<div class="section">
-		<label class="declaration">
-			<input type="checkbox" />
-			I confirm that the information provided is accurate and I am authorized to represent this institution.
-		</label>
-		<button class="btn btn-primary" disabled>Submit</button>
-	</div>
-</div>
-
-<style>
-	.institution-verification-container {
-		max-width: 1000px;
-		margin: 2rem auto;
-		padding: 2.5rem 2rem;
-		background: #fff;
-		border-radius: 10px;
-		box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-	}
-	.section {
-		margin-bottom: 2rem;
-	}
-	.form-row {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 1rem;
-		margin-bottom: 1rem;
-	}
-	.input {
-		flex: 1 1 220px;
-		min-width: 180px;
-		padding: 0.5rem;
-		border: 1px solid #ccc;
-		border-radius: 5px;
-		box-sizing: border-box;
-	}
-	.btn {
-		padding: 0.5rem 1.5rem;
-		border: none;
-		border-radius: 5px;
-		background: #2563eb;
-		color: #fff;
-		cursor: pointer;
-		font-size: 1rem;
-	}
-	.btn-secondary {
-		background: #e0e7ef;
-		color: #222;
-		margin-left: 1rem;
-	}
-	.btn[disabled] {
-		opacity: 0.6;
-		cursor: not-allowed;
-	}
-	.declaration {
-		display: flex;
-		align-items: center;
-		gap: 0.5rem;
-		margin-bottom: 1rem;
-	}
-	.subtitle {
-		color: #555;
-		margin-bottom: 2rem;
-	}
-</style>
+</EditForm>
