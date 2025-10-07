@@ -6,8 +6,39 @@
 @using Microsoft.AspNetCore.Components.Authorization
 @using Microsoft.AspNetCore.Identity
 @using Microsoft.AspNetCore.Components.Forms
+@using Microsoft.EntityFrameworkCore
 
 <div class="container-fluid p-5 institution-profile-bg">
+    <!-- Error/Success Messages -->
+    @if (!string.IsNullOrWhiteSpace(_errorMessage))
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="fas fa-exclamation-triangle me-2"></i>@_errorMessage
+            <button type="button" class="btn-close" @onclick="() => _errorMessage = string.Empty"></button>
+        </div>
+    }
+    @if (!string.IsNullOrWhiteSpace(_successMessage))
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="fas fa-check-circle me-2"></i>@_successMessage
+            <button type="button" class="btn-close" @onclick="() => _successMessage = string.Empty"></button>
+        </div>
+    }
+    @if (!string.IsNullOrWhiteSpace(_institutionErrorMessage))
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="fas fa-exclamation-triangle me-2"></i>@_institutionErrorMessage
+            <button type="button" class="btn-close" @onclick="() => _institutionErrorMessage = string.Empty"></button>
+        </div>
+    }
+    @if (!string.IsNullOrWhiteSpace(_institutionSuccessMessage))
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="fas fa-check-circle me-2"></i>@_institutionSuccessMessage
+            <button type="button" class="btn-close" @onclick="() => _institutionSuccessMessage = string.Empty"></button>
+        </div>
+    }
+    
     <!-- Header Section -->
     <div class="row mb-4">
         <div class="col-12">
@@ -72,8 +103,9 @@
                     </div>
                     <div class="text-start mt-3">
                         <div class="mb-2"><span class="profile-label-bold">Role:</span> <span>@Role</span></div>
-                        <div class="mb-2"><span class="profile-label-bold">Phone:</span> <span>@Phone</span></div>
-                        <div class="mb-2"><span class="profile-label-bold">Location:</span> <span>@Location</span></div>
+                        <div class="mb-2"><span class="profile-label-bold">Phone:</span> <span>@AdminContactNumber</span></div>
+                        <div class="mb-2"><span class="profile-label-bold">Institution:</span> <span>@InstitutionName</span></div>
+                        <div class="mb-2"><span class="profile-label-bold">Location:</span> <span>@InstitutionAddress</span></div>
                         <div class="mb-0"><span class="profile-label-bold">Member since:</span> <span>@CreatedDate.ToString("MMM yyyy")</span></div>
                     </div>
                 </div>
@@ -156,15 +188,27 @@
                         <div class="row mb-2">
                             <div class="col-md-6 mb-3">
                                 <label class="profile-label-bold">First Name</label>
-                                <input class="form-control" @bind="AdminFirstName" />
+                                <input class="form-control @GetPersonalValidationErrorClass("AdminFirstName")" @bind="AdminFirstName" required />
+                                @if (!string.IsNullOrWhiteSpace(GetPersonalValidationMessage("AdminFirstName")))
+                                {
+                                    <div class="invalid-feedback d-block">@GetPersonalValidationMessage("AdminFirstName")</div>
+                                }
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label class="profile-label-bold">Middle Name</label>
-                                <input class="form-control" @bind="AdminMiddleName" />
+                                <input class="form-control @GetPersonalValidationErrorClass("AdminMiddleName")" @bind="AdminMiddleName" />
+                                @if (!string.IsNullOrWhiteSpace(GetPersonalValidationMessage("AdminMiddleName")))
+                                {
+                                    <div class="invalid-feedback d-block">@GetPersonalValidationMessage("AdminMiddleName")</div>
+                                }
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label class="profile-label-bold">Last Name</label>
-                                <input class="form-control" @bind="AdminLastName" />
+                                <input class="form-control @GetPersonalValidationErrorClass("AdminLastName")" @bind="AdminLastName" required />
+                                @if (!string.IsNullOrWhiteSpace(GetPersonalValidationMessage("AdminLastName")))
+                                {
+                                    <div class="invalid-feedback d-block">@GetPersonalValidationMessage("AdminLastName")</div>
+                                }
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label class="profile-label-bold">Sex</label>
@@ -176,15 +220,27 @@
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label class="profile-label-bold">Nationality</label>
-                                <input class="form-control" @bind="Nationality" />
+                                <input class="form-control @GetPersonalValidationErrorClass("Nationality")" @bind="Nationality" />
+                                @if (!string.IsNullOrWhiteSpace(GetPersonalValidationMessage("Nationality")))
+                                {
+                                    <div class="invalid-feedback d-block">@GetPersonalValidationMessage("Nationality")</div>
+                                }
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label class="profile-label-bold">Birth Date</label>
-                                <input type="date" class="form-control" @bind="BirthDate" />
+                                <input type="date" class="form-control @GetPersonalValidationErrorClass("BirthDate")" @bind="BirthDate" />
+                                @if (!string.IsNullOrWhiteSpace(GetPersonalValidationMessage("BirthDate")))
+                                {
+                                    <div class="invalid-feedback d-block">@GetPersonalValidationMessage("BirthDate")</div>
+                                }
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label class="profile-label-bold">Contact Number</label>
-                                <input class="form-control" @bind="ContactNumber" />
+                                <input class="form-control @GetPersonalValidationErrorClass("AdminContactNumber")" @bind="AdminContactNumber" required />
+                                @if (!string.IsNullOrWhiteSpace(GetPersonalValidationMessage("AdminContactNumber")))
+                                {
+                                    <div class="invalid-feedback d-block">@GetPersonalValidationMessage("AdminContactNumber")</div>
+                                }
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label class="profile-label-bold">Email</label>
@@ -192,7 +248,11 @@
                             </div>
                             <div class="col-md-12 mb-3">
                                 <label class="profile-label-bold">Address</label>
-                                <input class="form-control" @bind="Address" />
+                                <input class="form-control @GetPersonalValidationErrorClass("AdminAddress")" @bind="AdminAddress" />
+                                @if (!string.IsNullOrWhiteSpace(GetPersonalValidationMessage("AdminAddress")))
+                                {
+                                    <div class="invalid-feedback d-block">@GetPersonalValidationMessage("AdminAddress")</div>
+                                }
                             </div>
                         </div>
                     }
@@ -225,7 +285,7 @@
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label class="profile-label-bold">Contact Number</label>
-                                <div>@ContactNumber</div>
+                                <div>@AdminContactNumber</div>
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label class="profile-label-bold">Email</label>
@@ -233,7 +293,7 @@
                             </div>
                             <div class="col-md-12 mb-3">
                                 <label class="profile-label-bold">Address</label>
-                                <div>@Address</div>
+                                <div>@AdminAddress</div>
                             </div>
                         </div>
                     }
@@ -269,19 +329,35 @@
                         <div class="row mb-2">
                             <div class="col-md-6 mb-3">
                                 <label class="profile-label-bold">Institution Name</label>
-                                <input type="text" class="form-control" @bind="InstitutionName" />
+                                <input type="text" class="form-control @GetInstitutionalValidationErrorClass("InstitutionName")" @bind="InstitutionName" required />
+                                @if (!string.IsNullOrWhiteSpace(GetInstitutionalValidationMessage("InstitutionName")))
+                                {
+                                    <div class="invalid-feedback d-block">@GetInstitutionalValidationMessage("InstitutionName")</div>
+                                }
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label class="profile-label-bold">Institution Address</label>
-                                <input type="text" class="form-control" @bind="InstitutionAddress" />
+                                <input type="text" class="form-control @GetInstitutionalValidationErrorClass("InstitutionAddress")" @bind="InstitutionAddress" required />
+                                @if (!string.IsNullOrWhiteSpace(GetInstitutionalValidationMessage("InstitutionAddress")))
+                                {
+                                    <div class="invalid-feedback d-block">@GetInstitutionalValidationMessage("InstitutionAddress")</div>
+                                }
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label class="profile-label-bold">Institution Contact Number</label>
-                                <input type="text" class="form-control" @bind="InstitutionContactNumber" />
+                                <input type="text" class="form-control @GetInstitutionalValidationErrorClass("InstitutionContactNumber")" @bind="InstitutionContactNumber" />
+                                @if (!string.IsNullOrWhiteSpace(GetInstitutionalValidationMessage("InstitutionContactNumber")))
+                                {
+                                    <div class="invalid-feedback d-block">@GetInstitutionalValidationMessage("InstitutionContactNumber")</div>
+                                }
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label class="profile-label-bold">Institution Email</label>
-                                <input type="email" class="form-control" @bind="InstitutionEmail" />
+                                <input type="email" class="form-control @GetInstitutionalValidationErrorClass("InstitutionEmail")" @bind="InstitutionEmail" />
+                                @if (!string.IsNullOrWhiteSpace(GetInstitutionalValidationMessage("InstitutionEmail")))
+                                {
+                                    <div class="invalid-feedback d-block">@GetInstitutionalValidationMessage("InstitutionEmail")</div>
+                                }
                             </div>
                         </div>
                         <!-- Save button removed; use header Save button instead -->
@@ -326,13 +402,102 @@
     private void ToggleInstitutionEditMode()
     {
         IsInstitutionEditMode = !IsInstitutionEditMode;
+        if (!IsInstitutionEditMode)
+        {
+            // Clear validation errors when canceling edit mode
+            InstitutionValidationErrors.Clear();
+            _institutionErrorMessage = string.Empty;
+            _institutionSuccessMessage = string.Empty;
+        }
     }
 
-    private void SaveInstitutionalInfo()
+    private async Task SaveInstitutionalInfo()
     {
-        // TODO: Save institutional info to backend if needed
-        IsInstitutionEditMode = false;
+        // Clear previous messages
+        _institutionErrorMessage = string.Empty;
+        _institutionSuccessMessage = string.Empty;
+        
+        // Step 1: Validate all institutional fields before proceeding
+        if (!ValidateAllInstitutionalFields())
+        {
+            _institutionErrorMessage = "Please correct the validation errors before saving.";
+            StateHasChanged();
+            return;
+        }
+        
+        try
+        {
+            var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+            var user = await UserManager.GetUserAsync(authState.User);
+            if (user != null)
+            {
+                var profile = await InstitutionProfileService.GetProfileByUserIdAsync(user.Id);
+                if (profile != null)
+                {
+                    // Update institutional information with trimmed and sanitized values
+                    profile.InstitutionName = InstitutionName?.Trim() ?? "";
+                    profile.Address = string.IsNullOrWhiteSpace(InstitutionAddress) ? null : InstitutionAddress.Trim(); // Institution address goes to Address field
+                    profile.ContactNumber = string.IsNullOrWhiteSpace(InstitutionContactNumber) ? null : System.Text.RegularExpressions.Regex.Replace(InstitutionContactNumber.Trim(), @"[\s\-\(\)]", "");
+                    profile.ContactEmail = string.IsNullOrWhiteSpace(InstitutionEmail) ? null : InstitutionEmail.Trim();
+                    
+                    Console.WriteLine("Saving institutional information...");
+                    await InstitutionProfileService.SaveProfileAsync(profile);
+                    Console.WriteLine("Institutional profile saved successfully!");
+                    
+                    // Clear validation errors
+                    InstitutionValidationErrors.Clear();
+                    
+                    // Reload data to reflect changes in sidebar
+                    await LoadExtendedProfileData(user.Id);
+                    
+                    IsInstitutionEditMode = false;
+                    
+                    // Show success message
+                    _institutionSuccessMessage = "Institutional information updated successfully!";
+                    
+                    // Force UI update
+                    StateHasChanged();
+                    
+                    Console.WriteLine("Institutional information updated successfully!");
+                }
+                else
+                {
+                    _institutionErrorMessage = "Profile not found. Please refresh the page and try again.";
+                }
+            }
+            else
+            {
+                _institutionErrorMessage = "User session expired. Please login again.";
+            }
+        }
+        catch (ArgumentException argEx)
+        {
+            Console.WriteLine($"Validation error: {argEx.Message}");
+            _institutionErrorMessage = argEx.Message;
+        }
+        catch (DbUpdateException dbEx)
+        {
+            Console.WriteLine($"Database error: {dbEx.Message}");
+            _institutionErrorMessage = "Failed to save institutional information. Please check your input and try again.";
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error saving institutional info: {ex.Message}");
+            Console.WriteLine($"Stack trace: {ex.StackTrace}");
+            _institutionErrorMessage = "An unexpected error occurred while saving institutional information. Please try again.";
+        }
     }
+    // Error handling variables
+    private string _errorMessage = "";
+    private string _successMessage = "";
+    private string _institutionErrorMessage = "";
+    private string _institutionSuccessMessage = "";
+    
+    // Validation error properties (similar to Student profile)
+    private Dictionary<string, string> ValidationErrors = new();
+    private Dictionary<string, string> InstitutionValidationErrors = new();
+    private bool IsValidating = false;
+    
     // Edit mode state
     private bool IsEditMode = false;
     // Removed unused isLoading field
@@ -344,7 +509,12 @@
     private string Sex = "Male";
     private string Nationality = "";
     private DateTime BirthDate = DateTime.Now;
-    private string ContactNumber = "";
+    
+    // Personal contact info (admin personal info)
+    private string AdminContactNumber = ""; // Personal phone of admin
+    private string AdminAddress = ""; // Personal address of admin
+    
+    private string ContactNumber = ""; // For backward compatibility
     private string ContactEmail = "";
     private string Address = "";
     private string FullName = "";
@@ -487,17 +657,32 @@
             var profile = await InstitutionProfileService.GetProfileByUserIdAsync(userId);
             if (profile != null)
             {
+                // Admin Personal Information
                 AdminFirstName = profile.AdminFirstName ?? "";
                 AdminMiddleName = profile.AdminMiddleName ?? "";
                 AdminLastName = profile.AdminLastName ?? "";
                 Sex = profile.InstitutionType ?? "";
                 Nationality = profile.Accreditation ?? "";
                 BirthDate = profile.EstablishedDate ?? DateTime.Now;
+                
+                // Admin personal contact (we'll use AdminPosition field to store admin phone temporarily)
+                // This is a workaround until the model is updated with separate fields
+                AdminContactNumber = profile.AdminPosition ?? ""; // Temporary storage
+                AdminAddress = profile.Mission ?? ""; // Use Mission field for admin personal address temporarily
+                
+                FullName = profile.AdminFullName;
+                ProfilePicture = !string.IsNullOrWhiteSpace(profile.ProfilePicture) ? profile.ProfilePicture : "https://via.placeholder.com/120";
+                
+                // Institutional Information
+                InstitutionName = profile.InstitutionName ?? "";
+                InstitutionAddress = profile.Address ?? ""; // Institution address
+                InstitutionContactNumber = profile.ContactNumber ?? "";
+                InstitutionEmail = profile.ContactEmail ?? "";
+                
+                // Backward compatibility
                 ContactNumber = profile.ContactNumber ?? "";
                 ContactEmail = profile.ContactEmail ?? "";
                 Address = profile.Address ?? "";
-                FullName = profile.AdminFullName;
-                ProfilePicture = !string.IsNullOrWhiteSpace(profile.ProfilePicture) ? profile.ProfilePicture : "https://via.placeholder.com/120";
             }
         }
         catch (Exception ex)
@@ -506,87 +691,409 @@
         }
     }
 
+    // Validation methods (similar to Student profile)
+    private bool ValidatePersonalField(string fieldName, string value, string fieldDisplayName)
+    {
+        ValidationErrors.Remove(fieldName);
+        
+        switch (fieldName)
+        {
+            case "AdminFirstName":
+            case "AdminLastName":
+                if (string.IsNullOrWhiteSpace(value))
+                {
+                    ValidationErrors[fieldName] = $"{fieldDisplayName} is required.";
+                    return false;
+                }
+                if (!IsValidName(value))
+                {
+                    ValidationErrors[fieldName] = $"{fieldDisplayName} should only contain letters, spaces, hyphens, and apostrophes.";
+                    return false;
+                }
+                if (value.Length > 50)
+                {
+                    ValidationErrors[fieldName] = $"{fieldDisplayName} cannot exceed 50 characters.";
+                    return false;
+                }
+                break;
+                
+            case "AdminMiddleName":
+                if (!string.IsNullOrWhiteSpace(value) && !IsValidName(value))
+                {
+                    ValidationErrors[fieldName] = $"{fieldDisplayName} should only contain letters, spaces, hyphens, and apostrophes.";
+                    return false;
+                }
+                if (!string.IsNullOrWhiteSpace(value) && value.Length > 50)
+                {
+                    ValidationErrors[fieldName] = $"{fieldDisplayName} cannot exceed 50 characters.";
+                    return false;
+                }
+                break;
+                
+            case "AdminContactNumber":
+                if (string.IsNullOrWhiteSpace(value))
+                {
+                    ValidationErrors[fieldName] = "Contact Number is required.";
+                    return false;
+                }
+                if (!IsValidPhoneNumber(value))
+                {
+                    ValidationErrors[fieldName] = "Phone number should only contain numbers, spaces, hyphens, plus signs, and parentheses.";
+                    return false;
+                }
+                break;
+                
+            case "Nationality":
+                if (!string.IsNullOrWhiteSpace(value) && !IsValidName(value))
+                {
+                    ValidationErrors[fieldName] = "Nationality should only contain letters and spaces.";
+                    return false;
+                }
+                if (!string.IsNullOrWhiteSpace(value) && value.Length > 50)
+                {
+                    ValidationErrors[fieldName] = "Nationality cannot exceed 50 characters.";
+                    return false;
+                }
+                break;
+                
+            case "AdminAddress":
+                if (!string.IsNullOrWhiteSpace(value) && value.Length > 200)
+                {
+                    ValidationErrors[fieldName] = "Address cannot exceed 200 characters.";
+                    return false;
+                }
+                break;
+        }
+        
+        return true;
+    }
+    
+    private bool ValidateInstitutionalField(string fieldName, string value, string fieldDisplayName)
+    {
+        InstitutionValidationErrors.Remove(fieldName);
+        
+        switch (fieldName)
+        {
+            case "InstitutionName":
+                if (string.IsNullOrWhiteSpace(value))
+                {
+                    InstitutionValidationErrors[fieldName] = "Institution Name is required.";
+                    return false;
+                }
+                if (!IsValidInstitutionName(value))
+                {
+                    InstitutionValidationErrors[fieldName] = "Institution name contains invalid characters.";
+                    return false;
+                }
+                if (value.Length > 150)
+                {
+                    InstitutionValidationErrors[fieldName] = "Institution name cannot exceed 150 characters.";
+                    return false;
+                }
+                break;
+                
+            case "InstitutionAddress":
+                if (string.IsNullOrWhiteSpace(value))
+                {
+                    InstitutionValidationErrors[fieldName] = "Institution Address is required.";
+                    return false;
+                }
+                if (value.Length > 255)
+                {
+                    InstitutionValidationErrors[fieldName] = "Institution address cannot exceed 255 characters.";
+                    return false;
+                }
+                break;
+                
+            case "InstitutionContactNumber":
+                if (!string.IsNullOrWhiteSpace(value) && !IsValidPhoneNumber(value))
+                {
+                    InstitutionValidationErrors[fieldName] = "Institution contact number format is invalid.";
+                    return false;
+                }
+                break;
+                
+            case "InstitutionEmail":
+                if (!string.IsNullOrWhiteSpace(value) && !IsValidEmail(value))
+                {
+                    InstitutionValidationErrors[fieldName] = "Institution email format is invalid.";
+                    return false;
+                }
+                if (!string.IsNullOrWhiteSpace(value) && value.Length > 100)
+                {
+                    InstitutionValidationErrors[fieldName] = "Institution email cannot exceed 100 characters.";
+                    return false;
+                }
+                break;
+        }
+        
+        return true;
+    }
+    
+    private bool IsValidName(string name)
+    {
+        if (string.IsNullOrWhiteSpace(name)) return false;
+        // Allow letters, spaces, hyphens, apostrophes, and periods
+        return System.Text.RegularExpressions.Regex.IsMatch(name.Trim(), @"^[a-zA-Z\s\-'\.]+$");
+    }
+    
+    private bool IsValidPhoneNumber(string phone)
+    {
+        if (string.IsNullOrWhiteSpace(phone)) return true; // Optional field
+        // Allow digits, spaces, hyphens, plus, parentheses
+        var cleanPhone = System.Text.RegularExpressions.Regex.Replace(phone, @"[\s\-\+\(\)]", "");
+        return System.Text.RegularExpressions.Regex.IsMatch(cleanPhone, @"^\d{7,15}$"); // 7-15 digits
+    }
+    
+    private bool IsValidEmail(string email)
+    {
+        if (string.IsNullOrWhiteSpace(email)) return true;
+        try
+        {
+            var addr = new System.Net.Mail.MailAddress(email);
+            return addr.Address == email;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+    
+    private bool IsValidInstitutionName(string name)
+    {
+        if (string.IsNullOrWhiteSpace(name)) return true;
+        // Allow letters, numbers, spaces, common punctuation for institution names
+        return System.Text.RegularExpressions.Regex.IsMatch(name.Trim(), @"^[a-zA-Z0-9\s\-'\.&,()]+$");
+    }
+    
+    private bool ValidateAllPersonalFields()
+    {
+        IsValidating = true;
+        ValidationErrors.Clear();
+        
+        var isValid = true;
+        
+        // Validate required fields
+        isValid &= ValidatePersonalField("AdminFirstName", AdminFirstName, "First Name");
+        isValid &= ValidatePersonalField("AdminLastName", AdminLastName, "Last Name");
+        isValid &= ValidatePersonalField("AdminContactNumber", AdminContactNumber, "Contact Number");
+        
+        // Validate optional fields
+        ValidatePersonalField("AdminMiddleName", AdminMiddleName, "Middle Name");
+        ValidatePersonalField("Nationality", Nationality, "Nationality");
+        ValidatePersonalField("AdminAddress", AdminAddress, "Address");
+        
+        // Additional business logic validations
+        if (!string.IsNullOrWhiteSpace(AdminContactNumber) && AdminContactNumber.Length < 7)
+        {
+            ValidationErrors["AdminContactNumber"] = "Contact number must be at least 7 digits.";
+            isValid = false;
+        }
+        
+        // Age validation for birth date
+        if (BirthDate != DateTime.MinValue)
+        {
+            var age = DateTime.Now.Year - BirthDate.Year;
+            if (DateTime.Now.DayOfYear < BirthDate.DayOfYear) age--;
+            
+            if (age < 18 || age > 100)
+            {
+                ValidationErrors["BirthDate"] = "Age must be between 18 and 100 years for institution administrators.";
+                isValid = false;
+            }
+        }
+        
+        return isValid;
+    }
+    
+    private bool ValidateAllInstitutionalFields()
+    {
+        InstitutionValidationErrors.Clear();
+        
+        var isValid = true;
+        
+        // Validate required fields
+        isValid &= ValidateInstitutionalField("InstitutionName", InstitutionName, "Institution Name");
+        isValid &= ValidateInstitutionalField("InstitutionAddress", InstitutionAddress, "Institution Address");
+        
+        // Validate optional fields
+        ValidateInstitutionalField("InstitutionContactNumber", InstitutionContactNumber, "Institution Contact Number");
+        ValidateInstitutionalField("InstitutionEmail", InstitutionEmail, "Institution Email");
+        
+        return isValid;
+    }
+    
+    private string GetPersonalValidationErrorClass(string fieldName)
+    {
+        return ValidationErrors.ContainsKey(fieldName) ? "is-invalid" : "";
+    }
+    
+    private string GetInstitutionalValidationErrorClass(string fieldName)
+    {
+        return InstitutionValidationErrors.ContainsKey(fieldName) ? "is-invalid" : "";
+    }
+    
+    private string GetPersonalValidationMessage(string fieldName)
+    {
+        return ValidationErrors.TryGetValue(fieldName, out var error) ? error : "";
+    }
+    
+    private string GetInstitutionalValidationMessage(string fieldName)
+    {
+        return InstitutionValidationErrors.TryGetValue(fieldName, out var error) ? error : "";
+    }
+
     // Methods
     private void ToggleEditMode()
     {
         IsEditMode = !IsEditMode;
+        if (!IsEditMode)
+        {
+            // Clear validation errors when canceling edit mode
+            ValidationErrors.Clear();
+            _errorMessage = string.Empty;
+            _successMessage = string.Empty;
+        }
     }
 
     private async Task SaveProfile()
     {
+        // Clear previous messages
+        _errorMessage = string.Empty;
+        _successMessage = string.Empty;
+        
+        // Step 1: Validate all fields before proceeding
+        if (!ValidateAllPersonalFields())
+        {
+            _errorMessage = "Please correct the validation errors before saving.";
+            StateHasChanged();
+            return;
+        }
+        
         try
         {
+            Console.WriteLine("Starting SaveProfile...");
             var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
             var user = await UserManager.GetUserAsync(authState.User);
             if (user != null)
             {
+                Console.WriteLine($"User found: {user.Id}");
                 var profile = await InstitutionProfileService.GetProfileByUserIdAsync(user.Id);
                 if (profile == null)
                 {
+                    Console.WriteLine("Creating new profile...");
                     profile = new Models.InstitutionProfile {
                         UserId = user.Id,
-                        InstitutionName = University,
-                        AdminFirstName = AdminFirstName,
-                        AdminMiddleName = AdminMiddleName,
-                        AdminLastName = AdminLastName,
+                        InstitutionName = InstitutionName,
+                        AdminFirstName = AdminFirstName.Trim(),
+                        AdminMiddleName = string.IsNullOrWhiteSpace(AdminMiddleName) ? null : AdminMiddleName.Trim(),
+                        AdminLastName = AdminLastName.Trim(),
                         InstitutionType = Sex,
-                        Accreditation = Nationality,
+                        Accreditation = string.IsNullOrWhiteSpace(Nationality) ? null : Nationality.Trim(),
                         EstablishedDate = BirthDate,
                         ContactNumber = ContactNumber,
                         ContactEmail = ContactEmail,
                         Address = Address
                     };
                 }
-                profile.AdminFirstName = AdminFirstName;
-                profile.AdminMiddleName = AdminMiddleName;
-                profile.AdminLastName = AdminLastName;
+                else
+                {
+                    Console.WriteLine("Updating existing profile...");
+                }
+                // Update admin personal information with trimmed and sanitized values
+                profile.AdminFirstName = AdminFirstName?.Trim() ?? "";
+                profile.AdminMiddleName = string.IsNullOrWhiteSpace(AdminMiddleName) ? null : AdminMiddleName.Trim();
+                profile.AdminLastName = AdminLastName?.Trim() ?? "";
                 profile.InstitutionType = Sex;
-                profile.Accreditation = Nationality;
+                profile.Accreditation = string.IsNullOrWhiteSpace(Nationality) ? null : Nationality.Trim();
                 profile.EstablishedDate = BirthDate;
-                profile.ContactNumber = ContactNumber;
-                profile.ContactEmail = ContactEmail;
-                profile.Address = Address;
-                profile.InstitutionName = University;
-                // Handle file upload
+                
+                // Store admin personal phone in AdminPosition field temporarily (cleaned)
+                profile.AdminPosition = string.IsNullOrWhiteSpace(AdminContactNumber) ? null : System.Text.RegularExpressions.Regex.Replace(AdminContactNumber.Trim(), @"[\s\-\(\)]", "");
+                // Store admin personal address in Mission field temporarily
+                profile.Mission = string.IsNullOrWhiteSpace(AdminAddress) ? null : AdminAddress.Trim();
+                // Handle file upload with additional validation
                 if (UploadedProfileImage != null)
                 {
-                    // Validate file type and size again
+                    // Validate file type
                     var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif" };
                     var fileExtension = Path.GetExtension(UploadedProfileImage.Name).ToLower();
                     
-                    if (allowedExtensions.Contains(fileExtension) && UploadedProfileImage.Size <= 10 * 1024 * 1024)
+                    if (!allowedExtensions.Contains(fileExtension))
                     {
-                        var fileName = $"institution_profile_{Guid.NewGuid()}{fileExtension}";
-                        var dirPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/images/profiles");
-                        if (!Directory.Exists(dirPath))
-                        {
-                            Directory.CreateDirectory(dirPath);
-                        }
-                        var savePath = Path.Combine(dirPath, fileName);
-                        await using (var stream = File.Create(savePath))
-                        {
-                            await UploadedProfileImage.OpenReadStream(10 * 1024 * 1024).CopyToAsync(stream);
-                        }
-                        profile.ProfilePicture = $"/images/profiles/{fileName}";
-                        ProfilePicture = profile.ProfilePicture;
+                        _errorMessage = "Profile image must be a JPG, PNG, or GIF file.";
+                        StateHasChanged();
+                        return;
                     }
+                    
+                    if (UploadedProfileImage.Size > 10 * 1024 * 1024)
+                    {
+                        _errorMessage = "Profile image exceeds the 10MB size limit. Please choose a smaller file.";
+                        StateHasChanged();
+                        return;
+                    }
+                    
+                    var fileName = $"institution_profile_{Guid.NewGuid()}{fileExtension}";
+                    var dirPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/images/profiles");
+                    if (!Directory.Exists(dirPath))
+                    {
+                        Directory.CreateDirectory(dirPath);
+                    }
+                    var savePath = Path.Combine(dirPath, fileName);
+                    await using (var stream = File.Create(savePath))
+                    {
+                        await UploadedProfileImage.OpenReadStream(10 * 1024 * 1024).CopyToAsync(stream);
+                    }
+                    profile.ProfilePicture = $"/images/profiles/{fileName}";
+                    ProfilePicture = profile.ProfilePicture;
                 }
                 else if (!string.IsNullOrWhiteSpace(ProfilePicture) && ProfilePicture != "https://via.placeholder.com/120")
                 {
                     profile.ProfilePicture = ProfilePicture;
                 }
+                Console.WriteLine("Calling SaveProfileAsync...");
                 await InstitutionProfileService.SaveProfileAsync(profile);
-                // Reload profile data to update ProfilePicture and other fields
-                await LoadExtendedProfileData(user.Id);
-                IsEditMode = false;
+                Console.WriteLine("Profile saved successfully!");
+                
+                // Clear upload state and validation errors
                 _previewProfilePicture = null;
                 UploadedProfileImage = null;
+                ValidationErrors.Clear();
+                
+                // Reload profile data to update ProfilePicture and other fields
+                await LoadExtendedProfileData(user.Id);
+                
+                IsEditMode = false;
+                
+                // Show success message
+                _successMessage = "Personal profile updated successfully!";
+                
+                // Force UI update
+                StateHasChanged();
+                
                 Console.WriteLine("Institution profile updated successfully!");
             }
+            else
+            {
+                Console.WriteLine("No user found!");
+                _errorMessage = "User session expired. Please login again.";
+            }
+        }
+        catch (ArgumentException argEx)
+        {
+            Console.WriteLine($"Validation error: {argEx.Message}");
+            _errorMessage = argEx.Message;
+        }
+        catch (DbUpdateException dbEx)
+        {
+            Console.WriteLine($"Database error: {dbEx.Message}");
+            _errorMessage = "Failed to save profile. Please check your input and try again.";
         }
         catch (Exception ex)
         {
             Console.WriteLine($"Error saving profile: {ex.Message}");
+            Console.WriteLine($"Stack trace: {ex.StackTrace}");
+            _errorMessage = "An unexpected error occurred while saving your profile. Please try again.";
         }
     }
 }

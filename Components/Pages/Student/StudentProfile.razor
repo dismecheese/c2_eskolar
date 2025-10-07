@@ -9,7 +9,41 @@
 @using Microsoft.AspNetCore.Components.Authorization
 @using Microsoft.AspNetCore.Identity
 
+@implements IDisposable
 @code {
+    // Notification variables
+    private string _errorMessage = "";
+    private string _successMessage = "";
+    private System.Threading.Timer? _errorTimer;
+    private System.Threading.Timer? _successTimer;
+    private void SetErrorMessageWithTimer(string message)
+    {
+        _errorMessage = message;
+        _errorTimer?.Dispose();
+        _errorTimer = new System.Threading.Timer(_ =>
+        {
+            _errorMessage = "";
+            InvokeAsync(StateHasChanged);
+        }, null, TimeSpan.FromSeconds(5), Timeout.InfiniteTimeSpan);
+    }
+
+    private void SetSuccessMessageWithTimer(string message)
+    {
+        _successMessage = message;
+        _successTimer?.Dispose();
+        _successTimer = new System.Threading.Timer(_ =>
+        {
+            _successMessage = "";
+            InvokeAsync(StateHasChanged);
+        }, null, TimeSpan.FromSeconds(5), Timeout.InfiniteTimeSpan);
+    }
+
+    public void Dispose()
+    {
+        _errorTimer?.Dispose();
+        _successTimer?.Dispose();
+    }
+
     private async Task RemoveProfileImageAsync()
     {
         // Set to blank avatar
@@ -366,31 +400,25 @@
 
     private async Task SaveProfile()
     {
-        if (isLoading) return;
-        isLoading = true;
-        ProfileErrorMessage = "";
-        
         try
         {
             // Step 1: Validate all fields before proceeding
             if (!ValidateAllFields())
             {
-                ProfileErrorMessage = "Please correct the validation errors before saving.";
+                SetErrorMessageWithTimer("Please correct the validation errors before saving.");
                 StateHasChanged();
                 isLoading = false;
                 return;
             }
-            
             // Step 2: Get userId from claims
             var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
             var userId = authState.User?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
             if (string.IsNullOrWhiteSpace(userId))
             {
-                ProfileErrorMessage = "User not found.";
+                SetErrorMessageWithTimer("User not found.");
                 isLoading = false;
                 return;
             }
-
             // Step 3: Get or create student profile
             var studentProfile = await StudentProfileService.GetProfileByUserIdAsync(userId);
             if (studentProfile == null)
@@ -401,7 +429,6 @@
                     LastName = LastName.Trim()
                 };
             }
-
             // Step 4: Update fields with trimmed and sanitized values
             studentProfile.FirstName = FirstName?.Trim() ?? "";
             studentProfile.MiddleName = string.IsNullOrWhiteSpace(MiddleName) ? null : MiddleName.Trim();
@@ -417,9 +444,7 @@
             studentProfile.Course = string.IsNullOrWhiteSpace(Program) ? null : Program.Trim();
             var yearLevelInt = ParseYearLevel(YearLevel);
             studentProfile.YearLevel = yearLevelInt;
-            
             // Status is managed by the service - students cannot change verification status
-
             // Step 5: Handle file upload with additional validation
             if (UploadedProfileImage != null)
             {
@@ -428,20 +453,18 @@
                 var fileExtension = Path.GetExtension(UploadedProfileImage.Name).ToLower();
                 if (!allowedExtensions.Contains(fileExtension))
                 {
-                    ProfileErrorMessage = "Profile image must be a JPG, PNG, or GIF file.";
+                    SetErrorMessageWithTimer("Profile image must be a JPG, PNG, or GIF file.");
                     StateHasChanged();
                     isLoading = false;
                     return;
                 }
-                
                 if (UploadedProfileImage.Size > 10 * 1024 * 1024)
                 {
-                    ProfileErrorMessage = "Profile image exceeds the 10MB size limit. Please choose a smaller file.";
+                    SetErrorMessageWithTimer("Profile image exceeds the 10MB size limit. Please choose a smaller file.");
                     StateHasChanged();
                     isLoading = false;
                     return;
                 }
-                
                 var fileName = $"profile_{Guid.NewGuid()}{fileExtension}";
                 var dirPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/images/profiles");
                 if (!Directory.Exists(dirPath))
@@ -460,32 +483,28 @@
             {
                 studentProfile.ProfilePicture = ProfilePicture;
             }
-
             // Step 6: Save profile with error handling
             await StudentProfileService.SaveProfileAsync(studentProfile, Email);
-            
             // Clear upload state and validation errors
             _previewProfilePicture = null;
             UploadedProfileImage = null;
             ValidationErrors.Clear();
-            
             // Reload the profile data to reflect database changes
             await LoadExtendedProfileData(userId);
-            
             IsEditMode = false;
-            
+            SetSuccessMessageWithTimer("Student profile updated successfully!");
             Console.WriteLine("Student profile updated successfully!");
             StateHasChanged();
         }
         catch (ArgumentException ex)
         {
-            ProfileErrorMessage = ex.Message;
+            SetErrorMessageWithTimer(ex.Message);
             StateHasChanged();
             Console.WriteLine($"Validation error: {ex.Message}");
         }
         catch (Exception ex)
         {
-            ProfileErrorMessage = $"Error saving profile: {ex.Message}";
+            SetErrorMessageWithTimer($"Error saving profile: {ex.Message}");
             StateHasChanged();
             Console.WriteLine($"Error saving profile: {ex.Message}");
         }
@@ -493,6 +512,7 @@
         {
             isLoading = false;
         }
+        // ...existing code...
     }
 
     private async Task LoadExtendedProfileData(string userId)
@@ -573,6 +593,20 @@
 
 
 <div class="container-fluid p-5 student-profile-bg">
+    @if (!string.IsNullOrWhiteSpace(_errorMessage))
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="fas fa-exclamation-triangle me-2"></i>@_errorMessage
+            <button type="button" class="btn-close" @onclick="() => _errorMessage = string.Empty"></button>
+        </div>
+    }
+    @if (!string.IsNullOrWhiteSpace(_successMessage))
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="fas fa-check-circle me-2"></i>@_successMessage
+            <button type="button" class="btn-close" @onclick="() => _successMessage = string.Empty"></button>
+        </div>
+    }
     @if (!string.IsNullOrWhiteSpace(ProfileErrorMessage))
     {
         <div class="alert alert-danger" role="alert">
