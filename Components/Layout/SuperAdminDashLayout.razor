@@ -9,6 +9,7 @@
 @using Microsoft.AspNetCore.Components.Authorization
 @using Microsoft.AspNetCore.Identity
 @using Microsoft.JSInterop
+@using c2_eskolar.Components.UI
 
 @rendermode InteractiveServer
 
@@ -31,6 +32,11 @@
                     <li class="nav-item">
                         <a href="/dashboard/superadmin" class="@GetSidebarLinkClass("/dashboard/superadmin")">
                             <i class="fa fa-tachometer-alt"></i> Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="/dashboard/superadmin/announcements" class="@GetSidebarLinkClass("/dashboard/superadmin/announcements")">
+                            <i class="fa fa-bullhorn"></i> Announcements
                         </a>
                     </li>
                     <li class="nav-item">
@@ -66,7 +72,7 @@
             </div>
 
             <!-- Help Box Button -->
-            <button class="help-box-bottom" type="button">
+            <button class="help-box-bottom" @onclick="OpenChatbot" type="button">
                 <div class="help-box-content">
                     <img src="images/NeedHelp.svg" alt="Help" class="help-box-img" />
                     <div class="help-box-text">
@@ -143,6 +149,11 @@
         <main class="main-content" style="flex:1; min-width:0; background: #f5f6fa;">
             @Body
         </main>
+
+        @if (ShowChatbot)
+        {
+            <ChatBot CloseChatbot="CloseChatbot" MinimizeChatbot="MinimizeChatbot" />
+        }
     </div>
 
 <!-- Logout Confirmation Modal -->
@@ -191,6 +202,16 @@
         color: #666;
         margin-bottom: 15px;
         text-align: center;
+    }
+    
+    .logout-link:hover {
+        background: rgba(255,255,255,0.1) !important;
+        color: rgba(255,255,255,1) !important;
+        transform: translateX(4px);
+    }
+
+    .logout-link:active {
+        background: rgba(255,255,255,0.15) !important;
     }
 </style>
 
@@ -285,8 +306,14 @@
     {
         try
         {
-            await JSRuntime.InvokeVoidAsync("new bootstrap.Modal", "#logoutModal").ConfigureAwait(false);
-            await JSRuntime.InvokeVoidAsync("eval", "new bootstrap.Modal(document.getElementById('logoutModal')).show()");
+            await JSRuntime.InvokeVoidAsync("eval", @"
+                if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+                    const modal = new bootstrap.Modal(document.getElementById('logoutModal'));
+                    modal.show();
+                } else {
+                    console.error('Bootstrap not loaded');
+                }
+            ");
         }
         catch (Exception ex)
         {
@@ -295,6 +322,12 @@
             LogOut();
         }
     }
+
+    // --- CHATBOT STATE ---
+    private bool ShowChatbot = false;
+    private void OpenChatbot() => ShowChatbot = true;
+    private void CloseChatbot() => ShowChatbot = false;
+    private void MinimizeChatbot() => ShowChatbot = false;
 
     public void Dispose()
     {
