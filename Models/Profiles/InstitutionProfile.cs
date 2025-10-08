@@ -62,8 +62,15 @@ namespace c2_eskolar.Models
     [StringLength(255)]
     public string? ProfilePicture { get; set; } // Institution profile picture file path/URL
 
+
     [StringLength(255)]
     public string? AdminValidationDocument { get; set; } // Admin validation document file path/URL
+
+    [StringLength(255)]
+    public string? GovernmentIdDocument { get; set; } // Government-issued ID file path/URL
+
+    [StringLength(255)]
+    public string? AuthorizationLetterDocument { get; set; } // Letter of Authorization file path/URL
 
         // Academic Information
         public int? TotalStudents { get; set; }

@@ -28,7 +28,7 @@
 
     <!-- Institution Check Section -->
     <section class="sv-card sv-card-elevated">
-        <div class="sv-section-title">Institution Check</div>
+        <div class="sv-section-title">Partnership Check</div>
         <div class="sv-institution-check">
             <div class="sv-field sv-field-vertical">
                 <label class="sv-field-label">Are you affiliated with a partner institution?</label>
@@ -69,6 +69,52 @@
                 </div>
             </div>
         </div>
+
+        <!-- Add spacing between institution and benefactor check sections -->
+        <div style="height: 2rem;"></div>
+
+        <!-- Benefactor Check Section -->
+        <div class="sv-institution-check">
+            <div class="sv-field sv-field-vertical">
+                <label class="sv-field-label">Are you affiliated with a partner benefactor?</label>
+                <div class="sv-radio-group">
+                    <label for="benefactorYes" class="sv-radio-label">
+                        <input type="radio" id="benefactorYes" name="benefactorCheck" value="Yes" @onchange="() => SetBenefactorCheck(true)" checked="@IsBenefactorAffiliated" />
+                        Yes
+                    </label>
+                    <label for="benefactorNo" class="sv-radio-label">
+                        <input type="radio" id="benefactorNo" name="benefactorCheck" value="No" @onchange="() => SetBenefactorCheck(false)" checked="@(!IsBenefactorAffiliated)" />
+                        No
+                    </label>
+                </div>
+            </div>
+            <div class="sv-field sv-field-vertical">
+                <label for="benefactorDropdown" class="sv-field-label">Select Benefactor</label>
+                <div class="sv-custom-select @(IsBenefactorDropdownDisabled ? "sv-custom-select-disabled" : null)" tabindex="0"
+                     @onclick="() => { if (!IsBenefactorDropdownDisabled) ToggleBenefactorDropdown(); }"
+                     @onblur="CloseBenefactorDropdown"
+                     style="@(IsBenefactorDropdownDisabled ? "pointer-events: none; opacity: 0.6;" : null)">
+                    <span class="sv-custom-select-value">@SelectedBenefactorText</span>
+                    <svg class="sv-custom-select-arrow" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+                    @if (ShowBenefactorDropdown && !IsBenefactorDropdownDisabled)
+                    {
+                        <ul class="sv-custom-select-list">
+                            @{
+                                var benefNone = string.Empty;
+                                var benefA = "Benefactor A";
+                                var benefB = "Benefactor B";
+                                var benefC = "Benefactor C";
+                            }
+                            <li class="sv-custom-select-item @(string.IsNullOrEmpty(SelectedBenefactor) ? "selected" : null)" @onmousedown="() => SelectBenefactor(benefNone)">Select a benefactor</li>
+                            <li class="sv-custom-select-item @(SelectedBenefactor == benefA ? "selected" : null)" @onmousedown="() => SelectBenefactor(benefA)">Benefactor A</li>
+                            <li class="sv-custom-select-item @(SelectedBenefactor == benefB ? "selected" : null)" @onmousedown="() => SelectBenefactor(benefB)">Benefactor B</li>
+                            <li class="sv-custom-select-item @(SelectedBenefactor == benefC ? "selected" : null)" @onmousedown="() => SelectBenefactor(benefC)">Benefactor C</li>
+                        </ul>
+                    }
+                </div>
+            </div>
+        </div>
+
     </section>
 
         <!-- Document Upload Section -->
@@ -795,6 +841,31 @@
         {
             SelectedInstitution = value;
             ShowInstitutionDropdown = false;
+        }
+
+        // Benefactor Check
+        private bool IsBenefactorAffiliated = false;
+        private void SetBenefactorCheck(bool affiliated)
+        {
+            IsBenefactorAffiliated = affiliated;
+            if (!affiliated)
+            {
+                SelectedBenefactor = string.Empty;
+                ShowBenefactorDropdown = false;
+            }
+        }
+
+        // Benefactor Dropdown
+        private bool ShowBenefactorDropdown = false;
+        private string SelectedBenefactor = string.Empty;
+        private string SelectedBenefactorText => string.IsNullOrEmpty(SelectedBenefactor) ? "Select a benefactor" : SelectedBenefactor;
+        private bool IsBenefactorDropdownDisabled => !IsBenefactorAffiliated;
+        private void ToggleBenefactorDropdown() { if (!IsBenefactorDropdownDisabled) ShowBenefactorDropdown = !ShowBenefactorDropdown; }
+        private void CloseBenefactorDropdown() => ShowBenefactorDropdown = false;
+        private void SelectBenefactor(string value)
+        {
+            SelectedBenefactor = value;
+            ShowBenefactorDropdown = false;
         }
 
         // Sex Dropdown (custom)

@@ -1,4 +1,4 @@
-/* Institution Verification Page Styles: Professional & Modern (Matching StudentVerification) */
+/* Benefactor Verification Page Styles: Professional & Modern (Matching InstitutionVerification) */
 
 /* Header */
 .sv-header {
@@ -175,6 +175,10 @@
 
 .sv-form-grid .sv-field-full {
     grid-column: 1 / -1;
+}
+
+.sv-form-grid .sv-field-contact-row {
+    display: contents;
 }
 
 /* Personal Information Grid Layout */

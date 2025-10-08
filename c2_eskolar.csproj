@@ -32,6 +32,8 @@
     <PackageReference Include="Selenium.WebDriver" Version="4.15.0" />
     <PackageReference Include="Selenium.WebDriver.ChromeDriver" Version="118.0.5993.7000" />
     <PackageReference Include="Quartz" Version="3.8.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.Forms" Version="9.0.8" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="9.0.8" />
   </ItemGroup>
 
 </Project>
