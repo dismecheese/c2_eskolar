@@ -4,6 +4,30 @@ using System.Text.Json.Serialization;
 
 namespace c2_eskolar.Services
 {
+    public class ExtractedInstitutionIdData
+    {
+        public string? AdminFirstName { get; set; }
+        public string? AdminMiddleName { get; set; }
+        public string? AdminLastName { get; set; }
+        public string? AdminEmail { get; set; }
+        public string? AdminContactNumber { get; set; }
+        public string? AdminPosition { get; set; }
+        public string? InstitutionalEmailDomain { get; set; }
+    }
+
+    public class ExtractedInstitutionAuthLetterData
+    {
+        public string? InstitutionName { get; set; }
+        public string? InstitutionType { get; set; }
+        public string? Address { get; set; }
+        public string? ContactNumber { get; set; }
+        public string? Website { get; set; }
+        public string? Description { get; set; }
+        public string? DeanName { get; set; }
+        public string? DeanEmail { get; set; }
+        public string? InstitutionalEmailDomain { get; set; }
+    }
+
     public class ExtractedIdData
     {
         public string? FirstName { get; set; }
@@ -88,6 +112,44 @@ namespace c2_eskolar.Services
 
     public class DocumentIntelligenceService
     {
+
+        public async Task<ExtractedInstitutionIdData?> AnalyzeInstitutionIdDocumentAsync(IBrowserFile file)
+        {
+            var idData = await AnalyzeIdDocumentAsync(file);
+            if (idData == null) return null;
+            var extracted = new ExtractedInstitutionIdData
+            {
+                AdminFirstName = idData.FirstName,
+                AdminMiddleName = idData.MiddleName,
+                AdminLastName = idData.LastName,
+                AdminEmail = idData.Nationality, // fallback: use Nationality as email if not present (should be improved)
+                AdminContactNumber = idData.DocumentNumber, // fallback: use DocumentNumber as contact
+                AdminPosition = idData.Sex, // fallback: use Sex as position (should be improved)
+                InstitutionalEmailDomain = null // Will be enhanced with proper AI extraction later
+            };
+            return extracted;
+        }
+
+        public async Task<ExtractedInstitutionAuthLetterData?> AnalyzeInstitutionAuthLetterAsync(IBrowserFile file)
+        {
+            var corData = await AnalyzeCorDocumentAsync(file);
+            if (corData == null) return null;
+            var extracted = new ExtractedInstitutionAuthLetterData
+            {
+                InstitutionName = corData.University,
+                InstitutionType = null, // Not extracted from layout
+                Address = corData.Address,
+                ContactNumber = corData.StudentNumber, // fallback: use StudentNumber as contact
+                Website = null,
+                Description = corData.Program,
+                DeanName = corData.StudentName,
+                DeanEmail = null,
+                InstitutionalEmailDomain = null // Will be enhanced with proper AI extraction later
+            };
+            return extracted;
+        }
+
+        // ...existing methods (AnalyzeIdDocumentAsync, AnalyzeCorDocumentAsync, MapIdDocumentFields, PollForResults, ExtractCorDataFromContent)...
         private readonly HttpClient _httpClient;
         private readonly string _endpoint;
         private readonly string _apiKey;
@@ -509,4 +571,4 @@ namespace c2_eskolar.Services
             return extractedData;
         }
     }
-}
+    }

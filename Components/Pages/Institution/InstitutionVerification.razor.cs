@@ -23,7 +23,7 @@ namespace c2_eskolar.Components.Pages.Institution
 
             public string? Description { get; set; } = string.Empty;
 
-            [Required(ErrorMessage = "Contact number is required.")]
+            [Required(ErrorMessage = "Institution contact number is required.")]
             public string ContactNumber { get; set; } = string.Empty;
 
             [Required(ErrorMessage = "Contact email is required.")]
@@ -39,6 +39,15 @@ namespace c2_eskolar.Components.Pages.Institution
             [Required(ErrorMessage = "Admin last name is required.")]
             public string AdminLastName { get; set; } = string.Empty;
 
+            [Required(ErrorMessage = "Sex is required.")]
+            public string Sex { get; set; } = string.Empty;
+
+            [Required(ErrorMessage = "Birthdate is required.")]
+            public DateTime? BirthDate { get; set; }
+
+            [Required(ErrorMessage = "Nationality is required.")]
+            public string Nationality { get; set; } = string.Empty;
+
             public string? AdminPosition { get; set; } = string.Empty;
 
             [Required(ErrorMessage = "Admin email is required.")]
@@ -50,9 +59,16 @@ namespace c2_eskolar.Components.Pages.Institution
 
             public string? Accreditation { get; set; } = string.Empty;
 
-            // Added missing Dean fields
-            public string? DeanName { get; set; } = string.Empty;
-            public string? DeanEmail { get; set; } = string.Empty;
+            // Dean fields - now required
+            [Required(ErrorMessage = "Dean or head of institution name is required.")]
+            public string DeanName { get; set; } = string.Empty;
+            
+            [Required(ErrorMessage = "Dean or head of institution email is required.")]
+            [EmailAddress(ErrorMessage = "Invalid email address.")]
+            public string DeanEmail { get; set; } = string.Empty;
+            
+            // Institutional Email Domain
+            public string? InstitutionalEmailDomain { get; set; } = string.Empty;
         }
 
         // File upload variables for Document Upload section
@@ -72,6 +88,22 @@ namespace c2_eskolar.Components.Pages.Institution
         private bool IsSubmitting = false;
         private string ProfileErrorMessage = "";
 
+        // Sex Dropdown logic for custom select (component-level)
+        private bool ShowSexDropdown = false;
+        private string SelectedSex
+        {
+            get => verificationModel.Sex;
+            set => verificationModel.Sex = value;
+        }
+        private string SelectedSexText => string.IsNullOrEmpty(SelectedSex) ? "Select sex" : SelectedSex;
+        private void ToggleSexDropdown() => ShowSexDropdown = !ShowSexDropdown;
+        private void CloseSexDropdown() => ShowSexDropdown = false;
+        private void SelectSex(string value)
+        {
+            SelectedSex = value;
+            ShowSexDropdown = false;
+        }
+
         [Inject] private HttpClient Http { get; set; } = default!;
         [Inject] private Services.InstitutionProfileService InstitutionProfileService { get; set; } = default!;
         [Inject] private AuthenticationStateProvider AuthenticationStateProvider { get; set; } = default!;
@@ -80,11 +112,33 @@ namespace c2_eskolar.Components.Pages.Institution
         private async Task OnIdFileChange(InputFileChangeEventArgs e)
         {
             var file = e.File;
-            if (file == null) return;
+            if (file == null)
+            {
+                IdUploadStatus = "No file selected.";
+                StateHasChanged();
+                return;
+            }
+            // Validate file type and size before upload
+            var validExtensions = new[] { ".jpg", ".jpeg", ".png", ".pdf" };
+            var fileExt = System.IO.Path.GetExtension(file.Name).ToLowerInvariant();
+            if (!validExtensions.Contains(fileExt))
+            {
+                IdUploadStatus = $"Invalid file type: {fileExt}. Allowed: {string.Join(", ", validExtensions)}";
+                StateHasChanged();
+                return;
+            }
+            if (file.Size > 5 * 1024 * 1024)
+            {
+                IdUploadStatus = "File too large. Max 5MB.";
+                StateHasChanged();
+                return;
+            }
             IdFileName = file.Name;
             IdUploadStatus = "Uploading...";
+            StateHasChanged();
             try
             {
+                // Step 1: Upload the file
                 var content = new MultipartFormDataContent();
                 var stream = file.OpenReadStream(5 * 1024 * 1024);
                 content.Add(new StreamContent(stream), "file", file.Name);
@@ -94,27 +148,70 @@ namespace c2_eskolar.Components.Pages.Institution
                 {
                     var result = await response.Content.ReadFromJsonAsync<UploadResult>();
                     AdminValidationUploadUrl = result?.url;
-                    IdUploadStatus = "Uploaded!";
+                    IdUploadStatus = "Processing with AI...";
+                    StateHasChanged();
+                    // Step 2: Analyze the document with Document Intelligence
+                    try
+                    {
+                        var extractedData = await DocumentIntelligenceService.AnalyzeInstitutionIdDocumentAsync(file);
+                        if (extractedData != null)
+                        {
+                            PrepopulateFromIdDocument(extractedData);
+                            IdUploadStatus = "Uploaded & Data Extracted!";
+                        }
+                        else
+                        {
+                            IdUploadStatus = "Uploaded! (AI extraction failed). Please check file clarity and type.";
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        IdUploadStatus = $"AI extraction error: {ex.Message}";
+                    }
                 }
                 else
                 {
-                    IdUploadStatus = "Upload failed.";
+                    var errorMsg = await response.Content.ReadAsStringAsync();
+                    IdUploadStatus = $"Upload failed: {errorMsg}";
                 }
             }
             catch (Exception ex)
             {
                 IdUploadStatus = $"Error: {ex.Message}";
             }
+            StateHasChanged();
         }
 
         private async Task OnAuthLetterFileChange(InputFileChangeEventArgs e)
         {
             var file = e.File;
-            if (file == null) return;
+            if (file == null)
+            {
+                AuthLetterUploadStatus = "No file selected.";
+                StateHasChanged();
+                return;
+            }
+            // Validate file type and size before upload
+            var validExtensions = new[] { ".jpg", ".jpeg", ".png", ".pdf" };
+            var fileExt = System.IO.Path.GetExtension(file.Name).ToLowerInvariant();
+            if (!validExtensions.Contains(fileExt))
+            {
+                AuthLetterUploadStatus = $"Invalid file type: {fileExt}. Allowed: {string.Join(", ", validExtensions)}";
+                StateHasChanged();
+                return;
+            }
+            if (file.Size > 5 * 1024 * 1024)
+            {
+                AuthLetterUploadStatus = "File too large. Max 5MB.";
+                StateHasChanged();
+                return;
+            }
             AuthLetterFileName = file.Name;
             AuthLetterUploadStatus = "Uploading...";
+            StateHasChanged();
             try
             {
+                // Step 1: Upload the file
                 var content = new MultipartFormDataContent();
                 var stream = file.OpenReadStream(5 * 1024 * 1024);
                 content.Add(new StreamContent(stream), "file", file.Name);
@@ -124,17 +221,87 @@ namespace c2_eskolar.Components.Pages.Institution
                 {
                     var result = await response.Content.ReadFromJsonAsync<UploadResult>();
                     LogoUploadUrl = result?.url;
-                    AuthLetterUploadStatus = "Uploaded!";
+                    AuthLetterUploadStatus = "Processing with AI...";
+                    StateHasChanged();
+                    // Step 2: Analyze the document with Document Intelligence
+                    try
+                    {
+                        var extractedData = await DocumentIntelligenceService.AnalyzeInstitutionAuthLetterAsync(file);
+                        if (extractedData != null)
+                        {
+                            PrepopulateFromAuthLetter(extractedData);
+                            AuthLetterUploadStatus = "Uploaded & Data Extracted!";
+                        }
+                        else
+                        {
+                            AuthLetterUploadStatus = "Uploaded! (AI extraction failed). Please check file clarity and type.";
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        AuthLetterUploadStatus = $"AI extraction error: {ex.Message}";
+                    }
                 }
                 else
                 {
-                    AuthLetterUploadStatus = "Upload failed.";
+                    var errorMsg = await response.Content.ReadAsStringAsync();
+                    AuthLetterUploadStatus = $"Upload failed: {errorMsg}";
                 }
             }
             catch (Exception ex)
             {
                 AuthLetterUploadStatus = $"Error: {ex.Message}";
             }
+            StateHasChanged();
+        }
+        [Inject] private Services.DocumentIntelligenceService DocumentIntelligenceService { get; set; } = default!;
+
+        private void PrepopulateFromIdDocument(Services.ExtractedInstitutionIdData extractedData)
+        {
+            // Prepopulate admin information fields
+            if (!string.IsNullOrEmpty(extractedData.AdminFirstName))
+                verificationModel.AdminFirstName = extractedData.AdminFirstName;
+            if (!string.IsNullOrEmpty(extractedData.AdminMiddleName))
+                verificationModel.AdminMiddleName = extractedData.AdminMiddleName;
+            if (!string.IsNullOrEmpty(extractedData.AdminLastName))
+                verificationModel.AdminLastName = extractedData.AdminLastName;
+            if (!string.IsNullOrEmpty(extractedData.AdminEmail))
+                verificationModel.AdminEmail = extractedData.AdminEmail;
+            if (!string.IsNullOrEmpty(extractedData.AdminContactNumber))
+                verificationModel.AdminContactNumber = extractedData.AdminContactNumber;
+            if (!string.IsNullOrEmpty(extractedData.AdminPosition))
+                verificationModel.AdminPosition = extractedData.AdminPosition;
+            if (!string.IsNullOrEmpty(extractedData.InstitutionalEmailDomain))
+                verificationModel.InstitutionalEmailDomain = extractedData.InstitutionalEmailDomain;
+            // Show success message
+            ProfileErrorMessage = "Admin information has been automatically filled from your ID document. Please review and complete any missing fields.";
+            StateHasChanged();
+        }
+
+        private void PrepopulateFromAuthLetter(Services.ExtractedInstitutionAuthLetterData extractedData)
+        {
+            // Prepopulate institution information fields
+            if (!string.IsNullOrEmpty(extractedData.InstitutionName))
+                verificationModel.InstitutionName = extractedData.InstitutionName;
+            if (!string.IsNullOrEmpty(extractedData.InstitutionType))
+                verificationModel.InstitutionType = extractedData.InstitutionType;
+            if (!string.IsNullOrEmpty(extractedData.Address))
+                verificationModel.Address = extractedData.Address;
+            if (!string.IsNullOrEmpty(extractedData.ContactNumber))
+                verificationModel.ContactNumber = extractedData.ContactNumber;
+            if (!string.IsNullOrEmpty(extractedData.Website))
+                verificationModel.Website = extractedData.Website;
+            if (!string.IsNullOrEmpty(extractedData.Description))
+                verificationModel.Description = extractedData.Description;
+            if (!string.IsNullOrEmpty(extractedData.DeanName))
+                verificationModel.DeanName = extractedData.DeanName;
+            if (!string.IsNullOrEmpty(extractedData.DeanEmail))
+                verificationModel.DeanEmail = extractedData.DeanEmail;
+            if (!string.IsNullOrEmpty(extractedData.InstitutionalEmailDomain))
+                verificationModel.InstitutionalEmailDomain = extractedData.InstitutionalEmailDomain;
+            // Show success message
+            ProfileErrorMessage = "Institution information has been automatically filled from your Authorization Letter. Please review and complete any missing fields.";
+            StateHasChanged();
         }
 
         private async Task RemoveIdDocument()
