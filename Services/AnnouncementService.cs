@@ -246,5 +246,61 @@ namespace c2_eskolar.Services
             await _context.SaveChangesAsync();
             return true;
         }
+
+        // PHOTO MANAGEMENT
+
+        // Add photos to an announcement
+        public async Task AddPhotosToAnnouncementAsync(Guid announcementId, List<string> photoUrls)
+        {
+            var photos = photoUrls.Select(url => new Photo
+            {
+                PhotoId = Guid.NewGuid(),
+                AnnouncementId = announcementId,
+                Url = url,
+                UploadedAt = DateTime.UtcNow
+            }).ToList();
+
+            _context.Photos.AddRange(photos);
+            await _context.SaveChangesAsync();
+        }
+
+        // Remove a photo from an announcement
+        public async Task<bool> RemovePhotoFromAnnouncementAsync(Guid photoId)
+        {
+            var photo = await _context.Photos.FindAsync(photoId);
+            if (photo == null) return false;
+
+            _context.Photos.Remove(photo);
+            await _context.SaveChangesAsync();
+            return true;
+        }
+
+        // Get photos for an announcement
+        public async Task<List<Photo>> GetAnnouncementPhotosAsync(Guid announcementId)
+        {
+            return await _context.Photos
+                .Where(p => p.AnnouncementId == announcementId)
+                .OrderBy(p => p.UploadedAt)
+                .ToListAsync();
+        }
+
+        // Get announcement with photos included
+        public async Task<Announcement?> GetAnnouncementWithPhotosAsync(Guid id)
+        {
+            return await _context.Announcements
+                .Include(a => a.Photos)
+                .FirstOrDefaultAsync(a => a.AnnouncementId == id);
+        }
+
+        // Get all announcements with photos included
+        public async Task<List<Announcement>> GetAllAnnouncementsWithPhotosAsync()
+        {
+            return await _context.Announcements
+                .Include(a => a.Photos)
+                .OrderByDescending(a => a.IsPinned)
+                .ThenByDescending(a => a.Priority)
+                .ThenByDescending(a => a.CreatedAt)
+                .ToListAsync();
+        }
     }
 }
