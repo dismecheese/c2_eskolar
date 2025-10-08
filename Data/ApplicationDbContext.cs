@@ -30,6 +30,12 @@ namespace c2_eskolar.Data
     public DbSet<BenefactorAdminProfile> BenefactorAdminProfiles { get; set; }
     public DbSet<Document> Documents { get; set; }
     public DbSet<Photo> Photos { get; set; }
+    
+    // Scraped scholarship management with EskoBot Intelligence
+    public DbSet<ScrapedScholarship> ScrapedScholarships { get; set; }
+    public DbSet<ScrapingProcessLog> ScrapingProcessLogs { get; set; }
+    public DbSet<ScrapingConfiguration> ScrapingConfigurations { get; set; }
+    public DbSet<BulkOperationRecord> BulkOperationRecords { get; set; }
 
         // MODEL CONFIGURATION & RELATIONSHIPS
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -145,6 +151,46 @@ namespace c2_eskolar.Data
                 .HasOne(s => s.Institution)
                 .WithMany(i => i.ManagedScholarships)
                 .HasForeignKey(s => s.InstitutionProfileId);
+
+            // Scraped scholarship configurations
+            modelBuilder.Entity<ScrapedScholarship>()
+                .Property(s => s.ParsingConfidence)
+                .HasPrecision(3, 2);
+
+            modelBuilder.Entity<ScrapedScholarship>()
+                .Property(s => s.MonetaryValue)
+                .HasPrecision(18, 2);
+
+            modelBuilder.Entity<ScrapedScholarship>()
+                .Property(s => s.MinimumGPA)
+                .HasPrecision(3, 2);
+
+            // Scraped scholarship to published scholarship relationship
+            modelBuilder.Entity<ScrapedScholarship>()
+                .HasOne(ss => ss.PublishedScholarship)
+                .WithOne()
+                .HasForeignKey<ScrapedScholarship>(ss => ss.PublishedScholarshipId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            // Scraping process logs relationship
+            modelBuilder.Entity<ScrapingProcessLog>()
+                .HasOne(spl => spl.ScrapedScholarship)
+                .WithMany(ss => ss.ProcessingLogs)
+                .HasForeignKey(spl => spl.ScrapedScholarshipId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Configure indexes for performance
+            modelBuilder.Entity<ScrapedScholarship>()
+                .HasIndex(s => s.Status);
+
+            modelBuilder.Entity<ScrapedScholarship>()
+                .HasIndex(s => s.ScrapedAt);
+
+            modelBuilder.Entity<ScrapedScholarship>()
+                .HasIndex(s => s.ParsingConfidence);
+
+            modelBuilder.Entity<ScrapingProcessLog>()
+                .HasIndex(spl => spl.ProcessedAt);
         }
     }
 }

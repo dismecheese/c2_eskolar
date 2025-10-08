@@ -90,6 +90,10 @@ builder.Services.AddHostedService<c2_eskolar.Services.WebScraping.ScrapingBackgr
 builder.Services.Configure<c2_eskolar.Services.WebScraping.ScrapingConfiguration>(
     builder.Configuration.GetSection("WebScraping"));
 
+// DEPRECATED: Old scraped scholarship service - now using IEnhancedWebScrapingService
+// Register ScrapedScholarshipService - Enhanced AI-powered scholarship management
+builder.Services.AddScoped<IScrapedScholarshipService, ScrapedScholarshipService>();
+
 // Register DocumentIntelligenceService
 builder.Services.AddScoped<DocumentIntelligenceService>();
 builder.Services.AddScoped<VerificationDocumentService>();
