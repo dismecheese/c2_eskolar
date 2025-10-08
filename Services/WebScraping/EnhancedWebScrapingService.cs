@@ -147,9 +147,48 @@ namespace c2_eskolar.Services.WebScraping
                         ParseScholarshipWithAIAsync(text, sourceUrl)).ToList();
                     
                     var results = await Task.WhenAll(tasks);
-                    scholarships.AddRange(results.Where(s => !string.IsNullOrWhiteSpace(s.Title)));
+                    var baseScholarships = results.Where(s => !string.IsNullOrWhiteSpace(s.Title)).ToList();
                     
-                    _logger.LogInformation($"Successfully parsed {scholarships.Count} scholarships with AI");
+                    _logger.LogInformation($"Successfully parsed {baseScholarships.Count} base scholarships with AI");
+                    
+                    // Enhanced: Check for external URLs and scrape additional details
+                    var enhancedScholarships = new List<EnhancedScrapedScholarship>();
+                    
+                    foreach (var scholarship in baseScholarships)
+                    {
+                        var enhancedScholarship = scholarship;
+                        
+                        // Check if this scholarship has an external application URL
+                        if (!string.IsNullOrWhiteSpace(scholarship.ExternalApplicationUrl))
+                        {
+                            _logger.LogInformation($"Found external URL for '{scholarship.Title}': {scholarship.ExternalApplicationUrl}");
+                            
+                            try
+                            {
+                                var externalData = await ScrapeExternalUrlAsync(scholarship.ExternalApplicationUrl, scholarship);
+                                if (externalData != null)
+                                {
+                                    enhancedScholarship = externalData;
+                                    _logger.LogInformation($"Successfully enhanced '{scholarship.Title}' with external data");
+                                }
+                                else
+                                {
+                                    _logger.LogInformation($"No additional data found for external URL: {scholarship.ExternalApplicationUrl}");
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                _logger.LogWarning($"Failed to enhance scholarship '{scholarship.Title}' with external URL: {ex.Message}");
+                                // Keep the original scholarship if external enhancement fails
+                            }
+                        }
+                        
+                        enhancedScholarships.Add(enhancedScholarship);
+                    }
+                    
+                    scholarships.AddRange(enhancedScholarships);
+                    
+                    _logger.LogInformation($"Final result: {scholarships.Count} scholarships (enhanced: {enhancedScholarships.Count(s => s.ParsingNotes.Any(n => n.Contains("Enhanced with external")))})");
                 }
                 catch (TaskCanceledException ex) when (ex.InnerException is TimeoutException)
                 {
@@ -340,13 +379,22 @@ namespace c2_eskolar.Services.WebScraping
                             continue;
                         }
                         
-                        // ENHANCED: Check if this is a large text block that might contain multiple scholarships
-                        if (text.Length > 2000 && ContainsScholarshipKeywords(text))
+                        // Extract URLs from non-table nodes and append them to the text
+                        var urls = ExtractUrlsFromNode(node);
+                        var enhancedText = text;
+                        if (urls.Any())
                         {
-                            _logger.LogInformation($"Large text block detected ({text.Length} characters), checking for scholarship list...");
+                            enhancedText += $"\nExternal URLs: {string.Join(", ", urls)}";
+                            _logger.LogInformation($"Found {urls.Count} external URLs in node: {string.Join(", ", urls)}");
+                        }
+                        
+                        // ENHANCED: Check if this is a large text block that might contain multiple scholarships
+                        if (enhancedText.Length > 2000 && ContainsScholarshipKeywords(enhancedText))
+                        {
+                            _logger.LogInformation($"Large text block detected ({enhancedText.Length} characters), checking for scholarship list...");
                             
                             // Try to detect and split scholarship lists
-                            if (DetectScholarshipList(text, out var listChunks))
+                            if (DetectScholarshipList(enhancedText, out var listChunks))
                             {
                                 _logger.LogInformation($"Scholarship list detected! Split into {listChunks.Count} individual scholarships");
                                 texts.AddRange(listChunks);
@@ -365,7 +413,7 @@ namespace c2_eskolar.Services.WebScraping
                                 _logger.LogInformation("No scholarship list pattern detected, applying chunking...");
                                 
                                 // Apply enhanced chunking to break down large blocks
-                                var chunks = SplitIntoScholarshipChunks(text);
+                                var chunks = SplitIntoScholarshipChunks(enhancedText);
                                 if (chunks.Count > 1)
                                 {
                                     _logger.LogInformation($"Text chunked into {chunks.Count} parts");
@@ -377,9 +425,9 @@ namespace c2_eskolar.Services.WebScraping
                         }
                         
                         // Normal processing for smaller blocks or when chunking didn't help
-                        texts.Add(text);
+                        texts.Add(enhancedText);
                         processedCount++;
-                        _logger.LogInformation($"Added text block {processedCount}: {text.Substring(0, Math.Min(100, text.Length))}...");
+                        _logger.LogInformation($"Added text block {processedCount}: {enhancedText.Substring(0, Math.Min(100, enhancedText.Length))}...");
                     }
                 }
                 
@@ -556,7 +604,8 @@ IMPORTANT INSTRUCTIONS:
 - Extract discipline/field information from any mentions of study areas
 - If you see 'Multiple' disciplines, look for specific fields mentioned in parentheses or nearby
 - Convert month names to 2025 dates (e.g., 'February' = '2025-02-28', 'January' = '2025-01-31')
-- Extract website URLs if present (look for 'View website', 'Website:', or URL patterns)
+- Extract website URLs if present (look for 'View website', 'Website:', 'External URLs:', or any URL patterns like http/https)
+- Pay special attention to 'External URLs:' lines which contain the actual scholarship provider websites
 - Be aggressive in extracting data - if information appears to be there, include it
 
 Extract these fields:
@@ -571,7 +620,7 @@ Extract these fields:
 - RequiredCourse (specific courses/disciplines mentioned)
 - RequiredYearLevel (undergraduate=1-4, graduate=5-8)
 - RequiredUniversity (specific university if mentioned)
-- ExternalApplicationUrl (extract any website/URL mentioned)
+- ExternalApplicationUrl (PRIORITY: extract from 'External URLs:' lines or any website/URL mentioned - this is the official scholarship provider website)
 
 Return ONLY a valid JSON object (NOT an array), no additional text.
 
@@ -599,7 +648,13 @@ Extract these fields if available:
 - RequiredCourse (specific course/program requirements)
 - RequiredYearLevel (extract year level as integer 1-8)
 - RequiredUniversity (specific university requirements)
-- ExternalApplicationUrl (application link if mentioned)
+- ExternalApplicationUrl (extract any external website URLs - these are the official scholarship provider websites, not the current page URL)
+
+IMPORTANT: For ExternalApplicationUrl, look for:
+- Links that say 'View website', 'Apply here', 'More information'
+- URLs that point to external domains (not the current site)
+- Official scholarship provider websites
+- Application portals
 
 Return ONLY a JSON object with these fields. Use null for missing values. Be accurate and conservative.
 
@@ -1214,6 +1269,84 @@ JSON Response:";
                    node.SelectNodes(".//td")?.Count > 0;
         }
 
+        private List<string> ExtractUrlsFromNode(HtmlNode node)
+        {
+            var urls = new List<string>();
+            
+            try
+            {
+                // Extract URLs from anchor tags
+                var links = node.SelectNodes(".//a[@href]");
+                if (links != null)
+                {
+                    foreach (var link in links)
+                    {
+                        var href = link.GetAttributeValue("href", "");
+                        var linkText = CleanText(link.InnerText).ToLowerInvariant();
+                        
+                        // Look for external links, especially those that indicate scholarship websites
+                        if (!string.IsNullOrWhiteSpace(href) && IsExternalScholarshipUrl(href, linkText))
+                        {
+                            if (Uri.TryCreate(href, UriKind.Absolute, out var absoluteUri))
+                            {
+                                urls.Add(absoluteUri.ToString());
+                            }
+                        }
+                    }
+                }
+                
+                // Also look for URLs in text content using regex
+                var textContent = node.InnerText;
+                var urlMatches = Regex.Matches(textContent, @"https?://[^\s\)]+", RegexOptions.IgnoreCase);
+                foreach (Match match in urlMatches)
+                {
+                    if (Uri.TryCreate(match.Value, UriKind.Absolute, out var uri))
+                    {
+                        urls.Add(uri.ToString());
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning($"Error extracting URLs from node: {ex.Message}");
+            }
+            
+            return urls.Distinct().ToList();
+        }
+
+        private bool IsExternalScholarshipUrl(string href, string linkText)
+        {
+            // Skip internal/navigation links
+            if (href.StartsWith("#") || href.StartsWith("javascript:") || href.StartsWith("mailto:"))
+                return false;
+                
+            // Skip common non-scholarship links
+            var skipPatterns = new[] { "facebook.com", "twitter.com", "linkedin.com", "youtube.com", "instagram.com" };
+            if (skipPatterns.Any(pattern => href.ToLowerInvariant().Contains(pattern)))
+                return false;
+                
+            // Look for scholarship-related link text
+            var scholarshipIndicators = new[] 
+            { 
+                "view website", "apply", "more info", "details", "scholarship", "grant", 
+                "application", "website", "visit", "learn more", "official", "portal"
+            };
+            
+            // If it's an external URL (contains domain) and has scholarship-related text, include it
+            if (href.Contains(".") && scholarshipIndicators.Any(indicator => linkText.Contains(indicator)))
+                return true;
+                
+            // If it's a full URL to an external domain, consider it
+            if (Uri.TryCreate(href, UriKind.Absolute, out var uri))
+            {
+                // Skip if it's the same domain as the source (internal links)
+                // This could be enhanced to compare with the source URL domain
+                return true;
+            }
+            
+            return false;
+        }
+
         private string ProcessTableRow(HtmlNode tableRow)
         {
             try
@@ -1223,6 +1356,7 @@ JSON Response:";
                     return "";
 
                 var cellTexts = new List<string>();
+                var extractedUrls = new List<string>();
                 
                 foreach (var cell in cells)
                 {
@@ -1230,6 +1364,29 @@ JSON Response:";
                     if (!string.IsNullOrWhiteSpace(cellText))
                     {
                         cellTexts.Add(cellText);
+                    }
+                    
+                    // Extract URLs from links within the cell
+                    var links = cell.SelectNodes(".//a[@href]");
+                    if (links != null)
+                    {
+                        foreach (var link in links)
+                        {
+                            var href = link.GetAttributeValue("href", "");
+                            if (!string.IsNullOrWhiteSpace(href))
+                            {
+                                // Convert relative URLs to absolute URLs if needed
+                                if (Uri.TryCreate(href, UriKind.Absolute, out var absoluteUri))
+                                {
+                                    extractedUrls.Add(absoluteUri.ToString());
+                                }
+                                else if (href.StartsWith("/") || href.StartsWith("./"))
+                                {
+                                    // Handle relative URLs - you might want to make this configurable
+                                    extractedUrls.Add(href);
+                                }
+                            }
+                        }
                     }
                 }
 
@@ -1260,23 +1417,497 @@ JSON Response:";
                         {
                             formattedRow.AppendLine($"Contact: {cellTexts[5]}");
                         }
+                        
+                        // Add extracted URLs
+                        if (extractedUrls.Any())
+                        {
+                            formattedRow.AppendLine($"External URLs: {string.Join(", ", extractedUrls)}");
+                        }
                     }
                     else
                     {
                         // Fallback: join all cells
                         formattedRow.AppendLine(string.Join(" | ", cellTexts));
+                        
+                        // Add extracted URLs for fallback format too
+                        if (extractedUrls.Any())
+                        {
+                            formattedRow.AppendLine($"External URLs: {string.Join(", ", extractedUrls)}");
+                        }
                     }
                     
                     return formattedRow.ToString().Trim();
                 }
                 
-                return string.Join(" ", cellTexts);
+                var result = string.Join(" ", cellTexts);
+                if (extractedUrls.Any())
+                {
+                    result += $" | External URLs: {string.Join(", ", extractedUrls)}";
+                }
+                
+                return result;
             }
             catch (Exception ex)
             {
                 _logger.LogWarning($"Error processing table row: {ex.Message}");
                 return CleanText(tableRow.InnerText);
             }
+        }
+
+        /// <summary>
+        /// Scrapes detailed scholarship information from external application URLs
+        /// </summary>
+        public async Task<EnhancedScrapedScholarship?> ScrapeExternalUrlAsync(string externalUrl, EnhancedScrapedScholarship baseScholarship)
+        {
+            try
+            {
+                _logger.LogInformation($"Scraping external URL: {externalUrl}");
+                
+                // Validate URL
+                if (!Uri.TryCreate(externalUrl, UriKind.Absolute, out var validUri))
+                {
+                    _logger.LogWarning($"Invalid external URL: {externalUrl}");
+                    return null;
+                }
+
+                // Rate limiting to avoid being blocked
+                await Task.Delay(2000); // 2 second delay between requests
+                
+                // Create a separate HttpClient for external requests with different headers
+                using var externalClient = new HttpClient();
+                externalClient.Timeout = TimeSpan.FromSeconds(45); // Longer timeout for external sites
+                
+                // Enhanced headers to avoid detection as bot
+                externalClient.DefaultRequestHeaders.Clear();
+                externalClient.DefaultRequestHeaders.Add("User-Agent", 
+                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
+                externalClient.DefaultRequestHeaders.Add("Accept", 
+                    "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7");
+                externalClient.DefaultRequestHeaders.Add("Accept-Language", "en-US,en;q=0.9");
+                externalClient.DefaultRequestHeaders.Add("Accept-Encoding", "gzip, deflate, br");
+                externalClient.DefaultRequestHeaders.Add("DNT", "1");
+                externalClient.DefaultRequestHeaders.Add("Connection", "keep-alive");
+                externalClient.DefaultRequestHeaders.Add("Upgrade-Insecure-Requests", "1");
+                externalClient.DefaultRequestHeaders.Add("Sec-Fetch-Dest", "document");
+                externalClient.DefaultRequestHeaders.Add("Sec-Fetch-Mode", "navigate");
+                externalClient.DefaultRequestHeaders.Add("Sec-Fetch-Site", "none");
+                externalClient.DefaultRequestHeaders.Add("Sec-Fetch-User", "?1");
+                externalClient.DefaultRequestHeaders.Add("Cache-Control", "max-age=0");
+                
+                // Additional retry logic for external requests
+                HttpResponseMessage? response = null;
+                var maxRetries = 3;
+                var retryDelay = 1000; // Start with 1 second
+                
+                for (int retry = 0; retry < maxRetries; retry++)
+                {
+                    try
+                    {
+                        if (retry > 0)
+                        {
+                            _logger.LogInformation($"Retrying external URL request (attempt {retry + 1}/{maxRetries}) after {retryDelay}ms delay");
+                            await Task.Delay(retryDelay);
+                            retryDelay *= 2; // Exponential backoff
+                        }
+                        
+                        response = await externalClient.GetAsync(externalUrl);
+                        
+                        if (response.IsSuccessStatusCode)
+                        {
+                            break; // Success, exit retry loop
+                        }
+                        else if (response.StatusCode == System.Net.HttpStatusCode.TooManyRequests)
+                        {
+                            _logger.LogWarning($"Rate limited by {externalUrl}, waiting longer before retry");
+                            await Task.Delay(5000); // Wait 5 seconds for rate limiting
+                        }
+                        else if ((int)response.StatusCode >= 400 && (int)response.StatusCode < 500)
+                        {
+                            // Client errors (4xx) usually won't be resolved by retrying
+                            _logger.LogWarning($"Client error {response.StatusCode} for {externalUrl}, skipping retries");
+                            break;
+                        }
+                    }
+                    catch (TaskCanceledException) when (retry < maxRetries - 1)
+                    {
+                        _logger.LogWarning($"Request timeout for {externalUrl}, retrying...");
+                        continue;
+                    }
+                    catch (HttpRequestException) when (retry < maxRetries - 1)
+                    {
+                        _logger.LogWarning($"HTTP error for {externalUrl}, retrying...");
+                        continue;
+                    }
+                }
+                
+                if (response == null || !response.IsSuccessStatusCode)
+                {
+                    _logger.LogWarning($"Failed to fetch external URL {externalUrl}: {(response != null ? response.StatusCode.ToString() : "No response")}");
+                    return null;
+                }
+                
+                var html = await response.Content.ReadAsStringAsync();
+                
+                if (string.IsNullOrWhiteSpace(html) || html.Length < 100)
+                {
+                    _logger.LogWarning($"External URL returned insufficient content: {html?.Length ?? 0} characters");
+                    return null;
+                }
+                
+                _logger.LogInformation($"Successfully fetched {html.Length} characters from external URL");
+                
+                // Parse the HTML to extract scholarship details
+                var doc = new HtmlDocument();
+                doc.LoadHtml(html);
+                
+                // Extract main content from the external page
+                var externalContent = ExtractMainContentFromExternalPage(doc);
+                
+                if (string.IsNullOrWhiteSpace(externalContent))
+                {
+                    _logger.LogWarning("Could not extract meaningful content from external page");
+                    return null;
+                }
+                
+                _logger.LogInformation($"Extracted {externalContent.Length} characters of content from external page");
+                
+                // Use AI to parse the external content with enhanced prompts
+                var enhancedScholarship = await ParseExternalScholarshipWithAIAsync(externalContent, externalUrl, baseScholarship);
+                
+                if (enhancedScholarship != null)
+                {
+                    _logger.LogInformation($"Successfully enhanced scholarship '{enhancedScholarship.Title}' with external data");
+                    enhancedScholarship.ParsingNotes.Add($"Enhanced with external URL: {externalUrl}");
+                }
+                
+                return enhancedScholarship;
+            }
+            catch (TaskCanceledException ex) when (ex.InnerException is TimeoutException)
+            {
+                _logger.LogWarning($"External URL request timed out: {externalUrl}");
+                return null;
+            }
+            catch (HttpRequestException ex)
+            {
+                _logger.LogWarning($"HTTP error fetching external URL {externalUrl}: {ex.Message}");
+                return null;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Error scraping external URL: {externalUrl}");
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Extracts main content from external scholarship provider pages
+        /// </summary>
+        private string ExtractMainContentFromExternalPage(HtmlDocument doc)
+        {
+            var contentSelectors = new[]
+            {
+                // Common content selectors for scholarship pages
+                "//main",
+                "//article",
+                "//div[contains(@class, 'content')]",
+                "//div[contains(@class, 'main')]",
+                "//div[contains(@class, 'scholarship')]",
+                "//div[contains(@class, 'program')]",
+                "//div[contains(@class, 'opportunity')]",
+                "//div[contains(@class, 'award')]",
+                "//div[contains(@class, 'grant')]",
+                "//div[contains(@class, 'details')]",
+                "//div[contains(@class, 'description')]",
+                "//div[contains(@class, 'information')]",
+                "//div[contains(@class, 'about')]",
+                "//div[contains(@id, 'content')]",
+                "//div[contains(@id, 'main')]",
+                "//section",
+                "//div[@role='main']",
+                "//body"
+            };
+            
+            foreach (var selector in contentSelectors)
+            {
+                try
+                {
+                    var contentNode = doc.DocumentNode.SelectSingleNode(selector);
+                    if (contentNode != null)
+                    {
+                        var text = CleanText(contentNode.InnerText);
+                        if (!string.IsNullOrWhiteSpace(text) && text.Length > 200)
+                        {
+                            _logger.LogInformation($"Extracted content using selector: {selector} ({text.Length} characters)");
+                            
+                            // Remove navigation, footer, and other non-content elements
+                            var cleanedText = CleanExternalPageContent(text);
+                            
+                            if (cleanedText.Length > 500)
+                            {
+                                return cleanedText;
+                            }
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogDebug($"Selector {selector} failed: {ex.Message}");
+                    continue;
+                }
+            }
+            
+            return "";
+        }
+
+        /// <summary>
+        /// Cleans extracted content from external pages by removing navigation, footer, and irrelevant content
+        /// </summary>
+        private string CleanExternalPageContent(string content)
+        {
+            if (string.IsNullOrWhiteSpace(content))
+                return "";
+            
+            // Common phrases to remove from external content
+            var removePatterns = new[]
+            {
+                @"Skip to (?:main )?content",
+                @"Navigation menu",
+                @"Main menu",
+                @"Footer",
+                @"Copyright.*?\d{4}",
+                @"All rights reserved",
+                @"Privacy Policy",
+                @"Terms (?:of Use|and Conditions)",
+                @"Contact Us",
+                @"Follow us on",
+                @"Social media",
+                @"Subscribe to",
+                @"Newsletter",
+                @"Cookie Policy",
+                @"Search this site",
+                @"Last updated",
+                @"Print this page",
+                @"Share this page",
+                @"Home\s+About\s+",
+                @"Menu\s+Home\s+",
+                @"Login\s+Register",
+                @"Sign in\s+Sign up"
+            };
+            
+            var cleaned = content;
+            
+            foreach (var pattern in removePatterns)
+            {
+                cleaned = Regex.Replace(cleaned, pattern, "", RegexOptions.IgnoreCase);
+            }
+            
+            // Remove excessive whitespace
+            cleaned = Regex.Replace(cleaned, @"\s+", " ");
+            cleaned = cleaned.Trim();
+            
+            // Focus on scholarship-related content
+            var lines = cleaned.Split('\n');
+            var scholarshipLines = new List<string>();
+            
+            foreach (var line in lines)
+            {
+                var trimmedLine = line.Trim();
+                if (trimmedLine.Length > 20 && 
+                    (ContainsScholarshipKeywords(trimmedLine) || 
+                     scholarshipLines.Count > 0)) // Include context after finding scholarship content
+                {
+                    scholarshipLines.Add(trimmedLine);
+                }
+                
+                // Stop if we have enough content
+                if (scholarshipLines.Count > 50)
+                    break;
+            }
+            
+            return string.Join(" ", scholarshipLines);
+        }
+
+        /// <summary>
+        /// Uses AI to parse detailed scholarship information from external website content
+        /// </summary>
+        private async Task<EnhancedScrapedScholarship?> ParseExternalScholarshipWithAIAsync(string externalContent, string externalUrl, EnhancedScrapedScholarship baseScholarship)
+        {
+            try
+            {
+                _logger.LogInformation($"Starting AI parsing for external content of {externalContent.Length} characters");
+                
+                var aiPrompt = CreateEnhancedScholarshipParsingPrompt(externalContent, baseScholarship);
+                
+                _logger.LogInformation("Sending enhanced prompt to AI service for external content...");
+                var aiResponse = await _openAIService.GetChatCompletionAsync(aiPrompt);
+                
+                _logger.LogInformation($"AI Response received for external content ({aiResponse.Length} characters)");
+                
+                var result = ParseAIResponse(aiResponse, externalContent, externalUrl);
+                
+                if (result != null)
+                {
+                    // Merge with base scholarship data intelligently
+                    var mergedScholarship = MergeScholarshipData(baseScholarship, result);
+                    mergedScholarship.ExternalApplicationUrl = externalUrl;
+                    mergedScholarship.ParsingNotes.Add("Enhanced with external website content");
+                    mergedScholarship.ParsingConfidence = Math.Max(mergedScholarship.ParsingConfidence, 0.8); // Higher confidence for external data
+                    
+                    _logger.LogInformation($"Successfully merged scholarship data for: '{mergedScholarship.Title}'");
+                    return mergedScholarship;
+                }
+                
+                return null;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error parsing external scholarship with AI");
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Creates enhanced AI prompt for parsing external scholarship website content
+        /// </summary>
+        private string CreateEnhancedScholarshipParsingPrompt(string externalContent, EnhancedScrapedScholarship baseScholarship)
+        {
+            return $@"You are an AI assistant that extracts comprehensive scholarship information from official scholarship provider websites.
+
+CONTEXT: This is detailed content from the official scholarship provider website for: '{baseScholarship.Title}'
+The content below contains complete scholarship details including application requirements, benefits, deadlines, and eligibility criteria.
+
+INSTRUCTIONS:
+- Extract ALL available scholarship details from this official source
+- Be thorough and comprehensive - this is the authoritative source
+- Focus on key information that students need to apply
+- Extract monetary values, deadlines, requirements, and benefits
+- Look for application procedures, contact information, and specific criteria
+- Convert any dates to YYYY-MM-DD format (assume current year 2025 if not specified)
+- Extract GPA requirements, course requirements, year level requirements
+- Look for scholarship value/amount information
+- Extract any specific university or institution requirements
+
+CRITICAL: Return ONLY a single JSON object with complete scholarship information.
+
+Extract these fields comprehensively:
+- Title (official scholarship name from the provider website)
+- Description (comprehensive description including purpose and scope)
+- Benefits (detailed benefits including financial and non-financial support)
+- MonetaryValue (extract scholarship amount as decimal, e.g., 50000.00)
+- ApplicationDeadline (application deadline in YYYY-MM-DD format)
+- Requirements (comprehensive eligibility and application requirements)
+- SlotsAvailable (number of scholarships available if mentioned)
+- MinimumGPA (GPA requirement as decimal if specified)
+- RequiredCourse (specific field of study or course requirements)
+- RequiredYearLevel (target year level: 1-4 for undergraduate, 5-8 for graduate)
+- RequiredUniversity (specific university requirements if any)
+- ExternalApplicationUrl (application portal URL if different from this page)
+
+Be extremely thorough - this is the official source so extract as much detail as possible.
+
+Official scholarship website content:
+{externalContent}
+
+JSON Response:";
+        }
+
+        /// <summary>
+        /// Intelligently merges scholarship data from table source with external website details
+        /// </summary>
+        private EnhancedScrapedScholarship MergeScholarshipData(EnhancedScrapedScholarship baseScholarship, EnhancedScrapedScholarship externalScholarship)
+        {
+            var merged = new EnhancedScrapedScholarship
+            {
+                // Use external title if it's more comprehensive, otherwise use base
+                Title = !string.IsNullOrWhiteSpace(externalScholarship.Title) && externalScholarship.Title.Length > baseScholarship.Title?.Length 
+                    ? externalScholarship.Title 
+                    : baseScholarship.Title ?? externalScholarship.Title,
+                
+                // Combine descriptions intelligently
+                Description = CombineText(baseScholarship.Description, externalScholarship.Description, " | "),
+                
+                // Use external benefits as they're more detailed
+                Benefits = !string.IsNullOrWhiteSpace(externalScholarship.Benefits) 
+                    ? externalScholarship.Benefits 
+                    : baseScholarship.Benefits,
+                
+                // Prefer external monetary value as it's from official source
+                MonetaryValue = externalScholarship.MonetaryValue ?? baseScholarship.MonetaryValue,
+                
+                // Use external deadline as it's more reliable
+                ApplicationDeadline = externalScholarship.ApplicationDeadline ?? baseScholarship.ApplicationDeadline,
+                
+                // Combine requirements for comprehensive information
+                Requirements = CombineText(baseScholarship.Requirements, externalScholarship.Requirements, " | "),
+                
+                // Use external data for detailed fields
+                SlotsAvailable = externalScholarship.SlotsAvailable ?? baseScholarship.SlotsAvailable,
+                MinimumGPA = externalScholarship.MinimumGPA ?? baseScholarship.MinimumGPA,
+                RequiredCourse = CombineText(baseScholarship.RequiredCourse, externalScholarship.RequiredCourse, " | "),
+                RequiredYearLevel = externalScholarship.RequiredYearLevel ?? baseScholarship.RequiredYearLevel,
+                RequiredUniversity = CombineText(baseScholarship.RequiredUniversity, externalScholarship.RequiredUniversity, " | "),
+                
+                // Prefer external URL for applications
+                ExternalApplicationUrl = externalScholarship.ExternalApplicationUrl ?? baseScholarship.ExternalApplicationUrl,
+                
+                // Keep original metadata
+                SourceUrl = baseScholarship.SourceUrl,
+                ScrapedAt = baseScholarship.ScrapedAt,
+                IsActive = true,
+                IsInternal = false, // External URLs indicate external scholarships
+                
+                // Combine raw text for reference
+                RawText = $"TABLE DATA: {baseScholarship.RawText}\n\nEXTERNAL CONTENT: {externalScholarship.RawText}",
+                
+                // Combine parsing notes
+                ParsingNotes = baseScholarship.ParsingNotes.Concat(externalScholarship.ParsingNotes).ToList(),
+                
+                // Use higher confidence from external parsing
+                ParsingConfidence = Math.Max(baseScholarship.ParsingConfidence, externalScholarship.ParsingConfidence)
+            };
+            
+            return merged;
+        }
+
+        /// <summary>
+        /// Combines two text fields intelligently, avoiding duplication
+        /// </summary>
+        private string? CombineText(string? text1, string? text2, string separator = " | ")
+        {
+            if (string.IsNullOrWhiteSpace(text1) && string.IsNullOrWhiteSpace(text2))
+                return null;
+            
+            if (string.IsNullOrWhiteSpace(text1))
+                return text2;
+            
+            if (string.IsNullOrWhiteSpace(text2))
+                return text1;
+            
+            // Avoid duplication if texts are very similar
+            if (text1.Length > 10 && text2.Length > 10)
+            {
+                var similarity = CalculateTextSimilarity(text1, text2);
+                if (similarity > 0.8) // 80% similar, just use the longer one
+                {
+                    return text1.Length > text2.Length ? text1 : text2;
+                }
+            }
+            
+            return $"{text1}{separator}{text2}";
+        }
+
+        /// <summary>
+        /// Calculates simple text similarity to avoid duplicate information
+        /// </summary>
+        private double CalculateTextSimilarity(string text1, string text2)
+        {
+            var words1 = text1.ToLowerInvariant().Split(' ', StringSplitOptions.RemoveEmptyEntries).ToHashSet();
+            var words2 = text2.ToLowerInvariant().Split(' ', StringSplitOptions.RemoveEmptyEntries).ToHashSet();
+            
+            var intersection = words1.Intersect(words2).Count();
+            var union = words1.Union(words2).Count();
+            
+            return union > 0 ? (double)intersection / union : 0;
         }
     }
 }

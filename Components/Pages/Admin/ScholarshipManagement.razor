@@ -1,0 +1,1068 @@
+@page "/admin/scholarship-management"
+@layout SuperAdminDashLayout
+@using c2_eskolar.Models
+@using c2_eskolar.Data
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components
+@using Microsoft.EntityFrameworkCore
+@attribute [Authorize(Roles = "SuperAdmin")]
+@inject IDbContextFactory<ApplicationDbContext> DbContextFactory
+@inject IJSRuntime JSRuntime
+@rendermode InteractiveServer
+
+<PageTitle>Published Scholarship Management - Admin Dashboard</PageTitle>
+
+<div class="scholarship-management-container">
+    <!-- Header Section -->
+    <div class="dashboard-header">
+        <div class="header-content">
+            <div class="header-title">
+                <h1 class="page-title">
+                    <i class="fas fa-graduation-cap text-primary"></i>
+                    Published Scholarship Management
+                </h1>
+                <p class="page-subtitle">Manage approved scholarships visible to students • Posted by institutions and benefactors</p>
+            </div>
+            <div class="header-actions">
+                <button class="btn btn-primary" @onclick="ShowNewScholarshipModal">
+                    <i class="fas fa-plus"></i>
+                    New Scholarship
+                </button>
+                <button class="btn btn-success" @onclick="ShowBulkOperations">
+                    <i class="fas fa-tasks"></i>
+                    Bulk Operations
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="stats-grid">
+        <div class="stat-card total-published">
+            <div class="stat-icon">
+                <i class="fas fa-graduation-cap"></i>
+            </div>
+            <div class="stat-content">
+                <h3 class="stat-number">@totalPublishedCount</h3>
+                <p class="stat-label">Total Published</p>
+                <span class="stat-trend positive">+@todayPublishedCount today</span>
+            </div>
+        </div>
+
+        <div class="stat-card active-scholarships">
+            <div class="stat-icon">
+                <i class="fas fa-eye"></i>
+            </div>
+            <div class="stat-content">
+                <h3 class="stat-number">@activeScholarshipsCount</h3>
+                <p class="stat-label">Active & Visible</p>
+                <span class="stat-trend positive">Currently accepting applications</span>
+            </div>
+        </div>
+
+        <div class="stat-card total-applications">
+            <div class="stat-icon">
+                <i class="fas fa-users"></i>
+            </div>
+            <div class="stat-content">
+                <h3 class="stat-number">@totalApplicationsCount</h3>
+                <p class="stat-label">Total Applications</p>
+                <span class="stat-trend positive">From students</span>
+            </div>
+        </div>
+
+        <div class="stat-card avg-value">
+            <div class="stat-icon">
+                <i class="fas fa-chart-line"></i>
+            </div>
+            <div class="stat-content">
+                <h3 class="stat-number">@($"{averageMonetaryValue:C0}")</h3>
+                <p class="stat-label">Avg Value</p>
+                <span class="stat-trend @(averageMonetaryValue > 50000 ? "positive" : "neutral")">Scholarship worth</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters and Search -->
+    <div class="filters-section">
+        <div class="filters-header">
+            <h3>
+                <i class="fas fa-filter"></i>
+                Filters & Search
+            </h3>
+            <button class="btn btn-outline-secondary btn-sm" @onclick="ClearFilters">
+                <i class="fas fa-times"></i>
+                Clear All
+            </button>
+        </div>
+
+        <div class="filters-content">
+            <div class="search-box">
+                <div class="input-group">
+                    <span class="input-group-text">
+                        <i class="fas fa-search"></i>
+                    </span>
+                    <input type="text" class="form-control" placeholder="Search scholarships..." 
+                           @bind="searchQuery" @oninput="OnSearchChanged" />
+                </div>
+            </div>
+
+            <div class="filter-row">
+                <div class="filter-group">
+                    <label>Status</label>
+                    <select class="form-select" @bind="statusFilter" @bind:after="ApplyFilters">
+                        <option value="">All Status</option>
+                        <option value="active">🟢 Active</option>
+                        <option value="inactive">🔴 Inactive</option>
+                        <option value="expired">⚪ Expired</option>
+                    </select>
+                </div>
+
+                <div class="filter-group">
+                    <label>Type</label>
+                    <select class="form-select" @bind="typeFilter" @bind:after="ApplyFilters">
+                        <option value="">All Types</option>
+                        <option value="internal">🏫 Internal (Institution)</option>
+                        <option value="external">🎯 External (Benefactor)</option>
+                    </select>
+                </div>
+
+                <div class="filter-group">
+                    <label>Source</label>
+                    <select class="form-select" @bind="sourceFilter" @bind:after="ApplyFilters">
+                        <option value="">All Sources</option>
+                        @foreach (var source in availableSources)
+                        {
+                            <option value="@source">@source</option>
+                        }
+                    </select>
+                </div>
+
+                <div class="filter-group">
+                    <label>Date Range</label>
+                    <select class="form-select" @bind="dateFilter" @bind:after="ApplyFilters">
+                        <option value="">All Time</option>
+                        <option value="today">Today</option>
+                        <option value="week">This Week</option>
+                        <option value="month">This Month</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scholarships Data Table -->
+    <div class="scholarships-table-section">
+        <div class="table-header">
+            <div class="table-info">
+                <h3>
+                    <i class="fas fa-graduation-cap"></i>
+                    Published Scholarships
+                </h3>
+                <span class="record-count">@filteredScholarships.Count() of @allScholarships.Count() scholarships</span>
+            </div>
+            
+            <div class="table-actions">
+                <div class="view-toggle">
+                    <button class="btn @(viewMode == "table" ? "btn-primary" : "btn-outline-primary") btn-sm" 
+                            @onclick='() => SetViewMode("table")'>
+                        <i class="fas fa-table"></i>
+                    </button>
+                    <button class="btn @(viewMode == "cards" ? "btn-primary" : "btn-outline-primary") btn-sm" 
+                            @onclick='() => SetViewMode("cards")'>
+                        <i class="fas fa-th-large"></i>
+                    </button>
+                </div>
+                
+                <button class="btn btn-success btn-sm" @onclick="ExportFilteredData">
+                    <i class="fas fa-download"></i>
+                    Export
+                </button>
+            </div>
+        </div>
+
+        @if (isLoading)
+        {
+            <div class="loading-spinner">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p>Loading scholarship data...</p>
+            </div>
+        }
+        else if (viewMode == "table")
+        {
+            <div class="table-responsive">
+                <table class="table table-hover scholarship-table">
+                    <thead class="table-dark">
+                        <tr>
+                            <th scope="col">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" @onchange="ToggleSelectAll" />
+                                </div>
+                            </th>
+                            <th @onclick='() => SortBy("Title")' class="sortable">
+                                Title
+                                <i class="fas fa-sort"></i>
+                            </th>
+                            <th @onclick='() => SortBy("IsActive")' class="sortable">
+                                Status
+                                <i class="fas fa-sort"></i>
+                            </th>
+                            <th @onclick='() => SortBy("MonetaryValue")' class="sortable">
+                                Value
+                                <i class="fas fa-sort"></i>
+                            </th>
+                            <th @onclick='() => SortBy("ApplicationDeadline")' class="sortable">
+                                Deadline
+                                <i class="fas fa-sort"></i>
+                            </th>
+                            <th @onclick='() => SortBy("CreatedAt")' class="sortable">
+                                Created Date
+                                <i class="fas fa-sort"></i>
+                            </th>
+                            <th>Source</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var scholarship in paginatedScholarships)
+                        {
+                            <tr class="@GetRowClass(scholarship)">
+                                <td>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" 
+                                               checked="@selectedScholarshipIds.Contains(scholarship.ScholarshipId)"
+                                               @onchange="(e) => ToggleScholarshipSelection(scholarship, e)" />
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="scholarship-title-cell">
+                                        <h6 class="mb-1">@scholarship.Title</h6>
+                                        <small class="text-muted">@(scholarship.Description?.Length > 80 ? scholarship.Description.Substring(0, 80) + "..." : scholarship.Description)</small>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="status-badge @GetStatusClass(GetScholarshipStatus(scholarship))">
+                                        @GetStatusIcon(GetScholarshipStatus(scholarship)) @GetScholarshipStatus(scholarship)
+                                    </span>
+                                </td>
+                                <td>
+                                    <div class="value-cell">
+                                        @if (scholarship.MonetaryValue.HasValue)
+                                        {
+                                            <span class="value-amount">@($"{scholarship.MonetaryValue:C0}")</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">Not specified</span>
+                                        }
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="deadline-cell">
+                                        <span class="deadline-date @(scholarship.ApplicationDeadline <= DateTime.Now ? "text-danger" : "")">
+                                            @scholarship.ApplicationDeadline.ToString("MMM dd, yyyy")
+                                        </span>
+                                        <br />
+                                        <small class="text-muted">
+                                            @(scholarship.ApplicationDeadline <= DateTime.Now ? "Expired" : 
+                                              (scholarship.ApplicationDeadline - DateTime.Now).Days + " days left")
+                                        </small>
+                                    </div>
+                                </td>
+                                <td>
+                                    <small class="text-muted">
+                                        @scholarship.CreatedAt.ToString("MMM dd, yyyy")
+                                        <br />
+                                        <span class="time-ago">@scholarship.CreatedAt.ToString("HH:mm")</span>
+                                    </small>
+                                </td>
+                                <td>
+                                    <span class="badge bg-light text-dark">@GetScholarshipSource(scholarship)</span>
+                                </td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <button class="btn btn-outline-primary" @onclick="() => EditScholarship(scholarship)" title="Edit">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <button class="btn btn-outline-info" @onclick="() => PreviewScholarship(scholarship)" title="Preview">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                        @if (!scholarship.IsActive)
+                                        {
+                                            <button class="btn btn-outline-success" @onclick="() => ActivateScholarship(scholarship)" title="Activate">
+                                                <i class="fas fa-play"></i>
+                                            </button>
+                                        }
+                                        else
+                                        {
+                                            <button class="btn btn-outline-warning" @onclick="() => DeactivateScholarship(scholarship)" title="Deactivate">
+                                                <i class="fas fa-pause"></i>
+                                            </button>
+                                        }
+                                        <button class="btn btn-outline-danger" @onclick="() => DeleteScholarship(scholarship)" title="Delete">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            <div class="pagination-section">
+                <div class="pagination-info">
+                    <span>Showing @((currentPage - 1) * pageSize + 1) to @Math.Min(currentPage * pageSize, filteredScholarships.Count()) of @filteredScholarships.Count() entries</span>
+                </div>
+                <nav>
+                    <ul class="pagination pagination-sm">
+                        <li class="page-item @(currentPage == 1 ? "disabled" : "")">
+                            <button class="page-link" @onclick="() => ChangePage(currentPage - 1)">Previous</button>
+                        </li>
+                        @for (int i = Math.Max(1, currentPage - 2); i <= Math.Min(totalPages, currentPage + 2); i++)
+                        {
+                            <li class="page-item @(i == currentPage ? "active" : "")">
+                                <button class="page-link" @onclick="() => ChangePage(i)">@i</button>
+                            </li>
+                        }
+                        <li class="page-item @(currentPage == totalPages ? "disabled" : "")">
+                            <button class="page-link" @onclick="() => ChangePage(currentPage + 1)">Next</button>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+        }
+        else
+        {
+            <!-- Card View Implementation will go here -->
+            <div class="cards-view">
+                <p class="text-center text-muted">Card view coming soon...</p>
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    // Statistics Properties
+    private int totalPublishedCount = 0;
+    private int todayPublishedCount = 0;
+    private int activeScholarshipsCount = 0;
+    private int totalApplicationsCount = 0;
+    private decimal averageMonetaryValue = 0.0m;
+
+    // Data Properties
+    private List<Scholarship> allScholarships = new();
+    private IEnumerable<Scholarship> filteredScholarships = new List<Scholarship>();
+    private IEnumerable<Scholarship> paginatedScholarships = new List<Scholarship>();
+    private List<string> availableSources = new();
+    private HashSet<int> selectedScholarshipIds = new();
+
+    // Filter Properties
+    private string searchQuery = "";
+    private string statusFilter = "";
+    private string typeFilter = "";
+    private string sourceFilter = "";
+    private string dateFilter = "";
+
+    // UI State Properties
+    private bool isLoading = true;
+    private string viewMode = "table";
+    private string sortColumn = "CreatedAt";
+    private bool sortAscending = false;
+
+    // Pagination Properties
+    private int currentPage = 1;
+    private int pageSize = 20;
+    private int totalPages = 1;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadScholarshipData();
+        CalculateStatistics();
+        ApplyFilters();
+    }
+
+    private async Task LoadScholarshipData()
+    {
+        isLoading = true;
+        StateHasChanged();
+
+        try
+        {
+            using var context = await DbContextFactory.CreateDbContextAsync();
+            
+            // Load all published scholarships with their related data
+            var scholarships = await context.Scholarships
+                .Include(s => s.Institution)
+                .Include(s => s.Benefactor)
+                .Include(s => s.Applications)
+                .ToListAsync();
+            
+            allScholarships = scholarships;
+            
+            // Extract unique sources (institution/benefactor names)
+            availableSources = allScholarships
+                .Select(s => GetScholarshipSource(s))
+                .Where(s => !string.IsNullOrEmpty(s))
+                .Distinct()
+                .OrderBy(s => s)
+                .ToList();
+        }
+        catch (Exception ex)
+        {
+            // Handle error - if no data is available, create empty list
+            Console.WriteLine($"Error loading scholarship data: {ex.Message}");
+            allScholarships = new List<Scholarship>();
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private void CalculateStatistics()
+    {
+        totalPublishedCount = allScholarships.Count;
+        todayPublishedCount = allScholarships.Count(s => s.CreatedAt.Date == DateTime.Today);
+        activeScholarshipsCount = allScholarships.Count(s => s.IsActive && s.ApplicationDeadline > DateTime.Now);
+        totalApplicationsCount = allScholarships.Sum(s => s.Applications.Count);
+        averageMonetaryValue = allScholarships.Where(s => s.MonetaryValue.HasValue).Any() ? 
+            allScholarships.Where(s => s.MonetaryValue.HasValue).Average(s => s.MonetaryValue.Value) : 0m;
+    }
+
+    private void ApplyFilters()
+    {
+        var filtered = allScholarships.AsEnumerable();
+
+        // Apply search filter
+        if (!string.IsNullOrWhiteSpace(searchQuery))
+        {
+            var query = searchQuery.ToLowerInvariant();
+            filtered = filtered.Where(s => 
+                (s.Title?.ToLowerInvariant().Contains(query) ?? false) ||
+                (s.Description?.ToLowerInvariant().Contains(query) ?? false) ||
+                (s.Requirements?.ToLowerInvariant().Contains(query) ?? false) ||
+                (s.Benefits?.ToLowerInvariant().Contains(query) ?? false));
+        }
+
+        // Apply status filter
+        if (!string.IsNullOrWhiteSpace(statusFilter))
+        {
+            filtered = statusFilter switch
+            {
+                "active" => filtered.Where(s => s.IsActive && s.ApplicationDeadline > DateTime.Now),
+                "inactive" => filtered.Where(s => !s.IsActive),
+                "expired" => filtered.Where(s => s.ApplicationDeadline <= DateTime.Now),
+                _ => filtered
+            };
+        }
+
+        // Apply type filter
+        if (!string.IsNullOrWhiteSpace(typeFilter))
+        {
+            filtered = typeFilter switch
+            {
+                "internal" => filtered.Where(s => s.IsInternal || s.InstitutionProfileId.HasValue),
+                "external" => filtered.Where(s => !s.IsInternal && s.BenefactorProfileId.HasValue),
+                _ => filtered
+            };
+        }
+
+        // Apply source filter
+        if (!string.IsNullOrWhiteSpace(sourceFilter))
+            filtered = filtered.Where(s => GetScholarshipSource(s) == sourceFilter);
+
+        // Apply date filter
+        if (!string.IsNullOrWhiteSpace(dateFilter))
+        {
+            var now = DateTime.Now;
+            filtered = dateFilter switch
+            {
+                "today" => filtered.Where(s => s.CreatedAt.Date == now.Date),
+                "week" => filtered.Where(s => s.CreatedAt >= now.AddDays(-7)),
+                "month" => filtered.Where(s => s.CreatedAt >= now.AddDays(-30)),
+                _ => filtered
+            };
+        }
+
+        // Apply sorting
+        filtered = sortColumn switch
+        {
+            "Title" => sortAscending ? filtered.OrderBy(s => s.Title) : filtered.OrderByDescending(s => s.Title),
+            "IsActive" => sortAscending ? filtered.OrderBy(s => s.IsActive) : filtered.OrderByDescending(s => s.IsActive),
+            "MonetaryValue" => sortAscending ? filtered.OrderBy(s => s.MonetaryValue ?? 0) : filtered.OrderByDescending(s => s.MonetaryValue ?? 0),
+            "ApplicationDeadline" => sortAscending ? filtered.OrderBy(s => s.ApplicationDeadline) : filtered.OrderByDescending(s => s.ApplicationDeadline),
+            "CreatedAt" => sortAscending ? filtered.OrderBy(s => s.CreatedAt) : filtered.OrderByDescending(s => s.CreatedAt),
+            _ => filtered.OrderByDescending(s => s.CreatedAt)
+        };
+
+        filteredScholarships = filtered.ToList();
+        totalPages = (int)Math.Ceiling((double)filteredScholarships.Count() / pageSize);
+        currentPage = Math.Min(currentPage, Math.Max(1, totalPages));
+        UpdatePaginatedData();
+    }
+
+    private void UpdatePaginatedData()
+    {
+        var skip = (currentPage - 1) * pageSize;
+        paginatedScholarships = filteredScholarships.Skip(skip).Take(pageSize);
+        StateHasChanged();
+    }
+
+    // Event Handlers
+    private async Task OnSearchChanged(ChangeEventArgs e)
+    {
+        searchQuery = e.Value?.ToString() ?? "";
+        currentPage = 1;
+        ApplyFilters();
+        await Task.Delay(10);
+    }
+
+    private void ClearFilters()
+    {
+        searchQuery = statusFilter = typeFilter = sourceFilter = dateFilter = "";
+        currentPage = 1;
+        ApplyFilters();
+    }
+
+    private void SortBy(string column)
+    {
+        if (sortColumn == column)
+            sortAscending = !sortAscending;
+        else
+        {
+            sortColumn = column;
+            sortAscending = true;
+        }
+        ApplyFilters();
+    }
+
+    private void ChangePage(int page)
+    {
+        if (page >= 1 && page <= totalPages)
+        {
+            currentPage = page;
+            UpdatePaginatedData();
+        }
+    }
+
+    private void SetViewMode(string mode)
+    {
+        viewMode = mode;
+        StateHasChanged();
+    }
+
+    private void ToggleSelectAll(ChangeEventArgs e)
+    {
+        var isChecked = (bool)(e.Value ?? false);
+        selectedScholarshipIds = isChecked ? 
+            paginatedScholarships.Select(s => s.ScholarshipId).ToHashSet() : 
+            new HashSet<int>();
+        StateHasChanged();
+    }
+
+    private void ToggleScholarshipSelection(Scholarship scholarship, ChangeEventArgs e)
+    {
+        var isChecked = (bool)(e.Value ?? false);
+        var scholarshipId = scholarship.ScholarshipId;
+        if (isChecked)
+            selectedScholarshipIds.Add(scholarshipId);
+        else
+            selectedScholarshipIds.Remove(scholarshipId);
+        StateHasChanged();
+    }
+
+    // UI Helper Methods
+    private string GetScholarshipSource(Scholarship scholarship)
+    {
+        if (scholarship.Institution != null)
+            return scholarship.Institution.InstitutionName ?? "Unknown Institution";
+        if (scholarship.Benefactor != null)
+            return scholarship.Benefactor.OrganizationName ?? "Unknown Benefactor";
+        return "Unknown Source";
+    }
+
+    private string GetScholarshipStatus(Scholarship scholarship)
+    {
+        if (!scholarship.IsActive)
+            return "Inactive";
+        if (scholarship.ApplicationDeadline <= DateTime.Now)
+            return "Expired";
+        return "Active";
+    }
+
+    private string GetRowClass(Scholarship scholarship)
+    {
+        var classes = new List<string>();
+        if (selectedScholarshipIds.Contains(scholarship.ScholarshipId))
+            classes.Add("table-primary");
+        if (scholarship.MonetaryValue > 100000)
+            classes.Add("enhanced-row");
+        return string.Join(" ", classes);
+    }
+
+    private string GetStatusClass(string status) => status?.ToLowerInvariant() switch
+    {
+        "active" => "status-approved",
+        "inactive" => "status-rejected",
+        "expired" => "status-archived",
+        _ => "status-scraped"
+    };
+
+    private string GetStatusIcon(string status) => status?.ToLowerInvariant() switch
+    {
+        "active" => "🟢",
+        "inactive" => "🔴",
+        "expired" => "⚪",
+        _ => "🔵"
+    };
+
+    // Action Methods
+    private async Task ShowNewScholarshipModal()
+    {
+        await JSRuntime.InvokeVoidAsync("alert", "New scholarship creation modal will be implemented next!");
+    }
+
+    private async Task ShowBulkOperations()
+    {
+        await JSRuntime.InvokeVoidAsync("alert", "Bulk operations modal will be implemented next!");
+    }
+
+    private async Task EditScholarship(Scholarship scholarship)
+    {
+        await JSRuntime.InvokeVoidAsync("alert", $"Edit scholarship: {scholarship.Title}");
+    }
+
+    private async Task PreviewScholarship(Scholarship scholarship)
+    {
+        await JSRuntime.InvokeVoidAsync("alert", $"Preview scholarship: {scholarship.Title}");
+    }
+
+    private async Task ActivateScholarship(Scholarship scholarship)
+    {
+        try
+        {
+            using var context = await DbContextFactory.CreateDbContextAsync();
+            var scholarshipToUpdate = await context.Scholarships.FindAsync(scholarship.ScholarshipId);
+            if (scholarshipToUpdate != null)
+            {
+                scholarshipToUpdate.IsActive = true;
+                scholarshipToUpdate.UpdatedAt = DateTime.UtcNow;
+                await context.SaveChangesAsync();
+                
+                // Update local object
+                scholarship.IsActive = true;
+                scholarship.UpdatedAt = DateTime.UtcNow;
+                
+                CalculateStatistics();
+                ApplyFilters();
+                await JSRuntime.InvokeVoidAsync("alert", $"Scholarship '{scholarship.Title}' has been activated successfully!");
+            }
+        }
+        catch (Exception ex)
+        {
+            await JSRuntime.InvokeVoidAsync("alert", $"Error activating scholarship: {ex.Message}");
+        }
+    }
+
+    private async Task DeactivateScholarship(Scholarship scholarship)
+    {
+        try
+        {
+            using var context = await DbContextFactory.CreateDbContextAsync();
+            var scholarshipToUpdate = await context.Scholarships.FindAsync(scholarship.ScholarshipId);
+            if (scholarshipToUpdate != null)
+            {
+                scholarshipToUpdate.IsActive = false;
+                scholarshipToUpdate.UpdatedAt = DateTime.UtcNow;
+                await context.SaveChangesAsync();
+                
+                // Update local object
+                scholarship.IsActive = false;
+                scholarship.UpdatedAt = DateTime.UtcNow;
+                
+                CalculateStatistics();
+                ApplyFilters();
+                await JSRuntime.InvokeVoidAsync("alert", $"Scholarship '{scholarship.Title}' has been deactivated successfully!");
+            }
+        }
+        catch (Exception ex)
+        {
+            await JSRuntime.InvokeVoidAsync("alert", $"Error deactivating scholarship: {ex.Message}");
+        }
+    }
+
+    private async Task DeleteScholarship(Scholarship scholarship)
+    {
+        var confirmed = await JSRuntime.InvokeAsync<bool>("confirm", $"Are you sure you want to delete '{scholarship.Title}'?");
+        if (confirmed)
+        {
+            try
+            {
+                using var context = await DbContextFactory.CreateDbContextAsync();
+                var scholarshipToDelete = await context.Scholarships.FindAsync(scholarship.ScholarshipId);
+                if (scholarshipToDelete != null)
+                {
+                    context.Scholarships.Remove(scholarshipToDelete);
+                    await context.SaveChangesAsync();
+                    
+                    allScholarships.Remove(scholarship);
+                    CalculateStatistics();
+                    ApplyFilters();
+                    await JSRuntime.InvokeVoidAsync("alert", $"Scholarship '{scholarship.Title}' has been deleted successfully!");
+                }
+            }
+            catch (Exception ex)
+            {
+                await JSRuntime.InvokeVoidAsync("alert", $"Error deleting scholarship: {ex.Message}");
+            }
+        }
+    }
+
+    private async Task ExportFilteredData()
+    {
+        await JSRuntime.InvokeVoidAsync("alert", $"Exporting {filteredScholarships.Count()} scholarships to CSV...");
+    }
+}
+
+<style>
+/* Published Scholarship Management Styles */
+.scholarship-management-container {
+    padding: 20px;
+    background-color: #f8f9fa;
+    min-height: 100vh;
+}
+
+.dashboard-header {
+    margin-bottom: 30px;
+}
+
+.header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: white;
+    padding: 24px;
+    border-radius: 16px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+    border: 1px solid rgba(0,0,0,0.05);
+}
+
+.page-title {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #2d3748;
+    margin: 0 0 8px 0;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.page-subtitle {
+    color: #6b7280;
+    margin: 0;
+    font-size: 1rem;
+}
+
+.header-actions {
+    display: flex;
+    gap: 12px;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+    margin-bottom: 30px;
+}
+
+.stat-card {
+    background: linear-gradient(135deg, #fff 0%, #f8fafc 100%);
+    border-radius: 16px;
+    padding: 24px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+    border: 1px solid rgba(0,0,0,0.05);
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+}
+
+.stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+}
+
+.stat-card.total-published::before { background: linear-gradient(90deg, #667eea, #764ba2); }
+.stat-card.active-scholarships::before { background: linear-gradient(90deg, #4facfe, #00f2fe); }
+.stat-card.total-applications::before { background: linear-gradient(90deg, #43e97b, #38f9d7); }
+.stat-card.avg-value::before { background: linear-gradient(90deg, #f093fb, #f5576c); }
+
+.stat-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    color: white;
+    margin-right: 20px;
+    flex-shrink: 0;
+}
+
+.stat-card.total-published .stat-icon { background: linear-gradient(135deg, #667eea, #764ba2); }
+.stat-card.active-scholarships .stat-icon { background: linear-gradient(135deg, #4facfe, #00f2fe); }
+.stat-card.total-applications .stat-icon { background: linear-gradient(135deg, #43e97b, #38f9d7); }
+.stat-card.avg-value .stat-icon { background: linear-gradient(135deg, #f093fb, #f5576c); }
+
+.stat-content {
+    flex: 1;
+}
+
+.stat-number {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: #2d3748;
+    margin: 0 0 4px 0;
+    line-height: 1;
+}
+
+.stat-label {
+    font-size: 0.95rem;
+    color: #4a5568;
+    font-weight: 500;
+    margin: 0 0 4px 0;
+}
+
+.stat-trend {
+    font-size: 0.8rem;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-weight: 500;
+}
+
+.stat-trend.positive {
+    background-color: rgba(72, 187, 120, 0.1);
+    color: #38a169;
+}
+
+.stat-trend.neutral {
+    background-color: rgba(160, 174, 192, 0.1);
+    color: #4a5568;
+}
+
+.filters-section {
+    background: white;
+    border-radius: 16px;
+    padding: 24px;
+    margin-bottom: 30px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+    border: 1px solid rgba(0,0,0,0.05);
+}
+
+.filters-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.filters-header h3 {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #2d3748;
+}
+
+.filter-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+    margin-top: 20px;
+}
+
+.filter-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.scholarships-table-section {
+    background: white;
+    border-radius: 16px;
+    padding: 24px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+    border: 1px solid rgba(0,0,0,0.05);
+}
+
+.table-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.table-header h3 {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #2d3748;
+}
+
+.record-count {
+    color: #6b7280;
+    font-size: 0.9rem;
+}
+
+.table-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.view-toggle {
+    display: flex;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.view-toggle .btn {
+    border: none;
+    border-radius: 0;
+}
+
+.scholarship-table {
+    margin-bottom: 0;
+}
+
+.scholarship-table th {
+    background-color: #f8fafc;
+    font-weight: 600;
+    color: #374151;
+    border: none;
+    padding: 16px 12px;
+}
+
+.scholarship-table th.sortable {
+    cursor: pointer;
+    user-select: none;
+    transition: background-color 0.2s;
+}
+
+.scholarship-table th.sortable:hover {
+    background-color: #e5e7eb;
+}
+
+.scholarship-table td {
+    padding: 16px 12px;
+    border: none;
+    border-bottom: 1px solid #f3f4f6;
+    vertical-align: middle;
+}
+
+.scholarship-title-cell h6 {
+    font-weight: 600;
+    color: #1f2937;
+    margin-bottom: 4px;
+}
+
+.status-badge {
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+.value-cell .value-amount {
+    font-weight: 600;
+    color: #059669;
+}
+
+.deadline-cell .deadline-date {
+    font-weight: 500;
+}
+
+.loading-spinner {
+    text-align: center;
+    padding: 60px 20px;
+    color: #6b7280;
+}
+
+.loading-spinner .spinner-border {
+    width: 3rem;
+    height: 3rem;
+    margin-bottom: 16px;
+}
+
+.pagination-section {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 24px;
+    padding-top: 16px;
+    border-top: 1px solid #e5e7eb;
+}
+
+.pagination-info {
+    color: #6b7280;
+    font-size: 0.9rem;
+}
+
+.enhanced-row {
+    background-color: rgba(16, 185, 129, 0.05);
+}
+
+.status-approved { background-color: rgba(16, 185, 129, 0.1); color: #059669; }
+.status-rejected { background-color: rgba(239, 68, 68, 0.1); color: #dc2626; }
+.status-archived { background-color: rgba(107, 114, 128, 0.1); color: #374151; }
+.status-scraped { background-color: rgba(59, 130, 246, 0.1); color: #1d4ed8; }
+
+.time-ago {
+    font-size: 0.75rem;
+    color: #9ca3af;
+}
+
+.cards-view {
+    padding: 40px 20px;
+}
+
+@@media (max-width: 768px) {
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .filter-row {
+        grid-template-columns: 1fr;
+    }
+    
+    .table-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 16px;
+    }
+    
+    .table-actions {
+        width: 100%;
+        justify-content: space-between;
+    }
+    
+    .header-content {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 16px;
+    }
+}
+</style>
