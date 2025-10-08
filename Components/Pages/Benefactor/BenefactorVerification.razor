@@ -1,0 +1,276 @@
+@using System.ComponentModel.DataAnnotations
+@using Microsoft.AspNetCore.Components
+@using Microsoft.AspNetCore.Components.Forms
+@using Microsoft.AspNetCore.Components.Web
+@using Microsoft.AspNetCore.Components.Authorization
+@using System.Net.Http
+@using System.Net.Http.Json
+@page "/benefactor/verification"
+@layout Layout.BenefactorDashLayout
+
+
+<EditForm Model="verificationModel" OnValidSubmit="HandleValidSubmit">
+	<DataAnnotationsValidator />
+	<ValidationSummary />
+	<div class="dashboard-center-container">
+		<div class="sv-header">
+			<h2 id="sv-modal-title">Benefactor Verification</h2>
+			<div class="sv-divider"></div>
+		</div>
+
+		<!-- Document Uploads Section -->
+		<section class="sv-card sv-card-elevated">
+			<div class="sv-section-title">Document Upload</div>
+			<div class="sv-upload-grid">
+				<div class="sv-upload-field">
+					<label for="idUploadInput" class="sv-field-label">ID Upload <span class="sv-required">*</span></label>
+					<div class="sv-upload-area">
+						<InputFile id="idUploadInput" style="display:none" accept="image/*,.pdf" OnChange="OnIdFileChange" />
+						<label for="idUploadInput" class="sv-upload-placeholder" style="cursor:pointer;">
+							<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+								<path d="M12 16L16 12H13V8H11V12H8L12 16Z" fill="currentColor"/>
+								<path d="M20 6H16L14 4H10L8 6H4C2.9 6 2 6.9 2 8V18C2 19.1 2.9 20 4 20H20C21.1 20 22 19.1 22 18V8C22 6.9 21.1 6 20 6Z" fill="currentColor"/>
+							</svg>
+							<span>@(IdUploadStatus ?? "Click to upload or drag and drop")</span>
+							<small>PNG, JPG or PDF (max. 5MB) - AI will extract benefactor info</small>
+							@if (!string.IsNullOrEmpty(IdFileName))
+							{
+								<div style="font-size:0.9em; display:flex; align-items:center; gap:0.5em;">
+									<span>@IdFileName</span>
+									<button type="button" class="btn btn-sm btn-danger" @onclick="RemoveIdDocument" style="margin-left:0.5em;">Remove</button>
+								</div>
+							}
+							@if (IdUploadStatus?.Contains("Processing") == true)
+							{
+								<div style="color:orange;font-size:0.9em;">
+									<i class="fas fa-spinner fa-spin"></i> Processing with AI...
+								</div>
+							}
+							else if (IdUploadStatus?.Contains("Extracted") == true)
+							{
+								<div style="color:green;font-size:0.9em;">
+									<i class="fas fa-check-circle"></i> Uploaded & Data Extracted!
+								</div>
+							}
+							else if (!string.IsNullOrEmpty(AdminValidationUploadUrl))
+							{
+								<div style="color:green;font-size:0.9em;">
+									<i class="fas fa-check"></i> Uploaded!
+								</div>
+							}
+						</label>
+					</div>
+				</div>
+				<div class="sv-upload-field">
+					<label for="authLetterUploadInput" class="sv-field-label">Organization/Company Documents <span class="sv-required">*</span></label>
+					<div class="sv-upload-area">
+						<InputFile id="authLetterUploadInput" style="display:none" accept="image/*,.pdf" OnChange="OnAuthLetterFileChange" />
+						<label for="authLetterUploadInput" class="sv-upload-placeholder" style="cursor:pointer;">
+							<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+								<path d="M12 16L16 12H13V8H11V12H8L12 16Z" fill="currentColor"/>
+								<path d="M20 6H16L14 4H10L8 6H4C2.9 6 2 6.9 2 8V18C2 19.1 2.9 20 4 20H20C21.1 20 22 19.1 22 18V8C22 6.9 21.1 6 20 6Z" fill="currentColor"/>
+							</svg>
+							<span>@(AuthLetterUploadStatus ?? "Click to upload or drag and drop")</span>
+							<small>PNG, JPG or PDF (max. 5MB) - AI will extract organization info</small>
+							@if (!string.IsNullOrEmpty(AuthLetterFileName))
+							{
+								<div style="font-size:0.9em; display:flex; align-items:center; gap:0.5em;">
+									<span>@AuthLetterFileName</span>
+									<button type="button" class="btn btn-sm btn-danger" @onclick="RemoveAuthLetterDocument" style="margin-left:0.5em;">Remove</button>
+								</div>
+							}
+							@if (AuthLetterUploadStatus?.Contains("Processing") == true)
+							{
+								<div style="color:orange;font-size:0.9em;">
+									<i class="fas fa-spinner fa-spin"></i> Processing with AI...
+								</div>
+							}
+							else if (AuthLetterUploadStatus?.Contains("Extracted") == true)
+							{
+								<div style="color:green;font-size:0.9em;">
+									<i class="fas fa-check-circle"></i> Uploaded & Data Extracted!
+								</div>
+							}
+							else if (!string.IsNullOrEmpty(LogoUploadUrl))
+							{
+								<div style="color:green;font-size:0.9em;">
+									<i class="fas fa-check"></i> Uploaded!
+								</div>
+							}
+						</label>
+					</div>
+				</div>
+			</div>
+		</section>
+
+		<!-- Personal Information Section -->
+		<section class="sv-card sv-card-elevated">
+			<div class="sv-section-title">Personal Information</div>
+			<div class="sv-form-grid-personal">
+				<!-- Name Row: First Name (wider), Middle Name (shorter), Last Name (wider) -->
+				<div class="sv-field-name-row">
+					<div class="sv-field sv-field-vertical">
+						<label for="adminFirstName" class="sv-field-label">First Name <span class="sv-required">*</span></label>
+						<InputText id="adminFirstName" class="sv-input" placeholder="Enter your first name" @bind-Value="verificationModel.AdminFirstName" />
+						<ValidationMessage For="@(() => verificationModel.AdminFirstName)" />
+					</div>
+					<div class="sv-field sv-field-vertical">
+						<label for="adminMiddleName" class="sv-field-label">Middle Name</label>
+						<InputText id="adminMiddleName" class="sv-input" placeholder="Middle name" @bind-Value="verificationModel.AdminMiddleName" />
+					</div>
+					<div class="sv-field sv-field-vertical">
+						<label for="adminLastName" class="sv-field-label">Last Name <span class="sv-required">*</span></label>
+						<InputText id="adminLastName" class="sv-input" placeholder="Enter your last name" @bind-Value="verificationModel.AdminLastName" />
+						<ValidationMessage For="@(() => verificationModel.AdminLastName)" />
+					</div>
+				</div>
+				
+				<!-- Compact Row: Sex and Birthday -->
+				<div class="sv-field-compact-row">
+					<div class="sv-field sv-field-vertical sv-field-short">
+						<label for="sexDropdown" class="sv-field-label">Sex <span class="sv-required">*</span></label>
+						<div class="sv-custom-select @(ShowSexDropdown ? "sv-custom-select-open" : null)" tabindex="0"
+							 @onclick="ToggleSexDropdown"
+							 @onblur="CloseSexDropdown"
+							 id="sexDropdown">
+							<span class="sv-custom-select-value">@SelectedSexText</span>
+							<svg class="sv-custom-select-arrow" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+							@if (ShowSexDropdown)
+							{
+								<ul class="sv-custom-select-list">
+									<li class="sv-custom-select-item" @onclick='() => SelectSex("")'>Select sex</li>
+									<li class="sv-custom-select-item" @onclick='() => SelectSex("Male")'>Male</li>
+									<li class="sv-custom-select-item" @onclick='() => SelectSex("Female")'>Female</li>
+									<li class="sv-custom-select-item" @onclick='() => SelectSex("Other")'>Other</li>
+								</ul>
+							}
+						</div>
+						<ValidationMessage For="@(() => verificationModel.Sex)" />
+					</div>
+					<div class="sv-field sv-field-vertical">
+						<label for="bday" class="sv-field-label">Birthday <span class="sv-required">*</span></label>
+						<InputDate id="bday" class="sv-input" @bind-Value="verificationModel.BirthDate" />
+						<ValidationMessage For="@(() => verificationModel.BirthDate)" />
+					</div>
+				</div>
+				
+				<!-- Contact Row: Nationality (wider) and Contact Number (shorter) -->
+				<div class="sv-field-contact-row">
+					<div class="sv-field sv-field-vertical">
+						<label for="nationality" class="sv-field-label">Nationality <span class="sv-required">*</span></label>
+						<InputText id="nationality" class="sv-input" placeholder="Enter your nationality" @bind-Value="verificationModel.Nationality" />
+						<ValidationMessage For="@(() => verificationModel.Nationality)" />
+					</div>
+					<div class="sv-field sv-field-vertical">
+						<label for="adminNumber" class="sv-field-label">Contact Number <span class="sv-required">*</span></label>
+						<InputText id="adminNumber" class="sv-input" placeholder="Enter your contact number" @bind-Value="verificationModel.AdminContactNumber" />
+						<ValidationMessage For="@(() => verificationModel.AdminContactNumber)" />
+					</div>
+				</div>
+				
+				<!-- Full Width Fields -->
+				<div class="sv-field sv-field-vertical sv-field-full">
+					<label for="adminPosition" class="sv-field-label">Position</label>
+					<InputText id="adminPosition" class="sv-input" placeholder="Enter your position" @bind-Value="verificationModel.AdminPosition" />
+				</div>
+				<div class="sv-field sv-field-vertical sv-field-full">
+					<label for="adminEmail" class="sv-field-label">Email Address <span class="sv-required">*</span></label>
+					<InputText id="adminEmail" class="sv-input" placeholder="Enter your email address" @bind-Value="verificationModel.AdminEmail" />
+					<ValidationMessage For="@(() => verificationModel.AdminEmail)" />
+				</div>
+			</div>
+		</section>
+
+		<!-- Organization/Company Info Section -->
+		<section class="sv-card sv-card-elevated">
+			<div class="sv-section-title">Organization Information</div>
+			<div class="sv-form-grid">
+				<div class="sv-field sv-field-vertical sv-field-full">
+					<label for="organizationName" class="sv-field-label">Organization or Company Name <span class="sv-required">*</span></label>
+					<InputText id="organizationName" class="sv-input" placeholder="Enter organization/company name" @bind-Value="verificationModel.InstitutionName" />
+					<ValidationMessage For="@(() => verificationModel.InstitutionName)" />
+				</div>
+				<div class="sv-field sv-field-vertical sv-field-full">
+					<label for="organizationAddress" class="sv-field-label">Official Address <span class="sv-required">*</span></label>
+					<InputText id="organizationAddress" class="sv-input" placeholder="Enter official address" @bind-Value="verificationModel.Address" />
+					<ValidationMessage For="@(() => verificationModel.Address)" />
+				</div>
+				<!-- Organization Type and Contact Number Row -->
+				<div class="sv-field-contact-row">
+					<div class="sv-field sv-field-vertical">
+						<label for="organizationTypeDropdown" class="sv-field-label">Organization Type</label>
+						<div class="sv-custom-select @(ShowOrganizationTypeDropdown ? "sv-custom-select-open" : null)" tabindex="0"
+							 @onclick="ToggleOrganizationTypeDropdown"
+							 @onblur="CloseOrganizationTypeDropdown"
+							 id="organizationTypeDropdown">
+							<span class="sv-custom-select-value">@SelectedOrganizationTypeText</span>
+							<svg class="sv-custom-select-arrow" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+							@if (ShowOrganizationTypeDropdown)
+							{
+								<ul class="sv-custom-select-list">
+									<li class="sv-custom-select-item" @onclick='() => SelectOrganizationType("")'>Select type</li>
+									<li class="sv-custom-select-item" @onclick='() => SelectOrganizationType("Corporation")'>Corporation</li>
+									<li class="sv-custom-select-item" @onclick='() => SelectOrganizationType("Foundation")'>Foundation</li>
+									<li class="sv-custom-select-item" @onclick='() => SelectOrganizationType("Non-Profit Organization")'>Non-Profit Organization</li>
+									<li class="sv-custom-select-item" @onclick='() => SelectOrganizationType("Government Agency")'>Government Agency</li>
+									<li class="sv-custom-select-item" @onclick='() => SelectOrganizationType("Educational Institution")'>Educational Institution</li>
+									<li class="sv-custom-select-item" @onclick='() => SelectOrganizationType("Healthcare Organization")'>Healthcare Organization</li>
+									<li class="sv-custom-select-item" @onclick='() => SelectOrganizationType("Religious Organization")'>Religious Organization</li>
+									<li class="sv-custom-select-item" @onclick='() => SelectOrganizationType("Individual Donor")'>Individual Donor</li>
+									<li class="sv-custom-select-item" @onclick='() => SelectOrganizationType("Other")'>Other</li>
+								</ul>
+							}
+						</div>
+					</div>
+					<div class="sv-field sv-field-vertical">
+						<label for="organizationContactNumber" class="sv-field-label">Organization Contact Number <span class="sv-required">*</span></label>
+						<InputText id="organizationContactNumber" class="sv-input" placeholder="Enter organization contact number" @bind-Value="verificationModel.ContactNumber" />
+						<ValidationMessage For="@(() => verificationModel.ContactNumber)" />
+					</div>
+				</div>
+				<div class="sv-field sv-field-vertical sv-field-full">
+					<label for="contactPersonName" class="sv-field-label">Authorized Representative or Supervisor <span class="sv-required">*</span></label>
+					<InputText id="contactPersonName" class="sv-input" placeholder="Enter name of supervisor or manager who can verify your employment" @bind-Value="verificationModel.DeanName" />
+					<ValidationMessage For="@(() => verificationModel.DeanName)" />
+					<small style="color: #6b7280; font-size: 0.875rem; margin-top: 0.25rem;">Someone with authority who can verify that you represent this organization</small>
+				</div>
+				<div class="sv-field sv-field-vertical sv-field-full">
+					<label for="contactPersonEmail" class="sv-field-label">Representative Official Email <span class="sv-required">*</span></label>
+					<InputText id="contactPersonEmail" class="sv-input" placeholder="supervisor@organization.com" @bind-Value="verificationModel.DeanEmail" />
+					<ValidationMessage For="@(() => verificationModel.DeanEmail)" />
+				</div>
+				<div class="sv-field sv-field-vertical sv-field-full">
+					<label for="website" class="sv-field-label">Website</label>
+					<InputText id="website" class="sv-input" placeholder="https://www.organization.com" @bind-Value="verificationModel.Website" />
+					<ValidationMessage For="@(() => verificationModel.Website)" />
+				</div>
+				<div class="sv-field sv-field-vertical sv-field-full">
+					<label for="emailDomain" class="sv-field-label">Official Email Domain</label>
+					<InputText id="emailDomain" class="sv-input" placeholder="organization.com (e.g., company.com, foundation.org)" @bind-Value="verificationModel.Description" />
+					<small style="color: #6b7280; font-size: 0.875rem; margin-top: 0.25rem;">The email domain used by your organization for official communications</small>
+				</div>
+			</div>
+		</section>
+
+		<!-- Actions Section -->
+		<div class="sv-actions-container">
+			<div class="sv-actions-buttons">
+				<button type="button" class="sv-btn sv-btn-secondary">Skip for now</button>
+				<button type="submit" class="sv-btn sv-btn-primary" disabled="@(IsSubmitting)">Submit Verification</button>
+			</div>
+			<div class="sv-status-messages">
+				@if (!string.IsNullOrEmpty(ProfileErrorMessage))
+				{
+					<div class="sv-status-info">
+						<svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+							<path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" fill="currentColor"/>
+						</svg>
+						<span>@ProfileErrorMessage</span>
+					</div>
+				}
+			</div>
+		</div>
+
+	</div>
+</EditForm>
+

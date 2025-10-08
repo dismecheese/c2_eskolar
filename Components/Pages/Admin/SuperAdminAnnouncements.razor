@@ -1,0 +1,580 @@
+@page "/dashboard/superadmin/announcements"
+@attribute [Authorize(Roles = "SuperAdmin")]
+@layout Layout.SuperAdminDashLayout
+@rendermode InteractiveServer
+@using c2_eskolar.Models
+@using c2_eskolar.Models.Enums
+@using c2_eskolar.Services
+@using Microsoft.AspNetCore.Identity
+@using Microsoft.AspNetCore.Components.Authorization
+@inject AnnouncementService AnnouncementService
+@inject UserManager<IdentityUser> UserManager
+@inject AuthenticationStateProvider AuthenticationStateProvider
+
+<PageTitle>SuperAdmin - Announcements</PageTitle>
+
+<div class="container-fluid" style="min-height: 100vh;">
+    <div class="row justify-content-center">
+        <div class="col-12 col-lg-10">
+            <!-- Search and Header -->
+            <div class="d-flex flex-column flex-md-row align-items-md-center mb-4 gap-3 mt-5">
+                <div class="flex-grow-1">
+                    <div class="input-group">
+                        <input type="text" class="form-control" placeholder="Search all announcements..." 
+                               @bind="searchTerm" @oninput="OnSearchChanged" />
+                        <span class="input-group-text bg-white border-0">
+                            <i class="bi bi-search"></i>
+                        </span>
+                    </div>
+                </div>
+                <!-- Create Button for SuperAdmin -->
+                <button class="btn btn-primary d-flex align-items-center gap-2" @onclick="ShowCreateForm">
+                    <i class="bi bi-plus-circle"></i>
+                    <span>Create System Announcement</span>
+                </button>
+            </div>
+
+            <!-- Category Tabs -->
+            <div class="modern-tabs d-flex align-items-center mb-4 gap-3">
+                <div class="tab-pills">
+                    <button class="tab-pill @(activeTab == "all" ? "active" : "")" @onclick='() => SetActiveTab("all")'>
+                        <i class="bi bi-collection"></i> <span>All Announcements</span>
+                    </button>
+                    <button class="tab-pill @(activeTab == "system" ? "active" : "")" @onclick='() => SetActiveTab("system")'>
+                        <i class="bi bi-gear"></i> <span>System</span>
+                    </button>
+                    <button class="tab-pill @(activeTab == "institution" ? "active" : "")" @onclick='() => SetActiveTab("institution")'>
+                        <i class="bi bi-building"></i> <span>Institutions</span>
+                    </button>
+                    <button class="tab-pill @(activeTab == "benefactor" ? "active" : "")" @onclick='() => SetActiveTab("benefactor")'>
+                        <i class="bi bi-globe"></i> <span>Benefactors</span>
+                    </button>
+                </div>
+
+                <!-- Category filter -->
+                <div class="ms-auto">
+                    <select class="form-select form-select-sm" @bind="selectedCategory">
+                        <option value="">All Categories</option>
+                        <option value="Requirements">Requirements</option>
+                        <option value="Results">Results</option>
+                        <option value="Events">Events</option>
+                        <option value="General">General</option>
+                        <option value="System">System</option>
+                        <option value="Maintenance">Maintenance</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="row">
+                <!-- Announcements List -->
+                <div class="col-lg-8">
+                    @if (isLoading)
+                    {
+                        <div class="d-flex justify-content-center py-5">
+                            <div class="spinner-border" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                        </div>
+                    }
+                    else if (filteredAnnouncements?.Any() == true)
+                    {
+                        <div class="mb-3">
+                            <h5 class="text-muted">@GetTabDescription()</h5>
+                        </div>
+
+                        <div class="d-flex flex-column gap-3">
+                            @foreach (var announcement in filteredAnnouncements.OrderByDescending(a => a.IsPinned).ThenByDescending(a => a.CreatedAt))
+                            {
+                                <div class="card shadow-sm border-0 @(announcement.IsPinned ? "border-warning border-2" : "")">
+                                    <div class="card-body">
+                                        <!-- Header with badges -->
+                                        <div class="d-flex justify-content-between align-items-start mb-2">
+                                            <div class="d-flex gap-2 flex-wrap">
+                                                @if (announcement.IsPinned)
+                                                {
+                                                    <span class="badge bg-warning text-dark">
+                                                        <i class="bi bi-pin-fill"></i> Pinned
+                                                    </span>
+                                                }
+                                                <span class="badge @(GetAuthorBadgeClass(announcement.AuthorType))">
+                                                    @announcement.AuthorType
+                                                </span>
+                                                @if (!string.IsNullOrEmpty(announcement.Category))
+                                                {
+                                                    <span class="badge bg-info">@announcement.Category</span>
+                                                }
+                                                <span class="badge bg-@GetPriorityColor(announcement.Priority)">
+                                                    @announcement.Priority
+                                                </span>
+                                            </div>
+                                            <div class="d-flex align-items-center gap-2">
+                                                <small class="text-muted">@announcement.CreatedAt.ToString("MMM dd, yyyy")</small>
+                                                <button class="btn btn-sm btn-outline-secondary" 
+                                                        @onclick="() => ToggleAnnouncementExpansion(announcement.AnnouncementId)"
+                                                        @onclick:stopPropagation="true">
+                                                    @(expandedAnnouncements.Contains(announcement.AnnouncementId) ? "Collapse" : "Details")
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        <!-- Title and Summary -->
+                                        <h6 class="fw-bold mb-2">@announcement.Title</h6>
+                                        @if (!string.IsNullOrEmpty(announcement.Summary))
+                                        {
+                                            <p class="text-secondary mb-3">@announcement.Summary</p>
+                                        }
+                                        else if (!string.IsNullOrEmpty(announcement.Content) && announcement.Content.Length > 150)
+                                        {
+                                            <p class="text-secondary mb-3">@(announcement.Content.Substring(0, 150))...</p>
+                                        }
+                                        else if (!string.IsNullOrEmpty(announcement.Content))
+                                        {
+                                            <p class="text-secondary mb-3">@announcement.Content</p>
+                                        }
+
+                                        <!-- Expanded Details -->
+                                        @if (expandedAnnouncements.Contains(announcement.AnnouncementId))
+                                        {
+                                            <div class="announcement-details border-top pt-3 mt-2">
+                                                <!-- Full Content -->
+                                                @if (!string.IsNullOrEmpty(announcement.Content) && announcement.Content.Length > 150)
+                                                {
+                                                    <div class="mb-3">
+                                                        <h6 class="fw-bold">Full Description:</h6>
+                                                        <div class="text-secondary">@announcement.Content</div>
+                                                    </div>
+                                                }
+
+                                                <!-- Additional Details -->
+                                                <div class="row">
+                                                    @if (!string.IsNullOrEmpty(announcement.OrganizationName))
+                                                    {
+                                                        <div class="col-md-6 mb-2">
+                                                            <small class="text-muted">Organization:</small>
+                                                            <div class="fw-semibold">@announcement.OrganizationName</div>
+                                                        </div>
+                                                    }
+                                                    @if (announcement.ExpiryDate.HasValue)
+                                                    {
+                                                        <div class="col-md-6 mb-2">
+                                                            <small class="text-muted">Deadline:</small>
+                                                            <div class="fw-semibold">@announcement.ExpiryDate.Value.ToString("MMM dd, yyyy")</div>
+                                                        </div>
+                                                    }
+                                                    <div class="col-md-6 mb-2">
+                                                        <small class="text-muted">Visibility:</small>
+                                                        <div class="fw-semibold">@(announcement.IsPublic ? "Public" : "Private")</div>
+                                                    </div>
+                                                    <div class="col-md-6 mb-2">
+                                                        <small class="text-muted">Status:</small>
+                                                        <div class="fw-semibold">@(announcement.IsActive ? "Active" : "Inactive")</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        }
+                                        
+                                        <div class="mt-2 d-flex justify-content-between align-items-center">
+                                            <small class="text-muted">
+                                                <i class="bi bi-eye"></i> @announcement.ViewCount views
+                                                • By @announcement.AuthorName
+                                            </small>
+                                            
+                                            <!-- Management Buttons (SuperAdmin can manage all) -->
+                                            <div class="btn-group btn-group-sm">
+                                                <button class="btn btn-outline-primary" @onclick="() => EditAnnouncement(announcement)" 
+                                                        @onclick:stopPropagation="true" title="Edit">
+                                                    <i class="bi bi-pencil"></i>
+                                                </button>
+                                                <button class="btn btn-outline-danger" @onclick="() => DeleteAnnouncement(announcement.AnnouncementId)" 
+                                                        @onclick:stopPropagation="true" title="Delete">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                                <button class="btn btn-outline-warning" @onclick="() => TogglePin(announcement)" 
+                                                        @onclick:stopPropagation="true" title="@(announcement.IsPinned ? "Unpin" : "Pin")">
+                                                    <i class="bi bi-pin@(announcement.IsPinned ? "-fill" : "")"></i>
+                                                </button>
+                                                <button class="btn btn-outline-@(announcement.IsActive ? "secondary" : "success")" 
+                                                        @onclick="() => ToggleStatus(announcement)" 
+                                                        @onclick:stopPropagation="true" title="@(announcement.IsActive ? "Deactivate" : "Activate")">
+                                                    <i class="bi bi-@(announcement.IsActive ? "pause" : "play")-circle"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <!-- Empty State -->
+                        <div class="text-center py-5">
+                            <i class="bi bi-megaphone display-1 text-muted mb-3"></i>
+                            <h5 class="text-muted">@GetEmptyStateTitle()</h5>
+                            <p class="text-muted">@GetEmptyStateMessage()</p>
+                            @if (!string.IsNullOrEmpty(searchTerm) || !string.IsNullOrEmpty(selectedCategory))
+                            {
+                                <button class="btn btn-outline-primary btn-sm me-2" @onclick="ClearFilters">
+                                    Clear Filters
+                                </button>
+                            }
+                            @if (activeTab == "system" || activeTab == "all")
+                            {
+                                <button class="btn btn-primary" @onclick="ShowCreateForm">
+                                    <i class="bi bi-plus-circle"></i> Create System Announcement
+                                </button>
+                            }
+                        </div>
+                    }
+                </div>
+
+                <!-- STATISTICS SIDEBAR -->
+                <div class="col-lg-4 mt-4 mt-lg-0">
+                    <div class="card shadow-sm border-0">
+                        <div class="card-body">
+                            <div class="fw-bold mb-3">System Statistics</div>
+                            <div class="list-group list-group-flush">
+                                <div class="list-group-item d-flex justify-content-between align-items-center border-0 px-0">
+                                    <span>Total Announcements</span>
+                                    <span class="badge bg-primary rounded-pill">@GetTabCount()</span>
+                                </div>
+                                <div class="list-group-item d-flex justify-content-between align-items-center border-0 px-0">
+                                    <span>From Institutions</span>
+                                    <span class="badge bg-success rounded-pill">@institutionCount</span>
+                                </div>
+                                <div class="list-group-item d-flex justify-content-between align-items-center border-0 px-0">
+                                    <span>From Benefactors</span>
+                                    <span class="badge bg-info rounded-pill">@benefactorCount</span>
+                                </div>
+                                <div class="list-group-item d-flex justify-content-between align-items-center border-0 px-0">
+                                    <span>System Announcements</span>
+                                    <span class="badge bg-warning rounded-pill">@systemCount</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    // Main data and state variables
+    private List<Announcement>? announcements;
+    private List<Announcement>? filteredAnnouncements;
+    private string searchTerm = "";
+    private string activeTab = "all";
+    private string selectedCategory = "";
+    private bool isLoading = true;
+    private bool showModal = false;
+    private bool isLoadingModal = false;
+    private HashSet<Guid> expandedAnnouncements = new HashSet<Guid>();
+    
+    // Statistics counters
+    private int institutionCount = 0;
+    private int benefactorCount = 0;
+    private int systemCount = 0;
+    
+    // User info
+    private string currentUserId = "";
+    private string currentUserName = "";
+    
+    // Model for editing
+    private Announcement editingAnnouncement = new() 
+    { 
+        Title = "",
+        Content = "",
+        AuthorId = "",
+        AuthorName = "",
+        AuthorType = UserRole.SuperAdmin,
+        Priority = AnnouncementPriority.Normal,
+        IsPublic = true,
+        IsActive = true
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadCurrentUser();
+        await LoadAnnouncements();
+    }
+
+    private async Task LoadCurrentUser()
+    {
+        try
+        {
+            var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+            var user = authState.User;
+
+            if (user.Identity?.IsAuthenticated == true)
+            {
+                var identityUser = await UserManager.GetUserAsync(user);
+                if (identityUser != null)
+                {
+                    currentUserId = identityUser.Id;
+                    currentUserName = identityUser.Email?.Split('@')[0] ?? "SuperAdmin";
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading user: {ex.Message}");
+        }
+    }
+
+    private async Task LoadAnnouncements()
+    {
+        try
+        {
+            isLoading = true;
+            announcements = await AnnouncementService.GetAllAnnouncementsAsync();
+            UpdateStatistics();
+            FilterAnnouncements();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading announcements: {ex.Message}");
+            announcements = new List<Announcement>();
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private void UpdateStatistics()
+    {
+        if (announcements == null) return;
+
+        institutionCount = announcements.Count(a => a.AuthorType == UserRole.Institution);
+        benefactorCount = announcements.Count(a => a.AuthorType == UserRole.Benefactor);
+        systemCount = announcements.Count(a => a.AuthorType == UserRole.SuperAdmin);
+    }
+
+    private void FilterAnnouncements()
+    {
+        if (announcements == null)
+        {
+            filteredAnnouncements = new List<Announcement>();
+            return;
+        }
+
+        var query = announcements.AsEnumerable();
+
+        // Filter by tab
+        query = activeTab switch
+        {
+            "system" => query.Where(a => a.AuthorType == UserRole.SuperAdmin),
+            "institution" => query.Where(a => a.AuthorType == UserRole.Institution),
+            "benefactor" => query.Where(a => a.AuthorType == UserRole.Benefactor),
+            _ => query // "all"
+        };
+
+        // Filter by search term
+        if (!string.IsNullOrEmpty(searchTerm))
+        {
+            query = query.Where(a => 
+                (a.Title?.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                (a.Content?.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                (a.Summary?.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                (a.AuthorName?.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ?? false));
+        }
+
+        // Filter by category
+        if (!string.IsNullOrEmpty(selectedCategory))
+        {
+            query = query.Where(a => a.Category == selectedCategory);
+        }
+
+        filteredAnnouncements = query.ToList();
+    }
+
+    private void SetActiveTab(string tab)
+    {
+        if (activeTab != tab)
+        {
+            activeTab = tab;
+            FilterAnnouncements();
+        }
+    }
+
+    private async Task OnSearchChanged(ChangeEventArgs e)
+    {
+        searchTerm = e.Value?.ToString() ?? "";
+        FilterAnnouncements();
+        await Task.Delay(1);
+    }
+
+    private void ToggleAnnouncementExpansion(Guid announcementId)
+    {
+        if (expandedAnnouncements.Contains(announcementId))
+            expandedAnnouncements.Remove(announcementId);
+        else
+            expandedAnnouncements.Add(announcementId);
+    }
+
+    private void ClearFilters()
+    {
+        searchTerm = "";
+        selectedCategory = "";
+        FilterAnnouncements();
+    }
+
+    private async Task RefreshAnnouncements() => await LoadAnnouncements();
+
+    // CREATE ANNOUNCEMENT FORM
+    private void ShowCreateForm()
+    {
+        editingAnnouncement = new Announcement
+        {
+            Title = "",
+            Content = "",
+            AuthorId = currentUserId,
+            AuthorName = currentUserName,
+            AuthorType = UserRole.SuperAdmin,
+            Priority = AnnouncementPriority.Normal,
+            IsPublic = true,
+            IsActive = true
+        };
+        showModal = true;
+    }
+
+    // EDIT ANNOUNCEMENT FORM
+    private void EditAnnouncement(Announcement announcement)
+    {
+        editingAnnouncement = new Announcement
+        {
+            AnnouncementId = announcement.AnnouncementId,
+            Title = announcement.Title,
+            Content = announcement.Content,
+            Summary = announcement.Summary,
+            Category = announcement.Category,
+            Priority = announcement.Priority,
+            IsPublic = announcement.IsPublic,
+            IsPinned = announcement.IsPinned,
+            IsActive = announcement.IsActive,
+            ExpiryDate = announcement.ExpiryDate,
+            AuthorId = currentUserId,
+            AuthorName = currentUserName,
+            AuthorType = UserRole.SuperAdmin
+        };
+        showModal = true;
+    }
+
+    private async Task DeleteAnnouncement(Guid announcementId)
+    {
+        try
+        {
+            await AnnouncementService.DeleteAnnouncementAsync(announcementId);
+            await LoadAnnouncements();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error deleting announcement: {ex.Message}");
+        }
+    }
+
+    private async Task TogglePin(Announcement announcement)
+    {
+        try
+        {
+            announcement.IsPinned = !announcement.IsPinned;
+            await AnnouncementService.UpdateAnnouncementAsync(announcement);
+            await LoadAnnouncements();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error toggling pin: {ex.Message}");
+        }
+    }
+
+    private async Task ToggleStatus(Announcement announcement)
+    {
+        try
+        {
+            announcement.IsActive = !announcement.IsActive;
+            await AnnouncementService.UpdateAnnouncementAsync(announcement);
+            await LoadAnnouncements();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error toggling status: {ex.Message}");
+        }
+    }
+
+    // UI HELPER METHODS
+    private string GetTabDescription()
+    {
+        return activeTab switch
+        {
+            "all" => "Comprehensive view of all announcements across the platform",
+            "system" => "System-wide announcements and maintenance notifications",
+            "institution" => "Announcements from educational institutions",
+            "benefactor" => "Announcements from scholarship benefactors and sponsors",
+            _ => "Platform announcements and updates"
+        };
+    }
+
+    private string GetEmptyStateTitle()
+    {
+        return activeTab switch
+        {
+            "all" => "No announcements found",
+            "system" => "No system announcements",
+            "institution" => "No institution announcements",
+            "benefactor" => "No benefactor announcements",
+            _ => "No announcements found"
+        };
+    }
+
+    private string GetEmptyStateMessage()
+    {
+        if (!string.IsNullOrEmpty(searchTerm) || !string.IsNullOrEmpty(selectedCategory))
+        {
+            return "Try adjusting your search terms or filters.";
+        }
+        
+        return activeTab switch
+        {
+            "all" => "No announcements have been posted yet.",
+            "system" => "No system announcements have been created yet.",
+            "institution" => "No institutions have posted announcements yet.",
+            "benefactor" => "No benefactors have posted announcements yet.",
+            _ => "No announcements available."
+        };
+    }
+
+    private int GetTabCount()
+    {
+        return activeTab switch
+        {
+            "all" => announcements?.Count ?? 0,
+            "system" => systemCount,
+            "institution" => institutionCount,
+            "benefactor" => benefactorCount,
+            _ => 0
+        };
+    }
+
+    private string GetAuthorBadgeClass(UserRole authorType)
+    {
+        return authorType switch
+        {
+            UserRole.Institution => "bg-success",
+            UserRole.Benefactor => "bg-info",
+            UserRole.SuperAdmin => "bg-warning text-dark",
+            _ => "bg-secondary"
+        };
+    }
+
+    private string GetPriorityColor(AnnouncementPriority priority)
+    {
+        return priority switch
+        {
+            AnnouncementPriority.High => "danger",
+            AnnouncementPriority.Normal => "primary",
+            AnnouncementPriority.Low => "success",
+            _ => "secondary"
+        };
+    }
+}

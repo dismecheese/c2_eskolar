@@ -83,8 +83,19 @@ builder.Services.AddScoped<BenefactorProfileService>();
 builder.Services.AddScoped<InstitutionProfileService>();
 builder.Services.AddScoped<BlobStorageService>();
 
+// Register web scraping services
+builder.Services.AddScoped<c2_eskolar.Services.WebScraping.IWebScrapingService, c2_eskolar.Services.WebScraping.WebScrapingService>();
+builder.Services.AddScoped<c2_eskolar.Services.WebScraping.IEnhancedWebScrapingService, c2_eskolar.Services.WebScraping.EnhancedWebScrapingService>();
+builder.Services.AddHostedService<c2_eskolar.Services.WebScraping.ScrapingBackgroundService>();
+builder.Services.Configure<c2_eskolar.Services.WebScraping.ScrapingConfiguration>(
+    builder.Configuration.GetSection("WebScraping"));
+
+// DEPRECATED: Old scraped scholarship service - now using IEnhancedWebScrapingService
+// Register ScrapedScholarshipService - Enhanced AI-powered scholarship management
+builder.Services.AddScoped<IScrapedScholarshipService, ScrapedScholarshipService>();
+
 // Register DocumentIntelligenceService
-// builder.Services.AddScoped<DocumentIntelligenceService>();
+builder.Services.AddScoped<DocumentIntelligenceService>();
 builder.Services.AddScoped<VerificationDocumentService>();
 
 // Register AI Services
@@ -99,6 +110,7 @@ builder.Services.AddScoped<ContextGenerationService>();
 builder.Services.AddScoped<DisplayContextAwarenessService>();
 builder.Services.AddScoped<ChatbotMessageFormattingService>();
 builder.Services.AddScoped<OpenAIService>();
+builder.Services.AddScoped<AITokenTrackingService>();
 
     var app = builder.Build();
 
