@@ -229,23 +229,24 @@
 
     </nav>
 
-    <!-- --- PROFILE SIDEBAR (Bootstrap Offcanvas) --- -->
-    <button class="dashboard-profile-absolute mt-5" type="button" data-bs-toggle="offcanvas" data-bs-target="#rightSidebar" aria-controls="rightSidebar">
-        <svg width="32" height="32" fill="none" viewBox="0 0 24 24">
-            <circle cx="12" cy="8" r="4" stroke="#222" stroke-width="2"/>
-            <circle cx="12" cy="12" r="11" stroke="#222" stroke-width="2"/>
-            <path d="M4 20c1.5-3 5.5-5 8-5s6.5 2 8 5" stroke="#222" stroke-width="2"/>
-        </svg>
-    </button>
+            <!-- --- PROFILE SIDEBAR (Bootstrap Offcanvas) --- -->
+            <button class="dashboard-profile-absolute mt-5" type="button" data-bs-toggle="offcanvas" data-bs-target="#rightSidebar" aria-controls="rightSidebar">
+                <svg width="32" height="32" fill="none" viewBox="0 0 24 24">
+                    <circle cx="12" cy="8" r="4" stroke="#222" stroke-width="2"/>
+                    <circle cx="12" cy="12" r="11" stroke="#222" stroke-width="2"/>
+                    <path d="M4 20c1.5-3 5.5-5 8-5s6.5 2 8 5" stroke="#222" stroke-width="2"/>
+                </svg>
+            </button>
 
-<!-- Profile Sidebar Content -->
-<div class="offcanvas offcanvas-end" tabindex="-1" id="rightSidebar" aria-labelledby="rightSidebarLabel" data-bs-backdrop="false">
-    <div class="offcanvas-header">
-        <h5 class="offcanvas-title" id="rightSidebarLabel">Profile</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
-  </div>
+            <!-- Profile Sidebar Content -->
+                <div class="offcanvas offcanvas-end" tabindex="-1" id="rightSidebar" aria-labelledby="rightSidebarLabel" data-bs-backdrop="false">
+                <div class="offcanvas-header">
+                    <h5 class="offcanvas-title" id="rightSidebarLabel">Profile</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+                </div>
 
-    <div class="offcanvas-body">
+        <div class="offcanvas-body">
+
     <!-- Sidebar Profile Section -->
     <div class="sidebar-profile">
         <svg width="32" height="32" fill="none" viewBox="0 0 24 24">
@@ -292,25 +293,26 @@
         <ChatBot CloseChatbot="CloseChatbot" MinimizeChatbot="MinimizeChatbot" />
     }
 
-    @if (showVerificationModal)
-    {
-        <div class="sv-modal sv-modal-backdrop">
-            <div class="sv-modal-content">
-                <div class="sv-modal-header">
-                    <h2>Institution Verification Required</h2>
-                    <p>Your institution needs to be verified to access all features. Please complete the verification process.</p>
-                </div>
-                <div class="sv-modal-body">
-                    <p>To continue using eSkolar as an institution, you must verify your institution profile and upload required documents.</p>
-                    <p>Click "Verify Institution" to complete your verification with institution details, admin information, and required documents.</p>
-                </div>
-                <div class="sv-modal-footer" style="display:flex;gap:16px;justify-content:flex-end;">
-                    <button class="sv-btn sv-btn-secondary" @onclick="SkipVerification">Skip for Now</button>
-                    <button class="sv-btn sv-btn-primary" @onclick="GoToVerification">Verify Institution</button>
-                </div>
+}
+
+@if (showVerificationModal)
+{
+    <div class="sv-modal sv-modal-backdrop sv-modal-fixed">
+        <div class="sv-modal-content">
+            <div class="sv-modal-header">
+                <h2>Institution Verification Required</h2>
+            </div>
+            <div class="sv-modal-body">
+                <p class="sv-modal-justify">To maintain the integrity of eSkolar, all institutions must complete verification before gaining full access to platform features.
+                Please verify your institution by providing accurate details, administrator information, and the necessary supporting documents.</p>
+            </div>
+            <div class="sv-modal-footer" style="display:flex;gap:16px;justify-content:flex-end;">
+                <button class="sv-btn sv-btn-secondary" @onclick="SkipVerification">Skip for Now</button>
+                <button class="sv-btn sv-btn-primary" @onclick="GoToVerification">Verify Institution</button>
             </div>
         </div>
-    }
+    </div>
+}
 
 </div>
 
@@ -357,15 +359,3 @@ document.addEventListener('click', function(event) {
     }
 });
 </script>
-
-<style>
-.logout-link:hover {
-    background: rgba(255,255,255,0.1) !important;
-    color: rgba(255,255,255,1) !important;
-    transform: translateX(4px);
-}
-
-.logout-link:active {
-    background: rgba(255,255,255,0.15) !important;
-}
-</style>
