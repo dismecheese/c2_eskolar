@@ -1,0 +1,489 @@
+@using c2_eskolar.Models
+@using c2_eskolar.Models.Enums
+
+<div class="announcement-card @(announcement.IsPinned ? "pinned" : "") @(isExpanded ? "expanded" : "")" 
+     @onclick="() => OnClick.InvokeAsync(announcement.AnnouncementId)">
+    
+    <!-- Header -->
+    <div class="announcement-header">
+        <div class="announcement-title-section">
+            <h5 class="announcement-title">@announcement.Title</h5>
+            <div class="announcement-badges">
+                @if (announcement.IsPinned)
+                {
+                    <span class="badge badge-pinned">
+                        <i class="bi bi-pin-fill"></i> Pinned
+                    </span>
+                }
+                <span class="badge badge-@(GetAuthorType(announcement.AuthorType))">
+                    @announcement.AuthorType
+                </span>
+                @if (!string.IsNullOrEmpty(announcement.Category))
+                {
+                    <span class="badge badge-category">@announcement.Category</span>
+                }
+                <span class="badge badge-@(GetPriorityClass(announcement.Priority))">
+                    @announcement.Priority
+                </span>
+                @if (announcement.Photos?.Any() == true)
+                {
+                    <span class="badge badge-images">
+                        <i class="bi bi-image"></i> @announcement.Photos.Count
+                    </span>
+                }
+            </div>
+        </div>
+        <div class="announcement-meta">
+            <small class="text-muted">@announcement.CreatedAt.ToString("MMM dd, yyyy")</small>
+            <button class="btn btn-sm btn-outline-secondary expand-btn" 
+                    @onclick="ToggleExpansion" @onclick:stopPropagation="true">
+                <i class="bi bi-@(isExpanded ? "chevron-up" : "chevron-down")"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- Images Section -->
+    @if (announcement.Photos?.Any() == true)
+    {
+        <div class="announcement-images">
+            @if (announcement.Photos.Count == 1)
+            {
+                <div class="single-image">
+                    <img src="@announcement.Photos.First().Url" 
+                         class="img-fluid announcement-image" 
+                         alt="Announcement image"
+                         @onclick="() => OnImageClick.InvokeAsync(announcement.Photos.First().Url)"
+                         @onclick:stopPropagation="true" />
+                </div>
+            }
+            else if (announcement.Photos.Count == 2)
+            {
+                <div class="dual-images">
+                    @foreach (var photo in announcement.Photos.Take(2))
+                    {
+                        <div class="image-container">
+                            <img src="@photo.Url" 
+                                 class="img-fluid announcement-image" 
+                                 alt="Announcement image"
+                                 @onclick="() => OnImageClick.InvokeAsync(photo.Url)"
+                                 @onclick:stopPropagation="true" />
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="multi-images">
+                    @foreach (var photo in announcement.Photos.Take(3))
+                    {
+                        <div class="image-container">
+                            <img src="@photo.Url" 
+                                 class="img-fluid announcement-image" 
+                                 alt="Announcement image"
+                                 @onclick="() => OnImageClick.InvokeAsync(photo.Url)"
+                                 @onclick:stopPropagation="true" />
+                        </div>
+                    }
+                    @if (announcement.Photos.Count > 3)
+                    {
+                        <div class="more-images-overlay">
+                            <span>+@(announcement.Photos.Count - 3) more</span>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+    }
+
+    <!-- Content Section -->
+    <div class="announcement-content">
+        <div class="author-section">
+            <i class="@(GetAuthorIcon(announcement.AuthorType)) author-icon"></i>
+            <div class="content-text">
+                <p class="announcement-summary">
+                    @GetSummaryText(announcement)
+                </p>
+                
+                @if (isExpanded)
+                {
+                    <div class="announcement-details">
+                        @if (!string.IsNullOrEmpty(announcement.Content) && announcement.Content.Length > 150)
+                        {
+                            <div class="full-content">
+                                <h6>Full Description:</h6>
+                                <p>@announcement.Content</p>
+                            </div>
+                        }
+                        
+                        @if (!string.IsNullOrEmpty(announcement.OrganizationName))
+                        {
+                            <div class="detail-item">
+                                <strong>Organization:</strong> @announcement.OrganizationName
+                            </div>
+                        }
+                        
+                        @if (announcement.ExpiryDate.HasValue)
+                        {
+                            <div class="detail-item">
+                                <strong>Deadline:</strong> @announcement.ExpiryDate.Value.ToString("MMM dd, yyyy")
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+        
+        <!-- Footer -->
+        <div class="announcement-footer">
+            <div class="announcement-stats">
+                <small class="text-muted">
+                    <i class="bi bi-eye"></i> @announcement.ViewCount views
+                    • By @announcement.AuthorName
+                </small>
+            </div>
+            
+            @if (showActions && CanManage)
+            {
+                <div class="announcement-actions">
+                    <button class="btn btn-sm btn-outline-primary" 
+                            @onclick="() => OnEdit.InvokeAsync(announcement)" 
+                            @onclick:stopPropagation="true">
+                        <i class="bi bi-pencil"></i>
+                    </button>
+                    <button class="btn btn-sm btn-outline-@(announcement.IsPinned ? "warning" : "secondary")" 
+                            @onclick="() => OnTogglePin.InvokeAsync(announcement.AnnouncementId)" 
+                            @onclick:stopPropagation="true">
+                        <i class="bi bi-pin"></i>
+                    </button>
+                    <button class="btn btn-sm btn-outline-danger" 
+                            @onclick="() => OnDelete.InvokeAsync(announcement.AnnouncementId)" 
+                            @onclick:stopPropagation="true">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public Announcement announcement { get; set; } = new() 
+    { 
+        Title = "", 
+        Content = "", 
+        AuthorId = "", 
+        AuthorName = "", 
+        AuthorType = UserRole.Student 
+    };
+    [Parameter] public bool isExpanded { get; set; }
+    [Parameter] public bool showActions { get; set; } = true;
+    [Parameter] public bool CanManage { get; set; }
+    
+    [Parameter] public EventCallback<Guid> OnClick { get; set; }
+    [Parameter] public EventCallback<string> OnImageClick { get; set; }
+    [Parameter] public EventCallback<Announcement> OnEdit { get; set; }
+    [Parameter] public EventCallback<Guid> OnTogglePin { get; set; }
+    [Parameter] public EventCallback<Guid> OnDelete { get; set; }
+
+    private async Task ToggleExpansion()
+    {
+        isExpanded = !isExpanded;
+        await OnClick.InvokeAsync(announcement.AnnouncementId);
+    }
+
+    private string GetSummaryText(Announcement announcement)
+    {
+        return announcement.Summary ?? 
+               (announcement.Content.Length > 150 ? 
+                announcement.Content.Substring(0, 150) + "..." : 
+                announcement.Content);
+    }
+
+    private string GetAuthorType(UserRole authorType)
+    {
+        return authorType switch
+        {
+            UserRole.Institution => "institution",
+            UserRole.Benefactor => "benefactor",
+            _ => "default"
+        };
+    }
+
+    private string GetPriorityClass(AnnouncementPriority priority)
+    {
+        return priority switch
+        {
+            AnnouncementPriority.Low => "low",
+            AnnouncementPriority.Normal => "normal",
+            AnnouncementPriority.High => "high",
+            AnnouncementPriority.Urgent => "urgent",
+            _ => "normal"
+        };
+    }
+
+    private string GetAuthorIcon(UserRole authorType)
+    {
+        return authorType switch
+        {
+            UserRole.Institution => "bi bi-building",
+            UserRole.Benefactor => "bi bi-globe",
+            _ => "bi bi-person"
+        };
+    }
+}
+
+<style>
+    .announcement-card {
+        background: #fff;
+        border-radius: 16px;
+        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+        margin-bottom: 1.5rem;
+        overflow: hidden;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        cursor: pointer;
+        border: 1px solid #f0f0f0;
+    }
+
+    .announcement-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12);
+        border-color: #e0e0e0;
+    }
+
+    .announcement-card.pinned {
+        background: linear-gradient(135deg, #fff9e6 0%, #ffffff 100%);
+        border-left: 4px solid #ffc107;
+    }
+
+    .announcement-header {
+        padding: 1.5rem 1.5rem 1rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 1rem;
+    }
+
+    .announcement-title-section {
+        flex: 1;
+    }
+
+    .announcement-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: #1a1a1a;
+        margin-bottom: 0.75rem;
+        line-height: 1.3;
+    }
+
+    .announcement-badges {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+    }
+
+    .badge {
+        font-size: 0.75rem;
+        font-weight: 500;
+        padding: 0.375rem 0.75rem;
+        border-radius: 12px;
+        border: none;
+    }
+
+    .badge-pinned {
+        background: #ffc107;
+        color: #856404;
+    }
+
+    .badge-institution {
+        background: #d4edda;
+        color: #155724;
+    }
+
+    .badge-benefactor {
+        background: #d1ecf1;
+        color: #0c5460;
+    }
+
+    .badge-category {
+        background: #e2e3e5;
+        color: #383d41;
+    }
+
+    .badge-low {
+        background: #f8f9fa;
+        color: #6c757d;
+    }
+
+    .badge-normal {
+        background: #cce5ff;
+        color: #004085;
+    }
+
+    .badge-high {
+        background: #fff3cd;
+        color: #856404;
+    }
+
+    .badge-urgent {
+        background: #f8d7da;
+        color: #721c24;
+    }
+
+    .badge-images {
+        background: #e9ecef;
+        color: #495057;
+    }
+
+    .announcement-meta {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        flex-shrink: 0;
+    }
+
+    .expand-btn {
+        border: none;
+        background: #f8f9fa;
+        border-radius: 50%;
+        width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s;
+    }
+
+    .expand-btn:hover {
+        background: #e9ecef;
+        transform: scale(1.1);
+    }
+
+    .announcement-images {
+        margin: 0 1.5rem 1rem;
+    }
+
+    .single-image img {
+        width: 100%;
+        height: 300px;
+        object-fit: cover;
+        border-radius: 12px;
+    }
+
+    .dual-images {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 0.5rem;
+    }
+
+    .dual-images img {
+        width: 100%;
+        height: 200px;
+        object-fit: cover;
+        border-radius: 8px;
+    }
+
+    .multi-images {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 0.5rem;
+        position: relative;
+    }
+
+    .multi-images img {
+        width: 100%;
+        height: 150px;
+        object-fit: cover;
+        border-radius: 8px;
+    }
+
+    .more-images-overlay {
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.6);
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: 600;
+        font-size: 1rem;
+        cursor: pointer;
+    }
+
+    .announcement-image {
+        cursor: pointer;
+        transition: transform 0.2s;
+    }
+
+    .announcement-image:hover {
+        transform: scale(1.02);
+    }
+
+    .announcement-content {
+        padding: 0 1.5rem 1.5rem;
+    }
+
+    .author-section {
+        display: flex;
+        gap: 1rem;
+        align-items: flex-start;
+    }
+
+    .author-icon {
+        font-size: 2rem;
+        color: #6c757d;
+        flex-shrink: 0;
+        margin-top: 0.25rem;
+    }
+
+    .content-text {
+        flex: 1;
+    }
+
+    .announcement-summary {
+        color: #6c757d;
+        line-height: 1.6;
+        margin-bottom: 1rem;
+    }
+
+    .announcement-details {
+        background: #f8f9fa;
+        border-radius: 12px;
+        padding: 1.25rem;
+        margin-top: 1rem;
+        animation: slideDown 0.3s ease-out;
+    }
+
+    .full-content h6 {
+        color: #495057;
+        font-weight: 600;
+        margin-bottom: 0.75rem;
+    }
+
+    .detail-item {
+        margin-bottom: 0.5rem;
+        color: #495057;
+    }
+
+    .announcement-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 1rem;
+    }
+
+    .announcement-actions {
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .announcement-actions .btn {
+        border-radius: 8px;
+        transition: all 0.2s;
+    }
+
+
+</style>

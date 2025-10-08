@@ -1,0 +1,599 @@
+@using c2_eskolar.Models
+@using c2_eskolar.Models.Enums
+@using c2_eskolar.Services
+@inject BlobStorageService BlobStorageService
+@inject IJSRuntime JSRuntime
+
+<!-- Modal -->
+<div class="modal fade @(IsVisible ? "show" : "")" 
+     style="display: @(IsVisible ? "block" : "none")" 
+     tabindex="-1" 
+     role="dialog" 
+     aria-labelledby="announcementModalLabel" 
+     aria-hidden="@(!IsVisible)">
+    <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+        <div class="modal-content modern-modal">
+            <div class="modal-header">
+                <h5 class="modal-title" id="announcementModalLabel">
+                    <i class="bi bi-@(IsEditMode ? "pencil" : "plus-circle") me-2"></i>
+                    @(IsEditMode ? "Edit Announcement" : "Create New Announcement")
+                </h5>
+                <button type="button" class="btn-close" @onclick="CloseModal" aria-label="Close"></button>
+            </div>
+            
+            <EditForm Model="@CurrentAnnouncement" OnValidSubmit="SaveAnnouncement">
+                <DataAnnotationsValidator />
+                
+                <div class="modal-body">
+                    @if (!string.IsNullOrEmpty(ErrorMessage))
+                    {
+                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                            @ErrorMessage
+                            <button type="button" class="btn-close" @onclick="() => ErrorMessage = string.Empty"></button>
+                        </div>
+                    }
+
+                    <!-- Basic Information -->
+                    <div class="form-section">
+                        <h6 class="section-title">
+                            <i class="bi bi-info-circle me-2"></i>Basic Information
+                        </h6>
+                        
+                        <div class="row">
+                            <div class="col-12 mb-3">
+                                <label for="title" class="form-label required">Title</label>
+                                <InputText id="title" 
+                                         @bind-Value="CurrentAnnouncement.Title" 
+                                         class="form-control modern-input" 
+                                         placeholder="Enter announcement title..." />
+                                <ValidationMessage For="@(() => CurrentAnnouncement.Title)" />
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="category" class="form-label">Category</label>
+                                <InputText id="category" 
+                                         @bind-Value="CurrentAnnouncement.Category" 
+                                         class="form-control modern-input" 
+                                         placeholder="e.g., Scholarship, Event..." />
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label for="priority" class="form-label">Priority</label>
+                                <InputSelect id="priority" 
+                                           @bind-Value="CurrentAnnouncement.Priority" 
+                                           class="form-select modern-input">
+                                    <option value="@AnnouncementPriority.Low">Low</option>
+                                    <option value="@AnnouncementPriority.Normal">Normal</option>
+                                    <option value="@AnnouncementPriority.High">High</option>
+                                    <option value="@AnnouncementPriority.Urgent">Urgent</option>
+                                </InputSelect>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Content -->
+                    <div class="form-section">
+                        <h6 class="section-title">
+                            <i class="bi bi-file-text me-2"></i>Content
+                        </h6>
+                        
+                        <div class="mb-3">
+                            <label for="summary" class="form-label">Summary</label>
+                            <InputTextArea id="summary" 
+                                         @bind-Value="CurrentAnnouncement.Summary" 
+                                         class="form-control modern-input" 
+                                         rows="2"
+                                         placeholder="Brief summary (optional)..." />
+                            <div class="form-text">A short summary that appears in the announcement card</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="content" class="form-label required">Description</label>
+                            <InputTextArea id="content" 
+                                         @bind-Value="CurrentAnnouncement.Content" 
+                                         class="form-control modern-input" 
+                                         rows="4"
+                                         placeholder="Enter detailed announcement description..." />
+                            <ValidationMessage For="@(() => CurrentAnnouncement.Content)" />
+                        </div>
+                    </div>
+
+                    <!-- Organization & Timing -->
+                    <div class="form-section">
+                        <h6 class="section-title">
+                            <i class="bi bi-building me-2"></i>Organization & Timing
+                        </h6>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="organizationName" class="form-label">Organization Name</label>
+                                <InputText id="organizationName" 
+                                         @bind-Value="CurrentAnnouncement.OrganizationName" 
+                                         class="form-control modern-input" 
+                                         placeholder="Organization or department..." />
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label for="expiryDate" class="form-label">Expiry Date</label>
+                                <InputDate id="expiryDate" 
+                                         @bind-Value="CurrentAnnouncement.ExpiryDate" 
+                                         class="form-control modern-input" />
+                                <div class="form-text">When this announcement should expire (optional)</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Settings -->
+                    <div class="form-section">
+                        <h6 class="section-title">
+                            <i class="bi bi-gear me-2"></i>Settings
+                        </h6>
+                        
+                        <div class="form-check form-switch mb-3">
+                            <InputCheckbox id="isPinned" 
+                                         @bind-Value="CurrentAnnouncement.IsPinned" 
+                                         class="form-check-input" />
+                            <label class="form-check-label" for="isPinned">
+                                <i class="bi bi-pin me-1"></i>Pin this announcement
+                            </label>
+                            <div class="form-text">Pinned announcements appear at the top</div>
+                        </div>
+                    </div>
+
+                    <!-- Photo Upload -->
+                    <div class="form-section">
+                        <h6 class="section-title">
+                            <i class="bi bi-images me-2"></i>Photos
+                        </h6>
+                        
+                        <div class="photo-upload-section">
+                            <div class="upload-area" @ondragover="HandleDragOver" @ondrop="HandleDrop">
+                                <InputFile OnChange="OnFileSelected" 
+                                         multiple 
+                                         accept="image/*" 
+                                         class="file-input" 
+                                         id="photoUpload" />
+                                <label for="photoUpload" class="upload-label">
+                                    <i class="bi bi-cloud-upload upload-icon"></i>
+                                    <div class="upload-text">
+                                        <strong>Click to upload</strong> or drag and drop
+                                        <div class="upload-subtext">PNG, JPG, GIF up to 10MB each</div>
+                                    </div>
+                                </label>
+                            </div>
+
+                            @if (IsUploading)
+                            {
+                                <div class="upload-progress">
+                                    <div class="progress mb-2">
+                                        <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                                             role="progressbar" 
+                                             style="width: @(UploadProgress)%">
+                                            @UploadProgress%
+                                        </div>
+                                    </div>
+                                    <small class="text-muted">Uploading @SelectedFiles.Count file(s)...</small>
+                                </div>
+                            }
+
+                            <!-- Photo Preview -->
+                            @if (PhotoPreviews?.Any() == true)
+                            {
+                                <div class="photo-previews">
+                                    @foreach (var preview in PhotoPreviews)
+                                    {
+                                        <div class="photo-preview-item">
+                                            <img src="@preview.Url" alt="Preview" class="preview-image" />
+                                            <button type="button" 
+                                                    class="btn btn-sm btn-danger remove-photo" 
+                                                    @onclick="() => RemovePhoto(preview)">
+                                                <i class="bi bi-x"></i>
+                                            </button>
+                                            <div class="photo-name">@preview.FileName</div>
+                                        </div>
+                                    }
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" @onclick="CloseModal">
+                        <i class="bi bi-x-circle me-1"></i>Cancel
+                    </button>
+                    <button type="submit" class="btn btn-primary" disabled="@IsProcessing">
+                        @if (IsProcessing)
+                        {
+                            <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                        }
+                        else
+                        {
+                            <i class="bi bi-@(IsEditMode ? "check-circle" : "plus-circle") me-1"></i>
+                        }
+                        @(IsEditMode ? "Update" : "Create") Announcement
+                    </button>
+                </div>
+            </EditForm>
+        </div>
+    </div>
+</div>
+
+@if (IsVisible)
+{
+    <div class="modal-backdrop fade show"></div>
+}
+
+@code {
+    [Parameter] public bool IsVisible { get; set; }
+    [Parameter] public bool IsEditMode { get; set; }
+    [Parameter] public Announcement CurrentAnnouncement { get; set; } = new() 
+    { 
+        Title = "", 
+        Content = "", 
+        AuthorId = "", 
+        AuthorName = "", 
+        AuthorType = UserRole.Student 
+    };
+    [Parameter] public EventCallback OnClose { get; set; }
+    [Parameter] public EventCallback<Announcement> OnSave { get; set; }
+
+    private string ErrorMessage = string.Empty;
+    private bool IsProcessing = false;
+    private bool IsUploading = false;
+    private int UploadProgress = 0;
+    private List<IBrowserFile> SelectedFiles = new();
+    private List<PhotoPreview> PhotoPreviews = new();
+
+    public class PhotoPreview
+    {
+        public string Url { get; set; } = string.Empty;
+        public string FileName { get; set; } = string.Empty;
+        public bool IsExisting { get; set; }
+        public Photo? ExistingPhoto { get; set; }
+    }
+
+    protected override void OnParametersSet()
+    {
+        if (IsVisible && IsEditMode && CurrentAnnouncement?.Photos?.Any() == true)
+        {
+            PhotoPreviews = CurrentAnnouncement.Photos.Select(p => new PhotoPreview
+            {
+                Url = p.Url,
+                FileName = p.Caption ?? "Image",
+                IsExisting = true,
+                ExistingPhoto = p
+            }).ToList();
+        }
+        else if (!IsVisible)
+        {
+            PhotoPreviews.Clear();
+            SelectedFiles.Clear();
+            ErrorMessage = string.Empty;
+        }
+    }
+
+    private async Task SaveAnnouncement()
+    {
+        try
+        {
+            IsProcessing = true;
+            ErrorMessage = string.Empty;
+
+            // Upload new photos if any
+            if (SelectedFiles.Any())
+            {
+                await UploadPhotos();
+            }
+
+            // Update the announcement with photo previews
+            if (PhotoPreviews.Any())
+            {
+                CurrentAnnouncement.Photos = PhotoPreviews
+                    .Where(p => p.IsExisting && p.ExistingPhoto != null)
+                    .Select(p => p.ExistingPhoto!)
+                    .ToList();
+
+                // Add newly uploaded photos (these would be handled by the parent component)
+            }
+
+            await OnSave.InvokeAsync(CurrentAnnouncement);
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"Error saving announcement: {ex.Message}";
+        }
+        finally
+        {
+            IsProcessing = false;
+        }
+    }
+
+    private async Task CloseModal()
+    {
+        PhotoPreviews.Clear();
+        SelectedFiles.Clear();
+        ErrorMessage = string.Empty;
+        await OnClose.InvokeAsync();
+    }
+
+    private async Task OnFileSelected(InputFileChangeEventArgs e)
+    {
+        SelectedFiles = e.GetMultipleFiles(10).ToList();
+
+        foreach (var file in SelectedFiles)
+        {
+            if (file.Size > 10 * 1024 * 1024) // 10MB limit
+            {
+                ErrorMessage = $"File {file.Name} is too large. Maximum size is 10MB.";
+                return;
+            }
+
+            // Create preview
+            var preview = new PhotoPreview
+            {
+                FileName = file.Name,
+                IsExisting = false
+            };
+
+            // Create blob URL for preview
+            var buffer = new byte[file.Size];
+            await file.OpenReadStream(10 * 1024 * 1024).ReadAsync(buffer);
+            var base64 = Convert.ToBase64String(buffer);
+            preview.Url = $"data:{file.ContentType};base64,{base64}";
+
+            PhotoPreviews.Add(preview);
+        }
+
+        StateHasChanged();
+    }
+
+    private async Task UploadPhotos()
+    {
+        IsUploading = true;
+        UploadProgress = 0;
+
+        try
+        {
+            for (int i = 0; i < SelectedFiles.Count; i++)
+            {
+                var file = SelectedFiles[i];
+                
+                // Upload to blob storage
+                var url = await BlobStorageService.UploadPhotoAsync(
+                    file.OpenReadStream(10 * 1024 * 1024), 
+                    file.Name, 
+                    file.ContentType
+                );
+
+                // Update progress
+                UploadProgress = (int)((i + 1) * 100.0 / SelectedFiles.Count);
+                StateHasChanged();
+            }
+        }
+        finally
+        {
+            IsUploading = false;
+            UploadProgress = 0;
+        }
+    }
+
+    private void RemovePhoto(PhotoPreview preview)
+    {
+        PhotoPreviews.Remove(preview);
+        
+        if (!preview.IsExisting)
+        {
+            var file = SelectedFiles.FirstOrDefault(f => f.Name == preview.FileName);
+            if (file != null)
+            {
+                SelectedFiles.Remove(file);
+            }
+        }
+        
+        StateHasChanged();
+    }
+
+    private void HandleDragOver(DragEventArgs e)
+    {
+        e.DataTransfer.DropEffect = "copy";
+    }
+
+    private Task HandleDrop(DragEventArgs e)
+    {
+        // This would require more complex JS interop for proper drag/drop handling
+        // For now, we'll keep the basic file input approach
+        return Task.CompletedTask;
+    }
+}
+
+<style>
+    .modern-modal {
+        border: none;
+        border-radius: 16px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+    }
+
+    .modal-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 16px 16px 0 0;
+        padding: 1.5rem;
+        border-bottom: none;
+    }
+
+    .modal-title {
+        font-weight: 600;
+        font-size: 1.25rem;
+    }
+
+    .btn-close {
+        filter: invert(1);
+        opacity: 0.8;
+    }
+
+    .btn-close:hover {
+        opacity: 1;
+    }
+
+    .modal-body {
+        padding: 2rem;
+        max-height: 70vh;
+        overflow-y: auto;
+    }
+
+    .form-section {
+        margin-bottom: 2rem;
+        padding-bottom: 1.5rem;
+        border-bottom: 1px solid #e9ecef;
+    }
+
+    .form-section:last-child {
+        border-bottom: none;
+        margin-bottom: 0;
+    }
+
+    .section-title {
+        color: #495057;
+        font-weight: 600;
+        margin-bottom: 1rem;
+        font-size: 1rem;
+    }
+
+    .modern-input {
+        border-radius: 12px;
+        border: 2px solid #e9ecef;
+        padding: 0.75rem 1rem;
+        transition: all 0.2s;
+        font-size: 0.95rem;
+    }
+
+    .modern-input:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+    }
+
+    .form-label.required::after {
+        content: " *";
+        color: #dc3545;
+    }
+
+    .photo-upload-section {
+        border: 2px dashed #dee2e6;
+        border-radius: 12px;
+        padding: 1.5rem;
+        text-align: center;
+        transition: all 0.2s;
+    }
+
+    .photo-upload-section:hover {
+        border-color: #667eea;
+        background-color: #f8f9ff;
+    }
+
+    .upload-area {
+        position: relative;
+    }
+
+    .file-input {
+        position: absolute;
+        opacity: 0;
+        width: 100%;
+        height: 100%;
+        cursor: pointer;
+    }
+
+    .upload-label {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 1rem;
+        cursor: pointer;
+        margin: 0;
+    }
+
+    .upload-icon {
+        font-size: 3rem;
+        color: #667eea;
+    }
+
+    .upload-text {
+        color: #495057;
+    }
+
+    .upload-subtext {
+        font-size: 0.875rem;
+        color: #6c757d;
+        margin-top: 0.25rem;
+    }
+
+    .upload-progress {
+        margin-top: 1rem;
+        text-align: left;
+    }
+
+    .photo-previews {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+        gap: 1rem;
+        margin-top: 1.5rem;
+    }
+
+    .photo-preview-item {
+        position: relative;
+        border-radius: 8px;
+        overflow: hidden;
+        border: 2px solid #e9ecef;
+    }
+
+    .preview-image {
+        width: 100%;
+        height: 100px;
+        object-fit: cover;
+    }
+
+    .remove-photo {
+        position: absolute;
+        top: 4px;
+        right: 4px;
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0;
+        font-size: 0.75rem;
+    }
+
+    .photo-name {
+        padding: 0.5rem;
+        font-size: 0.75rem;
+        color: #6c757d;
+        text-overflow: ellipsis;
+        overflow: hidden;
+        white-space: nowrap;
+        background: #f8f9fa;
+    }
+
+    .modal-footer {
+        padding: 1.5rem 2rem;
+        border-top: 1px solid #e9ecef;
+        border-radius: 0 0 16px 16px;
+    }
+
+    .form-check-input:checked {
+        background-color: #667eea;
+        border-color: #667eea;
+    }
+
+    .alert {
+        border-radius: 12px;
+        margin-bottom: 1.5rem;
+    }
+
+
+</style>

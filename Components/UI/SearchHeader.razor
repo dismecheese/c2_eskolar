@@ -1,0 +1,470 @@
+@using c2_eskolar.Models.Enums
+
+<div class="search-header">
+    <div class="container-fluid">
+        <div class="row align-items-center">
+            <!-- Title and Stats -->
+            <div class="col-md-4">
+                <div class="header-info">
+                    <h4 class="page-title">
+                        <i class="bi bi-megaphone-fill me-2 text-primary"></i>
+                        @Title
+                    </h4>
+                    @if (ShowStats)
+                    {
+                        <div class="stats-info">
+                            <span class="stat-item">
+                                <i class="bi bi-eye text-muted me-1"></i>
+                                @TotalAnnouncements announcements
+                            </span>
+                            @if (PinnedCount > 0)
+                            {
+                                <span class="stat-item">
+                                    <i class="bi bi-pin text-warning me-1"></i>
+                                    @PinnedCount pinned
+                                </span>
+                            }
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <!-- Search and Filters -->
+            <div class="col-md-5">
+                <div class="search-controls">
+                    <div class="search-input-group">
+                        <div class="input-group">
+                            <span class="input-group-text">
+                                <i class="bi bi-search"></i>
+                            </span>
+                            <input type="text" 
+                                   class="form-control search-input" 
+                                   placeholder="Search announcements..." 
+                                   @bind="SearchQuery" 
+                                   @bind:event="oninput"
+                                   @onkeypress="HandleKeyPress" />
+                            @if (!string.IsNullOrEmpty(SearchQuery))
+                            {
+                                <button class="btn btn-outline-secondary clear-search" 
+                                        type="button" 
+                                        @onclick="ClearSearch">
+                                    <i class="bi bi-x"></i>
+                                </button>
+                            }
+                        </div>
+                    </div>
+
+                    <!-- Quick Filters -->
+                    <div class="quick-filters">
+                        <button class="btn btn-sm filter-chip @(CurrentPriorityFilter == null ? "active" : "")" 
+                                @onclick="() => OnPriorityFilter.InvokeAsync(null)">
+                            All
+                        </button>
+                        <button class="btn btn-sm filter-chip @(CurrentPriorityFilter == AnnouncementPriority.High ? "active" : "")" 
+                                @onclick="() => OnPriorityFilter.InvokeAsync(AnnouncementPriority.High)">
+                            <i class="bi bi-exclamation-triangle text-warning me-1"></i>High
+                        </button>
+                        <button class="btn btn-sm filter-chip @(CurrentPriorityFilter == AnnouncementPriority.Urgent ? "active" : "")" 
+                                @onclick="() => OnPriorityFilter.InvokeAsync(AnnouncementPriority.Urgent)">
+                            <i class="bi bi-exclamation-circle text-danger me-1"></i>Urgent
+                        </button>
+                        @if (ShowPinnedFilter)
+                        {
+                            <button class="btn btn-sm filter-chip @(ShowPinnedOnly ? "active" : "")" 
+                                    @onclick="() => OnPinnedFilter.InvokeAsync(!ShowPinnedOnly)">
+                                <i class="bi bi-pin text-warning me-1"></i>Pinned
+                            </button>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="col-md-3">
+                <div class="header-actions">
+                    @if (ShowCreateButton && CanCreate)
+                    {
+                        <button class="btn btn-success btn-create" 
+                                @onclick="@(() => OnCreateClick.InvokeAsync())">
+                            <i class="bi bi-plus-circle me-2"></i>
+                            Create Announcement
+                        </button>
+                    }
+                    
+                    @if (ShowViewToggle)
+                    {
+                        <div class="btn-group view-toggle" role="group">
+                            <button type="button" 
+                                    class="btn btn-outline-secondary @(ViewMode == "card" ? "active" : "")" 
+                                    @onclick="SetCardView">
+                                <i class="bi bi-grid-3x3-gap"></i>
+                            </button>
+                            <button type="button" 
+                                    class="btn btn-outline-secondary @(ViewMode == "list" ? "active" : "")" 
+                                    @onclick="SetListView">
+                                <i class="bi bi-list"></i>
+                            </button>
+                        </div>
+                    }
+
+                    @if (ShowSortOptions)
+                    {
+                        <div class="dropdown">
+                            <button class="btn btn-outline-secondary dropdown-toggle" 
+                                    type="button" 
+                                    data-bs-toggle="dropdown">
+                                <i class="bi bi-sort-down me-1"></i>
+                                Sort
+                            </button>
+                            <ul class="dropdown-menu">
+                                <li>
+                                    <button class="dropdown-item @(SortBy == "date-desc" ? "active" : "")" 
+                                            @onclick="SortByDateDesc">
+                                        <i class="bi bi-calendar-date me-2"></i>Newest First
+                                    </button>
+                                </li>
+                                <li>
+                                    <button class="dropdown-item @(SortBy == "date-asc" ? "active" : "")" 
+                                            @onclick="SortByDateAsc">
+                                        <i class="bi bi-calendar-date me-2"></i>Oldest First
+                                    </button>
+                                </li>
+                                <li>
+                                    <button class="dropdown-item @(SortBy == "priority" ? "active" : "")" 
+                                            @onclick="SortByPriority">
+                                        <i class="bi bi-exclamation-circle me-2"></i>By Priority
+                                    </button>
+                                </li>
+                                <li>
+                                    <button class="dropdown-item @(SortBy == "title" ? "active" : "")" 
+                                            @onclick="SortByTitle">
+                                        <i class="bi bi-sort-alpha-down me-2"></i>Alphabetical
+                                    </button>
+                                </li>
+                            </ul>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Active Filters Display -->
+        @if (HasActiveFilters)
+        {
+            <div class="row mt-3">
+                <div class="col-12">
+                    <div class="active-filters">
+                        <span class="filter-label">Active filters:</span>
+                        
+                        @if (!string.IsNullOrEmpty(SearchQuery))
+                        {
+                            <span class="filter-tag">
+                                Search: "@SearchQuery"
+                                <button class="btn-close btn-close-sm ms-1" @onclick="ClearSearch"></button>
+                            </span>
+                        }
+                        
+                        @if (CurrentPriorityFilter.HasValue)
+                        {
+                            <span class="filter-tag">
+                                Priority: @CurrentPriorityFilter.Value
+                                <button class="btn-close btn-close-sm ms-1" @onclick="() => OnPriorityFilter.InvokeAsync(null)"></button>
+                            </span>
+                        }
+                        
+                        @if (ShowPinnedOnly)
+                        {
+                            <span class="filter-tag">
+                                Pinned Only
+                                <button class="btn-close btn-close-sm ms-1" @onclick="() => OnPinnedFilter.InvokeAsync(false)"></button>
+                            </span>
+                        }
+
+                        <button class="btn btn-sm btn-outline-secondary clear-all-filters" 
+                                @onclick="ClearAllFilters">
+                            Clear All
+                        </button>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter] public string Title { get; set; } = "Announcements";
+    [Parameter] public string SearchQuery { get; set; } = string.Empty;
+    [Parameter] public bool ShowStats { get; set; } = true;
+    [Parameter] public int TotalAnnouncements { get; set; }
+    [Parameter] public int PinnedCount { get; set; }
+    [Parameter] public bool ShowCreateButton { get; set; } = true;
+    [Parameter] public bool CanCreate { get; set; } = true;
+    [Parameter] public bool ShowViewToggle { get; set; } = true;
+    [Parameter] public bool ShowSortOptions { get; set; } = true;
+    [Parameter] public bool ShowPinnedFilter { get; set; } = true;
+    [Parameter] public string ViewMode { get; set; } = "card";
+    [Parameter] public string SortBy { get; set; } = "date-desc";
+    [Parameter] public AnnouncementPriority? CurrentPriorityFilter { get; set; }
+    [Parameter] public bool ShowPinnedOnly { get; set; }
+
+    [Parameter] public EventCallback<string> OnSearchChange { get; set; }
+    [Parameter] public EventCallback OnCreateClick { get; set; }
+    [Parameter] public EventCallback<string> OnViewModeChange { get; set; }
+    [Parameter] public EventCallback<string> OnSortChange { get; set; }
+    [Parameter] public EventCallback<AnnouncementPriority?> OnPriorityFilter { get; set; }
+    [Parameter] public EventCallback<bool> OnPinnedFilter { get; set; }
+    [Parameter] public EventCallback OnClearAllFilters { get; set; }
+
+    private bool HasActiveFilters => 
+        !string.IsNullOrEmpty(SearchQuery) || 
+        CurrentPriorityFilter.HasValue || 
+        ShowPinnedOnly;
+
+    protected override void OnParametersSet()
+    {
+        // Debounce search input
+        if (searchTimer != null)
+        {
+            searchTimer.Dispose();
+        }
+
+        searchTimer = new Timer(async _ =>
+        {
+            await InvokeAsync(async () =>
+            {
+                await OnSearchChange.InvokeAsync(SearchQuery);
+                StateHasChanged();
+            });
+        }, null, 300, Timeout.Infinite);
+    }
+
+    private Timer? searchTimer;
+
+    private async Task HandleKeyPress(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            await OnSearchChange.InvokeAsync(SearchQuery);
+        }
+    }
+
+    private async Task ClearSearch()
+    {
+        SearchQuery = string.Empty;
+        await OnSearchChange.InvokeAsync(SearchQuery);
+    }
+
+    private async Task ClearAllFilters()
+    {
+        SearchQuery = string.Empty;
+        await OnSearchChange.InvokeAsync(SearchQuery);
+        await OnPriorityFilter.InvokeAsync(null);
+        await OnPinnedFilter.InvokeAsync(false);
+        await OnClearAllFilters.InvokeAsync();
+    }
+
+    private async Task SetCardView()
+    {
+        await OnViewModeChange.InvokeAsync("card");
+    }
+
+    private async Task SetListView()
+    {
+        await OnViewModeChange.InvokeAsync("list");
+    }
+
+    private async Task SortByDateDesc()
+    {
+        await OnSortChange.InvokeAsync("date-desc");
+    }
+
+    private async Task SortByDateAsc()
+    {
+        await OnSortChange.InvokeAsync("date-asc");
+    }
+
+    private async Task SortByPriority()
+    {
+        await OnSortChange.InvokeAsync("priority");
+    }
+
+    private async Task SortByTitle()
+    {
+        await OnSortChange.InvokeAsync("title");
+    }
+
+    public void Dispose()
+    {
+        searchTimer?.Dispose();
+    }
+}
+
+<style>
+    .search-header {
+        background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+        border-bottom: 1px solid #dee2e6;
+        padding: 1.5rem 0;
+        margin-bottom: 2rem;
+    }
+
+    .page-title {
+        font-weight: 700;
+        color: #2c3e50;
+        margin-bottom: 0.5rem;
+        font-size: 1.75rem;
+    }
+
+    .stats-info {
+        display: flex;
+        gap: 1rem;
+        font-size: 0.875rem;
+        color: #6c757d;
+    }
+
+    .stat-item {
+        display: flex;
+        align-items: center;
+    }
+
+    .search-controls {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .search-input-group {
+        position: relative;
+    }
+
+    .search-input {
+        border-radius: 25px;
+        border: 2px solid #e9ecef;
+        padding: 0.75rem 1rem;
+        font-size: 0.95rem;
+        transition: all 0.2s;
+    }
+
+    .search-input:focus {
+        border-color: #007bff;
+        box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+    }
+
+    .input-group-text {
+        background: transparent;
+        border: 2px solid #e9ecef;
+        border-right: none;
+        border-radius: 25px 0 0 25px;
+    }
+
+    .clear-search {
+        border-radius: 0 25px 25px 0;
+        border-left: none;
+    }
+
+    .quick-filters {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+    }
+
+    .filter-chip {
+        border-radius: 20px;
+        border: 1px solid #dee2e6;
+        background: #fff;
+        color: #6c757d;
+        transition: all 0.2s;
+        font-size: 0.875rem;
+        padding: 0.375rem 0.75rem;
+    }
+
+    .filter-chip:hover {
+        background: #f8f9fa;
+        border-color: #007bff;
+        color: #007bff;
+    }
+
+    .filter-chip.active {
+        background: #007bff;
+        border-color: #007bff;
+        color: #fff;
+    }
+
+    .header-actions {
+        display: flex;
+        gap: 0.75rem;
+        justify-content: flex-end;
+        align-items: center;
+    }
+
+    .btn-create {
+        border-radius: 25px;
+        font-weight: 600;
+        padding: 0.75rem 1.5rem;
+        transition: all 0.2s;
+    }
+
+    .btn-create:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+    }
+
+    .view-toggle .btn {
+        border-radius: 8px;
+        padding: 0.5rem 0.75rem;
+    }
+
+    .view-toggle .btn.active {
+        background: #007bff;
+        border-color: #007bff;
+        color: #fff;
+    }
+
+    .dropdown-toggle {
+        border-radius: 8px;
+        padding: 0.5rem 1rem;
+    }
+
+    .dropdown-item.active {
+        background: #007bff;
+        color: #fff;
+    }
+
+    .active-filters {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+        padding: 1rem;
+        background: #f8f9fa;
+        border-radius: 12px;
+        border: 1px solid #dee2e6;
+    }
+
+    .filter-label {
+        font-weight: 600;
+        color: #495057;
+        font-size: 0.875rem;
+    }
+
+    .filter-tag {
+        display: flex;
+        align-items: center;
+        background: #fff;
+        border: 1px solid #dee2e6;
+        border-radius: 20px;
+        padding: 0.375rem 0.75rem;
+        font-size: 0.875rem;
+        color: #495057;
+    }
+
+    .clear-all-filters {
+        border-radius: 20px;
+        font-size: 0.875rem;
+    }
+
+    .btn-close-sm {
+        font-size: 0.7rem;
+        width: 0.75rem;
+        height: 0.75rem;
+    }
+</style>

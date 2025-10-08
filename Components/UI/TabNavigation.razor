@@ -1,0 +1,322 @@
+@using c2_eskolar.Models.Enums
+
+<div class="tab-navigation">
+    <div class="container-fluid">
+        <ul class="nav nav-tabs modern-tabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link @(ActiveTab == "all" ? "active" : "")" 
+                        type="button" 
+                        role="tab"
+                        @onclick="@(() => SetActiveTab("all"))">
+                    <i class="bi bi-collection me-2"></i>
+                    <span class="tab-text">All Announcements</span>
+                    @if (AllCount > 0)
+                    {
+                        <span class="badge tab-badge">@AllCount</span>
+                    }
+                </button>
+            </li>
+
+            @foreach (var category in Categories)
+            {
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link @(ActiveTab == category.Key ? "active" : "")" 
+                            type="button" 
+                            role="tab"
+                            @onclick="@(() => SetActiveTab(category.Key))">
+                        <i class="@GetCategoryIcon(category.Key) me-2"></i>
+                        <span class="tab-text">@category.Key</span>
+                        @if (category.Value > 0)
+                        {
+                            <span class="badge tab-badge">@category.Value</span>
+                        }
+                    </button>
+                </li>
+            }
+
+            @if (ShowPinnedTab && PinnedCount > 0)
+            {
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link @(ActiveTab == "pinned" ? "active" : "")" 
+                            type="button" 
+                            role="tab"
+                            @onclick="@(() => SetActiveTab("pinned"))">
+                        <i class="bi bi-pin-fill text-warning me-2"></i>
+                        <span class="tab-text">Pinned</span>
+                        <span class="badge tab-badge">@PinnedCount</span>
+                    </button>
+                </li>
+            }
+
+            @if (ShowArchivedTab)
+            {
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link @(ActiveTab == "archived" ? "active" : "")" 
+                            type="button" 
+                            role="tab"
+                            @onclick="@(() => SetActiveTab("archived"))">
+                        <i class="bi bi-archive me-2"></i>
+                        <span class="tab-text">Archived</span>
+                        @if (ArchivedCount > 0)
+                        {
+                            <span class="badge tab-badge archived">@ArchivedCount</span>
+                        }
+                    </button>
+                </li>
+            }
+
+            @if (ShowDraftsTab && CanManage)
+            {
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link @(ActiveTab == "drafts" ? "active" : "")" 
+                            type="button" 
+                            role="tab"
+                            @onclick="@(() => SetActiveTab("drafts"))">
+                        <i class="bi bi-file-earmark-text me-2"></i>
+                        <span class="tab-text">Drafts</span>
+                        @if (DraftsCount > 0)
+                        {
+                            <span class="badge tab-badge drafts">@DraftsCount</span>
+                        }
+                    </button>
+                </li>
+            }
+        </ul>
+
+        <!-- Tab Content Info -->
+        @if (ShowTabInfo)
+        {
+            <div class="tab-info">
+                <div class="tab-description">
+                    @GetTabDescription()
+                </div>
+                
+                @if (ShowQuickActions && CanManage)
+                {
+                    <div class="tab-actions">
+                        @if (ActiveTab == "all" || Categories.ContainsKey(ActiveTab))
+                        {
+                            <button class="btn btn-sm btn-outline-primary" @onclick="OnBulkAction">
+                                <i class="bi bi-check2-square me-1"></i>
+                                Bulk Actions
+                            </button>
+                        }
+                        
+                        @if (ActiveTab == "archived")
+                        {
+                            <button class="btn btn-sm btn-outline-success" @onclick="OnRestoreSelected">
+                                <i class="bi bi-arrow-clockwise me-1"></i>
+                                Restore Selected
+                            </button>
+                        }
+                        
+                        @if (ActiveTab == "drafts")
+                        {
+                            <button class="btn btn-sm btn-outline-info" @onclick="OnPublishSelected">
+                                <i class="bi bi-send me-1"></i>
+                                Publish Selected
+                            </button>
+                        }
+                    </div>
+                }
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter] public string ActiveTab { get; set; } = "all";
+    [Parameter] public Dictionary<string, int> Categories { get; set; } = new();
+    [Parameter] public int AllCount { get; set; }
+    [Parameter] public int PinnedCount { get; set; }
+    [Parameter] public int ArchivedCount { get; set; }
+    [Parameter] public int DraftsCount { get; set; }
+    
+    [Parameter] public bool ShowPinnedTab { get; set; } = true;
+    [Parameter] public bool ShowArchivedTab { get; set; } = true;
+    [Parameter] public bool ShowDraftsTab { get; set; } = false;
+    [Parameter] public bool ShowTabInfo { get; set; } = true;
+    [Parameter] public bool ShowQuickActions { get; set; } = false;
+    [Parameter] public bool CanManage { get; set; } = false;
+
+    [Parameter] public EventCallback<string> OnTabChange { get; set; }
+    [Parameter] public EventCallback OnBulkAction { get; set; }
+    [Parameter] public EventCallback OnRestoreSelected { get; set; }
+    [Parameter] public EventCallback OnPublishSelected { get; set; }
+
+    private async Task SetActiveTab(string tab)
+    {
+        ActiveTab = tab;
+        await OnTabChange.InvokeAsync(tab);
+    }
+
+    private string GetCategoryIcon(string category)
+    {
+        return category.ToLower() switch
+        {
+            "scholarship" => "bi bi-award",
+            "event" => "bi bi-calendar-event",
+            "news" => "bi bi-newspaper",
+            "update" => "bi bi-arrow-repeat",
+            "announcement" => "bi bi-megaphone",
+            "academic" => "bi bi-book",
+            "administrative" => "bi bi-building",
+            "emergency" => "bi bi-exclamation-triangle",
+            "maintenance" => "bi bi-tools",
+            "social" => "bi bi-people",
+            _ => "bi bi-folder"
+        };
+    }
+
+    private string GetTabDescription()
+    {
+        return ActiveTab switch
+        {
+            "all" => $"Showing all {AllCount} announcements across all categories",
+            "pinned" => $"Important announcements pinned for visibility ({PinnedCount} items)",
+            "archived" => $"Previously active announcements that have been archived ({ArchivedCount} items)",
+            "drafts" => $"Unpublished announcement drafts ({DraftsCount} items)",
+            _ when Categories.ContainsKey(ActiveTab) => 
+                $"Announcements in the {ActiveTab} category ({Categories[ActiveTab]} items)",
+            _ => "Select a tab to view announcements"
+        };
+    }
+}
+
+<style>
+    .tab-navigation {
+        margin-bottom: 2rem;
+    }
+
+    .modern-tabs {
+        border: none;
+        background: #f8f9fa;
+        border-radius: 16px;
+        padding: 0.5rem;
+        overflow-x: auto;
+        flex-wrap: nowrap;
+    }
+
+    .modern-tabs .nav-item {
+        flex-shrink: 0;
+    }
+
+    .modern-tabs .nav-link {
+        border: none;
+        border-radius: 12px;
+        color: #6c757d;
+        font-weight: 500;
+        padding: 0.75rem 1.25rem;
+        margin: 0 0.25rem;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        white-space: nowrap;
+        background: transparent;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .modern-tabs .nav-link:hover {
+        color: #495057;
+        background: rgba(255, 255, 255, 0.5);
+        transform: translateY(-1px);
+    }
+
+    .modern-tabs .nav-link.active {
+        background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+        color: #fff;
+        box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
+        transform: translateY(-1px);
+    }
+
+    .modern-tabs .nav-link.active::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0%, transparent 100%);
+        pointer-events: none;
+    }
+
+    .tab-text {
+        font-size: 0.9rem;
+    }
+
+    .tab-badge {
+        background: rgba(255, 255, 255, 0.2);
+        color: inherit;
+        border-radius: 12px;
+        padding: 0.25rem 0.5rem;
+        font-size: 0.75rem;
+        font-weight: 600;
+        min-width: 1.5rem;
+        text-align: center;
+    }
+
+    .modern-tabs .nav-link:not(.active) .tab-badge {
+        background: #dee2e6;
+        color: #6c757d;
+    }
+
+    .tab-badge.archived {
+        background: #fd7e14;
+        color: #fff;
+    }
+
+    .tab-badge.drafts {
+        background: #6f42c1;
+        color: #fff;
+    }
+
+    .tab-info {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 1rem;
+        padding: 1rem;
+        background: #f8f9fa;
+        border-radius: 12px;
+        border-left: 4px solid #007bff;
+    }
+
+    .tab-description {
+        color: #6c757d;
+        font-size: 0.9rem;
+        font-style: italic;
+    }
+
+    .tab-actions {
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .tab-actions .btn {
+        border-radius: 8px;
+        font-size: 0.875rem;
+    }
+
+
+
+    /* Smooth scrolling for mobile tabs */
+    .modern-tabs::-webkit-scrollbar {
+        height: 4px;
+    }
+
+    .modern-tabs::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 2px;
+    }
+
+    .modern-tabs::-webkit-scrollbar-thumb {
+        background: #c1c1c1;
+        border-radius: 2px;
+    }
+
+    .modern-tabs::-webkit-scrollbar-thumb:hover {
+        background: #a8a8a8;
+    }
+</style>

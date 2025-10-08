@@ -114,6 +114,7 @@ namespace c2_eskolar.Services
         /// </summary>
         public async Task<Stream> DownloadPhotoAsync(string fileName)
         {
+            Console.WriteLine($"BlobStorageService: Attempting to download photo from container '{_photosContainer}': {fileName}");
             return await DownloadFileAsync(_photosContainer, fileName);
         }
 
@@ -178,6 +179,41 @@ namespace c2_eskolar.Services
             var containerClient = GetContainerClient(_photosContainer);
             var blobClient = containerClient.GetBlobClient(fileName);
             return blobClient.Uri.ToString();
+        }
+
+        /// <summary>
+        /// Generates a SAS URL for a photo, valid for the specified duration (default 1 hour).
+        /// </summary>
+        /// <param name="fileName">The blob file name.</param>
+        /// <param name="expiryMinutes">How long the SAS should be valid for (default 60 minutes).</param>
+        /// <returns>The SAS URL for the blob.</returns>
+        public string GetPhotoSasUrl(string fileName, int expiryMinutes = 60)
+        {
+            var containerClient = GetContainerClient(_photosContainer);
+            var blobClient = containerClient.GetBlobClient(fileName);
+            
+            // Check if blob exists before generating SAS
+            if (!blobClient.Exists())
+                throw new FileNotFoundException($"Blob '{fileName}' does not exist in container '{_photosContainer}'.");
+
+            if (!blobClient.CanGenerateSasUri)
+            {
+                // Log diagnostic info
+                Console.WriteLine($"[BlobStorageService] Cannot generate SAS URI for blob '{fileName}'.");
+                throw new InvalidOperationException("BlobClient cannot generate SAS URI. Ensure you are using a key credential.");
+            }
+
+            var sasBuilder = new BlobSasBuilder
+            {
+                BlobContainerName = _photosContainer,
+                BlobName = fileName,
+                Resource = "b",
+                ExpiresOn = DateTimeOffset.UtcNow.AddMinutes(expiryMinutes)
+            };
+            sasBuilder.SetPermissions(BlobSasPermissions.Read);
+
+            var sasUri = blobClient.GenerateSasUri(sasBuilder);
+            return sasUri.ToString();
         }
 
         /// <summary>
