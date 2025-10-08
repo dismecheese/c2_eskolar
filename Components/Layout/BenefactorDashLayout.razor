@@ -58,6 +58,10 @@
     private string? adminFirstName;
     private string? adminLastName;
 
+    // --- VERIFICATION MODAL STATE ---
+    private bool showVerificationModal = false;
+    private string? verificationStatus = null;
+
     [Inject]
     private BenefactorProfileService BenefactorProfileService { get; set; } = default!;
     // --- USER INFORMATION STATE ---
@@ -81,6 +85,7 @@
         // Asynchronously load the user's information
         await LoadCurrentUser();
         await LoadBenefactorProfile();
+        await CheckVerificationStatus();
     }
 
     private async Task LoadBenefactorProfile()
@@ -101,6 +106,30 @@
             Console.WriteLine($"Error loading benefactor profile: {ex.Message}");
         }
         StateHasChanged();
+    }
+
+    private async Task CheckVerificationStatus()
+    {
+        try
+        {
+            var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+            var userId = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (!string.IsNullOrEmpty(userId))
+            {
+                var profile = await BenefactorProfileService.GetProfileByUserIdAsync(userId);
+                var isVerified = profile?.IsVerified;
+                verificationStatus = profile?.VerificationStatus;
+
+                if (isVerified != true && (string.IsNullOrEmpty(verificationStatus) || verificationStatus != "Verified"))
+                {
+                    showVerificationModal = true;
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error checking verification status: {ex.Message}");
+        }
     }
 
     // Loads the currently authenticated user's information
@@ -243,6 +272,18 @@
             // Fallback to direct logout if modal fails
             LogOut();
         }
+    }
+
+    // --- VERIFICATION MODAL ACTIONS ---
+    private void GoToVerification()
+    {
+        showVerificationModal = false;
+        Navigation.NavigateTo("/benefactor/verification");
+    }
+
+    private void SkipVerification()
+    {
+        showVerificationModal = false;
     }
 }
 
@@ -418,6 +459,25 @@
         </div>
     </div>
 </div>
+    @if (showVerificationModal)
+    {
+        <div class="sv-modal sv-modal-backdrop">
+            <div class="sv-modal-content">
+                <div class="sv-modal-header">
+                    <h2>Benefactor Verification Required</h2>
+                    <p>Your organization needs to be verified to access all features. Please complete the verification process.</p>
+                </div>
+                <div class="sv-modal-body">
+                    <p>To continue using eSkolar as a benefactor, you must verify your organization profile and upload required documents.</p>
+                    <p>Click "Verify Organization" to complete your verification with organization details, admin information, and required documents.</p>
+                </div>
+                <div class="sv-modal-footer" style="display:flex;gap:16px;justify-content:flex-end;">
+                    <button class="sv-btn sv-btn-secondary" @onclick="SkipVerification">Skip for Now</button>
+                    <button class="sv-btn sv-btn-primary" @onclick="GoToVerification">Verify Organization</button>
+                </div>
+            </div>
+        </div>
+    }
 
 <!-- Floating Chatbot Window -->
 @if (ShowChatbot)

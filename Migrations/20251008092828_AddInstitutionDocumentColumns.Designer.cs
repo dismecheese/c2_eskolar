@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using c2_eskolar.Data;
 
@@ -11,9 +12,11 @@ using c2_eskolar.Data;
 namespace c2_eskolar.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251008092828_AddInstitutionDocumentColumns")]
+    partial class AddInstitutionDocumentColumns
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -479,50 +482,6 @@ namespace c2_eskolar.Migrations
                     b.HasIndex("UserId");
 
                     b.ToTable("BenefactorProfiles");
-                });
-
-            modelBuilder.Entity("c2_eskolar.Models.BulkOperationRecord", b =>
-                {
-                    b.Property<string>("Id")
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<string>("ErrorLog")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime>("ExecutedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("ExecutedBy")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("ExecutionNotes")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("FailedItems")
-                        .HasColumnType("int");
-
-                    b.Property<string>("FilterCriteria")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("OperationType")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<string>("ProcessedScholarshipIds")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("SuccessfulItems")
-                        .HasColumnType("int");
-
-                    b.Property<int>("TotalItemsProcessed")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("BulkOperationRecords");
                 });
 
             modelBuilder.Entity("c2_eskolar.Models.Document", b =>
@@ -1051,236 +1010,6 @@ namespace c2_eskolar.Migrations
                     b.ToTable("ScholarshipTypes");
                 });
 
-            modelBuilder.Entity("c2_eskolar.Models.ScrapedScholarship", b =>
-                {
-                    b.Property<string>("Id")
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<string>("AiModel")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("AiPromptVersion")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime?>("ApplicationDeadline")
-                        .HasColumnType("datetime2");
-
-                    b.Property<DateTime?>("ApprovedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("ApprovedBy")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("AuthorAttribution")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<string>("Benefits")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("CreatedBy")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Description")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime?>("EnhancedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("ExternalApplicationUrl")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("ExternalContactInfo")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("ExternalEligibilityDetails")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("ExternalImageUrl")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<bool>("IsEnhanced")
-                        .HasColumnType("bit");
-
-                    b.Property<decimal?>("MinimumGPA")
-                        .HasPrecision(3, 2)
-                        .HasColumnType("decimal(3,2)");
-
-                    b.Property<decimal?>("MonetaryValue")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<double>("ParsingConfidence")
-                        .HasPrecision(3, 2)
-                        .HasColumnType("float(3)");
-
-                    b.Property<string>("ParsingNotes")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int?>("PublishedScholarshipId")
-                        .HasColumnType("int");
-
-                    b.Property<string>("RawText")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("RequiredCourse")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("RequiredUniversity")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int?>("RequiredYearLevel")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Requirements")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("ReviewNotes")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime?>("ReviewedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("ReviewedBy")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime>("ScrapedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int?>("SlotsAvailable")
-                        .HasColumnType("int");
-
-                    b.Property<string>("SourceUrl")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("Status")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Title")
-                        .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
-
-                    b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("UpdatedBy")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ParsingConfidence");
-
-                    b.HasIndex("PublishedScholarshipId")
-                        .IsUnique()
-                        .HasFilter("[PublishedScholarshipId] IS NOT NULL");
-
-                    b.HasIndex("ScrapedAt");
-
-                    b.HasIndex("Status");
-
-                    b.ToTable("ScrapedScholarships");
-                });
-
-            modelBuilder.Entity("c2_eskolar.Models.ScrapingConfiguration", b =>
-                {
-                    b.Property<string>("Id")
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<string>("BaseUrl")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("CreatedBy")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("CustomPromptTemplate")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<bool>("EnableExternalUrlScraping")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("ExcludePatterns")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("bit");
-
-                    b.Property<int>("MaxRetryAttempts")
-                        .HasColumnType("int");
-
-                    b.Property<double>("MinConfidenceThreshold")
-                        .HasColumnType("float");
-
-                    b.Property<int>("RateLimitDelayMs")
-                        .HasColumnType("int");
-
-                    b.Property<string>("SelectorRules")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("SourceName")
-                        .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
-
-                    b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("ScrapingConfigurations");
-                });
-
-            modelBuilder.Entity("c2_eskolar.Models.ScrapingProcessLog", b =>
-                {
-                    b.Property<string>("Id")
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<double?>("ConfidenceScore")
-                        .HasColumnType("float");
-
-                    b.Property<string>("Notes")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("ProcessDetails")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("ProcessType")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<DateTime>("ProcessedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("ProcessedBy")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("ScrapedScholarshipId")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(450)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ProcessedAt");
-
-                    b.HasIndex("ScrapedScholarshipId");
-
-                    b.ToTable("ScrapingProcessLogs");
-                });
-
             modelBuilder.Entity("c2_eskolar.Models.StudentProfile", b =>
                 {
                     b.Property<Guid>("StudentProfileId")
@@ -1611,27 +1340,6 @@ namespace c2_eskolar.Migrations
                     b.Navigation("Student");
                 });
 
-            modelBuilder.Entity("c2_eskolar.Models.ScrapedScholarship", b =>
-                {
-                    b.HasOne("c2_eskolar.Models.Scholarship", "PublishedScholarship")
-                        .WithOne()
-                        .HasForeignKey("c2_eskolar.Models.ScrapedScholarship", "PublishedScholarshipId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
-                    b.Navigation("PublishedScholarship");
-                });
-
-            modelBuilder.Entity("c2_eskolar.Models.ScrapingProcessLog", b =>
-                {
-                    b.HasOne("c2_eskolar.Models.ScrapedScholarship", "ScrapedScholarship")
-                        .WithMany("ProcessingLogs")
-                        .HasForeignKey("ScrapedScholarshipId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("ScrapedScholarship");
-                });
-
             modelBuilder.Entity("c2_eskolar.Models.StudentProfile", b =>
                 {
                     b.HasOne("Microsoft.AspNetCore.Identity.IdentityUser", null)
@@ -1685,11 +1393,6 @@ namespace c2_eskolar.Migrations
             modelBuilder.Entity("c2_eskolar.Models.ScholarshipType", b =>
                 {
                     b.Navigation("Scholarships");
-                });
-
-            modelBuilder.Entity("c2_eskolar.Models.ScrapedScholarship", b =>
-                {
-                    b.Navigation("ProcessingLogs");
                 });
 
             modelBuilder.Entity("c2_eskolar.Models.StudentProfile", b =>
