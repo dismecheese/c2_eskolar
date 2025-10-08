@@ -12,12 +12,24 @@ applyTo: '**'
 
 ## Project Context
 - Current project type: Blazor web app with enhanced scholarship management
-- Tech stack: .NET 9.0, Azure SQL, Azure Blob Storage, AI integration (OpenAI GPT-4.1 Mini)
+- Tech stack: .NET 9.0, Azure SQL, Azure Blob Storage, Azure OpenAI Service (v2.3.0-beta.2)
 - Architecture patterns: Service-based, DI, DbContextFactory for Blazor Server, clean separation
-- Key requirements: Scalable file storage, external URL scraping, admin dashboard, approval workflows
+- Key requirements: Scalable file storage, external URL scraping, admin dashboard, approval workflows, Azure AI token tracking
+- Azure AI Integration: GPT-3.5-turbo and GPT-4 variants with comprehensive usage monitoring and cost calculation
+- Region: eastus2 for Azure OpenAI deployment
 - Institution verification modal now only requires AdminValidationDocument (ID/proof of employment); business permit and accreditation certificate uploads removed; validation enforced for admin document and logo/profile picture.
 
 ## Recent Major Accomplishments
+### Azure AI Token Tracking System ✅ NEW
+- Successfully implemented comprehensive Azure OpenAI token usage tracking with real cost calculation
+- Enhanced AITokenUsage model with Azure-specific fields (DeploymentName, Region, RequestDurationMs)
+- Created AITokenTrackingService with complete Azure pricing matrix and reflection-based SDK compatibility
+- Modified OpenAIService to automatically track all API calls with detailed timing and usage data
+- Applied database migration "AddAzureFieldsToAITokenUsage" successfully
+- Updated SuperAdminDashboard to display real token usage data instead of estimates
+- Resolved Azure OpenAI SDK compatibility issues using reflection-based property discovery
+- System provides accurate cost monitoring for business intelligence and budget tracking
+
 ### External URL Enhancement System ✅
 - Successfully implemented comprehensive external URL scraping with AI-powered content analysis
 - Enhanced data merging with similarity detection algorithms

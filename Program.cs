@@ -110,6 +110,7 @@ builder.Services.AddScoped<ContextGenerationService>();
 builder.Services.AddScoped<DisplayContextAwarenessService>();
 builder.Services.AddScoped<ChatbotMessageFormattingService>();
 builder.Services.AddScoped<OpenAIService>();
+builder.Services.AddScoped<AITokenTrackingService>();
 
     var app = builder.Build();
 
