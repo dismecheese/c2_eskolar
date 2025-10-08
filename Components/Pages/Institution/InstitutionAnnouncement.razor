@@ -103,6 +103,12 @@
                                                 <span class="badge bg-@GetPriorityColor(announcement.Priority)">
                                                     @announcement.Priority
                                                 </span>
+                                                @if (announcement.Photos?.Any() == true)
+                                                {
+                                                    <span class="badge bg-light text-dark">
+                                                        <i class="bi bi-image"></i> @announcement.Photos.Count
+                                                    </span>
+                                                }
                                             </div>
                                             <div class="d-flex align-items-center gap-2">
                                                 <small class="text-muted">@announcement.CreatedAt.ToString("MMM dd, yyyy")</small>
@@ -140,17 +146,28 @@
                                                             @foreach (var photo in announcement.Photos.Take(3))
                                                             {
                                                                 <div class="col-4">
-                                                                    <img src="@photo.Url" class="img-fluid rounded" 
-                                                                         style="height: 80px; width: 100%; object-fit: cover;" 
-                                                                         alt="Announcement image" />
+                                                                    <img src="@photo.Url" class="img-fluid rounded cursor-pointer" 
+                                                                         style="height: 80px; width: 100%; object-fit: cover; border: 2px solid #e9ecef;" 
+                                                                         alt="Announcement image"
+                                                                         @onclick="() => ToggleAnnouncementExpansion(announcement.AnnouncementId)"
+                                                                         title="Click to view full images" />
                                                                 </div>
                                                             }
                                                         </div>
                                                         @if (announcement.Photos.Count > 3)
                                                         {
-                                                            <small class="text-muted">+@(announcement.Photos.Count - 3) more images</small>
+                                                            <small class="text-muted cursor-pointer" 
+                                                                   @onclick="() => ToggleAnnouncementExpansion(announcement.AnnouncementId)">
+                                                                +@(announcement.Photos.Count - 3) more images - Click to view all
+                                                            </small>
                                                         }
                                                     </div>
+                                                }
+                                                else
+                                                {
+                                                    <!-- Debug: Show when no photos are available -->
+                                                    @* Uncomment the line below for debugging if images aren't showing *@
+                                                    @* <small class="text-muted">No images uploaded for this announcement</small> *@
                                                 }
 
                                                 <!-- Collapsible Details -->
@@ -170,19 +187,30 @@
                                                         @if (announcement.Photos?.Any() == true)
                                                         {
                                                             <div class="mb-3">
-                                                                <h6 class="fw-bold">Images:</h6>
+                                                                <h6 class="fw-bold">
+                                                                    <i class="bi bi-images me-2"></i>
+                                                                    Images (@announcement.Photos.Count)
+                                                                </h6>
                                                                 <div class="row g-3">
                                                                     @foreach (var photo in announcement.Photos)
                                                                     {
                                                                         <div class="col-md-4 col-sm-6">
-                                                                            <div class="card">
-                                                                                <img src="@photo.Url" class="card-img-top" 
+                                                                            <div class="card shadow-sm h-100">
+                                                                                <img src="@photo.Url" class="card-img-top cursor-pointer" 
                                                                                      style="height: 200px; object-fit: cover;" 
-                                                                                     alt="Announcement image" />
+                                                                                     alt="Announcement image"
+                                                                                     onclick="window.open('@photo.Url', '_blank')"
+                                                                                     title="Click to view full size" />
                                                                                 @if (!string.IsNullOrEmpty(photo.Caption))
                                                                                 {
                                                                                     <div class="card-body p-2">
                                                                                         <small class="text-muted">@photo.Caption</small>
+                                                                                    </div>
+                                                                                }
+                                                                                else
+                                                                                {
+                                                                                    <div class="card-body p-2" style="height: 40px;">
+                                                                                        <small class="text-muted">Click to view full size</small>
                                                                                     </div>
                                                                                 }
                                                                             </div>
@@ -554,6 +582,25 @@
         {
             // Load ALL announcements with photos (for shared viewing)
             announcements = await AnnouncementService.GetAllAnnouncementsWithPhotosAsync();
+            
+            // Debug: Log photo counts for troubleshooting
+            Console.WriteLine($"Loaded {announcements?.Count ?? 0} announcements");
+            if (announcements != null)
+            {
+                foreach (var announcement in announcements)
+                {
+                    var photoCount = announcement.Photos?.Count ?? 0;
+                    if (photoCount > 0)
+                    {
+                        Console.WriteLine($"Announcement '{announcement.Title}' has {photoCount} photos");
+                        foreach (var photo in announcement.Photos!)
+                        {
+                            Console.WriteLine($"  Photo URL: {photo.Url}");
+                        }
+                    }
+                }
+            }
+            
             UpdateStatistics();
             FilterAnnouncements();
         }
