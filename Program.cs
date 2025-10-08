@@ -85,6 +85,7 @@ builder.Services.AddScoped<BlobStorageService>();
 
 // Register web scraping services
 builder.Services.AddScoped<c2_eskolar.Services.WebScraping.IWebScrapingService, c2_eskolar.Services.WebScraping.WebScrapingService>();
+builder.Services.AddScoped<c2_eskolar.Services.WebScraping.IEnhancedWebScrapingService, c2_eskolar.Services.WebScraping.EnhancedWebScrapingService>();
 builder.Services.AddHostedService<c2_eskolar.Services.WebScraping.ScrapingBackgroundService>();
 builder.Services.Configure<c2_eskolar.Services.WebScraping.ScrapingConfiguration>(
     builder.Configuration.GetSection("WebScraping"));
