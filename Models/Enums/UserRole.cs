@@ -7,6 +7,7 @@ namespace c2_eskolar.Models.Enums
     {
         Student = 1,
         Institution = 2,
-        Benefactor = 3
+        Benefactor = 3,
+        SuperAdmin = 4
     }
 }
