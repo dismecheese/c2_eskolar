@@ -1,3 +1,4 @@
+
 /* StudentApplicationSummary styles */
 .doc-link:hover, .doc-link:focus {
     background: linear-gradient(90deg, #2563eb 0%, #3b82f6 100%);
@@ -1182,4 +1183,40 @@ button.dashboard-profile-absolute:hover svg * {
 .terms-bubble h1:focus-visible {
   outline: none !important;
   box-shadow: none !important;
+}
+
+/* ULTRA-SPECIFIC: Force premium styles for modal fields */
+.modal-content .force-premium-input,
+.modal-content .force-premium-input:focus,
+.modal-content .force-premium-input::placeholder {
+    width: 100% !important;
+    padding: 1.25rem 1.5rem !important;
+    margin-bottom: 1.2rem !important;
+    border: 2px solid #e2e8f0 !important;
+    border-radius: 20px !important;
+    font-size: 1rem !important;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    background: white !important;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.10) !important;
+    font-family: inherit !important;
+    color: #2d3748 !important;
+    outline: none !important;
+    z-index: 2 !important;
+    resize: vertical !important;
+    display: block !important;
+}
+.modal-content .force-premium-input:focus {
+    border-color: #1560d4 !important;
+    box-shadow: 0 0 0 4px rgba(21, 96, 212, 0.15), 0 8px 25px rgba(21, 96, 212, 0.2) !important;
+    transform: none !important;
+    background: white !important;
+    outline: none !important;
+    }
+.modal-content .force-premium-input::placeholder {
+    color: #a0aec0 !important;
+    font-style: italic !important;
+        opacity: 1 !important;
+}
+.modal-content textarea.force-premium-input {
+    resize: none !important;
 }
