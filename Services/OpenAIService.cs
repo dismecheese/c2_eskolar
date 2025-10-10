@@ -1,4 +1,3 @@
-
 using Azure.AI.OpenAI;
 using OpenAI.Chat;
 using Microsoft.Extensions.Configuration;
@@ -12,8 +11,8 @@ using c2_eskolar.Services.AI;
 
 namespace c2_eskolar.Services
 {
-    public class OpenAIService
-    {
+        public class OpenAIService
+        {
         private readonly AzureOpenAIClient _client;
         private readonly string _deploymentName;
         private readonly ProfileSummaryService _profileSummaryService;
@@ -215,6 +214,136 @@ namespace c2_eskolar.Services
                    "• Make urgent or important items stand out with warning emojis\n" +
                    "• Keep descriptions concise but informative\n" +
                    "• Always explain why information is relevant to the user\n";
+        }
+
+        public async Task<ExtractedInstitutionAuthLetterData?> ExtractInstitutionFieldsAsync(string rawText)
+        {
+            // Compose prompt for field extraction
+            string prompt = $@"Extract the following fields from the institution authorization letter text below. Return only the fields in JSON format:
+InstitutionName, InstitutionType, Address, ContactNumber, Website, Description, DeanName, DeanEmail, InstitutionalEmailDomain.
+
+Text:
+{rawText}
+
+JSON:";
+
+            var chatClient = _client.GetChatClient(_deploymentName);
+            var messages = new OpenAI.Chat.ChatMessage[]
+            {
+                new OpenAI.Chat.SystemChatMessage("You are an expert at extracting structured data from institution documents. Always return only valid JSON for the requested fields."),
+                new OpenAI.Chat.UserChatMessage(prompt)
+            };
+            var response = await chatClient.CompleteChatAsync(messages);
+            string json = response.Value.Content[0].Text.Trim();
+
+            try
+            {
+                var extracted = System.Text.Json.JsonSerializer.Deserialize<ExtractedInstitutionAuthLetterData>(json, new System.Text.Json.JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                });
+                return extracted;
+            }
+            catch
+            {
+                // If parsing fails, return null
+                return null;
+            }
+        }
+
+        public async Task<ExtractedInstitutionIdData?> ExtractInstitutionIdFieldsAsync(string rawText)
+        {
+            string prompt = $@"Extract the following fields from the institution admin ID document text below. Return only the fields in JSON format:
+AdminFirstName, AdminMiddleName, AdminLastName, AdminEmail, AdminContactNumber, AdminPosition, InstitutionalEmailDomain.
+
+Text:
+{rawText}
+
+JSON:";
+
+            var chatClient = _client.GetChatClient(_deploymentName);
+            var messages = new OpenAI.Chat.ChatMessage[]
+            {
+                new OpenAI.Chat.SystemChatMessage("You are an expert at extracting structured data from institution admin ID documents. Always return only valid JSON for the requested fields."),
+                new OpenAI.Chat.UserChatMessage(prompt)
+            };
+            var response = await chatClient.CompleteChatAsync(messages);
+            string json = response.Value.Content[0].Text.Trim();
+
+            try
+            {
+                var extracted = System.Text.Json.JsonSerializer.Deserialize<ExtractedInstitutionIdData>(json, new System.Text.Json.JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                });
+                return extracted;
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        public async Task<ExtractedIdData?> ImprovePhilippineIdExtractionAsync(string rawText, ExtractedIdData? initialExtraction)
+        {
+            string prompt = $@"You are an expert at extracting data from Philippine identification documents. 
+
+The initial extraction found these fields:
+FirstName: {initialExtraction?.FirstName}
+MiddleName: {initialExtraction?.MiddleName}
+LastName: {initialExtraction?.LastName}
+Sex: {initialExtraction?.Sex}
+DateOfBirth: {initialExtraction?.DateOfBirth}
+
+Please analyze the raw OCR text below and improve the extraction, particularly for Philippine naming conventions:
+- In Philippine IDs, ""Mga Pangalan/Given Names"" typically contains first and middle names separated by space (like ""RALPH LORENZ"")
+- ""Apellido/Last Name"" is the family name (like ""MARILAO"")
+- ""Gitnang Apellido/Middle Name"" is typically shown separately and should be used as the middle name (like ""MANZON"")
+- Sex is usually shown as ""MALE"" or ""FEMALE"" and may be preceded by ""Kasarian/Sex:"" or just appear as the word itself
+- Dates are often in format ""JANUARY 09, 2004"" and should be converted to YYYY-MM-DD format
+- Look carefully for the word ""MALE"" or ""FEMALE"" anywhere in the text
+
+Raw OCR Text:
+{rawText}
+
+Please return ONLY a JSON object with these exact field names:
+FirstName, MiddleName, LastName, Sex, DateOfBirth (in YYYY-MM-DD format if found)
+
+JSON:";
+
+            var chatClient = _client.GetChatClient(_deploymentName);
+            var messages = new OpenAI.Chat.ChatMessage[]
+            {
+                new OpenAI.Chat.SystemChatMessage("You are an expert at extracting structured data from Philippine identification documents. Focus on proper name parsing according to Philippine naming conventions. Always return only valid JSON."),
+                new OpenAI.Chat.UserChatMessage(prompt)
+            };
+            
+            try
+            {
+                var response = await chatClient.CompleteChatAsync(messages);
+                string json = response.Value.Content[0].Text.Trim();
+                
+                // Clean up the JSON response (remove markdown code block markers if present)
+                if (json.StartsWith("```json"))
+                    json = json.Substring(7);
+                if (json.StartsWith("```"))
+                    json = json.Substring(3);
+                if (json.EndsWith("```"))
+                    json = json.Substring(0, json.Length - 3);
+                json = json.Trim();
+
+                var extracted = System.Text.Json.JsonSerializer.Deserialize<ExtractedIdData>(json, new System.Text.Json.JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                });
+                return extracted;
+            }
+            catch (Exception ex)
+            {
+                // Log the error and return the original extraction
+                Console.WriteLine($"AI improvement failed: {ex.Message}");
+                return initialExtraction;
+            }
         }
     }
 }

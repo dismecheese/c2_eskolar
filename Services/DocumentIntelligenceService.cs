@@ -13,6 +13,8 @@ namespace c2_eskolar.Services
         public string? AdminContactNumber { get; set; }
         public string? AdminPosition { get; set; }
         public string? InstitutionalEmailDomain { get; set; }
+        public string? Sex { get; set; }
+        public DateTime? DateOfBirth { get; set; }
     }
 
     public class ExtractedInstitutionAuthLetterData
@@ -113,38 +115,64 @@ namespace c2_eskolar.Services
     public class DocumentIntelligenceService
     {
 
+        private readonly OpenAIService _openAIService;
+
         public async Task<ExtractedInstitutionIdData?> AnalyzeInstitutionIdDocumentAsync(IBrowserFile file)
         {
             var idData = await AnalyzeIdDocumentAsync(file);
             if (idData == null) return null;
+
+            // Step 1: Get raw text from OCR fields
+            string rawText = $"{idData.FirstName} {idData.MiddleName} {idData.LastName} {idData.Sex} {idData.DateOfBirth} {idData.Address} {idData.DocumentNumber} {idData.Nationality}";
+
+            // Step 2: Use OpenAI to extract semantic fields
+            var aiExtracted = await _openAIService.ExtractInstitutionIdFieldsAsync(rawText);
+
+            // Step 3: Merge extracted fields (AI + OCR)
             var extracted = new ExtractedInstitutionIdData
             {
-                AdminFirstName = idData.FirstName,
-                AdminMiddleName = idData.MiddleName,
-                AdminLastName = idData.LastName,
-                AdminEmail = idData.Nationality, // fallback: use Nationality as email if not present (should be improved)
-                AdminContactNumber = idData.DocumentNumber, // fallback: use DocumentNumber as contact
-                AdminPosition = idData.Sex, // fallback: use Sex as position (should be improved)
-                InstitutionalEmailDomain = null // Will be enhanced with proper AI extraction later
+                AdminFirstName = aiExtracted?.AdminFirstName ?? idData.FirstName,
+                AdminMiddleName = aiExtracted?.AdminMiddleName ?? idData.MiddleName,
+                AdminLastName = aiExtracted?.AdminLastName ?? idData.LastName,
+                AdminEmail = aiExtracted?.AdminEmail,
+                AdminContactNumber = aiExtracted?.AdminContactNumber,
+                AdminPosition = aiExtracted?.AdminPosition,
+                InstitutionalEmailDomain = aiExtracted?.InstitutionalEmailDomain,
+                Sex = idData.Sex,
+                DateOfBirth = idData.DateOfBirth
             };
             return extracted;
         }
 
         public async Task<ExtractedInstitutionAuthLetterData?> AnalyzeInstitutionAuthLetterAsync(IBrowserFile file)
         {
+            // Step 1: OCR/layout extraction
             var corData = await AnalyzeCorDocumentAsync(file);
             if (corData == null) return null;
+
+            // Step 2: Get raw text content from the document (OCR)
+            string rawText = corData.Program ?? "";
+            if (string.IsNullOrWhiteSpace(rawText))
+            {
+                // Fallback: try to get more text from other fields
+                rawText = $"{corData.StudentName} {corData.University} {corData.Address}";
+            }
+
+            // Step 3: Use OpenAI to extract semantic fields
+            var aiExtracted = await _openAIService.ExtractInstitutionFieldsAsync(rawText);
+
+            // Step 4: Merge extracted fields (AI + OCR)
             var extracted = new ExtractedInstitutionAuthLetterData
             {
-                InstitutionName = corData.University,
-                InstitutionType = null, // Not extracted from layout
-                Address = corData.Address,
-                ContactNumber = corData.StudentNumber, // fallback: use StudentNumber as contact
-                Website = null,
-                Description = corData.Program,
-                DeanName = corData.StudentName,
-                DeanEmail = null,
-                InstitutionalEmailDomain = null // Will be enhanced with proper AI extraction later
+                InstitutionName = aiExtracted?.InstitutionName ?? corData.University,
+                InstitutionType = aiExtracted?.InstitutionType,
+                Address = aiExtracted?.Address ?? corData.Address,
+                ContactNumber = aiExtracted?.ContactNumber ?? corData.StudentNumber,
+                Website = aiExtracted?.Website,
+                Description = aiExtracted?.Description ?? corData.Program,
+                DeanName = aiExtracted?.DeanName ?? corData.StudentName,
+                DeanEmail = aiExtracted?.DeanEmail,
+                InstitutionalEmailDomain = aiExtracted?.InstitutionalEmailDomain
             };
             return extracted;
         }
@@ -155,12 +183,13 @@ namespace c2_eskolar.Services
         private readonly string _apiKey;
         private readonly ILogger<DocumentIntelligenceService> _logger;
 
-        public DocumentIntelligenceService(HttpClient httpClient, IConfiguration config, ILogger<DocumentIntelligenceService> logger)
+        public DocumentIntelligenceService(HttpClient httpClient, IConfiguration config, ILogger<DocumentIntelligenceService> logger, OpenAIService openAIService)
         {
             _httpClient = httpClient;
             _endpoint = config["AzureDocumentIntelligence:Endpoint"] ?? "";
             _apiKey = config["AzureDocumentIntelligence:ApiKey"] ?? "";
             _logger = logger;
+            _openAIService = openAIService;
         }
 
         public async Task<ExtractedIdData?> AnalyzeIdDocumentAsync(IBrowserFile file)
@@ -244,11 +273,92 @@ namespace c2_eskolar.Services
                         PropertyNameCaseInsensitive = true
                     });
 
+                    // Log all detected fields for debugging
+                    if (docResponse?.AnalyzeResult?.Documents != null && docResponse.AnalyzeResult.Documents.Length > 0)
+                    {
+                        var fields = docResponse.AnalyzeResult.Documents[0].Fields;
+                        if (fields != null)
+                        {
+                            foreach (var kvp in fields)
+                            {
+                                _logger.LogInformation($"Field: {kvp.Key} => ValueString: {kvp.Value.ValueString}, Content: {kvp.Value.Content}, ValueDate: {kvp.Value.ValueDate}");
+                            }
+                        }
+                    }
+
                     var extractedData = MapIdDocumentFields(docResponse);
-                    
+
+                    // Fallback extraction from raw content if key fields are missing
+                    if (extractedData != null && (string.IsNullOrWhiteSpace(extractedData.FirstName) || string.IsNullOrWhiteSpace(extractedData.LastName) || string.IsNullOrWhiteSpace(extractedData.Sex) || extractedData.DateOfBirth == null))
+                    {
+                        var rawContent = docResponse?.AnalyzeResult?.Content;
+                        if (!string.IsNullOrWhiteSpace(rawContent))
+                        {
+                            // Name extraction fallback
+                            var nameMatch = System.Text.RegularExpressions.Regex.Match(rawContent, @"Given Names[:]?\s*([A-Z ]+)");
+                            if (nameMatch.Success)
+                            {
+                                var givenNames = nameMatch.Groups[1].Value.Trim();
+                                var nameParts = givenNames.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                                if (nameParts.Length > 0)
+                                    extractedData.FirstName = nameParts[0];
+                                if (nameParts.Length > 1)
+                                    extractedData.MiddleName = nameParts[1];
+                            }
+                            var lastNameMatch = System.Text.RegularExpressions.Regex.Match(rawContent, @"Last Name[:]?\s*([A-Z ]+)");
+                            if (lastNameMatch.Success)
+                                extractedData.LastName = lastNameMatch.Groups[1].Value.Trim();
+
+                                // Sex extraction fallback: look for 'Sex' or 'Kasarian' followed by MALE/FEMALE, or just MALE/FEMALE anywhere
+                                var sexMatch = System.Text.RegularExpressions.Regex.Match(rawContent, @"(Sex|Kasarian)[:]?[ \t]*([Mm][Aa][Ll][Ee]|[Ff][Ee][Mm][Aa][Ll][Ee])", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+                                if (sexMatch.Success)
+                                    extractedData.Sex = sexMatch.Groups[2].Value.ToUpper();
+                                else
+                                {
+                                    // Fallback: look for MALE or FEMALE anywhere in the content
+                                    var maleMatch = System.Text.RegularExpressions.Regex.Match(rawContent, @"\bMALE\b", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+                                    var femaleMatch = System.Text.RegularExpressions.Regex.Match(rawContent, @"\bFEMALE\b", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+                                    if (maleMatch.Success)
+                                        extractedData.Sex = "MALE";
+                                    else if (femaleMatch.Success)
+                                        extractedData.Sex = "FEMALE";
+                                }
+
+                            // Birthday extraction fallback
+                            var dobMatch = System.Text.RegularExpressions.Regex.Match(rawContent, @"Date of Birth[:]?\s*([A-Z0-9, ]+)");
+                            if (dobMatch.Success)
+                            {
+                                var dobStr = dobMatch.Groups[1].Value.Trim();
+                                DateTime parsedDate;
+                                var formats = new[] { "MMMM dd, yyyy", "MMM dd, yyyy", "MMMM d, yyyy", "MMM d, yyyy" };
+                                foreach (var fmt in formats)
+                                {
+                                    if (DateTime.TryParseExact(dobStr, fmt, System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out parsedDate))
+                                    {
+                                        extractedData.DateOfBirth = parsedDate;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // Use AI to improve extraction, especially for Philippine ID naming conventions
+                    if (extractedData != null && docResponse?.AnalyzeResult?.Content != null)
+                    {
+                        _logger.LogInformation($"Initial extraction: FirstName={extractedData.FirstName}, MiddleName={extractedData.MiddleName}, LastName={extractedData.LastName}");
+                        
+                        var improvedData = await _openAIService.ImprovePhilippineIdExtractionAsync(docResponse.AnalyzeResult.Content, extractedData);
+                        if (improvedData != null)
+                        {
+                            _logger.LogInformation($"AI improved extraction: FirstName={improvedData.FirstName}, MiddleName={improvedData.MiddleName}, LastName={improvedData.LastName}");
+                            extractedData = improvedData;
+                        }
+                    }
+
                     if (extractedData != null)
                     {
-                        _logger.LogInformation($"Successfully extracted data from {file.Name}: Name={extractedData.FirstName} {extractedData.LastName}, DOB={extractedData.DateOfBirth}");
+                        _logger.LogInformation($"Successfully extracted data from {file.Name}: FirstName={extractedData.FirstName}, MiddleName={extractedData.MiddleName}, LastName={extractedData.LastName}, Sex={extractedData.Sex}, DOB={extractedData.DateOfBirth}");
                     }
                     else
                     {
@@ -392,43 +502,91 @@ namespace c2_eskolar.Services
 
             var extractedData = new ExtractedIdData();
 
-            // Extract first name
+            // Improved name extraction
+            string? givenNames = null;
             if (fields.TryGetValue("FirstName", out var firstName))
-                extractedData.FirstName = firstName.ValueString ?? firstName.Content;
-
-            // Extract middle name  
+                givenNames = firstName.ValueString ?? firstName.Content;
+            if (!string.IsNullOrWhiteSpace(givenNames))
+            {
+                var nameParts = givenNames.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                if (nameParts.Length == 1)
+                {
+                    extractedData.FirstName = nameParts[0];
+                }
+                else if (nameParts.Length == 2)
+                {
+                    extractedData.FirstName = nameParts[0];
+                    extractedData.MiddleName = nameParts[1];
+                }
+                else if (nameParts.Length > 2)
+                {
+                    extractedData.FirstName = nameParts[0];
+                    extractedData.MiddleName = string.Join(" ", nameParts.Skip(1));
+                }
+            }
+            // If MiddleName field exists and is not empty, use it
             if (fields.TryGetValue("MiddleName", out var middleName))
-                extractedData.MiddleName = middleName.ValueString ?? middleName.Content;
-
-            // Extract last name
+            {
+                var middle = middleName.ValueString ?? middleName.Content;
+                if (!string.IsNullOrWhiteSpace(middle))
+                    extractedData.MiddleName = middle;
+            }
+            // Last name
             if (fields.TryGetValue("LastName", out var lastName))
                 extractedData.LastName = lastName.ValueString ?? lastName.Content;
 
-            // Extract sex/gender
+            // Sex/gender (handle common Philippine ID field names)
             if (fields.TryGetValue("Sex", out var sex))
-                extractedData.Sex = sex.ValueString ?? sex.Content;
+            {
+                var sexValue = sex.ValueString ?? sex.Content;
+                if (!string.IsNullOrWhiteSpace(sexValue))
+                    extractedData.Sex = sexValue.Trim().ToUpper();
+            }
+            else if (fields.TryGetValue("Kasarian", out var kasarian))
+            {
+                var sexValue = kasarian.ValueString ?? kasarian.Content;
+                if (!string.IsNullOrWhiteSpace(sexValue))
+                    extractedData.Sex = sexValue.Trim().ToUpper();
+            }
 
-            // Extract date of birth
+            // Date of birth (robust parsing for formats like "JANUARY 09, 2004")
             if (fields.TryGetValue("DateOfBirth", out var dob))
             {
                 var dobString = dob.ValueDate ?? dob.Content;
-                if (DateTime.TryParse(dobString, out var parsedDate))
-                    extractedData.DateOfBirth = parsedDate;
+                if (!string.IsNullOrWhiteSpace(dobString))
+                {
+                    DateTime parsedDate;
+                    if (DateTime.TryParse(dobString, out parsedDate))
+                    {
+                        extractedData.DateOfBirth = parsedDate;
+                    }
+                    else
+                    {
+                        // Try parsing with custom formats
+                        var formats = new[] { "MMMM dd, yyyy", "MMM dd, yyyy", "MMMM d, yyyy", "MMM d, yyyy" };
+                        foreach (var fmt in formats)
+                        {
+                            if (DateTime.TryParseExact(dobString.Trim(), fmt, System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out parsedDate))
+                            {
+                                extractedData.DateOfBirth = parsedDate;
+                                break;
+                            }
+                        }
+                    }
+                }
             }
 
-            // Extract address
+            // Address
             if (fields.TryGetValue("Address", out var address))
             {
                 if (address.ValueAddress != null)
                 {
                     var addr = address.ValueAddress;
                     var addressParts = new List<string>();
-                    
                     if (!string.IsNullOrEmpty(addr.StreetAddress)) addressParts.Add(addr.StreetAddress);
                     if (!string.IsNullOrEmpty(addr.Municipality)) addressParts.Add(addr.Municipality);
                     if (!string.IsNullOrEmpty(addr.State)) addressParts.Add(addr.State);
                     if (!string.IsNullOrEmpty(addr.PostalCode)) addressParts.Add(addr.PostalCode);
-                    
                     extractedData.Address = string.Join(", ", addressParts);
                 }
                 else
@@ -437,11 +595,11 @@ namespace c2_eskolar.Services
                 }
             }
 
-            // Extract document number (could be used as reference)
+            // Document number
             if (fields.TryGetValue("DocumentNumber", out var docNumber))
                 extractedData.DocumentNumber = docNumber.ValueString ?? docNumber.Content;
 
-            // Extract nationality
+            // Nationality
             if (fields.TryGetValue("Nationality", out var nationality))
                 extractedData.Nationality = nationality.ValueString ?? nationality.Content;
 

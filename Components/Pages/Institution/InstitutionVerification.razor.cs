@@ -273,6 +273,10 @@ namespace c2_eskolar.Components.Pages.Institution
                 verificationModel.AdminPosition = extractedData.AdminPosition;
             if (!string.IsNullOrEmpty(extractedData.InstitutionalEmailDomain))
                 verificationModel.InstitutionalEmailDomain = extractedData.InstitutionalEmailDomain;
+            if (!string.IsNullOrEmpty(extractedData.Sex))
+                verificationModel.Sex = extractedData.Sex;
+            if (extractedData.DateOfBirth.HasValue)
+                verificationModel.BirthDate = extractedData.DateOfBirth;
             // Show success message
             ProfileErrorMessage = "Admin information has been automatically filled from your ID document. Please review and complete any missing fields.";
             StateHasChanged();
