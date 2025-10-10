@@ -42,7 +42,7 @@ namespace c2_eskolar.Controllers
 
         public class UploadResultDto
         {
-            public string Url { get; set; }
+            public required string Url { get; set; }
         }
 
         /// <summary>
