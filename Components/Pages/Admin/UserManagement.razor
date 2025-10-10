@@ -193,10 +193,10 @@
                                     <td>
                                         @if (!string.IsNullOrEmpty(inst.Id))
                                         {
-                                            <div class="action-buttons">
-                                                <button class="btn btn-accept-light btn-sm me-2" @onclick="() => AcceptInstitution(inst.Id!)">Accept</button>
-                                                <button class="btn btn-reject-light btn-sm" @onclick="() => RejectInstitution(inst.Id!)">Reject</button>
-                                            </div>
+                                                                    <div class="action-buttons">
+                                                                        <button class="btn btn-accept-light btn-sm me-2" @onclick="async () => await AcceptInstitution(inst.Id!)">Accept</button>
+                                                                        <button class="btn btn-reject-light btn-sm" @onclick="async () => await RejectInstitution(inst.Id!)">Reject</button>
+                                                                    </div>
                                         }
                                         else
                                         {
@@ -225,7 +225,6 @@
                         <tr>
                             <th style="width: 200px; white-space: nowrap;">User</th>
                             <th style="width: 220px; white-space: nowrap;">Email</th>
-                            <th style="width: 120px; white-space: nowrap;">Role</th>
                             <th style="width: 140px; white-space: nowrap;">Registration Date</th>
                             <th style="width: 100px; white-space: nowrap;">Status</th>
                             <th style="width: 140px; white-space: nowrap;">Actions</th>
@@ -247,15 +246,10 @@
                                     </div>
                                 </td>
                                 <td>@user.Email</td>
-                                <td>
-                                    <span class="role-badge role-@(GetUserRole(user.Id).ToLower())">
-                                        @GetUserRole(user.Id)
-                                    </span>
-                                </td>
                                 <td>@(user.LockoutEnd?.ToString("MMM dd, yyyy") ?? "Unknown")</td>
                                 <td>
-                                    <span class="status-badge @(user.EmailConfirmed ? "status-active" : "status-pending")">
-                                        @(user.EmailConfirmed ? "Active" : "Pending")
+                                    <span class="status-badge @(GetUserVerificationStatus(user.Id) == "Verified" ? "status-active" : "status-pending")">
+                                        @(GetUserVerificationStatus(user.Id) == "Verified" ? "Verified" : "Pending")
                                     </span>
                                 </td>
                                 <td>
@@ -598,6 +592,7 @@
     private List<IdentityUser> allUsers = new();
     private IEnumerable<IdentityUser> filteredUsers = new List<IdentityUser>();
     private Dictionary<string, string> userRoles = new();
+    private Dictionary<string, string> userVerificationStatuses = new();
     
     private int totalUsers = 0;
     private int studentCount = 0;
@@ -690,6 +685,9 @@
             // Load role counts and user roles
             await LoadUserRoles();
             
+            // Load verification statuses
+            await LoadUserVerificationStatuses();
+            
             // Apply current filter
             ApplyFilter();
             
@@ -751,6 +749,62 @@
         return userRoles.TryGetValue(userId, out var role) ? role : "Unknown";
     }
     
+    private async Task LoadUserVerificationStatuses()
+    {
+        try
+        {
+            userVerificationStatuses.Clear();
+            using var context = DbContextFactory.CreateDbContext();
+            
+            // Load all verification statuses in bulk
+            var studentStatuses = await context.StudentProfiles
+                .Select(sp => new { sp.UserId, sp.VerificationStatus })
+                .ToListAsync();
+                
+            var institutionStatuses = await context.InstitutionProfiles
+                .Select(ip => new { ip.UserId, ip.VerificationStatus })
+                .ToListAsync();
+                
+            var benefactorStatuses = await context.BenefactorProfiles
+                .Select(bp => new { bp.UserId, bp.VerificationStatus })
+                .ToListAsync();
+            
+            // Populate the dictionary
+            foreach (var status in studentStatuses)
+                userVerificationStatuses[status.UserId] = status.VerificationStatus ?? "Pending";
+                
+            foreach (var status in institutionStatuses)
+                userVerificationStatuses[status.UserId] = status.VerificationStatus ?? "Pending";
+                
+            foreach (var status in benefactorStatuses)
+                userVerificationStatuses[status.UserId] = status.VerificationStatus ?? "Pending";
+            
+            // Set SuperAdmins as verified
+            foreach (var user in allUsers)
+            {
+                var role = GetUserRole(user.Id);
+                if (role == "SuperAdmin")
+                {
+                    userVerificationStatuses[user.Id] = "Verified";
+                }
+                else if (!userVerificationStatuses.ContainsKey(user.Id))
+                {
+                    // Fall back to email confirmation for users without profiles
+                    userVerificationStatuses[user.Id] = user.EmailConfirmed ? "Verified" : "Pending";
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading user verification statuses: {ex.Message}");
+        }
+    }
+    
+    private string GetUserVerificationStatus(string userId)
+    {
+        return userVerificationStatuses.TryGetValue(userId, out var status) ? status : "Pending";
+    }
+    
     private void SetFilter(string filter)
     {
         activeFilter = filter;
@@ -762,56 +816,92 @@
         try
         {
             Console.WriteLine($"ApplyFilter called - Search query: '{searchQuery}', Active filter: '{activeFilter}', Total users: {allUsers.Count}");
-            
-            // Filter regular users
-            if (activeFilter != "Requests")
-            {
-                var filtered = allUsers.AsEnumerable();
-                
-                // Apply role filter
-                if (activeFilter != "All")
-                {
-                    filtered = filtered.Where(u => GetUserRole(u.Id) == activeFilter);
-                    Console.WriteLine($"After role filter: {filtered.Count()} users");
-                }
-                
-                // Apply search filter
-                if (!string.IsNullOrEmpty(searchQuery))
-                {
-                    var query = searchQuery.ToLower();
-                    filtered = filtered.Where(u => 
-                        (u.UserName?.ToLower().Contains(query) ?? false) ||
-                        (u.Email?.ToLower().Contains(query) ?? false) ||
-                        u.Id.ToLower().Contains(query));
-                    Console.WriteLine($"After search filter: {filtered.Count()} users");
-                }
-                
-                filteredUsers = filtered.OrderBy(u => u.UserName);
-                Console.WriteLine($"Final filtered users count: {filteredUsers.Count()}");
-            }
-            
-            // Filter requests
+
+            // Handle Requests tab filtering separately
             if (activeFilter == "Requests")
             {
-                var filtered = pendingInstitutions.AsEnumerable();
-                // Filter by request type dropdown
+                var reqs = pendingInstitutions.AsEnumerable();
+
                 if (requestTypeDropdownValue != "All")
                 {
-                    filtered = filtered.Where(r => r.InstitutionType == requestTypeDropdownValue);
+                    reqs = reqs.Where(r => string.Equals(r.InstitutionType, requestTypeDropdownValue, StringComparison.OrdinalIgnoreCase));
+                    Console.WriteLine($"After request type filter: {reqs.Count()} requests");
                 }
-                // Apply search filter for requests
+
                 if (!string.IsNullOrEmpty(searchQuery))
                 {
-                    var query = searchQuery.ToLower();
-                    filtered = filtered.Where(r => 
-                        (r.Name?.ToLower().Contains(query) ?? false) ||
-                        (r.InstitutionName?.ToLower().Contains(query) ?? false) ||
-                        (r.Email?.ToLower().Contains(query) ?? false));
-                    Console.WriteLine($"After search filter: {filtered.Count()} requests");
+                    var q = searchQuery.ToLower();
+                    reqs = reqs.Where(r =>
+                        (r.Name?.ToLower().Contains(q) ?? false) ||
+                        (r.InstitutionName?.ToLower().Contains(q) ?? false) ||
+                        (r.Email?.ToLower().Contains(q) ?? false) ||
+                        (r.Id?.ToLower().Contains(q) ?? false));
+                    Console.WriteLine($"After request search filter: {reqs.Count()} requests");
                 }
-                filteredRequests = filtered.OrderBy(r => r.Name);
+
+                filteredRequests = reqs.OrderBy(r => r.SubmittedAt);
                 Console.WriteLine($"Final filtered requests count: {filteredRequests.Count()}");
+                StateHasChanged();
+                return;
             }
+
+            // Filter regular users
+            var filtered = allUsers.AsEnumerable();
+
+            // Apply role filter
+            if (activeFilter != "All")
+            {
+                filtered = filtered.Where(u => GetUserRole(u.Id) == activeFilter);
+                Console.WriteLine($"After role filter: {filtered.Count()} users");
+            }
+
+            // For Students tab, only show verified students
+            if (activeFilter == "Student")
+            {
+                using var context = DbContextFactory.CreateDbContext();
+                var verifiedStudentIds = context.StudentProfiles
+                    .Where(sp => sp.VerificationStatus == "Verified")
+                    .Select(sp => sp.UserId)
+                    .ToHashSet();
+                filtered = filtered.Where(u => verifiedStudentIds.Contains(u.Id));
+                Console.WriteLine($"After verified filter: {filtered.Count()} users");
+            }
+            // For Institutions tab, only show verified institutions
+            if (activeFilter == "Institution")
+            {
+                using var context = DbContextFactory.CreateDbContext();
+                var verifiedInstitutionIds = context.InstitutionProfiles
+                    .Where(ip => ip.VerificationStatus == "Verified")
+                    .Select(ip => ip.UserId)
+                    .ToHashSet();
+                filtered = filtered.Where(u => verifiedInstitutionIds.Contains(u.Id));
+                Console.WriteLine($"After verified institution filter: {filtered.Count()} users");
+            }
+            // For Benefactor tab, only show verified benefactors
+            if (activeFilter == "Benefactor")
+            {
+                using var context = DbContextFactory.CreateDbContext();
+                var verifiedBenefactorIds = context.BenefactorProfiles
+                    .Where(bp => bp.VerificationStatus == "Verified")
+                    .Select(bp => bp.UserId)
+                    .ToHashSet();
+                filtered = filtered.Where(u => verifiedBenefactorIds.Contains(u.Id));
+                Console.WriteLine($"After verified benefactor filter: {filtered.Count()} users");
+            }
+
+            // Apply search filter
+            if (!string.IsNullOrEmpty(searchQuery))
+            {
+                var query = searchQuery.ToLower();
+                filtered = filtered.Where(u =>
+                    (u.UserName?.ToLower().Contains(query) ?? false) ||
+                    (u.Email?.ToLower().Contains(query) ?? false) ||
+                    (u.Id?.ToLower().Contains(query) ?? false));
+                Console.WriteLine($"After search filter: {filtered.Count()} users");
+            }
+
+            filteredUsers = filtered.OrderBy(u => u.UserName);
+            Console.WriteLine($"Final filtered users count: {filteredUsers.Count()}");
         }
         catch (Exception ex)
         {
@@ -832,6 +922,7 @@
     private async Task RefreshUsers()
     {
         await LoadUsersData();
+        await LoadUserVerificationStatuses();
     }
     
     private void LoadMoreUsers()
@@ -959,13 +1050,182 @@
 
     private async Task AcceptInstitution(string institutionId)
     {
-        if (!string.IsNullOrEmpty(institutionId))
+        if (string.IsNullOrEmpty(institutionId)) return;
+
+        Console.WriteLine($"AcceptInstitution: attempting to accept request {institutionId}");
+
+        try
         {
-            // TODO: Accept logic
-            await Task.Delay(200);
+            await using var context = DbContextFactory.CreateDbContext();
+
+            // Find the request type from the local pending list
+            var req = pendingInstitutions.FirstOrDefault(i => i.Id == institutionId);
+            if (req == null)
+            {
+                Console.WriteLine($"AcceptInstitution: request {institutionId} not found in pending list");
+                return;
+            }
+
+            if (req.InstitutionType == "Student")
+            {
+                var student = await context.StudentProfiles.FirstOrDefaultAsync(sp => sp.UserId == institutionId);
+                if (student != null)
+                {
+                    student.VerificationStatus = "Verified";
+                    student.IsVerified = true;
+                    context.StudentProfiles.Update(student);
+                    await context.SaveChangesAsync();
+                    Console.WriteLine($"AcceptInstitution: student {institutionId} marked Verified in DB");
+                    // Ensure the AspNet Identity user has the Student role so the Students tab filter includes them
+                    try
+                    {
+                        var identityUser = await UserManager.FindByIdAsync(institutionId);
+                        if (identityUser != null)
+                        {
+                            var roles = await UserManager.GetRolesAsync(identityUser);
+                            if (!roles.Contains("Student"))
+                            {
+                                var addRoleResult = await UserManager.AddToRoleAsync(identityUser, "Student");
+                                if (addRoleResult.Succeeded)
+                                {
+                                    Console.WriteLine($"AcceptInstitution: added 'Student' role to user {institutionId}");
+                                }
+                                else
+                                {
+                                    Console.WriteLine($"AcceptInstitution: failed to add 'Student' role to user {institutionId}: {string.Join(',', addRoleResult.Errors.Select(e => e.Description))}");
+                                }
+                            }
+                        }
+                        else
+                        {
+                            Console.WriteLine($"AcceptInstitution: Identity user {institutionId} not found to add role");
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"AcceptInstitution: error ensuring Student role for {institutionId}: {ex.Message}");
+                    }
+                }
+                else
+                {
+                    Console.WriteLine($"AcceptInstitution: student record for {institutionId} not found in DB");
+                }
+            }
+            else if (req.InstitutionType == "Institution")
+            {
+                var institution = await context.InstitutionProfiles.FirstOrDefaultAsync(ip => ip.UserId == institutionId);
+                if (institution != null)
+                {
+                    institution.VerificationStatus = "Verified";
+                    institution.IsVerified = true;
+                    context.InstitutionProfiles.Update(institution);
+                    await context.SaveChangesAsync();
+                    Console.WriteLine($"AcceptInstitution: institution {institutionId} marked Verified in DB");
+                    // Ensure the AspNet Identity user has the Institution role
+                    try
+                    {
+                        var identityUser = await UserManager.FindByIdAsync(institutionId);
+                        if (identityUser != null)
+                        {
+                            var roles = await UserManager.GetRolesAsync(identityUser);
+                            if (!roles.Contains("Institution"))
+                            {
+                                var addRoleResult = await UserManager.AddToRoleAsync(identityUser, "Institution");
+                                if (addRoleResult.Succeeded)
+                                {
+                                    Console.WriteLine($"AcceptInstitution: added 'Institution' role to user {institutionId}");
+                                }
+                                else
+                                {
+                                    Console.WriteLine($"AcceptInstitution: failed to add 'Institution' role to user {institutionId}: {string.Join(',', addRoleResult.Errors.Select(e => e.Description))}");
+                                }
+                            }
+                        }
+                        else
+                        {
+                            Console.WriteLine($"AcceptInstitution: Identity user {institutionId} not found to add role");
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"AcceptInstitution: error ensuring Institution role for {institutionId}: {ex.Message}");
+                    }
+                }
+                else
+                {
+                    Console.WriteLine($"AcceptInstitution: institution record for {institutionId} not found in DB");
+                }
+            }
+            else if (req.InstitutionType == "Benefactor")
+            {
+                var benefactor = await context.BenefactorProfiles.FirstOrDefaultAsync(bp => bp.UserId == institutionId);
+                if (benefactor != null)
+                {
+                    benefactor.VerificationStatus = "Verified";
+                    benefactor.IsVerified = true;
+                    context.BenefactorProfiles.Update(benefactor);
+                    await context.SaveChangesAsync();
+                    Console.WriteLine($"AcceptInstitution: benefactor {institutionId} marked Verified in DB");
+                    // Ensure the AspNet Identity user has the Benefactor role
+                    try
+                    {
+                        var identityUser = await UserManager.FindByIdAsync(institutionId);
+                        if (identityUser != null)
+                        {
+                            var roles = await UserManager.GetRolesAsync(identityUser);
+                            if (!roles.Contains("Benefactor"))
+                            {
+                                var addRoleResult = await UserManager.AddToRoleAsync(identityUser, "Benefactor");
+                                if (addRoleResult.Succeeded)
+                                {
+                                    Console.WriteLine($"AcceptInstitution: added 'Benefactor' role to user {institutionId}");
+                                }
+                                else
+                                {
+                                    Console.WriteLine($"AcceptInstitution: failed to add 'Benefactor' role to user {institutionId}: {string.Join(',', addRoleResult.Errors.Select(e => e.Description))}");
+                                }
+                            }
+                        }
+                        else
+                        {
+                            Console.WriteLine($"AcceptInstitution: Identity user {institutionId} not found to add role");
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"AcceptInstitution: error ensuring Benefactor role for {institutionId}: {ex.Message}");
+                    }
+                }
+                else
+                {
+                    Console.WriteLine($"AcceptInstitution: benefactor record for {institutionId} not found in DB");
+                }
+            }
+            else
+            {
+                Console.WriteLine($"AcceptInstitution: request {institutionId} is of type {req.InstitutionType}; no DB action implemented yet");
+            }
+
+            // Remove from pending list and refresh both pending and users
             pendingInstitutions.RemoveAll(i => i.Id == institutionId);
+            await RefreshPendingAndUsers();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error accepting institution/student: {ex.Message}");
+        }
+        finally
+        {
             StateHasChanged();
         }
+    }
+
+    private async Task RefreshPendingAndUsers()
+    {
+        // Reload pending requests and users to ensure UI consistency
+        pendingInstitutions = await FetchPendingInstitutionsAsync();
+        await LoadUsersData();
+        await LoadUserVerificationStatuses();
     }
 
     private async Task RejectInstitution(string institutionId)
