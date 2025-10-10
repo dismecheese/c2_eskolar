@@ -10,6 +10,8 @@ using Microsoft.EntityFrameworkCore;
 using BlazorBootstrap;
 using Blazored.LocalStorage;
 
+using MudBlazor.Services;
+
 try
 {
     var builder = WebApplication.CreateBuilder(args);
@@ -20,6 +22,8 @@ try
 
     builder.Services.AddBlazorBootstrap();
     builder.Services.AddBlazoredLocalStorage();
+
+    builder.Services.AddMudServices();
 
     // Add Controllers for API endpoints
     builder.Services.AddControllers();

@@ -25,6 +25,16 @@
 <div class="container py-4" style="padding-top: 3rem !important; margin-top: 1rem;">
     <div class="row justify-content-center">
         <div class="col-lg-8">
+            @if (!isLoading && scholarship != null)
+            {
+                var progress = CalculateFormProgress();
+                <div class="mb-4">
+                    <h4 class="fw-bold mb-1">@scholarship.Title</h4>
+                    <p class="text-muted mb-2">@scholarship.Institution?.AdminFullName</p>
+                    <span class="badge bg-info text-dark mb-2">Deadline: @scholarship.ApplicationDeadline.ToString("MMMM dd, yyyy")</span>
+                    <div class="mb-2"><strong>Description:</strong> @scholarship.Description</div>
+                </div>
+            }
             <div class="card shadow-lg border-0 mb-4">
                 <div class="card-body">
                     @if (isLoading)
@@ -40,60 +50,17 @@
                     }
                     else
                     {
-                        var progress = CalculateFormProgress();
-                        <div class="mb-4">
-                            <h4 class="fw-bold mb-1">@scholarship.Title</h4>
-                            <p class="text-muted mb-2">@scholarship.Institution?.AdminFullName</p>
-                            <span class="badge bg-info text-dark mb-2">Deadline: @scholarship.ApplicationDeadline.ToString("MMMM dd, yyyy")</span>
-                            <div class="mb-2"><strong>Description:</strong> @scholarship.Description</div>
-                        </div>
                         <EditForm Model="application" OnValidSubmit="HandleSubmit">
                             <DataAnnotationsValidator />
                             <ValidationSummary />
-                            <!-- Banner inside the form -->
-                            <div class="sticky-top bg-white text-dark shadow-lg" style="z-index: 1030; border-bottom: 1px solid #dee2e6; width: 100vw; margin-left: calc(-50vw + 50%);">
-                                <div style="width:100vw; padding:0; margin:0;">
-                                    <div class="text-center" style="padding-top: 24px; padding-bottom: 8px;">
-                                        <div class="d-inline-flex align-items-center bg-primary rounded-pill px-4 py-2" style="margin-bottom: 0;">
-                                            <i class="fas fa-graduation-cap fs-4 me-3 text-warning"></i>
-                                            <div>
-                                                <h2 class="mb-0 fw-bold text-dark">Scholarship Application</h2>
-                                                <small class="text-secondary d-block">
-                                                    @if (progress == 0)
-                                                    {
-                                                        @:Complete your application form below
-                                                    }
-                                                    else if (progress < 100)
-                                                    {
-                                                        @:Application @progress% complete
-                                                    }
-                                                    else
-                                                    {
-                                                        <span class="text-warning fw-bold">✓ Application Ready to Submit!</span>
-                                                    }
-                                                </small>
-                                            </div>
-                                            <i class="fas fa-file-signature fs-4 ms-3 text-warning"></i>
-                                        </div>
-                                    </div>
-                                    <!-- Form Progress Indicator -->
-                                    <div style="width:100vw; padding:0; margin:0;">
-                                        <div class="progress bg-light" style="height: 4px; margin:0;">
-                                            <div id="form-progress-bar" class="progress-bar bg-warning" role="progressbar" 
-                                                 style="width: @progress%; transition: width 0.3s ease;" 
-                                                 aria-valuenow="@progress" aria-valuemin="0" aria-valuemax="100"></div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
                             
                             <!-- Form fields section -->
                             <div class="mt-4">
                                 <!-- Application Type Selection -->
                                 <div class="mb-4">
                                     <div class="form-check form-switch mb-3">
-                                        <input class="form-check-input" type="checkbox" id="isExternalApplication" @bind="application.IsExternalApplication" @bind:after="OnFieldChanged">
-                                        <label class="form-check-label fw-bold" for="isExternalApplication">
+                                        <input class="form-check-input" type="checkbox" id="isExternalApplication" @bind="application.IsExternalApplication" @bind:after="OnFieldChanged" aria-labelledby="isExternalApplicationLabel">
+                                        <label class="form-check-label fw-bold" id="isExternalApplicationLabel" for="isExternalApplication">
                                             External Application (Apply through institution's own system)
                                         </label>
                                     </div>
@@ -104,9 +71,10 @@
                                     <!-- External Application Fields -->
                                     <div class="mb-4">
                                         <label for="externalUrl" class="form-label fw-bold">External Application URL <span class="text-danger">*</span></label>
-                                        <input type="url" class="form-control" id="externalUrl" @bind="application.ExternalApplicationUrl" @bind:after="OnFieldChanged" 
-                                               placeholder="https://institution.edu/apply/scholarship-123" required />
+                         <input type="url" class="form-control" id="externalUrl" @bind="application.ExternalApplicationUrl" @bind:after="OnFieldChanged" 
+                             placeholder="https://institution.edu/apply/scholarship-123" required aria-describedby="externalUrlHelp" />
                                         <div class="form-text">Please provide the direct link to the external application form</div>
+                                        <div id="externalUrlHelp" class="form-text">Please provide the direct link to the external application form</div>
                                         <ValidationMessage For="@(() => application.ExternalApplicationUrl)" />
                                     </div>
 
@@ -126,8 +94,9 @@
                                     <div class="mb-4">
                                         <label for="personalStatement" class="form-label fw-bold">Personal Statement <span class="text-danger">*</span></label>
                                         <textarea class="form-control" id="personalStatement" rows="6" @bind="application.PersonalStatement" @bind:after="OnFieldChanged" 
-                                                  placeholder="Tell us about yourself, your academic goals, and why you deserve this scholarship..." required></textarea>
+                                                  placeholder="Tell us about yourself, your academic goals, and why you deserve this scholarship..." required aria-describedby="personalStatementHelp"></textarea>
                                         <div class="form-text">Minimum 100 words recommended</div>
+                                        <div id="personalStatementHelp" class="form-text">Minimum 100 words recommended</div>
                                         <ValidationMessage For="@(() => application.PersonalStatement)" />
                                     </div>
                                 }
@@ -135,9 +104,10 @@
                                 <!-- GWA Field (Always Required) -->
                                 <div class="mb-4">
                                     <label for="gwa" class="form-label fw-bold">General Weighted Average (GWA) <span class="text-danger">*</span></label>
-                                    <input type="number" step="0.01" min="1.00" max="4.00" class="form-control" id="gwa" @bind="application.GWA" @bind:after="OnFieldChanged" 
-                                           placeholder="1.00 - 4.00" required />
+                     <input type="number" step="0.01" min="1.00" max="4.00" class="form-control" id="gwa" @bind="application.GWA" @bind:after="OnFieldChanged" 
+                         placeholder="1.00 - 4.00" required aria-describedby="gwaHelp" />
                                     <div class="form-text">Enter your current GWA (1.00 = highest, 4.00 = lowest)</div>
+                                    <div id="gwaHelp" class="form-text">Enter your current GWA (1.00 = highest, 4.00 = lowest)</div>
                                     <ValidationMessage For="@(() => application.GWA)" />
                                 </div>
 
@@ -147,14 +117,14 @@
                                     <div class="mb-4">
                                         <label for="firstSemGrades" class="form-label fw-bold">First Semester Grades (Optional)</label>
                                         <textarea class="form-control" id="firstSemGrades" rows="4" @bind="application.FirstSemesterGrades" @bind:after="OnFieldChanged" 
-                                                  placeholder="List your first semester subjects and grades..."></textarea>
+                                                  placeholder="List your first semester subjects and grades..." aria-describedby="firstSemGradesHelp"></textarea>
                                         <ValidationMessage For="@(() => application.FirstSemesterGrades)" />
                                     </div>
 
                                     <div class="mb-4">
                                         <label for="secondSemGrades" class="form-label fw-bold">Second Semester Grades (Optional)</label>
                                         <textarea class="form-control" id="secondSemGrades" rows="4" @bind="application.SecondSemesterGrades" @bind:after="OnFieldChanged" 
-                                                  placeholder="List your second semester subjects and grades..."></textarea>
+                                                  placeholder="List your second semester subjects and grades..." aria-describedby="secondSemGradesHelp"></textarea>
                                         <ValidationMessage For="@(() => application.SecondSemesterGrades)" />
                                     </div>
 
@@ -162,8 +132,8 @@
                                     <div class="mb-4">
                                         <label class="form-label fw-bold">Supporting Documents (Optional)</label>
                                         <div class="border rounded p-3" style="border-style: dashed !important;">
-                                            <InputFile OnChange="OnFileSelected" class="form-control" multiple accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" />
-                                            <div class="form-text">
+                                            <InputFile OnChange="OnFileSelected" class="form-control" multiple accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" aria-describedby="documentsHelp" />
+                                            <div id="documentsHelp" class="form-text">
                                                 Upload transcripts, certificates, or other supporting documents. 
                                                 Supported formats: PDF, DOC, DOCX, JPG, PNG. Max file size: 10MB each, total: 50MB.
                                             </div>
@@ -206,18 +176,37 @@
                                         <div class="alert alert-info mt-3">
                                             <i class="fas fa-robot me-2"></i>
                                             <strong>AI Extracted Grades:</strong>
+                                            
+                                            @if (application.GWA != null)
+                                            {
+                                                <div class="text-center mb-3 p-3 bg-light rounded">
+                                                    <div class="fw-bold text-muted small">GENERAL WEIGHTED AVERAGE</div>
+                                                    <div class="display-6 fw-bold text-primary">@application.GWA.Value.ToString("0.00")</div>
+                                                </div>
+                                            }
+                                            
                                             <ul class="mb-1">
-                                                @if (application.GWA != null)
-                                                {
-                                                    <li><strong>GWA:</strong> @application.GWA</li>
-                                                }
                                                 @if (!string.IsNullOrWhiteSpace(application.FirstSemesterGrades))
                                                 {
-                                                    <li><strong>1st Semester Grades:</strong> <pre class="mb-0">@application.FirstSemesterGrades</pre></li>
+                                                    <li><strong>First Semester Subjects:</strong>
+                                                        <ul>
+                                                            @foreach (var line in CleanSemesterGradesText(application.FirstSemesterGrades, "First Semester").Split(new[] { '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries))
+                                                            {
+                                                                <li>@line</li>
+                                                            }
+                                                        </ul>
+                                                    </li>
                                                 }
                                                 @if (!string.IsNullOrWhiteSpace(application.SecondSemesterGrades))
                                                 {
-                                                    <li><strong>2nd Semester Grades:</strong> <pre class="mb-0">@application.SecondSemesterGrades</pre></li>
+                                                    <li><strong>Second Semester Subjects:</strong>
+                                                        <ul>
+                                                            @foreach (var line in CleanSemesterGradesText(application.SecondSemesterGrades, "Second Semester").Split(new[] { '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries))
+                                                            {
+                                                                <li>@line</li>
+                                                            }
+                                                        </ul>
+                                                    </li>
                                                 }
                                             </ul>
                                             <span class="text-muted small">If the extracted grades are incorrect or incomplete, please review and manually correct them above before submitting.</span>
@@ -242,8 +231,9 @@
 
                                 @if (!string.IsNullOrEmpty(successMessage))
                                 {
-                                    <div class="alert alert-success mt-4">
-                                        <i class="fas fa-check-circle me-2"></i>@successMessage
+                                    <div class="alert alert-success mt-4" role="alert" aria-live="polite">
+                                        <i class="fas fa-check-circle me-2" aria-hidden="true"></i>
+                                        <span>@successMessage</span>
                                         <div class="mt-2">
                                             @if (application.ScholarshipApplicationId != Guid.Empty)
                                             {
@@ -255,7 +245,7 @@
                                         @if (!string.IsNullOrWhiteSpace(application.FirstSemesterGrades) || !string.IsNullOrWhiteSpace(application.SecondSemesterGrades) || application.GWA != null)
                                         {
                                             <div class="mt-2">
-                                                <span class="text-muted small"><i class="fas fa-robot me-1"></i>AI grade extraction was used. Please verify your grades above.</span>
+                                                <span class="text-muted small"><i class="fas fa-robot me-1" aria-hidden="true"></i>AI grade extraction was used. Please verify your grades above.</span>
                                             </div>
                                         }
                                     </div>
@@ -286,8 +276,9 @@
 
                                 @if (!string.IsNullOrEmpty(errorMessage))
                                 {
-                                    <div class="alert alert-danger mt-4">
-                                        <i class="fas fa-exclamation-triangle me-2"></i>@errorMessage
+                                    <div class="alert alert-danger mt-4" role="alert" aria-live="assertive">
+                                        <i class="fas fa-exclamation-triangle me-2" aria-hidden="true"></i>
+                                        <span>@errorMessage</span>
                                     </div>
                                 }
                             </div>
@@ -300,10 +291,10 @@
 </div>
 
 @code {
-    // Component parameters
+    // --- Component parameters ---
     [Parameter] public int ScholarshipId { get; set; }
 
-    // Private fields
+    // --- Private fields ---
     private Scholarship? scholarship;
     private ScholarshipApplication application = new();
     private bool isLoading = true;
@@ -317,12 +308,13 @@
     private HashSet<string> processingFiles = new();
     private CancellationTokenSource? debounceCts;
 
-    // File upload constraints
+    // --- File upload constraints ---
     private readonly string[] allowedExtensions = { ".pdf", ".doc", ".docx", ".jpg", ".jpeg", ".png" };
     private readonly long perFileMaxBytes = 10 * 1024 * 1024; // 10MB per file
     private readonly long totalMaxBytes = 50 * 1024 * 1024; // 50MB total
     private readonly string LocalStorageKey = "scholarship_application_draft_";
 
+    // Removes a file from the selected files list and updates state.
     private void RemoveFile(IBrowserFile fileToRemove)
     {
         selectedFiles.Remove(fileToRemove);
@@ -332,66 +324,51 @@
         _ = DebouncedSaveFormStateAsync();
     }
 
-    private async Task OnFileSelected(InputFileChangeEventArgs e)
-    {
-        errorMessage = null;
-        var validFiles = new List<IBrowserFile>();
-        var validFileNames = new List<string>();
-        var existingNames = uploadedFileNames.ToHashSet(StringComparer.OrdinalIgnoreCase);
-        
-        long currentTotal = selectedFiles.Sum(f => f.Size);
-        
-        foreach (var file in e.GetMultipleFiles(10))
+    // Handles file selection, validates files, and triggers OCR for new files.
+        private async Task OnFileSelected(InputFileChangeEventArgs e)
         {
-            var ext = Path.GetExtension(file.Name).ToLowerInvariant();
-            if (!allowedExtensions.Contains(ext))
+            errorMessage = null;
+            var validFiles = new List<IBrowserFile>();
+            foreach (var file in e.GetMultipleFiles())
             {
-                errorMessage = $"File '{file.Name}' has unsupported format. Allowed: {string.Join(", ", allowedExtensions)}";
-                StateHasChanged();
-                return;
+                var ext = Path.GetExtension(file.Name).ToLowerInvariant();
+                if (!allowedExtensions.Contains(ext))
+                    continue;
+                if (file.Size > perFileMaxBytes)
+                    continue;
+                validFiles.Add(file);
+            }
+            selectedFiles.AddRange(validFiles);
+            uploadedFileNames.AddRange(validFiles.Select(f => f.Name));
+            errorMessage = null;
+
+            // Upload files to temp blob storage for Document Intelligence
+            foreach (var file in validFiles)
+            {
+                var tempBlobName = $"temp/{Guid.NewGuid()}_{file.Name}";
+                try
+                {
+                    await using var stream = file.OpenReadStream(perFileMaxBytes);
+                    await BlobStorageService.UploadDocumentAsync(stream, tempBlobName, file.ContentType);
+                    tempBlobFileNames.Add(tempBlobName);
+                }
+                catch (Exception ex)
+                {
+                    Logger?.LogError(ex, "Failed to upload temp file {FileName}", file.Name);
+                }
             }
 
-            if (file.Size > perFileMaxBytes)
-            {
-                errorMessage = $"File '{file.Name}' exceeds the maximum size of {perFileMaxBytes / (1024 * 1024)} MB.";
-                StateHasChanged();
-                return;
-            }
+            // Persist a minimal safe state
+            await DebouncedSaveFormStateAsync();
 
-            if (currentTotal + file.Size > totalMaxBytes)
+            // Automatically trigger OCR for the newly uploaded files
+            if (validFiles.Any())
             {
-                errorMessage = $"Adding '{file.Name}' would exceed the total upload size limit of {totalMaxBytes / (1024 * 1024)} MB.";
-                StateHasChanged();
-                return;
+                _ = Task.Run(async () => await TriggerOcrForFilesAsync(validFiles));
             }
-
-            if (existingNames.Contains(file.Name) || validFileNames.Contains(file.Name))
-            {
-                errorMessage = $"File '{file.Name}' is already selected. Please choose unique files.";
-                StateHasChanged();
-                return;
-            }
-
-            currentTotal += file.Size;
-            validFiles.Add(file);
-            validFileNames.Add(file.Name);
         }
 
-        // Add new valid files to the existing selection
-        selectedFiles.AddRange(validFiles);
-        uploadedFileNames.AddRange(validFileNames);
-        errorMessage = null;
-
-        // Persist a minimal safe state
-        await DebouncedSaveFormStateAsync();
-        
-        // Automatically trigger OCR for the newly uploaded files
-        if (validFiles.Any())
-        {
-            _ = Task.Run(async () => await TriggerOcrForFilesAsync(validFiles));
-        }
-    }
-
+    // Persists non-PII form state to local storage.
     private async Task SaveFormStateAsync()
     {
         // Persist only safe, non-PII fields
@@ -418,6 +395,7 @@
         }
     }
 
+    // Debounces form state saving to avoid excessive writes.
     private async Task DebouncedSaveFormStateAsync(int delayMs = 800)
     {
         try
@@ -438,6 +416,7 @@
         catch (TaskCanceledException) { }
     }
 
+    // Restores non-PII form state from local storage.
     private async Task RestoreFormStateAsync()
     {
         try
@@ -462,17 +441,20 @@
         }
     }
 
+    // Clears persisted form state from local storage.
     private async Task ClearFormStateAsync()
     {
         await LocalStorage.RemoveItemAsync(LocalStorageKey + ScholarshipId);
     }
 
+    // Handles field changes and triggers debounced state save and UI update.
     private async Task OnFieldChanged()
     {
         await DebouncedSaveFormStateAsync();
         await InvokeAsync(StateHasChanged); // Update progress bar
     }
 
+    // Initializes the component, loads scholarship and student profile, and restores form state.
     protected override async Task OnInitializedAsync()
     {
         await Task.Delay(200);
@@ -528,6 +510,7 @@
         isLoading = false;
     }
 
+    // Handles form submission, validates, uploads files, and saves application.
     private async Task HandleSubmit()
     {
         if (isSubmitting || scholarship == null)
@@ -557,72 +540,30 @@
                 return;
             }
 
-            // Save uploaded files to Azure Blob Storage in parallel
+            // Move temp files to permanent blob storage on submit
             var savedUrls = new List<string>();
-            long accumulated = 0;
-            var uploadTasks = new List<Task>();
-            var urlResults = new Dictionary<string, string>();
-            var sizeResults = new Dictionary<string, long>();
-
-            foreach (var file in selectedFiles)
+            foreach (var tempBlobName in tempBlobFileNames)
             {
-                var ext = Path.GetExtension(file.Name).ToLowerInvariant();
-                if (!allowedExtensions.Contains(ext))
-                    throw new InvalidOperationException($"Unsupported file type: {ext}");
-
-                if (file.Size > perFileMaxBytes)
-                    throw new InvalidOperationException($"File {file.Name} exceeds per-file size limit.");
-
-                if (accumulated + file.Size > totalMaxBytes)
-                    throw new InvalidOperationException($"Total upload size exceeds limit.");
-
-                accumulated += file.Size;
-
-                uploadTasks.Add(Task.Run(async () =>
+                try
                 {
-                    var uniqueName = $"{Guid.NewGuid()}_{Path.GetFileName(file.Name)}";
-                    try
-                    {
-                        await using var stream = file.OpenReadStream(perFileMaxBytes);
-                        var buffer = new byte[81920];
-                        long totalRead = 0;
-                        using (var ms = new MemoryStream())
-                        {
-                            int read;
-                            do
-                            {
-                                read = await stream.ReadAsync(buffer, 0, buffer.Length);
-                                if (read > 0)
-                                {
-                                    await ms.WriteAsync(buffer, 0, read);
-                                    totalRead += read;
-                                    int percent = (int)(100.0 * totalRead / file.Size);
-                                    uploadProgress[file.Name] = percent > 100 ? 100 : percent;
-                                    await InvokeAsync(StateHasChanged);
-                                }
-                            } while (read > 0);
-                            ms.Position = 0;
-                            var url = await BlobStorageService.UploadDocumentAsync(ms, uniqueName, file.ContentType);
-                            urlResults[file.Name] = url;
-                            sizeResults[file.Name] = file.Size;
-                            uploadProgress[file.Name] = 100;
-                            await InvokeAsync(StateHasChanged);
-                        }
-                    }
-                    catch (Exception ex)
-                    {
-                        Logger?.LogError(ex, "Failed uploading file {FileName} to Azure Blob Storage for scholarship {ScholarshipId}", file.Name, ScholarshipId);
-                        errorMessage = $"Error uploading document '{file.Name}': {ex.Message}";
-                        await InvokeAsync(StateHasChanged);
-                        throw;
-                    }
-                }));
+                    // Copy temp file to permanent location (remove 'temp/' prefix)
+                    var permanentBlobName = tempBlobName.Replace("temp/", "");
+                    // Download temp blob
+                    var tempStream = await BlobStorageService.DownloadDocumentAsync(tempBlobName);
+                    // Upload to permanent location
+                    await BlobStorageService.UploadDocumentAsync(tempStream, permanentBlobName, "application/octet-stream");
+                    savedUrls.Add(permanentBlobName);
+                    // Delete temp file after copy
+                    await BlobStorageService.DeleteDocumentAsync(tempBlobName);
+                }
+                catch (Exception ex)
+                {
+                    Logger?.LogError(ex, "Failed to move temp file {TempBlobName} to permanent storage", tempBlobName);
+                }
             }
+            tempBlobFileNames.Clear();
 
-            await Task.WhenAll(uploadTasks);
-            savedUrls.AddRange(urlResults.Values);
-
-            // Store the blob URLs (or you can store uniqueName if you want to keep it private)
+            // Store the permanent blob URLs
             application.UploadedDocuments = string.Join(",", savedUrls);
 
             DbContext.ScholarshipApplications.Add(application);
@@ -650,7 +591,31 @@
         }
     }
 
+    // Track temp files for cleanup
+    private List<string> tempBlobFileNames = new();
+
+    // Cleanup temp files if user leaves page without submitting
+    public async ValueTask DisposeAsync()
+    {
+        if (tempBlobFileNames.Any())
+        {
+            foreach (var tempBlobName in tempBlobFileNames)
+            {
+                try
+                {
+                    await BlobStorageService.DeleteDocumentAsync(tempBlobName);
+                }
+                catch (Exception ex)
+                {
+                    Logger?.LogWarning(ex, "Failed to cleanup temp blob file {TempBlobName}", tempBlobName);
+                }
+            }
+            tempBlobFileNames.Clear();
+        }
+    }
+
     // Automatically trigger OCR for specific files
+    // Triggers OCR processing for uploaded files and updates application fields.
     private async Task TriggerOcrForFilesAsync(List<IBrowserFile> filesToProcess)
     {
         if (!filesToProcess.Any())
@@ -783,24 +748,27 @@
     }
     
     // Keep the manual trigger method for backward compatibility (if needed elsewhere)
+    // Manual trigger for OCR processing (for backward compatibility).
     private async Task TriggerOcrAsync()
     {
         await TriggerOcrForFilesAsync(selectedFiles);
     }
 
+    // Closes the submitted modal and navigates to the dashboard.
     private void CloseSubmittedModal()
     {
         showSubmittedModal = false;
         Navigation.NavigateTo("/dashboard/student");
     }
 
+    // Cancels the application and clears form state.
     private async Task CancelAndClearAsync()
     {
         await ClearFormStateAsync();
         Navigation.NavigateTo("/dashboard/student/scholarships");
     }
 
-    // Helper class for persisting state
+    // --- Helper class for persisting state ---
     public class PersistedApplicationState
     {
         // Only non-PII fields
@@ -814,13 +782,14 @@
         public List<string>? UploadedFileNames { get; set; }
     }
 
+    // Validates the form for required fields and application type.
     private bool IsFormValid()
     {
         if (scholarship == null || application == null)
             return false;
 
         // Always required fields
-        if (string.IsNullOrWhiteSpace(application.StudentId?.ToString()))
+    if (application.StudentProfileId == Guid.Empty)
             return false;
         if (application.GWA == null || application.GWA <= 0)
             return false;
@@ -843,6 +812,7 @@
         return true;
     }
 
+    // Extracts grades from a document using Azure Document Intelligence API.
     private async Task<ExtractedGradeData> ExtractGradesFromDocumentAsync(Stream fileStream, string fileName, string contentType)
     {
         // Read endpoint and key from configuration
@@ -993,16 +963,33 @@
             {
                 allText = content.GetString() ?? "";
             }
-            // ...existing regex extraction logic for GWA and semester grades...
-            // (reuse your previous regex logic here)
+            // --- Enhanced regex extraction logic for GWA and semester grades ---
             var gwaPatterns = new[]
             {
-                @"GWA[:\s]*([0-9]+\.[0-9]+)",
-                @"General\s+Weighted\s+Average[:\s]*([0-9]+\.[0-9]+)",
-                @"Average[:\s]*([0-9]+\.[0-9]+)",
-                @"GPA[:\s]*([0-9]+\.[0-9]+)",
+                // Enhanced patterns for GPA/GWA with exclusions and notes
+                @"GPA\s*\([^)]*excludes[^)]*\)\s*([0-9]+\.[0-9]+)",
+                @"GWA\s*\([^)]*excludes[^)]*\)\s*([0-9]+\.[0-9]+)",
+                @"GPA\s*\([^)]*non-numeric[^)]*\)\s*([0-9]+\.[0-9]+)",
+                @"GWA\s*\([^)]*non-numeric[^)]*\)\s*([0-9]+\.[0-9]+)",
+                
+                // Standard patterns
+                @"GWA[:=\s-]*([0-9]+\.[0-9]+)",
+                @"GWA\s+is\s+([0-9]+\.[0-9]+)",
+                @"GWA\s*=\s*([0-9]+\.[0-9]+)",
+                @"GWA\s*-\s*([0-9]+\.[0-9]+)",
+                @"GWA\s*\(([^)]+)\)",
+                @"General\s+Weighted\s+Average[:=\s-]*([0-9]+\.[0-9]+)",
+                @"General\s+Average[:=\s-]*([0-9]+\.[0-9]+)",
+                @"Weighted\s+Average[:=\s-]*([0-9]+\.[0-9]+)",
+                @"Average[:=\s-]*([0-9]+\.[0-9]+)",
+                @"GPA[:=\s-]*([0-9]+\.[0-9]+)",
+                @"GPA\s+is\s+([0-9]+\.[0-9]+)",
+                @"GPA\s*=\s*([0-9]+\.[0-9]+)",
+                @"GPA\s*-\s*([0-9]+\.[0-9]+)",
+                @"GPA\s*\(([^)]+)\)",
                 @"([0-9]+\.[0-9]+).*GWA",
-                @"Grade.*Point.*Average[:\s]*([0-9]+\.[0-9]+)"
+                @"([0-9]+\.[0-9]+).*GPA",
+                @"Grade.*Point.*Average[:=\s-]*([0-9]+\.[0-9]+)"
             };
             foreach (var pattern in gwaPatterns)
             {
@@ -1014,8 +1001,21 @@
                     break;
                 }
             }
-            // ...existing regex logic for semester grades...
-            // (reuse your previous regex logic for first/second semester)
+
+            // --- Regex for 1st and 2nd semester grades ---
+            var firstSemPattern = @"1st\s*semester\s*grades[:\s]*([0-9]+\.[0-9]+)";
+            var secondSemPattern = @"2nd\s*semester\s*grades[:\s]*([0-9]+\.[0-9]+)";
+            var firstSemMatch = System.Text.RegularExpressions.Regex.Match(allText, firstSemPattern, System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+            if (firstSemMatch.Success)
+            {
+                result.FirstSemesterGrades = firstSemMatch.Groups[1].Value;
+            }
+            var secondSemMatch = System.Text.RegularExpressions.Regex.Match(allText, secondSemPattern, System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+            if (secondSemMatch.Success)
+            {
+                result.SecondSemesterGrades = secondSemMatch.Groups[1].Value;
+            }
+
             // If nothing found, fallback
             if (string.IsNullOrEmpty(result.GWA) && string.IsNullOrEmpty(result.FirstSemesterGrades) && string.IsNullOrEmpty(result.SecondSemesterGrades))
             {
@@ -1036,7 +1036,7 @@
         }
     }
 
-    // Helper class for extracted grade data
+    // --- Helper class for extracted grade data ---
     public class ExtractedGradeData
     {
         public string? GWA { get; set; }
@@ -1044,52 +1044,60 @@
         public string? SecondSemesterGrades { get; set; }
     }
 
-    // Helper method to clean semester grades text and show only the actual grades
+    // Cleans semester grades text and extracts only the actual grades.
+    // Cleans semester grades text and extracts subject-grade pairs (code, description, grade)
     private string CleanSemesterGradesText(string rawText, string semesterType)
     {
         if (string.IsNullOrWhiteSpace(rawText))
             return "";
 
-        // Extract all numerical grade values from the text
-        var numericalGrades = new List<string>();
-        
-        // First, try to extract grades from structured lines (course + grade format)
+        var subjectGradePairs = new List<string>();
         var lines = rawText.Split(new[] { '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries);
-        
         foreach (var line in lines)
         {
             var trimmedLine = line.Trim();
-            
-            // Skip empty lines and obvious headers
             if (string.IsNullOrWhiteSpace(trimmedLine) || IsHeaderLine(trimmedLine))
                 continue;
-            
-            // Extract numerical grades from the line
-            var gradesInLine = ExtractNumericalGrades(trimmedLine);
-            numericalGrades.AddRange(gradesInLine);
-        }
-        
-        // If no structured grades found, try to extract any numerical values that look like grades
-        if (!numericalGrades.Any())
-        {
-            var gradeMatches = System.Text.RegularExpressions.Regex.Matches(rawText, 
-                @"\b([0-4]\.\d{1,2}|[0-4]\.?\d*|[ABCDF][+-]?)\b", 
-                System.Text.RegularExpressions.RegexOptions.IgnoreCase);
-            
-            foreach (System.Text.RegularExpressions.Match match in gradeMatches)
+            var pairs = ExtractSubjectGradePairs(trimmedLine);
+            if (pairs.Any())
             {
-                numericalGrades.Add(match.Value);
+                foreach (var pair in pairs)
+                {
+                    var display = !string.IsNullOrEmpty(pair.SubjectCode) && !string.IsNullOrEmpty(pair.SubjectDesc)
+                        ? $"{pair.SubjectCode} - {pair.SubjectDesc} - {pair.Grade}"
+                        : !string.IsNullOrEmpty(pair.SubjectCode)
+                            ? $"{pair.SubjectCode} - {pair.Grade}"
+                            : !string.IsNullOrEmpty(pair.SubjectDesc)
+                                ? $"{pair.SubjectDesc} - {pair.Grade}"
+                                : pair.Grade;
+                    subjectGradePairs.Add(display);
+                }
+            }
+            else
+            {
+                // Fallback: just extract numerical grades
+                var gradesInLine = ExtractNumericalGrades(trimmedLine);
+                subjectGradePairs.AddRange(gradesInLine);
             }
         }
-        
-        var result = string.Join("\n", numericalGrades.Distinct()).Trim();
-        Logger?.LogInformation("Extracted {SemesterType} semester numerical grades: Original {OriginalLength} chars -> {GradeCount} grades: {Grades}", 
-            semesterType, rawText.Length, numericalGrades.Count, string.Join(", ", numericalGrades.Take(5)));
-        
+        if (!subjectGradePairs.Any())
+        {
+            var gradeMatches = System.Text.RegularExpressions.Regex.Matches(rawText, 
+                @"\b([0-4]\.\d{1,2}|[0-4]\.?
+*|[ABCDF][+-]?)\b", 
+                System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+            foreach (System.Text.RegularExpressions.Match match in gradeMatches)
+            {
+                subjectGradePairs.Add(match.Value);
+            }
+        }
+        var result = string.Join("\n", subjectGradePairs.Distinct()).Trim();
+        Logger?.LogInformation("Extracted {SemesterType} semester subject-grade pairs: Original {OriginalLength} chars -> {PairCount} pairs: {Pairs}", 
+            semesterType, rawText.Length, subjectGradePairs.Count, string.Join(", ", subjectGradePairs.Take(5)));
         return result;
     }
     
-    // Helper method to check if a line is a header that should be ignored
+    // Checks if a line is a header that should be ignored in grade extraction.
     private bool IsHeaderLine(string line)
     {
         var headerPatterns = new[]
@@ -1119,17 +1127,18 @@
         return false;
     }
     
-    // Helper method to extract numerical grades from a single line
+    // Extracts numerical and non-numerical grades from a single line of text.
     private List<string> ExtractNumericalGrades(string line)
     {
         var grades = new List<string>();
         
-        // Pattern to match numerical grades (0.00 to 4.00 format) and letter grades
+        // Pattern to match all valid grade formats
         var gradePatterns = new[]
         {
             @"\b([0-4]\.\d{1,2})\b", // Decimal grades like 1.25, 2.00, 3.75
             @"\b([0-4]\.?\d*)\b",    // Integer or decimal grades
-            @"\b([ABCDF][+-]?)\b"    // Letter grades like A, B+, C-, F
+            @"\b([ABCDF][+-]?)\b",   // Letter grades like A, B+, C-, F
+            @"\b(P|INC|W|NG|NP|F|DRP|AUD|CR|NC)\b" // Non-numeric status grades
         };
         
         foreach (var pattern in gradePatterns)
@@ -1149,11 +1158,16 @@
         return grades;
     }
     
-    // Helper method to validate if a string represents a valid grade
+    // Validates if a string represents a valid grade value.
     private bool IsValidGrade(string grade)
     {
         // Check for letter grades
         if (System.Text.RegularExpressions.Regex.IsMatch(grade, @"^[ABCDF][+-]?$", System.Text.RegularExpressions.RegexOptions.IgnoreCase))
+            return true;
+        
+        // Check for non-numeric status grades
+        var nonNumericGrades = new[] { "P", "INC", "W", "NG", "NP", "F", "DRP", "AUD", "CR", "NC" };
+        if (nonNumericGrades.Contains(grade.ToUpper()))
             return true;
         
         // Check for numerical grades
@@ -1165,9 +1179,82 @@
         return false;
     }
 
+    // --- Helper class for subject-grade extraction ---
+    public class SubjectGradePair {
+        public string SubjectCode { get; set; } = "";
+        public string SubjectDesc { get; set; } = "";
+        public string Grade { get; set; } = "";
+    }
+
+    // Extracts subject-grade pairs from a single line of text using numbered groups only
+    private List<SubjectGradePair> ExtractSubjectGradePairs(string line)
+    {
+        var pairs = new List<SubjectGradePair>();
+        var patterns = new[]
+        {
+            // Enhanced patterns for various grade formats including incomplete grades
+            // Pattern 1: CODE DESCRIPTION NUMERIC_GRADE (e.g., ELEC IT-E3 IT Elective 3 1.00)
+            @"([A-Z]{2,}(?:\s+[A-Z0-9-]+)*)\s+([A-Za-z0-9 /,.'\-&()]+?)\s+([0-4]\.\d{2}|[0-4]\.0{1,2})",
+            
+            // Pattern 2: CODE DESCRIPTION NON_NUMERIC_STATUS (e.g., NSTP 101 National Service Training Program P)
+            @"([A-Z]{2,}(?:\s+[A-Z0-9-]+)*)\s+([A-Za-z0-9 /,.'\-&()]+?)\s+(P|INC|W|NG|NP|F|DRP|AUD|CR|NC)",
+            
+            // Pattern 3: Traditional CODE - DESCRIPTION - GRADE format
+            @"([A-Z]{2,}\s*\d{2,})\s*-\s*([A-Za-z0-9 .,&()/-]+?)\s*-\s*([0-4]\.[0-9]{1,2}|[ABCDF][+-]?|P|INC|W|NG|NP|F|DRP|AUD|CR|NC)",
+            
+            // Pattern 4: CODE DESCRIPTION LETTER_GRADE
+            @"([A-Z]{2,}\s*\d{2,})\s+([A-Za-z0-9 .,&()/-]+?)\s+([ABCDF][+-]?)",
+            
+            // Pattern 5: Simple DESCRIPTION - GRADE
+            @"([A-Za-z0-9 .,&()/-]+?)\s*-\s*([0-4]\.[0-9]{1,2}|[ABCDF][+-]?|P|INC|W|NG|NP|F|DRP|AUD|CR|NC)",
+            
+            // Pattern 6: CODE GRADE_ONLY
+            @"([A-Z]{2,}\s*\d{2,})\s+([0-4]\.[0-9]{1,2}|[ABCDF][+-]?|P|INC|W|NG|NP|F|DRP|AUD|CR|NC)",
+            
+            // Pattern 7: DESCRIPTION GRADE_ONLY (last resort)
+            @"([A-Za-z0-9 .,&()/-]+?)\s+([0-4]\.[0-9]{1,2}|[ABCDF][+-]?|P|INC|W|NG|NP|F|DRP|AUD|CR|NC)"
+        };
+        foreach (var pattern in patterns)
+        {
+            var regex = new System.Text.RegularExpressions.Regex(pattern, System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+            var match = regex.Match(line);
+            if (match.Success)
+            {
+                var code = "";
+                var desc = "";
+                var grade = "";
+                if (match.Groups.Count == 4) // CODE-DESC-GRADE
+                {
+                    code = match.Groups[1].Value.Trim();
+                    desc = match.Groups[2].Value.Trim();
+                    grade = match.Groups[3].Value.Trim();
+                }
+                else if (match.Groups.Count == 3)
+                {
+                    // CODE-GRADE or DESC-GRADE
+                    if (pattern.StartsWith("([A-Z]"))
+                    {
+                        code = match.Groups[1].Value.Trim();
+                        grade = match.Groups[2].Value.Trim();
+                    }
+                    else
+                    {
+                        desc = match.Groups[1].Value.Trim();
+                        grade = match.Groups[2].Value.Trim();
+                    }
+                }
+                if (IsValidGrade(grade))
+                {
+                    pairs.Add(new SubjectGradePair { SubjectCode = code, SubjectDesc = desc, Grade = grade });
+                }
+            }
+        }
+        return pairs;
+    }
 
 
-    // Calculate form completion progress for the banner progress bar
+
+    // Calculates form completion progress for the banner progress bar.
     private int CalculateFormProgress()
     {
         if (application == null) return 0;
@@ -1176,8 +1263,8 @@
         int completedFields = 0;
         
         // Required fields for all applications
-        totalFields += 2; // StudentId, GWA
-        if (!string.IsNullOrWhiteSpace(application.StudentId?.ToString())) completedFields++;
+    totalFields += 2; // StudentProfileId, GWA
+    if (application.StudentProfileId != Guid.Empty) completedFields++;
         if (application.GWA.HasValue && application.GWA > 0) completedFields++;
         
         if (application.IsExternalApplication)
@@ -1210,9 +1297,9 @@
         return totalFields > 0 ? (int)Math.Round((double)completedFields / totalFields * 100) : 0;
     }
 
-    // Update progress bar after field changes (handled automatically by Blazor reactivity)
+    // --- Progress bar updates are handled automatically by Blazor reactivity ---
 
-    // Simple fallback for testing - this would normally not extract from the actual PDF
+    // Simple fallback for testing - returns sample values for grades if extraction fails.
     private ExtractedGradeData ExtractGradesFromSimpleTextSearch(string fileName)
     {
         // This is just a fallback that returns sample values for testing
