@@ -108,25 +108,36 @@
     <!-- Users Table -->
     <div class="users-table-container">
         <div class="table-header">
-                <div style="display: flex; align-items: center; gap: 1rem; width: 100%;">
-                    <div style="position: relative; flex: 1; max-width: 400px;">
-                        <i class="bi bi-search" style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: #64748b; z-index: 1;"></i>
-                        <input class="university-input" type="text" placeholder="Search users..." 
-                            style="padding-left: 45px; padding-right: 38px; width: 100%;" 
-                            @bind="searchQuery" @bind:event="oninput" />
-                        @if (!string.IsNullOrEmpty(searchQuery))
-                        {
-                            <button type="button" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: none; border: none; color: #64748b; font-size: 1.2rem; cursor: pointer;" @onclick="ClearSearch">
-                                <i class="bi bi-x-circle"></i>
-                            </button>
-                        }
-                    </div>
-                    <div class="table-actions">
-                        <button class="btn btn-outline-primary btn-sm" @onclick="RefreshUsers">
-                            <i class="bi bi-arrow-clockwise me-2"></i>Refresh
-                        </button>
-                    </div>
+        <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
+            <div style="position: relative; flex: 1; max-width: 400px;">
+                <i class="bi bi-search" style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: #64748b; z-index: 1;"></i>
+                <input class="university-input" type="text" placeholder="Search users..." 
+                    style="padding-left: 45px; padding-right: 38px; width: 100%;" 
+                    @bind="searchQuery" @bind:event="oninput" />
+                @if (!string.IsNullOrEmpty(searchQuery))
+                {
+                    <button type="button" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: none; border: none; color: #64748b; font-size: 1.2rem; cursor: pointer;" @onclick="ClearSearch">
+                        <i class="bi bi-x-circle"></i>
+                    </button>
+                }
+            </div>
+            <div style="display: flex; align-items: center; gap: 1rem; margin-left: auto;">
+                @if (activeFilter == "Requests")
+                {
+                    <select class="form-select" style="width: 160px; min-width: 120px;" @onchange="OnRequestTypeDropdownChanged" value="@requestTypeDropdownValue">
+                        <option value="All">All Requests</option>
+                        <option value="Institution">Institutions</option>
+                        <option value="Student">Students</option>
+                        <option value="Benefactor">Benefactors</option>
+                    </select>
+                }
+                <div class="table-actions">
+                    <button class="btn btn-outline-primary btn-sm" @onclick="RefreshUsers">
+                        <i class="bi bi-arrow-clockwise me-2"></i>Refresh
+                    </button>
                 </div>
+            </div>
+        </div>
         </div>
 
         @if (isLoading)
@@ -157,13 +168,13 @@
             else if (filteredRequests != null && filteredRequests.Any())
             {
                 <div class="table-responsive">
-                    <table class="table users-table">
+                    <table class="table users-table" style="table-layout: fixed;">
                         <thead>
                             <tr>
-                                <th>Name</th>
-                                <th>Institution</th>
-                                <th>Registration Date</th>
-                                <th>Actions</th>
+                                        <th style="width: 200px; white-space: nowrap;">Name</th>
+                                        <th style="width: 220px; white-space: nowrap;">Affiliation</th>
+                                        <th style="width: 140px; white-space: nowrap;">Registered</th>
+                                        <th style="width: 140px; white-space: nowrap;">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -180,10 +191,17 @@
                                     <td>@inst.InstitutionName</td>
                                     <td>@inst.SubmittedAt.ToString("MMM dd, yyyy")</td>
                                     <td>
-                                        <div class="action-buttons">
-                                            <button class="btn btn-accept-light btn-sm me-2" @onclick="() => AcceptInstitution(inst.Id)">Accept</button>
-                                            <button class="btn btn-reject-light btn-sm" @onclick="() => RejectInstitution(inst.Id)">Reject</button>
-                                        </div>
+                                        @if (!string.IsNullOrEmpty(inst.Id))
+                                        {
+                                            <div class="action-buttons">
+                                                <button class="btn btn-accept-light btn-sm me-2" @onclick="() => AcceptInstitution(inst.Id!)">Accept</button>
+                                                <button class="btn btn-reject-light btn-sm" @onclick="() => RejectInstitution(inst.Id!)">Reject</button>
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">No actions available</span>
+                                        }
                                     </td>
                                 </tr>
                             }
@@ -195,22 +213,22 @@
             {
                 <div class="empty-state">
                     <i class="bi bi-inbox" style="font-size: 2rem; color: #ccc;"></i>
-                    <h6>@(string.IsNullOrEmpty(searchQuery) ? "No pending institution requests." : $"No requests found matching \"{searchQuery}\".")</h6>
+                    <h6>@(string.IsNullOrEmpty(searchQuery) ? "No pending requests found." : $"No requests found matching \"{searchQuery}\".")</h6>
                 </div>
             }
         }
         else if (filteredUsers.Any())
         {
             <div class="table-responsive">
-                <table class="table users-table">
+                <table class="table users-table" style="table-layout: fixed;">
                     <thead>
                         <tr>
-                            <th>User</th>
-                            <th>Email</th>
-                            <th>Role</th>
-                            <th>Registration Date</th>
-                            <th>Status</th>
-                            <th>Actions</th>
+                            <th style="width: 200px; white-space: nowrap;">User</th>
+                            <th style="width: 220px; white-space: nowrap;">Email</th>
+                            <th style="width: 120px; white-space: nowrap;">Role</th>
+                            <th style="width: 140px; white-space: nowrap;">Registration Date</th>
+                            <th style="width: 100px; white-space: nowrap;">Status</th>
+                            <th style="width: 140px; white-space: nowrap;">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -588,6 +606,15 @@
     private int superAdminCount = 0;
     
     private string activeFilter = "All";
+    // Only for requests tab
+    private string requestTypeDropdownValue = "All";
+    // Only for requests tab
+    private void OnRequestTypeDropdownChanged(ChangeEventArgs e)
+    {
+        var selected = e.Value?.ToString() ?? "All";
+        requestTypeDropdownValue = selected;
+        ApplyFilter();
+    }
     private string searchQuery
     {
         get => _searchQuery;
@@ -767,7 +794,11 @@
             if (activeFilter == "Requests")
             {
                 var filtered = pendingInstitutions.AsEnumerable();
-                
+                // Filter by request type dropdown
+                if (requestTypeDropdownValue != "All")
+                {
+                    filtered = filtered.Where(r => r.InstitutionType == requestTypeDropdownValue);
+                }
                 // Apply search filter for requests
                 if (!string.IsNullOrEmpty(searchQuery))
                 {
@@ -778,7 +809,6 @@
                         (r.Email?.ToLower().Contains(query) ?? false));
                     Console.WriteLine($"After search filter: {filtered.Count()} requests");
                 }
-                
                 filteredRequests = filtered.OrderBy(r => r.Name);
                 Console.WriteLine($"Final filtered requests count: {filteredRequests.Count()}");
             }
@@ -868,12 +898,11 @@
         var requests = new List<InstitutionRequest>();
         try
         {
-            // Get all institution profiles with VerificationStatus == "Pending"
             await using var context = DbContextFactory.CreateDbContext();
+            // Pending Institutions
             var pendingProfiles = context.InstitutionProfiles
                 .Where(ip => ip.VerificationStatus == "Pending")
                 .ToList();
-
             foreach (var profile in pendingProfiles)
             {
                 requests.Add(new InstitutionRequest
@@ -882,13 +911,48 @@
                     Name = profile.AdminFirstName + " " + (string.IsNullOrEmpty(profile.AdminMiddleName) ? "" : profile.AdminMiddleName + " ") + profile.AdminLastName,
                     InstitutionName = profile.InstitutionName,
                     Email = profile.ContactEmail,
-                    SubmittedAt = profile.CreatedAt
+                    SubmittedAt = profile.CreatedAt,
+                    InstitutionType = "Institution"
+                });
+            }
+
+            // Pending Students
+            var pendingStudents = context.StudentProfiles
+                .Where(sp => sp.VerificationStatus == "Pending")
+                .ToList();
+            foreach (var student in pendingStudents)
+            {
+                requests.Add(new InstitutionRequest
+                {
+                    Id = student.UserId,
+                    Name = student.FirstName + " " + (string.IsNullOrEmpty(student.MiddleName) ? "" : student.MiddleName + " ") + student.LastName,
+                    InstitutionName = student.UniversityName ?? "Unknown University",
+                    Email = student.Email,
+                    SubmittedAt = student.CreatedAt,
+                    InstitutionType = "Student"
+                });
+            }
+
+            // Pending Benefactors
+            var pendingBenefactors = context.BenefactorProfiles
+                .Where(bp => bp.VerificationStatus == "Pending")
+                .ToList();
+            foreach (var benefactor in pendingBenefactors)
+            {
+                requests.Add(new InstitutionRequest
+                {
+                    Id = benefactor.UserId,
+                    Name = benefactor.AdminFirstName + " " + (string.IsNullOrEmpty(benefactor.AdminMiddleName) ? "" : benefactor.AdminMiddleName + " ") + benefactor.AdminLastName,
+                    InstitutionName = benefactor.OrganizationName ?? "Unknown Organization",
+                    Email = benefactor.ContactEmail,
+                    SubmittedAt = benefactor.CreatedAt,
+                    InstitutionType = "Benefactor"
                 });
             }
         }
         catch (Exception ex)
         {
-            // Optionally log error
+            Console.WriteLine($"Error fetching pending institutions: {ex.Message}");
         }
         return requests;
     }
@@ -922,5 +986,6 @@
     public string? InstitutionName { get; set; }
     public string? Email { get; set; }
     public DateTime SubmittedAt { get; set; }
+    public string InstitutionType { get; set; } = "Institution"; // Default, override for other types
     }
 }
