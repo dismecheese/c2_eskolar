@@ -5,6 +5,7 @@
 @using c2_eskolar.Models
 @using Microsoft.AspNetCore.Components.Authorization
 @using Microsoft.EntityFrameworkCore
+@using Microsoft.JSInterop
 @using System.Web
 
 
@@ -12,6 +13,9 @@
 @inject AuthenticationStateProvider AuthProvider
 @inject NavigationManager Navigation
 @inject c2_eskolar.Services.BlobStorageService BlobStorageService
+@inject IJSRuntime JSRuntime
+@inject MudBlazor.IDialogService DialogService
+@inject Microsoft.Extensions.Logging.ILogger<StudentApplicationSummary> Logger
 
 @attribute [Authorize(Roles = "Student,SuperAdmin")]
 
@@ -192,6 +196,8 @@
         }
     }
 </style>
+
+
 
 <div class="container-fluid py-5" style="min-height: 100vh; margin-top: 40px;">
     <!-- Back Button - Outside Container -->
@@ -609,9 +615,9 @@
                                                     <li class="mb-1 d-flex flex-column">
                                                         <div class="d-flex align-items-center">
                                                             <i class="@doc.IconClass me-2" style="font-size: 1.2em;" aria-hidden="true"></i>
-                                                            @if (!string.IsNullOrEmpty(doc.SasUrl))
+                                                            @if (!string.IsNullOrEmpty(doc.RawUrl))
                                                             {
-                                                                <a href="@doc.SasUrl" target="_blank" rel="noopener noreferrer" class="text-decoration-none doc-link" style="transition: color 0.2s; color: #2563eb; font-weight: 500;" aria-label="Open document @doc.DisplayName in new tab" tabindex="0">
+                                                                <a href="javascript:void(0)" @onclick="() => OpenDocumentModal(doc.RawUrl, doc.DisplayName, GetFileTypeFromPath(doc.BlobName))" class="text-decoration-none doc-link" style="transition: color 0.2s; color: #2563eb; font-weight: 500;" aria-label="View document @doc.DisplayName" tabindex="0">
                                                                     @doc.DisplayName
                                                                 </a>
                                                             }
@@ -650,6 +656,7 @@
             </div>
         </div>
     </div>
+
 @* --- Custom styles for improved UI/UX --- *@
 
 
@@ -718,39 +725,215 @@
         public string ErrorText { get; set; } = string.Empty;
     }
 
+    // Modal state variables
+
+    private string currentDocumentUrl = string.Empty;
+    private string currentDocumentName = string.Empty;
+    private string currentDocumentType = string.Empty;
+
     // Helper method to process document links
     private List<DocumentLinkInfo> GetDocumentLinks(string? uploadedDocuments)
     {
         var links = new List<DocumentLinkInfo>();
         if (string.IsNullOrEmpty(uploadedDocuments)) return links;
+        
+        Logger?.LogInformation("Processing uploaded documents: {UploadedDocuments}", uploadedDocuments);
+        
         var files = uploadedDocuments.Split(',', System.StringSplitOptions.RemoveEmptyEntries);
         foreach (var file in files)
         {
-            var doc = new DocumentLinkInfo();
-            doc.BlobName = file.Contains("/") ? file.Substring(file.LastIndexOf('/') + 1) : file;
-            doc.BlobName = Uri.UnescapeDataString(doc.BlobName);
-            doc.DisplayName = doc.BlobName.Contains('_') ? doc.BlobName.Substring(doc.BlobName.IndexOf('_') + 1) : doc.BlobName;
-            var ext = System.IO.Path.GetExtension(doc.BlobName).ToLowerInvariant();
-            doc.IconClass = ext switch
-            {
-                ".pdf" => "bi bi-file-earmark-pdf text-danger",
-                ".doc" or ".docx" => "bi bi-file-earmark-word text-primary",
-                ".jpg" or ".jpeg" or ".png" => "bi bi-file-earmark-image text-success",
-                _ => "bi bi-paperclip text-secondary"
-            };
-            doc.RawUrl = BlobStorageService.GetDocumentUrl(doc.BlobName);
             try
             {
-                doc.SasUrl = BlobStorageService.GetDocumentSasUrl(doc.BlobName);
+                var doc = new DocumentLinkInfo();
+                
+                // Extract blob name, handling SAS URLs properly
+                doc.BlobName = GetBlobNameFromPath(file.Trim());
+                if (string.IsNullOrWhiteSpace(doc.BlobName))
+                {
+                    Logger?.LogWarning("Could not extract blob name from file: {File}", file);
+                    continue;
+                }
+                
+                // Create display name by removing GUID prefix if present
+                doc.DisplayName = doc.BlobName.Contains('_') ? 
+                    doc.BlobName.Substring(doc.BlobName.IndexOf('_') + 1) : 
+                    doc.BlobName;
+                
+                // Set icon based on file extension
+                var ext = System.IO.Path.GetExtension(doc.BlobName).ToLowerInvariant();
+                doc.IconClass = ext switch
+                {
+                    ".pdf" => "bi bi-file-earmark-pdf text-danger",
+                    ".doc" or ".docx" => "bi bi-file-earmark-word text-primary",
+                    ".jpg" or ".jpeg" or ".png" => "bi bi-file-earmark-image text-success",
+                    _ => "bi bi-paperclip text-secondary"
+                };
+                
+                // Store the original URL for use in modal
+                doc.RawUrl = file.Trim();
+                
+                // Try to get SAS URL for download/external viewing
+                try
+                {
+                    doc.SasUrl = BlobStorageService.GetDocumentSasUrl(doc.BlobName);
+                    Logger?.LogInformation("Generated SAS URL for blob: {BlobName}", doc.BlobName);
+                }
+                catch (Exception ex)
+                {
+                    Logger?.LogWarning(ex, "Could not generate SAS URL for blob: {BlobName}", doc.BlobName);
+                    doc.SasUrl = doc.RawUrl; // Use original URL as fallback
+                    doc.ErrorText = $"(SAS generation error: {ex.Message})";
+                }
+                
+                links.Add(doc);
+                Logger?.LogInformation("Added document link: {DisplayName} (blob: {BlobName})", doc.DisplayName, doc.BlobName);
             }
             catch (Exception ex)
             {
-                doc.SasUrl = null;
-                doc.ErrorText = $"(link error: {ex.Message})";
+                Logger?.LogError(ex, "Error processing document file: {File}", file);
             }
-            links.Add(doc);
         }
+        
+        Logger?.LogInformation("Processed {Count} document links", links.Count);
         return links;
+    }
+
+    // Helper methods for document handling
+    private string GetBlobNameFromPath(string filePath)
+    {
+        if (string.IsNullOrWhiteSpace(filePath))
+            return string.Empty;
+
+        try
+        {
+            // Handle different path formats
+            var trimmed = filePath.Trim();
+            
+            // Handle SAS URLs - remove query parameters first
+            if (trimmed.Contains("?"))
+            {
+                var queryIndex = trimmed.IndexOf('?');
+                trimmed = trimmed.Substring(0, queryIndex);
+                Logger?.LogInformation("Removed SAS token from URL: {OriginalUrl} -> {CleanedUrl}", filePath, trimmed);
+            }
+            
+            // Remove any URL encoding
+            trimmed = Uri.UnescapeDataString(trimmed);
+            
+            // Extract blob name from various path formats
+            string blobName;
+            
+            if (trimmed.Contains("/"))
+            {
+                // Extract from URL or path with forward slashes
+                blobName = trimmed.Substring(trimmed.LastIndexOf('/') + 1);
+            }
+            else if (trimmed.Contains("\\"))
+            {
+                // Extract from Windows path with backslashes
+                blobName = trimmed.Substring(trimmed.LastIndexOf('\\') + 1);
+            }
+            else
+            {
+                // Assume it's already just the blob name
+                blobName = trimmed;
+            }
+            
+            // Clean up any remaining URL encoding or special characters
+            blobName = blobName.Trim();
+            
+            Logger?.LogInformation("Extracted blob name: {BlobName} from path: {FilePath}", blobName, filePath);
+            return blobName;
+        }
+        catch (Exception ex)
+        {
+            Logger?.LogWarning(ex, "Error extracting blob name from path: {FilePath}", filePath);
+            return string.Empty;
+        }
+    }
+
+    private string GetFileTypeFromPath(string path)
+    {
+        if (string.IsNullOrWhiteSpace(path)) return "Other";
+        if (path.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase)) return "PDF";
+        if (path.EndsWith(".docx", StringComparison.OrdinalIgnoreCase) || path.EndsWith(".doc", StringComparison.OrdinalIgnoreCase)) return "DOCX";
+        if (path.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase) || path.EndsWith(".jpeg", StringComparison.OrdinalIgnoreCase) || path.EndsWith(".png", StringComparison.OrdinalIgnoreCase)) return "Image";
+        return "Other";
+    }
+
+    // Modal methods using MudBlazor DialogService
+    private void OpenDocumentModal(string filePath, string documentName, string fileType)
+    {
+        try
+        {
+            Logger?.LogInformation("=== OPENING DOCUMENT MODAL ===");
+            Logger?.LogInformation("FilePath: {FilePath}", filePath);
+            Logger?.LogInformation("DocumentName: {DocumentName}", documentName);
+            Logger?.LogInformation("FileType: {FileType}", fileType);
+
+            string streamingUrl = "";
+            string error = "";
+            bool loading = false;
+
+            try
+            {
+                // Extract blob name properly, handling SAS URLs
+                var blobName = GetBlobNameFromPath(filePath);
+                if (string.IsNullOrWhiteSpace(blobName))
+                {
+                    error = "Cannot extract file name from path.";
+                    Logger?.LogWarning("Failed to extract blob name from path: {FilePath}", filePath);
+                }
+                else
+                {
+                    // Create streaming URL using our document controller
+                    streamingUrl = $"/api/document/stream/{Uri.EscapeDataString(blobName)}";
+                    Logger?.LogInformation("Created streaming URL: {StreamingUrl} from blob name: {BlobName}", streamingUrl, blobName);
+                }
+            }
+            catch (Exception ex)
+            {
+                error = $"Error processing document path: {ex.Message}";
+                Logger?.LogError(ex, "Error creating streaming URL for path: {FilePath}", filePath);
+            }
+
+            Logger?.LogInformation("Final parameters - StreamingUrl: {StreamingUrl}, Error: {Error}, Loading: {Loading}", streamingUrl, error, loading);
+
+            var parameters = new MudBlazor.DialogParameters
+            {
+                ["Title"] = documentName,
+                ["DocumentType"] = fileType,
+                ["DocumentUrl"] = streamingUrl,
+                ["Error"] = error,
+                ["Loading"] = loading
+            };
+
+            var options = new MudBlazor.DialogOptions 
+            { 
+                CloseOnEscapeKey = true, 
+                MaxWidth = MudBlazor.MaxWidth.ExtraLarge, 
+                FullWidth = true 
+            };
+
+            Logger?.LogInformation("About to show dialog with DialogService");
+            var dialogReference = DialogService.Show<Components.UI.DocumentViewerDialog>(documentName, parameters, options);
+            Logger?.LogInformation("Dialog shown successfully, DialogReference: {DialogReference}", dialogReference != null);
+        }
+        catch (Exception ex)
+        {
+            Logger?.LogError(ex, "Error in OpenDocumentModal for path: {FilePath}", filePath);
+            
+            // Fallback - try to open in new tab with the original URL
+            try
+            {
+                Logger?.LogInformation("Attempting fallback - opening document in new tab");
+                JSRuntime.InvokeVoidAsync("open", filePath, "_blank");
+            }
+            catch (Exception fallbackEx)
+            {
+                Logger?.LogError(fallbackEx, "Fallback also failed for path: {FilePath}", filePath);
+            }
+        }
     }
 
     private CancellationTokenSource _cts = new();
