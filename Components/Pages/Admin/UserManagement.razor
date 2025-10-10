@@ -1,0 +1,699 @@
+@page "/admin/users"
+@page "/dashboard/superadmin/users"
+@attribute [Authorize(Roles = "SuperAdmin")]
+@layout Layout.SuperAdminDashLayout
+@implements IDisposable
+
+@inject IDbContextFactory<ApplicationDbContext> DbContextFactory
+@inject UserManager<IdentityUser> UserManager
+@inject RoleManager<IdentityRole> RoleManager
+@inject NavigationManager Navigation
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@using c2_eskolar.Data
+@using Microsoft.EntityFrameworkCore
+@using Microsoft.AspNetCore.Identity
+@using Microsoft.AspNetCore.Authorization
+@rendermode InteractiveServer
+
+<PageTitle>User Management - eSkolar SuperAdmin</PageTitle>
+
+<div class="dashboard-center-container">
+    <!-- Top Bar -->
+    <div class="dashboard-topbar">
+        <div style="position: relative; flex: 1; max-width: 500px;">
+            <i class="bi bi-search" style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: #64748b; z-index: 1;"></i>
+            <input class="university-input" type="text" placeholder="Search users..." 
+                   style="padding-left: 45px; padding-right: 18px;" @bind="searchQuery" @oninput="FilterUsers" />
+        </div>
+        <span class="dashboard-date">@DateTime.Now.ToString("dd MMM yyyy, ddd")</span>
+    </div>
+
+    <!-- Page Header -->
+    <div class="page-header-section">
+        <div class="page-header-content">
+            <div class="page-title-area">
+                <h1 class="page-title">
+                    <i class="bi bi-people me-3"></i>
+                    User Management
+                </h1>
+                <p class="page-subtitle">Manage system users, roles, and permissions</p>
+            </div>
+            <div class="page-actions">
+                <button class="btn btn-primary" @onclick="ShowCreateUserModal">
+                    <i class="bi bi-plus-circle me-2"></i>
+                    Add New User
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="stats-grid-users">
+        <div class="stat-card">
+            <div class="stat-card-header">
+                <div class="stat-icon users">
+                    <i class="bi bi-people"></i>
+                </div>
+            </div>
+            <div class="stat-value">@totalUsers</div>
+            <div class="stat-label">Total Users</div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-card-header">
+                <div class="stat-icon students">
+                    <i class="bi bi-mortarboard"></i>
+                </div>
+            </div>
+            <div class="stat-value">@studentCount</div>
+            <div class="stat-label">Students</div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-card-header">
+                <div class="stat-icon institutions">
+                    <i class="bi bi-building"></i>
+                </div>
+            </div>
+            <div class="stat-value">@institutionCount</div>
+            <div class="stat-label">Institutions</div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-card-header">
+                <div class="stat-icon benefactors">
+                    <i class="bi bi-heart"></i>
+                </div>
+            </div>
+            <div class="stat-value">@benefactorCount</div>
+            <div class="stat-label">Benefactors</div>
+        </div>
+    </div>
+
+    <!-- Filter Tabs -->
+    <div class="filter-tabs">
+        <button class="filter-tab @(activeFilter == "All" ? "active" : "")" @onclick="@(() => SetFilter("All"))">
+            <i class="bi bi-list me-2"></i>All Users
+        </button>
+        <button class="filter-tab @(activeFilter == "Student" ? "active" : "")" @onclick="@(() => SetFilter("Student"))">
+            <i class="bi bi-mortarboard me-2"></i>Students
+        </button>
+        <button class="filter-tab @(activeFilter == "Institution" ? "active" : "")" @onclick="@(() => SetFilter("Institution"))">
+            <i class="bi bi-building me-2"></i>Institutions
+        </button>
+        <button class="filter-tab @(activeFilter == "Benefactor" ? "active" : "")" @onclick="@(() => SetFilter("Benefactor"))">
+            <i class="bi bi-heart me-2"></i>Benefactors
+        </button>
+        <button class="filter-tab @(activeFilter == "SuperAdmin" ? "active" : "")" @onclick="@(() => SetFilter("SuperAdmin"))">
+            <i class="bi bi-shield-check me-2"></i>SuperAdmins
+        </button>
+    </div>
+
+    <!-- Users Table -->
+    <div class="users-table-container">
+        <div class="table-header">
+            <h3>Users (@filteredUsers.Count())</h3>
+            <div class="table-actions">
+                <button class="btn btn-outline-primary btn-sm" @onclick="RefreshUsers">
+                    <i class="bi bi-arrow-clockwise me-2"></i>Refresh
+                </button>
+            </div>
+        </div>
+
+        @if (isLoading)
+        {
+            <div class="loading-container">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="mt-3">Loading users...</p>
+            </div>
+        }
+        else if (filteredUsers.Any())
+        {
+            <div class="table-responsive">
+                <table class="table users-table">
+                    <thead>
+                        <tr>
+                            <th>User</th>
+                            <th>Email</th>
+                            <th>Role</th>
+                            <th>Registration Date</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var user in filteredUsers.Take(pageSize))
+                        {
+                            <tr>
+                                <td>
+                                    <div class="user-info">
+                                        <div class="user-avatar">
+                                            <i class="bi bi-person-circle"></i>
+                                        </div>
+                                        <div class="user-details">
+                                            <div class="user-name">@(user.UserName ?? "No Name")</div>
+                                            <div class="user-id">ID: @user.Id.Substring(0, 8)...</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>@user.Email</td>
+                                <td>
+                                    <span class="role-badge role-@(GetUserRole(user.Id).ToLower())">
+                                        @GetUserRole(user.Id)
+                                    </span>
+                                </td>
+                                <td>@(user.LockoutEnd?.ToString("MMM dd, yyyy") ?? "Unknown")</td>
+                                <td>
+                                    <span class="status-badge @(user.EmailConfirmed ? "status-active" : "status-pending")">
+                                        @(user.EmailConfirmed ? "Active" : "Pending")
+                                    </span>
+                                </td>
+                                <td>
+                                    <div class="action-buttons">
+                                        <button class="btn btn-sm btn-outline-primary" @onclick="() => ViewUser(user.Id)">
+                                            <i class="bi bi-eye"></i>
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-warning" @onclick="() => EditUser(user.Id)">
+                                            <i class="bi bi-pencil"></i>
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteUser(user.Id)">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+            
+            @if (filteredUsers.Count() > pageSize)
+            {
+                <div class="pagination-container">
+                    <button class="btn btn-outline-primary" @onclick="LoadMoreUsers">
+                        Load More Users (@(filteredUsers.Count() - pageSize) remaining)
+                    </button>
+                </div>
+            }
+        }
+        else
+        {
+            <div class="empty-state">
+                <i class="bi bi-people" style="font-size: 4rem; color: #ccc;"></i>
+                <h4>No Users Found</h4>
+                <p>@(string.IsNullOrEmpty(searchQuery) ? "No users match the current filter." : $"No users found matching \"{searchQuery}\".")</p>
+            </div>
+        }
+    </div>
+</div>
+
+<style>
+    .dashboard-center-container {
+        padding: 2rem;
+        max-width: 1400px;
+        margin: 0 auto;
+    }
+
+    .page-header-section {
+        background: linear-gradient(135deg, #fff 0%, #f8fafc 100%);
+        border-radius: 16px;
+        padding: 2rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+        border: 1px solid rgba(0,0,0,0.05);
+    }
+
+    .page-header-content {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+
+    .page-title {
+        font-size: 2.5rem;
+        font-weight: 700;
+        color: #2d3748;
+        margin: 0;
+        display: flex;
+        align-items: center;
+    }
+
+    .page-subtitle {
+        color: #4a5568;
+        font-size: 1.1rem;
+        margin: 0.5rem 0 0 0;
+    }
+
+    .stats-grid-users {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .stat-card {
+        background: linear-gradient(135deg, #fff 0%, #f8fafc 100%);
+        border-radius: 16px;
+        padding: 1.5rem;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+        border: 1px solid rgba(0,0,0,0.05);
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .stat-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, #1560d4, #0d387e);
+    }
+
+    .stat-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+    }
+
+    .stat-card-header {
+        display: flex;
+        align-items: center;
+        margin-bottom: 1rem;
+    }
+
+    .stat-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
+        color: white;
+        margin-right: 1rem;
+    }
+
+    .stat-icon.users { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+    .stat-icon.students { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
+    .stat-icon.institutions { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
+    .stat-icon.benefactors { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); }
+
+    .stat-value {
+        font-size: 2.5rem;
+        font-weight: 700;
+        color: #2d3748;
+        line-height: 1;
+        margin-bottom: 0.5rem;
+    }
+
+    .stat-label {
+        font-size: 1rem;
+        font-weight: 600;
+        color: #4a5568;
+    }
+
+    .filter-tabs {
+        display: flex;
+        gap: 0.5rem;
+        margin-bottom: 2rem;
+        flex-wrap: wrap;
+    }
+
+    .filter-tab {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        color: #4a5568;
+        padding: 0.75rem 1rem;
+        border-radius: 8px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+    }
+
+    .filter-tab:hover {
+        background: #e2e8f0;
+        transform: translateY(-1px);
+    }
+
+    .filter-tab.active {
+        background: linear-gradient(135deg, #1560d4, #0d387e);
+        color: white;
+        border-color: #1560d4;
+    }
+
+    .users-table-container {
+        background: linear-gradient(135deg, #fff 0%, #f8fafc 100%);
+        border-radius: 16px;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+        border: 1px solid rgba(0,0,0,0.05);
+        overflow: hidden;
+    }
+
+    .table-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1.5rem 2rem;
+        border-bottom: 1px solid #e2e8f0;
+        background: #f8fafc;
+    }
+
+    .table-header h3 {
+        margin: 0;
+        color: #2d3748;
+        font-weight: 600;
+    }
+
+    .users-table {
+        width: 100%;
+        margin: 0;
+    }
+
+    .users-table th {
+        background: #f8fafc;
+        border: none;
+        padding: 1rem 1.5rem;
+        font-weight: 600;
+        color: #4a5568;
+        border-bottom: 1px solid #e2e8f0;
+    }
+
+    .users-table td {
+        padding: 1rem 1.5rem;
+        border: none;
+        border-bottom: 1px solid #f1f5f9;
+    }
+
+    .user-info {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .user-avatar {
+        width: 40px;
+        height: 40px;
+        background: linear-gradient(135deg, #1560d4, #0d387e);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 1.25rem;
+    }
+
+    .user-name {
+        font-weight: 600;
+        color: #2d3748;
+    }
+
+    .user-id {
+        font-size: 0.875rem;
+        color: #6b7280;
+    }
+
+    .role-badge {
+        padding: 0.25rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+
+    .role-student { background: #fef3c7; color: #d97706; }
+    .role-institution { background: #dbeafe; color: #2563eb; }
+    .role-benefactor { background: #dcfce7; color: #16a34a; }
+    .role-superadmin { background: #fce7f3; color: #be185d; }
+
+    .status-badge {
+        padding: 0.25rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+
+    .status-active { background: #dcfce7; color: #16a34a; }
+    .status-pending { background: #fef3c7; color: #d97706; }
+
+    .action-buttons {
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .loading-container, .empty-state {
+        text-align: center;
+        padding: 3rem 2rem;
+        color: #6b7280;
+    }
+
+    .pagination-container {
+        padding: 1.5rem 2rem;
+        text-align: center;
+        border-top: 1px solid #e2e8f0;
+    }
+
+    @@media (max-width: 768px) {
+        .page-header-content {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        
+        .stats-grid-users {
+            grid-template-columns: 1fr;
+        }
+        
+        .filter-tabs {
+            flex-direction: column;
+        }
+        
+        .table-responsive {
+            font-size: 0.875rem;
+        }
+    }
+</style>
+
+@code {
+    private string? currentUserName;
+    private string? currentUserEmail;
+    private List<IdentityUser> allUsers = new();
+    private IEnumerable<IdentityUser> filteredUsers = new List<IdentityUser>();
+    private Dictionary<string, string> userRoles = new();
+    
+    private int totalUsers = 0;
+    private int studentCount = 0;
+    private int institutionCount = 0;
+    private int benefactorCount = 0;
+    private int superAdminCount = 0;
+    
+    private string activeFilter = "All";
+    private string searchQuery = "";
+    private int pageSize = 25;
+    private bool isLoading = true;
+    
+    // Thread-safety for loading data
+    private readonly SemaphoreSlim loadingSemaphore = new SemaphoreSlim(1, 1);
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (loadingSemaphore.CurrentCount == 0) return;
+        
+        await loadingSemaphore.WaitAsync();
+        try
+        {
+            var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+            var user = authState.User;
+
+            if (user.Identity?.IsAuthenticated == true)
+            {
+                currentUserName = user.Identity.Name;
+                currentUserEmail = user.FindFirst("email")?.Value;
+            }
+
+            await LoadUsersData();
+        }
+        catch (ObjectDisposedException)
+        {
+            // Ignore if already disposed
+            return;
+        }
+        finally
+        {
+            try
+            {
+                loadingSemaphore.Release();
+            }
+            catch (ObjectDisposedException)
+            {
+                // Ignore if already disposed
+            }
+        }
+    }
+
+    private async Task LoadUsersData()
+    {
+        try
+        {
+            isLoading = true;
+            StateHasChanged();
+            
+            Console.WriteLine("LoadUsersData: Starting to load users data...");
+            
+            // Use separate context for each operation to avoid conflicts
+            using var context = DbContextFactory.CreateDbContext();
+            
+            // Load all users using the UserManager
+            allUsers = await UserManager.Users.ToListAsync();
+            totalUsers = allUsers.Count;
+            
+            // Load role counts and user roles
+            await LoadUserRoles();
+            
+            // Apply current filter
+            ApplyFilter();
+            
+            Console.WriteLine($"LoadUsersData: Loaded {totalUsers} users successfully");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading users data: {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+    
+    private async Task LoadUserRoles()
+    {
+        try
+        {
+            userRoles.Clear();
+            studentCount = 0;
+            institutionCount = 0;
+            benefactorCount = 0;
+            superAdminCount = 0;
+            
+            foreach (var user in allUsers)
+            {
+                var roles = await UserManager.GetRolesAsync(user);
+                var role = roles.FirstOrDefault() ?? "Unknown";
+                userRoles[user.Id] = role;
+                
+                // Count by role
+                switch (role)
+                {
+                    case "Student":
+                        studentCount++;
+                        break;
+                    case "Institution":
+                        institutionCount++;
+                        break;
+                    case "Benefactor":
+                        benefactorCount++;
+                        break;
+                    case "SuperAdmin":
+                        superAdminCount++;
+                        break;
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading user roles: {ex.Message}");
+        }
+    }
+    
+    private string GetUserRole(string userId)
+    {
+        return userRoles.TryGetValue(userId, out var role) ? role : "Unknown";
+    }
+    
+    private void SetFilter(string filter)
+    {
+        activeFilter = filter;
+        ApplyFilter();
+    }
+    
+    private void ApplyFilter()
+    {
+        var filtered = allUsers.AsEnumerable();
+        
+        // Apply role filter
+        if (activeFilter != "All")
+        {
+            filtered = filtered.Where(u => GetUserRole(u.Id) == activeFilter);
+        }
+        
+        // Apply search filter
+        if (!string.IsNullOrEmpty(searchQuery))
+        {
+            var query = searchQuery.ToLower();
+            filtered = filtered.Where(u => 
+                (u.UserName?.ToLower().Contains(query) ?? false) ||
+                (u.Email?.ToLower().Contains(query) ?? false) ||
+                u.Id.ToLower().Contains(query));
+        }
+        
+        filteredUsers = filtered.OrderBy(u => u.UserName);
+        StateHasChanged();
+    }
+    
+    private async Task FilterUsers(ChangeEventArgs e)
+    {
+        searchQuery = e.Value?.ToString() ?? "";
+        ApplyFilter();
+        await Task.CompletedTask; // Make method properly async
+    }
+    
+    private async Task RefreshUsers()
+    {
+        await LoadUsersData();
+    }
+    
+    private void LoadMoreUsers()
+    {
+        pageSize += 25;
+        StateHasChanged();
+    }
+    
+    // Placeholder methods for user actions
+    private void ShowCreateUserModal()
+    {
+        // TODO: Implement create user modal
+        Console.WriteLine("Create user modal - To be implemented");
+    }
+    
+    private void ViewUser(string userId)
+    {
+        // TODO: Navigate to user view page
+        Console.WriteLine($"View user: {userId}");
+    }
+    
+    private void EditUser(string userId)
+    {
+        // TODO: Navigate to user edit page
+        Console.WriteLine($"Edit user: {userId}");
+    }
+    
+    private void DeleteUser(string userId)
+    {
+        // TODO: Implement delete user confirmation
+        Console.WriteLine($"Delete user: {userId}");
+    }
+    
+    public void Dispose()
+    {
+        loadingSemaphore?.Dispose();
+    }
+}

@@ -20,8 +20,9 @@ namespace c2_eskolar.Services
         private readonly AnnouncementRecommendationService _announcementRecommendationService;
         private readonly ContextGenerationService _contextGenerationService;
         private readonly DisplayContextAwarenessService _displayContextAwarenessService;
+        private readonly AITokenTrackingService _tokenTrackingService;
 
-        public OpenAIService(IConfiguration config, ProfileSummaryService profileSummaryService, ScholarshipRecommendationService scholarshipRecommendationService, AnnouncementRecommendationService announcementRecommendationService, ContextGenerationService contextGenerationService, DisplayContextAwarenessService displayContextAwarenessService)
+        public OpenAIService(IConfiguration config, ProfileSummaryService profileSummaryService, ScholarshipRecommendationService scholarshipRecommendationService, AnnouncementRecommendationService announcementRecommendationService, ContextGenerationService contextGenerationService, DisplayContextAwarenessService displayContextAwarenessService, AITokenTrackingService tokenTrackingService)
         {
             var apiKey = config["AzureOpenAI:ApiKey"] ?? throw new ArgumentNullException("AzureOpenAI:ApiKey");
             var endpoint = config["AzureOpenAI:Endpoint"] ?? throw new ArgumentNullException("AzureOpenAI:Endpoint");
@@ -32,17 +33,49 @@ namespace c2_eskolar.Services
             _announcementRecommendationService = announcementRecommendationService;
             _contextGenerationService = contextGenerationService;
             _displayContextAwarenessService = displayContextAwarenessService;
+            _tokenTrackingService = tokenTrackingService;
         }
 
         public async Task<string> GetChatCompletionAsync(string userMessage)
         {
-            var chatClient = _client.GetChatClient(_deploymentName);
-            var messages = new[]
+            var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+            
+            try
             {
-                new UserChatMessage(userMessage)
-            };
-            var response = await chatClient.CompleteChatAsync(messages);
-            return response.Value.Content[0].Text.Trim();
+                var chatClient = _client.GetChatClient(_deploymentName);
+                var messages = new[]
+                {
+                    new UserChatMessage(userMessage)
+                };
+                
+                var response = await chatClient.CompleteChatAsync(messages);
+                stopwatch.Stop();
+                
+                // Track token usage
+                await _tokenTrackingService.TrackChatCompletionUsageAsync(
+                    completion: response.Value,
+                    operation: "BasicChatCompletion",
+                    userId: null, // No user context in basic method
+                    additionalDetails: $"Message length: {userMessage.Length}",
+                    requestDuration: stopwatch.Elapsed
+                );
+                
+                return response.Value.Content[0].Text.Trim();
+            }
+            catch (Exception ex)
+            {
+                stopwatch.Stop();
+                
+                // Track failed request
+                await _tokenTrackingService.TrackFailedRequestAsync(
+                    operation: "BasicChatCompletion",
+                    errorMessage: ex.Message,
+                    userId: null,
+                    requestDuration: stopwatch.Elapsed
+                );
+                
+                throw; // Re-throw the exception
+            }
         }
 
         // Enhanced method: includes user profile and current page context
@@ -154,17 +187,60 @@ namespace c2_eskolar.Services
             
             messages.Add(new UserChatMessage(userMessage));
 
-            var chatClient = _client.GetChatClient(_deploymentName);
-            var response = await chatClient.CompleteChatAsync(messages);
-            string aiResponse = response.Value.Content[0].Text.Trim();
+            var stopwatch = System.Diagnostics.Stopwatch.StartNew();
             
-            // Combine greeting with AI response if this is the first message
-            if (isFirstMessage && !string.IsNullOrEmpty(greeting))
+            try
             {
-                return $"{greeting}\n\n{aiResponse}";
+                var chatClient = _client.GetChatClient(_deploymentName);
+                var response = await chatClient.CompleteChatAsync(messages);
+                stopwatch.Stop();
+                
+                // Track token usage with enhanced context
+                var operationDetails = new
+                {
+                    HasProfile = profileSummary != null,
+                    UserRole = profileSummary?.Role ?? "Unknown",
+                    IsScholarshipQuery = isScholarshipQuery,
+                    IsAnnouncementQuery = isAnnouncementQuery,
+                    IsFirstMessage = isFirstMessage,
+                    MessageCount = messages.Count,
+                    UserMessageLength = userMessage.Length,
+                    ScholarshipRecommendations = scholarshipRecommendations.Count,
+                    AnnouncementRecommendations = announcementRecommendations.Count
+                };
+                
+                await _tokenTrackingService.TrackChatCompletionUsageAsync(
+                    completion: response.Value,
+                    operation: "EnhancedChatCompletion",
+                    userId: user?.Id,
+                    additionalDetails: System.Text.Json.JsonSerializer.Serialize(operationDetails),
+                    requestDuration: stopwatch.Elapsed
+                );
+                
+                string aiResponse = response.Value.Content[0].Text.Trim();
+                
+                // Combine greeting with AI response if this is the first message
+                if (isFirstMessage && !string.IsNullOrEmpty(greeting))
+                {
+                    return $"{greeting}\n\n{aiResponse}";
+                }
+                
+                return aiResponse;
             }
-            
-            return aiResponse;
+            catch (Exception ex)
+            {
+                stopwatch.Stop();
+                
+                // Track failed request
+                await _tokenTrackingService.TrackFailedRequestAsync(
+                    operation: "EnhancedChatCompletion",
+                    errorMessage: ex.Message,
+                    userId: user?.Id,
+                    requestDuration: stopwatch.Elapsed
+                );
+                
+                throw; // Re-throw the exception
+            }
         }
 
 

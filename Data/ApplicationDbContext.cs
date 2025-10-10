@@ -36,6 +36,9 @@ namespace c2_eskolar.Data
     public DbSet<ScrapingProcessLog> ScrapingProcessLogs { get; set; }
     public DbSet<ScrapingConfiguration> ScrapingConfigurations { get; set; }
     public DbSet<BulkOperationRecord> BulkOperationRecords { get; set; }
+    
+    // AI Token Usage Tracking
+    public DbSet<AITokenUsage> AITokenUsages { get; set; }
 
         // MODEL CONFIGURATION & RELATIONSHIPS
         protected override void OnModelCreating(ModelBuilder modelBuilder)

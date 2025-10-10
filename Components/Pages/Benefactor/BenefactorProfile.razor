@@ -4,6 +4,7 @@
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @inject UserManager<IdentityUser> UserManager
 @inject BenefactorProfileService BenefactorProfileService
+@inject Services.BlobStorageService BlobStorageService
 @using Microsoft.AspNetCore.Components.Authorization
 @using Microsoft.AspNetCore.Identity
 @using Microsoft.AspNetCore.Components.Forms
@@ -511,7 +512,31 @@
 
     private IBrowserFile? UploadedProfileImage;
     private string? _previewProfilePicture;
-    private string PreviewProfilePicture => _previewProfilePicture ?? ProfilePicture;
+    private string PreviewProfilePicture 
+    {
+        get
+        {
+            var pictureUrl = _previewProfilePicture ?? ProfilePicture;
+            
+            // If this is a blob storage URL, generate a SAS URL for access
+            if (!string.IsNullOrWhiteSpace(pictureUrl) && 
+                pictureUrl.Contains("blob.core.windows.net") && 
+                pictureUrl != "https://via.placeholder.com/120")
+            {
+                try
+                {
+                    return BlobStorageService.GetPhotoSasUrlFromBlobUrl(pictureUrl);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"[BenefactorProfile] Error generating SAS URL for profile picture: {ex.Message}");
+                    return pictureUrl; // Return original URL as fallback
+                }
+            }
+            
+            return pictureUrl;
+        }
+    }
 
     // Verification Status
     private bool EmailVerified = false;
@@ -987,20 +1012,50 @@
                         StateHasChanged();
                         return;
                     }
-                    
-                    var fileName = $"benefactor_profile_{Guid.NewGuid()}{fileExtension}";
-                    var dirPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/images/profiles");
-                    if (!Directory.Exists(dirPath))
+
+                    try
                     {
-                        Directory.CreateDirectory(dirPath);
+                        // Try to delete old profile picture from Azure Blob Storage if it exists
+                        if (!string.IsNullOrWhiteSpace(ProfilePicture) && 
+                            ProfilePicture != "https://via.placeholder.com/120" && 
+                            ProfilePicture.Contains("blob.core.windows.net"))
+                        {
+                            var oldBlobFileName = BlobStorageService.ExtractBlobFileName(ProfilePicture);
+                            if (!string.IsNullOrWhiteSpace(oldBlobFileName))
+                            {
+                                try
+                                {
+                                    var deleted = await BlobStorageService.DeletePhotoAsync(oldBlobFileName);
+                                    Console.WriteLine($"Old profile picture deletion result: {deleted}");
+                                }
+                                catch (Exception deleteEx)
+                                {
+                                    Console.WriteLine($"Warning: Could not delete old profile picture '{oldBlobFileName}': {deleteEx.Message}");
+                                    // Continue with upload even if deletion fails
+                                }
+                            }
+                        }
+
+                        // Upload new profile picture to Azure Blob Storage
+                        var contentType = fileExtension switch
+                        {
+                            ".png" => "image/png",
+                            ".gif" => "image/gif",
+                            _ => "image/jpeg"
+                        };
+
+                        using var stream = UploadedProfileImage.OpenReadStream(10 * 1024 * 1024);
+                        var blobUrl = await BlobStorageService.UploadProfilePictureAsync(stream, user.Id, "benefactor", fileExtension, contentType);
+                        
+                        profile.Logo = blobUrl;
+                        ProfilePicture = profile.Logo;
                     }
-                    var savePath = Path.Combine(dirPath, fileName);
-                    await using (var stream = File.Create(savePath))
+                    catch (Exception ex)
                     {
-                        await UploadedProfileImage.OpenReadStream(10 * 1024 * 1024).CopyToAsync(stream);
+                        SetErrorMessageWithTimer($"Error uploading profile picture: {ex.Message}");
+                        StateHasChanged();
+                        return;
                     }
-                    profile.Logo = $"/images/profiles/{fileName}";
-                    ProfilePicture = profile.Logo;
                 }
                 else if (!string.IsNullOrWhiteSpace(ProfilePicture) && ProfilePicture != "https://via.placeholder.com/120")
                 {
@@ -1082,23 +1137,52 @@
 
     private async Task RemoveProfileImageAsync()
     {
-        // Set to blank avatar
-        ProfilePicture = "https://via.placeholder.com/120";
-        _previewProfilePicture = null;
-        UploadedProfileImage = null;
-
-        // Optionally update in DB
-        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
-        var user = await UserManager.GetUserAsync(authState.User);
-        if (user != null)
+        try
         {
-            var profile = await BenefactorProfileService.GetProfileByUserIdAsync(user.Id);
-            if (profile != null)
+            // Try to delete old profile picture from Azure Blob Storage if it exists
+            if (!string.IsNullOrWhiteSpace(ProfilePicture) && 
+                ProfilePicture != "https://via.placeholder.com/120" && 
+                ProfilePicture.Contains("blob.core.windows.net"))
             {
-                profile.Logo = ProfilePicture;
-                await BenefactorProfileService.SaveProfileAsync(profile);
+                var oldBlobFileName = BlobStorageService.ExtractBlobFileName(ProfilePicture);
+                if (!string.IsNullOrWhiteSpace(oldBlobFileName))
+                {
+                    try
+                    {
+                        var deleted = await BlobStorageService.DeletePhotoAsync(oldBlobFileName);
+                        Console.WriteLine($"Profile picture deletion result: {deleted}");
+                    }
+                    catch (Exception deleteEx)
+                    {
+                        Console.WriteLine($"Warning: Could not delete profile picture '{oldBlobFileName}': {deleteEx.Message}");
+                        // Continue with removal even if deletion fails
+                    }
+                }
             }
+
+            // Set to blank avatar
+            ProfilePicture = "https://via.placeholder.com/120";
+            _previewProfilePicture = null;
+            UploadedProfileImage = null;
+
+            // Update in DB
+            var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+            var user = await UserManager.GetUserAsync(authState.User);
+            if (user != null)
+            {
+                var profile = await BenefactorProfileService.GetProfileByUserIdAsync(user.Id);
+                if (profile != null)
+                {
+                    profile.Logo = ProfilePicture;
+                    await BenefactorProfileService.SaveProfileAsync(profile);
+                }
+            }
+            StateHasChanged();
         }
-        StateHasChanged();
+        catch (Exception ex)
+        {
+            SetErrorMessageWithTimer($"Error removing profile picture: {ex.Message}");
+            StateHasChanged();
+        }
     }
 }

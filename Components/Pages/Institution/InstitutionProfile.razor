@@ -531,7 +531,31 @@
 
     private IBrowserFile? UploadedProfileImage;
     private string? _previewProfilePicture;
-    private string PreviewProfilePicture => _previewProfilePicture ?? ProfilePicture;
+    private string PreviewProfilePicture 
+    {
+        get
+        {
+            var pictureUrl = _previewProfilePicture ?? ProfilePicture;
+            
+            // If this is a blob storage URL, generate a SAS URL for access
+            if (!string.IsNullOrWhiteSpace(pictureUrl) && 
+                pictureUrl.Contains("blob.core.windows.net") && 
+                pictureUrl != "https://via.placeholder.com/120")
+            {
+                try
+                {
+                    return BlobStorageService.GetPhotoSasUrlFromBlobUrl(pictureUrl);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"[InstitutionProfile] Error generating SAS URL for profile picture: {ex.Message}");
+                    return pictureUrl; // Return original URL as fallback
+                }
+            }
+            
+            return pictureUrl;
+        }
+    }
 
     private async Task OnProfileImageChange(InputFileChangeEventArgs e)
     {
@@ -566,24 +590,53 @@
 
     private async Task RemoveProfileImageAsync()
     {
-        // Set to blank avatar
-        ProfilePicture = "https://via.placeholder.com/120";
-        _previewProfilePicture = null;
-        UploadedProfileImage = null;
-
-        // Optionally update in DB
-        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
-        var user = await UserManager.GetUserAsync(authState.User);
-        if (user != null)
+        try
         {
-            var profile = await InstitutionProfileService.GetProfileByUserIdAsync(user.Id);
-            if (profile != null)
+            // Try to delete old profile picture from Azure Blob Storage if it exists
+            if (!string.IsNullOrWhiteSpace(ProfilePicture) && 
+                ProfilePicture != "https://via.placeholder.com/120" && 
+                ProfilePicture.Contains("blob.core.windows.net"))
             {
-                profile.ProfilePicture = ProfilePicture;
-                await InstitutionProfileService.SaveProfileAsync(profile);
+                var oldBlobFileName = BlobStorageService.ExtractBlobFileName(ProfilePicture);
+                if (!string.IsNullOrWhiteSpace(oldBlobFileName))
+                {
+                    try
+                    {
+                        var deleted = await BlobStorageService.DeletePhotoAsync(oldBlobFileName);
+                        Console.WriteLine($"Profile picture deletion result: {deleted}");
+                    }
+                    catch (Exception deleteEx)
+                    {
+                        Console.WriteLine($"Warning: Could not delete profile picture '{oldBlobFileName}': {deleteEx.Message}");
+                        // Continue with removal even if deletion fails
+                    }
+                }
             }
+
+            // Set to blank avatar
+            ProfilePicture = "https://via.placeholder.com/120";
+            _previewProfilePicture = null;
+            UploadedProfileImage = null;
+
+            // Update in DB
+            var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+            var user = await UserManager.GetUserAsync(authState.User);
+            if (user != null)
+            {
+                var profile = await InstitutionProfileService.GetProfileByUserIdAsync(user.Id);
+                if (profile != null)
+                {
+                    profile.ProfilePicture = ProfilePicture;
+                    await InstitutionProfileService.SaveProfileAsync(profile);
+                }
+            }
+            StateHasChanged();
         }
-        StateHasChanged();
+        catch (Exception ex)
+        {
+            _errorMessage = $"Error removing profile picture: {ex.Message}";
+            StateHasChanged();
+        }
     }
 
     // Verification Status
@@ -649,6 +702,9 @@
 
     [Inject]
     private Services.InstitutionProfileService InstitutionProfileService { get; set; } = default!;
+
+    [Inject]
+    private Services.BlobStorageService BlobStorageService { get; set; } = default!;
 
     private async Task LoadExtendedProfileData(string userId)
     {
@@ -1033,20 +1089,50 @@
                         StateHasChanged();
                         return;
                     }
-                    
-                    var fileName = $"institution_profile_{Guid.NewGuid()}{fileExtension}";
-                    var dirPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/images/profiles");
-                    if (!Directory.Exists(dirPath))
+
+                    try
                     {
-                        Directory.CreateDirectory(dirPath);
+                        // Try to delete old profile picture from Azure Blob Storage if it exists
+                        if (!string.IsNullOrWhiteSpace(ProfilePicture) && 
+                            ProfilePicture != "https://via.placeholder.com/120" && 
+                            ProfilePicture.Contains("blob.core.windows.net"))
+                        {
+                            var oldBlobFileName = BlobStorageService.ExtractBlobFileName(ProfilePicture);
+                            if (!string.IsNullOrWhiteSpace(oldBlobFileName))
+                            {
+                                try
+                                {
+                                    var deleted = await BlobStorageService.DeletePhotoAsync(oldBlobFileName);
+                                    Console.WriteLine($"Old profile picture deletion result: {deleted}");
+                                }
+                                catch (Exception deleteEx)
+                                {
+                                    Console.WriteLine($"Warning: Could not delete old profile picture '{oldBlobFileName}': {deleteEx.Message}");
+                                    // Continue with upload even if deletion fails
+                                }
+                            }
+                        }
+
+                        // Upload new profile picture to Azure Blob Storage
+                        var contentType = fileExtension switch
+                        {
+                            ".png" => "image/png",
+                            ".gif" => "image/gif",
+                            _ => "image/jpeg"
+                        };
+
+                        using var stream = UploadedProfileImage.OpenReadStream(10 * 1024 * 1024);
+                        var blobUrl = await BlobStorageService.UploadProfilePictureAsync(stream, user.Id, "institution", fileExtension, contentType);
+                        
+                        profile.ProfilePicture = blobUrl;
+                        ProfilePicture = profile.ProfilePicture;
                     }
-                    var savePath = Path.Combine(dirPath, fileName);
-                    await using (var stream = File.Create(savePath))
+                    catch (Exception ex)
                     {
-                        await UploadedProfileImage.OpenReadStream(10 * 1024 * 1024).CopyToAsync(stream);
+                        _errorMessage = $"Error uploading profile picture: {ex.Message}";
+                        StateHasChanged();
+                        return;
                     }
-                    profile.ProfilePicture = $"/images/profiles/{fileName}";
-                    ProfilePicture = profile.ProfilePicture;
                 }
                 else if (!string.IsNullOrWhiteSpace(ProfilePicture) && ProfilePicture != "https://via.placeholder.com/120")
                 {
