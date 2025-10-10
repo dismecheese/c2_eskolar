@@ -505,6 +505,8 @@
 
     protected override async Task OnInitializedAsync()
     {
+        if (loadingSemaphore.CurrentCount == 0) return;
+        
         await loadingSemaphore.WaitAsync();
         try
         {
@@ -519,9 +521,21 @@
 
             await LoadUsersData();
         }
+        catch (ObjectDisposedException)
+        {
+            // Ignore if already disposed
+            return;
+        }
         finally
         {
-            loadingSemaphore.Release();
+            try
+            {
+                loadingSemaphore.Release();
+            }
+            catch (ObjectDisposedException)
+            {
+                // Ignore if already disposed
+            }
         }
     }
 
@@ -534,7 +548,10 @@
             
             Console.WriteLine("LoadUsersData: Starting to load users data...");
             
-            // Load all users
+            // Use separate context for each operation to avoid conflicts
+            using var context = DbContextFactory.CreateDbContext();
+            
+            // Load all users using the UserManager
             allUsers = await UserManager.Users.ToListAsync();
             totalUsers = allUsers.Count;
             

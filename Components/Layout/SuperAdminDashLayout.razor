@@ -9,9 +9,6 @@
 @using Microsoft.AspNetCore.Components.Authorization
 @using Microsoft.AspNetCore.Identity
 @using Microsoft.JSInterop
-@using c2_eskolar.Components.UI
-
-@rendermode InteractiveServer
 
 <div class="superadmin-layout">
     <div class="container-fluid p-0">
@@ -70,17 +67,6 @@
                     </button>
                 </div>
             </div>
-
-            <!-- Help Box Button -->
-            <button class="help-box-bottom" @onclick="OpenChatbot" type="button">
-                <div class="help-box-content">
-                    <img src="images/NeedHelp.svg" alt="Help" class="help-box-img" />
-                    <div class="help-box-text">
-                        <div class="help-box-title">Need help?</div>
-                        <div class="help-box-desc">Having trouble using eSkolar?<br />We're here to assist you!</div>
-                    </div>
-                </div>
-            </button>
         </nav>
 
         <!-- --- PROFILE SIDEBAR (Bootstrap Offcanvas) --- -->
@@ -149,11 +135,6 @@
         <main class="main-content" style="flex:1; min-width:0; background: #f5f6fa;">
             @Body
         </main>
-
-        @if (ShowChatbot)
-        {
-            <ChatBot CloseChatbot="CloseChatbot" MinimizeChatbot="MinimizeChatbot" />
-        }
     </div>
 
 <!-- Logout Confirmation Modal -->
@@ -185,6 +166,32 @@
 </div>
 
 <style>
+    .sidebar-link {
+        display: flex;
+        align-items: center;
+        padding: 12px 16px;
+        color: rgba(255,255,255,0.8);
+        text-decoration: none;
+        border-radius: 8px;
+        margin-bottom: 4px;
+        transition: all 0.3s ease;
+        font-weight: 500;
+    }
+
+    .sidebar-link:hover {
+        background: rgba(255,255,255,0.1);
+        color: rgba(255,255,255,1);
+        text-decoration: none;
+        transform: translateX(4px);
+    }
+
+    .sidebar-link.active {
+        background: rgba(255,255,255,0.2);
+        color: rgba(255,255,255,1);
+        font-weight: 600;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
     .user-avatar-large {
         width: 80px;
         height: 80px;
@@ -222,6 +229,15 @@
     protected override async Task OnInitializedAsync()
     {
         await LoadUserInfo();
+        
+        // Subscribe to navigation changes to update active states
+        Navigation.LocationChanged += OnLocationChanged;
+    }
+
+    private void OnLocationChanged(object? sender, Microsoft.AspNetCore.Components.Routing.LocationChangedEventArgs e)
+    {
+        // Trigger re-render when navigation changes to update active states
+        InvokeAsync(StateHasChanged);
     }
 
     private async Task LoadUserInfo()
@@ -253,11 +269,11 @@
         var currentPath = Navigation.ToBaseRelativePath(Navigation.Uri).Split('?')[0].TrimEnd('/');
         var linkPath = href.TrimStart('/').TrimEnd('/');
         
-        // Exact match
-        if (currentPath == linkPath)
-            return "nav-link d-flex align-items-center gap-2 sidebar-link active";
+        // Exact match for the current page
+        if (currentPath.Equals(linkPath, StringComparison.OrdinalIgnoreCase))
+            return "sidebar-link active";
             
-        return "nav-link d-flex align-items-center gap-2 sidebar-link";
+        return "sidebar-link";
     }
 
     private string GetPageTitle()
@@ -323,14 +339,9 @@
         }
     }
 
-    // --- CHATBOT STATE ---
-    private bool ShowChatbot = false;
-    private void OpenChatbot() => ShowChatbot = true;
-    private void CloseChatbot() => ShowChatbot = false;
-    private void MinimizeChatbot() => ShowChatbot = false;
-
     public void Dispose()
     {
-        // Cleanup if needed
+        // Unsubscribe from navigation changes
+        Navigation.LocationChanged -= OnLocationChanged;
     }
 }
