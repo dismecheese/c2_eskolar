@@ -218,35 +218,64 @@ namespace c2_eskolar.Services
 
         public async Task<ExtractedInstitutionAuthLetterData?> ExtractInstitutionFieldsAsync(string rawText)
         {
-            // Compose prompt for field extraction
-            string prompt = $@"Extract the following fields from the institution authorization letter text below. Return only the fields in JSON format:
-InstitutionName, InstitutionType, Address, ContactNumber, Website, Description, DeanName, DeanEmail, InstitutionalEmailDomain.
+            string prompt = $@"You are an expert at extracting structured data from institution authorization letters and official documents.
 
-Text:
+Analyze the OCR text below from an institution authorization letter and extract the following information. Return ONLY a JSON object with these exact field names:
+
+InstitutionName: The official name of the educational institution (university, college, school)
+InstitutionType: Type of institution (University, College, School, Institute, etc.)
+Address: Physical address of the institution
+ContactNumber: Phone number or contact number of the institution
+Website: Institution website URL (if mentioned)
+Description: Brief description of the institution or its mission
+DeanName: Name of the Dean, Director, President, or head of institution mentioned
+DeanEmail: Email address of the Dean or institutional head
+InstitutionalEmailDomain: The email domain used by the institution (like @university.edu.ph)
+
+Look for:
+- Institution headers, letterheads, official names
+- Contact information, addresses, phone numbers
+- Official signatures from deans, directors, presidents
+- Email addresses and domains
+- Institutional descriptions or mission statements
+- Website URLs or social media
+
+Raw OCR Text:
 {rawText}
 
-JSON:";
+Return only valid JSON:";
 
             var chatClient = _client.GetChatClient(_deploymentName);
             var messages = new OpenAI.Chat.ChatMessage[]
             {
-                new OpenAI.Chat.SystemChatMessage("You are an expert at extracting structured data from institution documents. Always return only valid JSON for the requested fields."),
+                new OpenAI.Chat.SystemChatMessage("You are an expert at extracting structured data from institution authorization letters and official documents. Focus on finding official institution information, contact details, and administrative personnel. Always return only valid JSON for the requested fields."),
                 new OpenAI.Chat.UserChatMessage(prompt)
             };
-            var response = await chatClient.CompleteChatAsync(messages);
-            string json = response.Value.Content[0].Text.Trim();
-
+            
             try
             {
+                var response = await chatClient.CompleteChatAsync(messages);
+                string json = response.Value.Content[0].Text.Trim();
+                
+                // Clean up the JSON response (remove markdown code block markers if present)
+                if (json.StartsWith("```json"))
+                    json = json.Substring(7);
+                if (json.StartsWith("```"))
+                    json = json.Substring(3);
+                if (json.EndsWith("```"))
+                    json = json.Substring(0, json.Length - 3);
+                json = json.Trim();
+
                 var extracted = System.Text.Json.JsonSerializer.Deserialize<ExtractedInstitutionAuthLetterData>(json, new System.Text.Json.JsonSerializerOptions
                 {
                     PropertyNameCaseInsensitive = true
                 });
                 return extracted;
             }
-            catch
+            catch (Exception ex)
             {
                 // If parsing fails, return null
+                Console.WriteLine($"Authorization letter extraction failed: {ex.Message}");
                 return null;
             }
         }
@@ -288,28 +317,28 @@ JSON:";
         {
             string prompt = $@"You are an expert at extracting data from Philippine identification documents. 
 
-The initial extraction found these fields:
-FirstName: {initialExtraction?.FirstName}
-MiddleName: {initialExtraction?.MiddleName}
-LastName: {initialExtraction?.LastName}
-Sex: {initialExtraction?.Sex}
-DateOfBirth: {initialExtraction?.DateOfBirth}
+            The initial extraction found these fields:
+            FirstName: {initialExtraction?.FirstName}
+            MiddleName: {initialExtraction?.MiddleName}
+            LastName: {initialExtraction?.LastName}
+            Sex: {initialExtraction?.Sex}
+            DateOfBirth: {initialExtraction?.DateOfBirth}
 
-Please analyze the raw OCR text below and improve the extraction, particularly for Philippine naming conventions:
-- In Philippine IDs, ""Mga Pangalan/Given Names"" typically contains first and middle names separated by space (like ""RALPH LORENZ"")
-- ""Apellido/Last Name"" is the family name (like ""MARILAO"")
-- ""Gitnang Apellido/Middle Name"" is typically shown separately and should be used as the middle name (like ""MANZON"")
-- Sex is usually shown as ""MALE"" or ""FEMALE"" and may be preceded by ""Kasarian/Sex:"" or just appear as the word itself
-- Dates are often in format ""JANUARY 09, 2004"" and should be converted to YYYY-MM-DD format
-- Look carefully for the word ""MALE"" or ""FEMALE"" anywhere in the text
+            Please analyze the raw OCR text below and improve the extraction, particularly for Philippine naming conventions:
+            - In Philippine IDs, ""Mga Pangalan/Given Names"" typically contains first and middle names separated by space (like ""RALPH LORENZ"")
+            - ""Apellido/Last Name"" is the family name (like ""MARILAO"")
+            - ""Gitnang Apellido/Middle Name"" is typically shown separately and should be used as the middle name (like ""MANZON"")
+            - Sex is usually shown as ""MALE"" or ""FEMALE"" and may be preceded by ""Kasarian/Sex:"" or just appear as the word itself
+            - Dates are often in format ""JANUARY 09, 2004"" and should be converted to YYYY-MM-DD format
+            - Look carefully for the word ""MALE"" or ""FEMALE"" anywhere in the text
 
-Raw OCR Text:
-{rawText}
+            Raw OCR Text:
+            {rawText}
 
-Please return ONLY a JSON object with these exact field names:
-FirstName, MiddleName, LastName, Sex, DateOfBirth (in YYYY-MM-DD format if found)
+            Please return ONLY a JSON object with these exact field names:
+            FirstName, MiddleName, LastName, Sex, DateOfBirth (in YYYY-MM-DD format if found)
 
-JSON:";
+            JSON:";
 
             var chatClient = _client.GetChatClient(_deploymentName);
             var messages = new OpenAI.Chat.ChatMessage[]

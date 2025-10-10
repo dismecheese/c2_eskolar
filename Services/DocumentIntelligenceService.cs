@@ -146,35 +146,125 @@ namespace c2_eskolar.Services
 
         public async Task<ExtractedInstitutionAuthLetterData?> AnalyzeInstitutionAuthLetterAsync(IBrowserFile file)
         {
-            // Step 1: OCR/layout extraction
-            var corData = await AnalyzeCorDocumentAsync(file);
-            if (corData == null) return null;
-
-            // Step 2: Get raw text content from the document (OCR)
-            string rawText = corData.Program ?? "";
-            if (string.IsNullOrWhiteSpace(rawText))
+            try
             {
-                // Fallback: try to get more text from other fields
-                rawText = $"{corData.StudentName} {corData.University} {corData.Address}";
+                if (string.IsNullOrEmpty(_endpoint) || string.IsNullOrEmpty(_apiKey))
+                {
+                    _logger.LogError("Document Intelligence endpoint or API key is not configured");
+                    return null;
+                }
+
+                // Validate file type and size
+                var validExtensions = new[] { ".jpg", ".jpeg", ".png", ".pdf" };
+                var fileExt = Path.GetExtension(file.Name).ToLowerInvariant();
+                if (!validExtensions.Contains(fileExt))
+                {
+                    _logger.LogWarning($"Invalid file type: {file.Name}. Supported types: {string.Join(", ", validExtensions)}");
+                    return null;
+                }
+
+                if (file.Size > 5 * 1024 * 1024) // 5MB limit
+                {
+                    _logger.LogWarning($"File too large: {file.Name} ({file.Size} bytes). Maximum size: 5MB");
+                    return null;
+                }
+
+                _logger.LogInformation($"Analyzing authorization letter: {file.Name} ({file.Size} bytes) with endpoint: {_endpoint}");
+
+                // Read file content into a byte array and convert to base64
+                using var stream = file.OpenReadStream(5 * 1024 * 1024);
+                using var memoryStream = new MemoryStream();
+                await stream.CopyToAsync(memoryStream);
+                var fileBytes = memoryStream.ToArray();
+                var base64Content = Convert.ToBase64String(fileBytes);
+
+                // Use layout analysis model for general document analysis instead of prebuilt-idDocument
+                var url = $"{_endpoint}/documentintelligence/documentModels/prebuilt-layout:analyze?_overload=analyzeDocument&api-version=2024-11-30";
+
+                // Create JSON request body with base64Source as required by the API
+                var requestBody = new
+                {
+                    base64Source = base64Content
+                };
+                var jsonContent = new StringContent(JsonSerializer.Serialize(requestBody), System.Text.Encoding.UTF8, "application/json");
+
+                // Make the request
+                _httpClient.DefaultRequestHeaders.Clear();
+                _httpClient.DefaultRequestHeaders.Add("Ocp-Apim-Subscription-Key", _apiKey);
+
+                var response = await _httpClient.PostAsync(url, jsonContent);
+                if (response.IsSuccessStatusCode)
+                {
+                    _logger.LogInformation("Document Intelligence analysis started. Polling for results...");
+                    var operationLocation = response.Headers.GetValues("Operation-Location").FirstOrDefault();
+                    if (string.IsNullOrEmpty(operationLocation))
+                    {
+                        _logger.LogError("Operation-Location header not found in response");
+                        return null;
+                    }
+
+                    // Poll for results
+                    var resultJson = await PollForResults(operationLocation);
+                    if (string.IsNullOrEmpty(resultJson))
+                    {
+                        _logger.LogError("Failed to get analysis results from Document Intelligence");
+                        return null;
+                    }
+
+                    _logger.LogInformation($"Document Intelligence response received for {file.Name}");
+                    
+                    var docResponse = JsonSerializer.Deserialize<DocumentIntelligenceResponse>(resultJson, new JsonSerializerOptions
+                    {
+                        PropertyNameCaseInsensitive = true
+                    });
+
+                    if (docResponse != null)
+                    {
+                        _logger.LogInformation($"Document analysis completed successfully for {file.Name}");
+                        
+                        // Get the raw OCR content for AI processing
+                        string rawContent = docResponse.AnalyzeResult?.Content ?? "";
+                        
+                        if (!string.IsNullOrWhiteSpace(rawContent))
+                        {
+                            _logger.LogInformation($"Raw content extracted ({rawContent.Length} characters), sending to AI for field extraction...");
+                            
+                            // Use AI to extract structured fields from the raw content
+                            var aiExtracted = await _openAIService.ExtractInstitutionFieldsAsync(rawContent);
+                            
+                            if (aiExtracted != null)
+                            {
+                                _logger.LogInformation($"AI successfully extracted fields: InstitutionName={aiExtracted.InstitutionName}, DeanName={aiExtracted.DeanName}");
+                                return aiExtracted;
+                            }
+                            else
+                            {
+                                _logger.LogWarning("AI extraction returned null");
+                            }
+                        }
+                        else
+                        {
+                            _logger.LogWarning("No raw content extracted from document");
+                        }
+                    }
+                    else
+                    {
+                        _logger.LogError("Failed to deserialize Document Intelligence response");
+                    }
+                }
+                else
+                {
+                    var errorContent = await response.Content.ReadAsStringAsync();
+                    _logger.LogError($"Document Intelligence API error: {response.StatusCode}, Content: {errorContent}");
+                }
+
+                return null;
             }
-
-            // Step 3: Use OpenAI to extract semantic fields
-            var aiExtracted = await _openAIService.ExtractInstitutionFieldsAsync(rawText);
-
-            // Step 4: Merge extracted fields (AI + OCR)
-            var extracted = new ExtractedInstitutionAuthLetterData
+            catch (Exception ex)
             {
-                InstitutionName = aiExtracted?.InstitutionName ?? corData.University,
-                InstitutionType = aiExtracted?.InstitutionType,
-                Address = aiExtracted?.Address ?? corData.Address,
-                ContactNumber = aiExtracted?.ContactNumber ?? corData.StudentNumber,
-                Website = aiExtracted?.Website,
-                Description = aiExtracted?.Description ?? corData.Program,
-                DeanName = aiExtracted?.DeanName ?? corData.StudentName,
-                DeanEmail = aiExtracted?.DeanEmail,
-                InstitutionalEmailDomain = aiExtracted?.InstitutionalEmailDomain
-            };
-            return extracted;
+                _logger.LogError(ex, $"Error analyzing authorization letter: {file.Name}");
+                return null;
+            }
         }
 
         // ...existing methods (AnalyzeIdDocumentAsync, AnalyzeCorDocumentAsync, MapIdDocumentFields, PollForResults, ExtractCorDataFromContent)...
