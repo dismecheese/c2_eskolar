@@ -20,6 +20,22 @@ namespace c2_eskolar.Services
             return await context.StudentProfiles.ToListAsync();
         }
 
+        public async Task<List<StudentProfile>> GetAffiliatedStudentsAsync()
+        {
+            await using var context = _contextFactory.CreateDbContext();
+            return await context.StudentProfiles
+                .Where(sp => sp.IsPartnerInstitution == true)
+                .ToListAsync();
+        }
+
+        public async Task<List<StudentProfile>> GetExternalStudentsAsync()
+        {
+            await using var context = _contextFactory.CreateDbContext();
+            return await context.StudentProfiles
+                .Where(sp => sp.IsPartnerInstitution != true)
+                .ToListAsync();
+        }
+
     public async Task<StudentProfile?> GetProfileByUserIdAsync(string userId)
         {
             await using var context = _contextFactory.CreateDbContext();

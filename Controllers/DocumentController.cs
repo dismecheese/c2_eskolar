@@ -44,6 +44,83 @@ namespace c2_eskolar.Controllers
         }
 
         /// <summary>
+        /// Streams a document directly from Azure Blob Storage, bypassing CORS issues.
+        /// </summary>
+        /// <param name="fileName">The name of the document file.</param>
+        /// <returns>The document as a file stream.</returns>
+        [HttpGet("stream/{*filePath}")]
+        public async Task<IActionResult> StreamDocument(string filePath)
+        {
+            try
+            {
+                // URL decode the file path to handle spaces and special characters
+                var decodedFilePath = Uri.UnescapeDataString(filePath);
+                Console.WriteLine($"DocumentController: Attempting to stream document: {filePath} -> decoded: {decodedFilePath}");
+                
+                Stream stream;
+                string fileName;
+                
+                // Check if this is a local file path or Azure blob name
+                if (decodedFilePath.StartsWith("/uploads/") || decodedFilePath.StartsWith("uploads/"))
+                {
+                    // Local file system path
+                    var localPath = decodedFilePath.StartsWith("/") ? decodedFilePath.Substring(1) : decodedFilePath;
+                    var fullPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", localPath);
+                    
+                    Console.WriteLine($"DocumentController: Attempting to read local file: {fullPath}");
+                    
+                    if (!System.IO.File.Exists(fullPath))
+                    {
+                        Console.WriteLine($"DocumentController: Local file not found: {fullPath}");
+                        return NotFound($"Document not found at local path: {localPath}");
+                    }
+                    
+                    stream = new FileStream(fullPath, FileMode.Open, FileAccess.Read);
+                    fileName = Path.GetFileName(fullPath);
+                }
+                else
+                {
+                    // Azure Blob Storage - extract just the filename
+                    fileName = Path.GetFileName(decodedFilePath);
+                    Console.WriteLine($"DocumentController: Attempting to download from Azure blob: {fileName}");
+                    stream = await _blobStorageService.DownloadDocumentAsync(fileName);
+                }
+                
+                // Determine content type based on file extension
+                var contentType = GetDocumentContentType(fileName);
+                Console.WriteLine($"DocumentController: Successfully streaming document: {fileName} with content type: {contentType}");
+                
+                // Add proper headers for document display
+                Response.Headers["Cache-Control"] = "public, max-age=3600"; // Cache for 1 hour
+                Response.Headers["Content-Disposition"] = "inline"; // Display inline, not as download
+                
+                // Add CORS headers to allow cross-origin access
+                Response.Headers["Access-Control-Allow-Origin"] = "*";
+                Response.Headers["Access-Control-Allow-Methods"] = "GET";
+                Response.Headers["Access-Control-Allow-Headers"] = "Content-Type";
+                
+                // For PDFs, add additional headers to ensure proper rendering
+                if (contentType == "application/pdf")
+                {
+                    Response.Headers["Content-Type"] = "application/pdf";
+                    Response.Headers["X-Content-Type-Options"] = "nosniff";
+                }
+                
+                return File(stream, contentType);
+            }
+            catch (FileNotFoundException ex)
+            {
+                Console.WriteLine($"DocumentController: Document not found: {filePath} - {ex.Message}");
+                return NotFound($"Document '{filePath}' not found.");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"DocumentController: Error streaming document: {filePath} - {ex.Message}");
+                return StatusCode(500, $"Error streaming document: {ex.Message}");
+            }
+        }
+
+        /// <summary>
         /// Deletes a document from Azure Blob Storage.
         /// </summary>
         /// <param name="fileName">The name of the file to delete.</param>
@@ -59,6 +136,22 @@ namespace c2_eskolar.Controllers
                 return Ok();
             else
                 return NotFound();
+        }
+
+        private static string GetDocumentContentType(string fileName)
+        {
+            var extension = Path.GetExtension(fileName).ToLowerInvariant();
+            return extension switch
+            {
+                ".pdf" => "application/pdf",
+                ".doc" => "application/msword",
+                ".docx" => "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                ".jpg" or ".jpeg" => "image/jpeg",
+                ".png" => "image/png",
+                ".gif" => "image/gif",
+                ".txt" => "text/plain",
+                _ => "application/octet-stream"
+            };
         }
     }
 

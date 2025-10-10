@@ -7,6 +7,7 @@
 @using Microsoft.EntityFrameworkCore
 @using Microsoft.AspNetCore.Components.Authorization
 @using Microsoft.AspNetCore.Identity
+@using Microsoft.JSInterop
 
 @inject c2_eskolar.Services.StudentProfileService StudentProfileService
 @inject c2_eskolar.Services.VerificationDocumentService VerificationDocumentService
@@ -14,6 +15,9 @@
 @inject IDbContextFactory<ApplicationDbContext> DbContextFactory
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @inject UserManager<IdentityUser> UserManager
+@inject c2_eskolar.Services.BlobStorageService BlobStorageService
+@inject IJSRuntime JSRuntime
+@inject NavigationManager NavigationManager
 
 @code {
     public class StudentDocument
@@ -43,96 +47,319 @@
     private List<Student> externalApplicants = new List<Student>();
     private string activeTab = "funded";
     private Guid? currentBenefactorProfileId = null;
+    
+    private async Task LogToConsole(string message)
+    {
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("console.log", $"[BenefactorScholars] {message}");
+        }
+        catch
+        {
+            // Fallback to server console if JS is not available
+            Console.WriteLine($"[BenefactorScholars] {message}");
+        }
+    }
 
     protected override async Task OnInitializedAsync()
     {
-        await LoadCurrentBenefactor();
-        await LoadStudentsAndScholars();
+        await LogToConsole("=== OnInitializedAsync START ===");
+        await LogToConsole($"Connection State: Component initializing at {DateTime.Now:HH:mm:ss.fff}");
+        
+        // Force a complete data refresh on initialization
+        await RefreshAllData();
+        
+        await LogToConsole($"After RefreshAllData: currentBenefactorProfileId = {currentBenefactorProfileId}");
+        await LogToConsole($"Final counts: Funded = {fundedStudents.Count}, External = {externalApplicants.Count}");
+        await LogToConsole("=== OnInitializedAsync END ===");
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await LogToConsole("=== OnParametersSetAsync START ===");
+        await LogToConsole($"Current state: BenefactorId={currentBenefactorProfileId}, Funded={fundedStudents.Count}, External={externalApplicants.Count}");
+        await LogToConsole($"Connection time: {DateTime.Now:HH:mm:ss.fff}");
+        
+        // On page reload, Blazor Server loses state - be aggressive about reloading
+        bool needsReload = currentBenefactorProfileId == null || 
+                          (fundedStudents.Count == 0 && externalApplicants.Count == 0) ||
+                          isRefreshing; // Don't reload if already refreshing
+        
+        if (needsReload && !isRefreshing)
+        {
+            await LogToConsole("OnParametersSetAsync: Triggering full data reload due to missing/empty state");
+            await RefreshAllData();
+        }
+        
+        await LogToConsole($"OnParametersSetAsync end state: BenefactorId={currentBenefactorProfileId}, Funded={fundedStudents.Count}, External={externalApplicants.Count}");
+        await base.OnParametersSetAsync();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            Console.WriteLine($"OnAfterRenderAsync - First render: Funded: {fundedStudents.Count}, External: {externalApplicants.Count}");
+            
+            // Double-check data loading after first render
+            if (fundedStudents.Count == 0 && externalApplicants.Count == 0 && currentBenefactorProfileId != null && !isRefreshing)
+            {
+                Console.WriteLine("OnAfterRenderAsync: No data found on first render, attempting reload");
+                await RefreshAllData();
+            }
+            
+            // Set up page visibility change handler to refresh when page becomes visible
+            await Task.Run(async () =>
+            {
+                try
+                {
+                    // Simple polling to check if we need a refresh periodically
+                    await Task.Delay(2000); // Wait 2 seconds after initial render
+                    if (fundedStudents.Count == 0 && externalApplicants.Count == 0 && currentBenefactorProfileId != null && !isRefreshing)
+                    {
+                        Console.WriteLine("OnAfterRenderAsync: Delayed check found no data, triggering refresh");
+                        await InvokeAsync(async () => await RefreshAllData());
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error in delayed refresh: {ex.Message}");
+                }
+            });
+        }
+        await base.OnAfterRenderAsync(firstRender);
+    }
+
+    private async Task LoadCurrentBenefactorWithRetry()
+    {
+        const int maxAttempts = 5;
+        var delays = new[] { 50, 100, 250, 500, 1000 }; // Exponential backoff
+        
+        for (int attempt = 0; attempt < maxAttempts; attempt++)
+        {
+            try
+            {
+                await LogToConsole($"LoadCurrentBenefactorWithRetry: Attempt {attempt + 1}/{maxAttempts}");
+                
+                var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+                await LogToConsole($"  Auth state: IsAuthenticated = {authState.User.Identity?.IsAuthenticated}, Name = {authState.User.Identity?.Name}");
+                
+                if (authState.User.Identity?.IsAuthenticated == true)
+                {
+                    var user = await UserManager.GetUserAsync(authState.User);
+                    await LogToConsole($"  User from UserManager: {user?.Id ?? "NULL"}");
+                    
+                    if (user != null)
+                    {
+                        var benefactorProfile = await BenefactorProfileService.GetProfileByUserIdAsync(user.Id);
+                        currentBenefactorProfileId = benefactorProfile?.BenefactorProfileId;
+                        await LogToConsole($"  Benefactor profile ID: {currentBenefactorProfileId}");
+                        
+                        if (currentBenefactorProfileId != null)
+                        {
+                            await LogToConsole($"LoadCurrentBenefactorWithRetry: SUCCESS on attempt {attempt + 1}");
+                            return; // Success
+                        }
+                    }
+                }
+                
+                // If we get here, the attempt failed
+                if (attempt < maxAttempts - 1)
+                {
+                    var delay = delays[attempt];
+                    await LogToConsole($"  Attempt {attempt + 1} failed, retrying in {delay}ms...");
+                    await Task.Delay(delay);
+                }
+            }
+            catch (Exception ex)
+            {
+                await LogToConsole($"  ERROR on attempt {attempt + 1}: {ex.Message}");
+                if (attempt == maxAttempts - 1)
+                {
+                    await LogToConsole($"LoadCurrentBenefactorWithRetry: All attempts failed. Final error: {ex.StackTrace}");
+                    throw; // Re-throw on final attempt
+                }
+                
+                if (attempt < maxAttempts - 1)
+                {
+                    await Task.Delay(delays[attempt]);
+                }
+            }
+        }
+        
+        await LogToConsole("LoadCurrentBenefactorWithRetry: All attempts exhausted without success");
     }
 
     private async Task LoadCurrentBenefactor()
     {
-        try
+        await LoadCurrentBenefactorWithRetry();
+    }
+
+    private async Task LoadStudentsAndScholarsWithRetry()
+    {
+        const int maxAttempts = 3;
+        var delays = new[] { 100, 250, 500 };
+        
+        for (int attempt = 0; attempt < maxAttempts; attempt++)
         {
-            var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
-            if (authState.User.Identity?.IsAuthenticated == true)
+            try
             {
-                var user = await UserManager.GetUserAsync(authState.User);
-                if (user != null)
+                await LogToConsole($"LoadStudentsAndScholarsWithRetry: Attempt {attempt + 1}/{maxAttempts}");
+                await LoadStudentsAndScholars();
+                
+                // Check if we got data
+                if (fundedStudents.Count > 0 || externalApplicants.Count > 0 || currentBenefactorProfileId == null)
                 {
-                    var benefactorProfile = await BenefactorProfileService.GetProfileByUserIdAsync(user.Id);
-                    currentBenefactorProfileId = benefactorProfile?.BenefactorProfileId;
+                    await LogToConsole($"LoadStudentsAndScholarsWithRetry: SUCCESS on attempt {attempt + 1}");
+                    return; // Success or valid empty state
+                }
+                
+                // If we get here and have a benefactor ID but no data, retry
+                if (currentBenefactorProfileId != null && attempt < maxAttempts - 1)
+                {
+                    await LogToConsole($"  Got benefactor ID but no students, retrying in {delays[attempt]}ms...");
+                    await Task.Delay(delays[attempt]);
                 }
             }
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error loading benefactor: {ex.Message}");
+            catch (Exception ex)
+            {
+                Console.WriteLine($"  ERROR on attempt {attempt + 1}: {ex.Message}");
+                if (attempt == maxAttempts - 1)
+                {
+                    Console.WriteLine($"LoadStudentsAndScholarsWithRetry: All attempts failed. Final error: {ex.StackTrace}");
+                    // Don't throw, just ensure lists are initialized
+                    fundedStudents = new List<Student>();
+                    externalApplicants = new List<Student>();
+                    StateHasChanged();
+                }
+                else
+                {
+                    await Task.Delay(delays[attempt]);
+                }
+            }
         }
     }
 
     private async Task LoadStudentsAndScholars()
     {
-        var profiles = await StudentProfileService.GetAllProfilesAsync();
-        fundedStudents = new List<Student>();
-        externalApplicants = new List<Student>();
-        
-        using var dbContext = await DbContextFactory.CreateDbContextAsync();
-        
-        // Get the current benefactor's profile ID
-        if (currentBenefactorProfileId == null)
+        try
         {
-            return; // Exit if no benefactor profile found
-        }
-        var benefactorScholarshipIds = await dbContext.Scholarships
-            .Where(s => s.BenefactorProfileId == currentBenefactorProfileId)
-            .Select(s => s.ScholarshipId)
-            .ToListAsync();
-        
-        foreach (var profile in profiles)
-        {
-            var allDocuments = new List<StudentDocument>();
-            // Get verification documents
-            var verificationDocs = await VerificationDocumentService.GetDocumentsByUserIdAsync(profile.UserId);
-            var mappedVerificationDocs = verificationDocs.Select(d => new StudentDocument
+            fundedStudents = new List<Student>();
+            externalApplicants = new List<Student>();
+            
+            using var dbContext = await DbContextFactory.CreateDbContextAsync();
+            
+            // Get the current benefactor's profile ID
+            if (currentBenefactorProfileId == null)
             {
-                Name = d.DocumentType ?? "Document",
-                DateUploaded = d.UploadedAt?.ToString("MM/dd/yyyy") ?? "",
-                Status = d.Status ?? "Pending",
-                StatusClass = d.Status == "Approved" ? "text-success" : d.Status == "Pending" ? "text-warning" : d.Status == "Needs Revision" ? "text-danger" : "text-info",
-                FileType = d.FilePath?.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase) == true ? "PDF" : d.FilePath?.EndsWith(".docx", StringComparison.OrdinalIgnoreCase) == true ? "DOCX" : "Other",
-                FilePath = d.FilePath ?? "",
-                DocumentSource = "Verification",
-                ApplicationTitle = ""
-            }).ToList();
-            allDocuments.AddRange(mappedVerificationDocs);
-            // Get scholarship applications and their documents
-            var applications = await dbContext.ScholarshipApplications
-                .Include(a => a.Scholarship)
-                .Include(a => a.Documents)
-                .Where(a => a.StudentProfileId == profile.StudentProfileId)
+                await LogToConsole("DEBUG: currentBenefactorProfileId is null, exiting");
+                return; // Exit if no benefactor profile found
+            }
+
+            await LogToConsole($"DEBUG: Loading data for benefactor ID: {currentBenefactorProfileId}");
+
+            // Get benefactor's scholarships
+            var benefactorScholarshipIds = await dbContext.Scholarships
+                .Where(s => s.BenefactorProfileId == currentBenefactorProfileId)
+                .Select(s => s.ScholarshipId)
                 .ToListAsync();
-            // Check if this student has been funded by this benefactor
-            bool isFundedByBenefactor = applications.Any(a => 
-                benefactorScholarshipIds.Contains(a.ScholarshipId) && a.Status == "Approved");
-            // Check if this student has applied to any scholarships from this benefactor
-            bool hasAppliedToBenefactor = applications.Any(a => 
-                benefactorScholarshipIds.Contains(a.ScholarshipId));
+
+            await LogToConsole($"DEBUG: Found {benefactorScholarshipIds.Count} scholarships");
+
+            if (!benefactorScholarshipIds.Any())
+            {
+                await LogToConsole("DEBUG: No scholarships found, exiting");
+                return; // No scholarships means no applicants
+            }
+
+        // Get all applications to this benefactor's scholarships with student profiles
+        var applicationsWithStudents = await dbContext.ScholarshipApplications
+            .Include(a => a.Scholarship)
+            .Include(a => a.Documents)
+            .Include(a => a.Student)
+            .Where(a => benefactorScholarshipIds.Contains(a.ScholarshipId))
+            .ToListAsync();
+
+        Console.WriteLine($"DEBUG: Found {applicationsWithStudents.Count} total applications for benefactor scholarships");
+        if (applicationsWithStudents.Count > 0 && applicationsWithStudents.Count <= 5)
+        {
+            Console.WriteLine($"DEBUG: Application details: [{string.Join(", ", applicationsWithStudents.Select(a => $"{a.Student?.FullName ?? "NULL"}:{a.Status}"))}]");
+        }
+        else if (applicationsWithStudents.Count > 5)
+        {
+            Console.WriteLine($"DEBUG: Too many applications to list ({applicationsWithStudents.Count}), showing first 3:");
+            Console.WriteLine($"DEBUG: First 3: [{string.Join(", ", applicationsWithStudents.Take(3).Select(a => $"{a.Student?.FullName ?? "NULL"}:{a.Status}"))}]");
+        }
+
+        // Group applications by student profile
+        var studentApplicationGroups = applicationsWithStudents
+            .GroupBy(a => a.Student)
+            .Where(g => g.Key != null) // Ensure student profile exists
+            .ToList();
+
+        Console.WriteLine($"DEBUG: Grouped into {studentApplicationGroups.Count} student groups");
+
+        // Batch fetch verification documents for all relevant students
+        var studentUserIds = studentApplicationGroups
+            .Select(g => g.Key.UserId)
+            .Where(id => !string.IsNullOrWhiteSpace(id))
+            .Distinct()
+            .ToList();
+
+        var allVerificationDocs = new List<c2_eskolar.Models.VerificationDocument>();
+        if (studentUserIds.Any())
+        {
+            allVerificationDocs = await dbContext.VerificationDocuments
+                .Where(d => studentUserIds.Contains(d.UserId))
+                .ToListAsync();
+        }
+        var verificationByUser = allVerificationDocs.GroupBy(d => d.UserId).ToDictionary(g => g.Key, g => g.ToList());
+
+        foreach (var studentGroup in studentApplicationGroups)
+        {
+            var profile = studentGroup.Key;
+            var applications = studentGroup.ToList();
+            var allDocuments = new List<StudentDocument>();
+
+            // Map verification documents if available
+            if (verificationByUser.TryGetValue(profile.UserId, out var vDocs))
+            {
+                var mappedVerificationDocs = vDocs.Select(d => new StudentDocument
+                {
+                    Name = d.DocumentType ?? "Document",
+                    DateUploaded = d.UploadedAt?.ToString("MM/dd/yyyy") ?? "",
+                    Status = d.Status ?? "Pending",
+                    StatusClass = d.Status == "Approved" ? "text-success" : d.Status == "Pending" ? "text-warning" : d.Status == "Needs Revision" ? "text-danger" : "text-info",
+                    FileType = d.FilePath?.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase) == true ? "PDF" : d.FilePath?.EndsWith(".docx", StringComparison.OrdinalIgnoreCase) == true ? "DOCX" : "Other",
+                    FilePath = d.FilePath ?? "",
+                    DocumentSource = "Verification",
+                    ApplicationTitle = ""
+                }).ToList();
+                allDocuments.AddRange(mappedVerificationDocs);
+            }
+
+            // Check funding status and add application documents
+            bool isFundedByBenefactor = applications.Any(a => a.Status == "Approved" || a.Status == "Granted");
+
             foreach (var application in applications)
             {
                 // Add documents from the Documents collection
-                var appDocuments = application.Documents.Select(d => new StudentDocument
+                if (application.Documents != null && application.Documents.Any())
                 {
-                    Name = d.FileName,
-                    DateUploaded = d.UploadedAt.ToString("MM/dd/yyyy"),
-                    Status = "Submitted", // Application documents don't have individual status
-                    StatusClass = "text-info",
-                    FileType = GetFileTypeFromPath(d.FilePath),
-                    FilePath = d.FilePath,
-                    DocumentSource = "Application",
-                    ApplicationTitle = application.Scholarship?.Title ?? "Unknown Scholarship"
-                }).ToList();
-                allDocuments.AddRange(appDocuments);
+                    var appDocuments = application.Documents.Select(d => new StudentDocument
+                    {
+                        Name = d.FileName,
+                        DateUploaded = d.UploadedAt.ToString("MM/dd/yyyy"),
+                        Status = "Submitted",
+                        StatusClass = "text-info",
+                        FileType = GetFileTypeFromPath(d.FilePath),
+                        FilePath = d.FilePath,
+                        DocumentSource = "Application",
+                        ApplicationTitle = application.Scholarship?.Title ?? "Unknown Scholarship"
+                    }).ToList();
+                    allDocuments.AddRange(appDocuments);
+                }
+
                 // Add documents from UploadedDocuments property (comma-separated paths)
                 if (!string.IsNullOrEmpty(application.UploadedDocuments))
                 {
@@ -151,6 +378,7 @@
                     allDocuments.AddRange(uploadedDocs);
                 }
             }
+
             var student = new Student
             {
                 Id = profile.StudentProfileId,
@@ -161,15 +389,33 @@
                 Year = profile.YearLevel.HasValue ? $"{profile.YearLevel} Year" : "N/A",
                 Documents = allDocuments
             };
-            // Categorize students
+
+            // Categorize students based on their funding status
             if (isFundedByBenefactor)
             {
                 fundedStudents.Add(student);
             }
-            else if (hasAppliedToBenefactor)
+            else
             {
+                // All applicants who haven't been funded are external applicants
                 externalApplicants.Add(student);
             }
+        }
+        
+            await LogToConsole($"FINAL RESULT: Funded: {fundedStudents.Count}, External: {externalApplicants.Count}");
+            
+            // Force UI update
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            await LogToConsole($"ERROR in LoadStudentsAndScholars: {ex.Message}");
+            await LogToConsole($"ERROR Stack trace: {ex.StackTrace}");
+            
+            // Ensure lists are initialized even on error
+            fundedStudents = new List<Student>();
+            externalApplicants = new List<Student>();
+            StateHasChanged();
         }
     }
     
@@ -214,6 +460,111 @@
             ? "Students who have received funding from your scholarships" 
             : "Students who applied to your scholarships but are not affiliated";
     }
+
+    private bool isRefreshing = false;
+    
+    private async Task RefreshAllData()
+    {
+        if (isRefreshing) return; // Prevent concurrent refreshes
+        
+        try
+        {
+            isRefreshing = true;
+            await LogToConsole($"=== RefreshAllData START at {DateTime.Now:HH:mm:ss.fff} ===");
+            
+            // Clear existing data first
+            fundedStudents.Clear();
+            externalApplicants.Clear();
+            currentBenefactorProfileId = null;
+            
+            // Force UI update to show loading state
+            StateHasChanged();
+            
+            // Reload with retry logic
+            await LoadCurrentBenefactorWithRetry();
+            await LoadStudentsAndScholarsWithRetry();
+            
+            await LogToConsole($"=== RefreshAllData COMPLETE: Funded={fundedStudents.Count}, External={externalApplicants.Count} ===");
+        }
+        catch (Exception ex)
+        {
+            await LogToConsole($"ERROR in RefreshAllData: {ex.Message}");
+            await LogToConsole($"Stack trace: {ex.StackTrace}");
+        }
+        finally
+        {
+            isRefreshing = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task RefreshData()
+    {
+        await LogToConsole("Manual refresh triggered");
+        await RefreshAllData();
+    }
+
+    private async Task LogDiagnostics()
+    {
+        Console.WriteLine("=== DETAILED DIAGNOSTICS ===");
+        Console.WriteLine($"Timestamp: {DateTime.Now:yyyy-MM-dd HH:mm:ss.fff}");
+        Console.WriteLine($"Is refreshing: {isRefreshing}");
+        Console.WriteLine($"Current benefactor profile ID: {currentBenefactorProfileId}");
+        Console.WriteLine($"Funded students count: {fundedStudents.Count}");
+        Console.WriteLine($"External applicants count: {externalApplicants.Count}");
+        Console.WriteLine($"Active tab: {activeTab}");
+        Console.WriteLine($"Current student list count: {GetCurrentStudentList().Count}");
+        
+        // Check authentication state
+        try
+        {
+            var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+            Console.WriteLine($"Auth State - IsAuthenticated: {authState.User.Identity?.IsAuthenticated}");
+            Console.WriteLine($"Auth State - Name: {authState.User.Identity?.Name}");
+            
+            if (authState.User.Identity?.IsAuthenticated == true)
+            {
+                var user = await UserManager.GetUserAsync(authState.User);
+                Console.WriteLine($"User Manager - User ID: {user?.Id ?? "NULL"}");
+                
+                if (user != null)
+                {
+                    var benefactorProfile = await BenefactorProfileService.GetProfileByUserIdAsync(user.Id);
+                    Console.WriteLine($"Benefactor Service - Profile ID: {benefactorProfile?.BenefactorProfileId}");
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error checking auth state: {ex.Message}");
+        }
+        
+        // Check database connectivity
+        try
+        {
+            using var dbContext = await DbContextFactory.CreateDbContextAsync();
+            var canConnect = await dbContext.Database.CanConnectAsync();
+            Console.WriteLine($"Database - Can Connect: {canConnect}");
+            
+            if (currentBenefactorProfileId != null)
+            {
+                var scholarshipCount = await dbContext.Scholarships
+                    .CountAsync(s => s.BenefactorProfileId == currentBenefactorProfileId);
+                Console.WriteLine($"Database - Scholarship Count: {scholarshipCount}");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error checking database: {ex.Message}");
+        }
+        
+        Console.WriteLine("=== END DETAILED DIAGNOSTICS ===");
+    }
+
+    private void NavigateToStudentProfile(Guid studentId)
+    {
+        NavigationManager.NavigateTo($"/dashboard/benefactor/profile/{studentId}");
+    }
 }
 
 <div class="container-fluid py-4" style="background: linear-gradient(135deg, #f8fbff 0%, #e3f2fd 100%); min-height: 100vh;">
@@ -243,6 +594,19 @@
                                 <div class="text-center">
                                     <div class="fs-4 fw-bold">@(fundedStudents.Count + externalApplicants.Count)</div>
                                     <small class="opacity-90">Total</small>
+                                </div>
+                                <div class="text-center">
+                                    <button type="button" class="btn btn-sm btn-outline-light me-1" @onclick="RefreshData" 
+                                            disabled="@isRefreshing" title="@(isRefreshing ? "Refreshing..." : "Refresh Data")">
+                                        <i class="fa @(isRefreshing ? "fa-spinner fa-spin" : "fa-refresh")"></i>
+                                        @if (isRefreshing)
+                                        {
+                                            <span class="ms-1">Loading...</span>
+                                        }
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-light" @onclick="LogDiagnostics" title="Debug: Log Diagnostics">
+                                        <i class="fa fa-info"></i>
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -309,25 +673,25 @@
             </div>
 
             <!-- Tab Content Info Banner -->
-            <div class="card border-0 shadow-sm mb-4" style="background: linear-gradient(135deg, @(activeTab == "affiliated" ? "#e3f2fd 0%, #bbdefb 100%" : "#e8f5e8 0%, #c8e6c9 100%")); border-left: 5px solid @(activeTab == "affiliated" ? "#1976d2" : "#388e3c") !important;">
+            <div class="card border-0 shadow-sm mb-4" style="background: linear-gradient(135deg, @(activeTab == "funded" ? "#e8f5e8 0%, #bbf7d0 100%" : "#e3f2fd 0%, #bbdefb 100%")); border-left: 5px solid @(activeTab == "funded" ? "#059669" : "#1976d2") !important;">
                 <div class="card-body">
                     <div class="row align-items-center">
                         <div class="col-md-2 text-center">
-                            <div class="@(activeTab == "affiliated" ? "bg-primary" : "bg-success") rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 80px; height: 80px;">
-                                <i class="fa @(activeTab == "affiliated" ? "fa-university" : "fa-globe") text-white fa-2x"></i>
+                            <div class="@(activeTab == "funded" ? "bg-success" : "bg-primary") rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 80px; height: 80px;">
+                                <i class="fa @(activeTab == "funded" ? "fa-money" : "fa-user-plus") text-white fa-2x"></i>
                             </div>
                         </div>
                         <div class="col-md-10">
-                            <h4 class="fw-bold @(activeTab == "affiliated" ? "text-primary" : "text-success") mb-2">@GetCurrentTabTitle()</h4>
+                            <h4 class="fw-bold @(activeTab == "funded" ? "text-success" : "text-primary") mb-2">@GetCurrentTabTitle()</h4>
                             <p class="text-muted mb-2">@GetCurrentTabDescription()</p>
                             <div class="row">
                                 <div class="col-md-4">
                                     <small class="text-muted">Category:</small>
-                                    <div class="fw-semibold">@(activeTab == "affiliated" ? "Institution Students" : "External Recipients")</div>
+                                    <div class="fw-semibold">@(activeTab == "funded" ? "Funded Recipients" : "External Applicants")</div>
                                 </div>
                                 <div class="col-md-4">
                                     <small class="text-muted">Total Count:</small>
-                                    <div class="fw-semibold @(activeTab == "affiliated" ? "text-primary" : "text-success")">@GetCurrentStudentList().Count students</div>
+                                    <div class="fw-semibold @(activeTab == "funded" ? "text-success" : "text-primary")">@GetCurrentStudentList().Count students</div>
                                 </div>
                                 <div class="col-md-4">
                                     <small class="text-muted">Active Status:</small>
@@ -348,9 +712,33 @@
                 {
                     <div class="card border-0 shadow-sm">
                         <div class="card-body text-center py-5">
-                            <i class="fa @(activeTab == "affiliated" ? "fa-university" : "fa-globe") fa-4x text-muted mb-3"></i>
-                            <h5 class="text-muted">No @(activeTab == "affiliated" ? "affiliated students" : "external scholars") found</h5>
-                            <p class="text-muted">@(activeTab == "affiliated" ? "Students from your institution will appear here once they register." : "Students from other institutions who apply for your scholarships will appear here.")</p>
+                            @if (isRefreshing)
+                            {
+                                <i class="fa fa-spinner fa-spin fa-4x text-primary mb-3"></i>
+                                <h5 class="text-primary">Loading @(activeTab == "funded" ? "funded students" : "external applicants")...</h5>
+                                <p class="text-muted">Please wait while we fetch the latest data from the database.</p>
+                                <div class="spinner-border text-primary mt-2" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                            }
+                            else if (currentBenefactorProfileId == null)
+                            {
+                                <i class="fa fa-user-times fa-4x text-warning mb-3"></i>
+                                <h5 class="text-warning">Unable to load benefactor profile</h5>
+                                <p class="text-muted">Please try refreshing the page or contact support if the issue persists.</p>
+                                <button type="button" class="btn btn-primary mt-2" @onclick="RefreshData">
+                                    <i class="fa fa-refresh me-2"></i>Try Again
+                                </button>
+                            }
+                            else
+                            {
+                                <i class="fa @(activeTab == "funded" ? "fa-money" : "fa-user-plus") fa-4x text-muted mb-3"></i>
+                                <h5 class="text-muted">No @(activeTab == "funded" ? "funded students" : "external applicants") found</h5>
+                                <p class="text-muted">@(activeTab == "funded" ? "Students who have received funding from your scholarships will appear here." : "Students who applied to your scholarships but are not yet funded will appear here.")</p>
+                                <button type="button" class="btn btn-outline-primary mt-2" @onclick="RefreshData">
+                                    <i class="fa fa-refresh me-2"></i>Refresh Data
+                                </button>
+                            }
                         </div>
                     </div>
                 }
@@ -368,7 +756,7 @@
                                         aria-expanded="@(isFirst ? "true" : "false")" aria-controls="collapse@(student.Id)"
                                         style="background: linear-gradient(135deg, #f8fbff 0%, #e8f4fd 100%); border-left: 4px solid #1976d2;">
                                     <div class="d-flex justify-content-between align-items-center w-100 me-3">
-                                        <div class="d-flex align-items-center">
+                                        <div class="d-flex align-items-center" @onclick="() => NavigateToStudentProfile(student.Id)" @onclick:stopPropagation="true" style="cursor: pointer;">
                                             <div class="me-3">
                                                 <div class="bg-primary rounded-circle d-flex align-items-center justify-content-center text-white fw-bold" style="width: 45px; height: 45px;">
                                                     @(string.IsNullOrWhiteSpace(student.Name) ? "?" : student.Name.Substring(0, 1))
@@ -526,21 +914,49 @@
                                                                 </td>
                                                                 <td class="border-0">
                                                                     <div class="btn-group btn-group-sm">
-                                                                        @if (!string.IsNullOrEmpty(doc.FilePath))
+                                                                        @{
+                                                                            string? sasUrl = null;
+                                                                            if (!string.IsNullOrWhiteSpace(doc.FilePath))
+                                                                            {
+                                                                                // Use same logic as InstitutionScholarshipApplicationReview
+                                                                                var trimmed = doc.FilePath.Trim();
+                                                                                var blobName = trimmed.Contains("/") ? trimmed.Substring(trimmed.LastIndexOf('/') + 1) : trimmed;
+                                                                                blobName = Uri.UnescapeDataString(blobName);
+                                                                                
+                                                                                try
+                                                                                {
+                                                                                    sasUrl = BlobStorageService.GetDocumentSasUrl(blobName, 60);
+                                                                                }
+                                                                                catch
+                                                                                {
+                                                                                    // Fallback: Try with known working GUID prefix for specific files
+                                                                                    if (blobName.Contains("_Almadrones_Assignment#2.pdf"))
+                                                                                    {
+                                                                                        try
+                                                                                        {
+                                                                                            var fallbackBlobName = "29c38a03-48f5-4719-a321-0b43d0599065_Almadrones_Assignment#2.pdf";
+                                                                                            sasUrl = BlobStorageService.GetDocumentSasUrl(fallbackBlobName, 60);
+                                                                                        }
+                                                                                        catch { sasUrl = null; }
+                                                                                    }
+                                                                                }
+                                                                            }
+                                                                        }
+                                                                        @if (!string.IsNullOrEmpty(sasUrl))
                                                                         {
-                                                                            <a href="@doc.FilePath" target="_blank" class="btn btn-outline-primary" title="View Document">
+                                                                            <a href="@sasUrl" target="_blank" class="btn btn-outline-primary" title="View Document">
                                                                                 <i class="fa fa-eye"></i>
                                                                             </a>
-                                                                            <a href="@doc.FilePath" download class="btn btn-outline-secondary" title="Download">
+                                                                            <a href="@sasUrl" class="btn btn-outline-secondary" title="Download">
                                                                                 <i class="fa fa-download"></i>
                                                                             </a>
                                                                         }
                                                                         else
                                                                         {
-                                                                            <button type="button" class="btn btn-outline-primary" disabled title="No file path available">
+                                                                            <button type="button" class="btn btn-outline-primary" disabled title="Document not available">
                                                                                 <i class="fa fa-eye"></i>
                                                                             </button>
-                                                                            <button type="button" class="btn btn-outline-secondary" disabled title="No file path available">
+                                                                            <button type="button" class="btn btn-outline-secondary" disabled title="Document not available">
                                                                                 <i class="fa fa-download"></i>
                                                                             </button>
                                                                         }

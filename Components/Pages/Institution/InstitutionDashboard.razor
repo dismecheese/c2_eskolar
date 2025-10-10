@@ -13,26 +13,35 @@
 @inject InstitutionProfileService InstitutionProfileService
 @inject AuthenticationStateProvider AuthStateProvider
 @inject ApplicationDbContext DbContext
+@inject IDbContextFactory<ApplicationDbContext> DbContextFactory
 
 <PageTitle>Institution Dashboard</PageTitle>
 
 <div class="dashboard-center-container">
     <!-- Top Bar -->
-    <div class="dashboard-topbar">
-        <div style="position: relative; flex: 1; max-width: 500px;">
-            <i class="bi bi-search" style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: #64748b; z-index: 1;"></i>
-            <input class="university-input" type="text" placeholder="Search scholarships..." 
-                   @bind="searchQuery" @oninput="OnSearchInput" 
-                   style="padding-left: 45px; padding-right: @(string.IsNullOrWhiteSpace(searchQuery) ? "18px" : "45px");" />
-            @if (!string.IsNullOrWhiteSpace(searchQuery))
-            {
-                <button @onclick="ClearSearch" style="position: absolute; right: 16px; top: 50%; transform: translateY(-50%); background: none; border: none; color: #64748b; cursor: pointer; z-index: 1;">
-                    <i class="bi bi-x-lg"></i>
-                </button>
-            }
+        <div class="dashboard-topbar">
+            <div style="position:relative;display:inline-block;width:320px;">
+                <input class="university-input" type="text" placeholder="Search scholarships..."
+                    @bind="scholarshipSearchBarQuery" @bind:event="oninput"
+                    @onfocus="ShowScholarshipDropdown" @onblur="HideScholarshipDropdownWithDelay"
+                    @onkeydown="ScholarshipSearchBarKeyDown"
+                    style="width:100%;padding:10px 16px;border-radius:8px;border:1.5px solid #d1d5db;font-size:16px;box-sizing:border-box;outline:none;"
+                    aria-label="Search scholarships" autocomplete="off" />
+                @if (showScholarshipDropdown && filteredScholarshipBarResults.Any())
+                {
+                    <ul style="position:absolute;z-index:10;top:110%;left:0;width:100%;background:#fff;border:1.5px solid #d1d5db;border-radius:0 0 8px 8px;max-height:220px;overflow-y:auto;box-shadow:0 2px 8px rgba(0,0,0,0.08);margin:0;padding:0;list-style:none;">
+                        @foreach (var s in filteredScholarshipBarResults)
+                        {
+                            <li style="padding:10px 16px;cursor:pointer;display:flex;flex-direction:column;" @onclick="() => SelectScholarshipBarResult(s)">
+                                <span style="font-weight:500;">@s.Title</span>
+                                <span style="font-size:13px;color:#888;">@((s.Institution?.InstitutionName ?? s.Benefactor?.OrganizationName) ?? "")</span>
+                            </li>
+                        }
+                    </ul>
+                }
+            </div>
+            <span class="dashboard-date">@DateTime.Now.ToString("dd MMM yyyy, ddd")</span>
         </div>
-        <span class="dashboard-date">@DateTime.Now.ToString("dd MMM yyyy, ddd")</span>
-    </div>
 
     <!-- Welcome Banner -->
     <div class="dashboard-banner-centered">
@@ -552,6 +561,23 @@
         StateHasChanged();
     }
 
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            // Load all scholarships for search bar autocomplete using separate context
+            using var dbContext = await DbContextFactory.CreateDbContextAsync();
+            allScholarshipBarResults = await dbContext.Scholarships
+                .Include(s => s.Institution)
+                .Include(s => s.Benefactor)
+                .Where(s => s.IsActive && s.ApplicationDeadline > DateTime.Now)
+                .OrderByDescending(s => s.CreatedAt)
+                .ToListAsync();
+            FilterScholarshipBarResults();
+            StateHasChanged();
+        }
+    }
+
     private async Task LoadDashboardData()
     {
         try
@@ -761,6 +787,23 @@
         Navigation.NavigateTo("/dashboard/institution/scholarships/post");
     }
 
+    // --- Scholarship Search Bar State ---
+    private string _scholarshipSearchBarQuery = string.Empty;
+    private string scholarshipSearchBarQuery
+    {
+        get => _scholarshipSearchBarQuery;
+        set
+        {
+            if (_scholarshipSearchBarQuery != value)
+            {
+                _scholarshipSearchBarQuery = value;
+                FilterScholarshipBarResults();
+            }
+        }
+    }
+    private bool showScholarshipDropdown = false;
+    private List<Scholarship> allScholarshipBarResults = new();
+    private List<Scholarship> filteredScholarshipBarResults = new();
     private async Task DeleteScholarship(int scholarshipId)
     {
         try
@@ -779,5 +822,51 @@
             // Handle error - you might want to show a toast or error message
             Console.WriteLine($"Error deleting scholarship: {ex.Message}");
         }
+    }
+    
+    private void SelectScholarshipBarResult(Scholarship s)
+    {
+        scholarshipSearchBarQuery = s.Title;
+        showScholarshipDropdown = false;
+        Navigation.NavigateTo($"/dashboard/institution/scholarships-info/{s.ScholarshipId}");
+    }
+    
+    private void ScholarshipSearchBarKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter" && filteredScholarshipBarResults.Count == 1)
+        {
+            var s = filteredScholarshipBarResults[0];
+            SelectScholarshipBarResult(s);
+        }
+    }
+    private async void HideScholarshipDropdownWithDelay()
+    {
+        // Delay to allow click event to register
+        await Task.Delay(150);
+        showScholarshipDropdown = false;
+        StateHasChanged();
+    }
+
+    private void FilterScholarshipBarResults()
+    {
+        var query = scholarshipSearchBarQuery?.Trim().ToLower() ?? "";
+        if (string.IsNullOrEmpty(query))
+        {
+            filteredScholarshipBarResults = allScholarshipBarResults.Take(10).ToList();
+        }
+        else
+        {
+            filteredScholarshipBarResults = allScholarshipBarResults
+                .Where(s => (s.Title?.ToLower().Contains(query) ?? false)
+                    || (s.Institution?.InstitutionName?.ToLower().Contains(query) ?? false)
+                    || (s.Benefactor?.OrganizationName?.ToLower().Contains(query) ?? false))
+                .Take(10)
+                .ToList();
+        }
+    }
+    private void ShowScholarshipDropdown()
+    {
+        showScholarshipDropdown = true;
+        FilterScholarshipBarResults();
     }
 }

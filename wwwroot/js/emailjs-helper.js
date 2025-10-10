@@ -57,3 +57,9 @@ window.emailJSHelper = {
         });
     }
 };
+window.bootstrapInterop = {
+    showModal: function (id) {
+        var modal = new bootstrap.Modal(document.getElementById(id));
+        modal.show();
+    }
+};
