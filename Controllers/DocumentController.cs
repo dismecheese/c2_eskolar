@@ -10,11 +10,13 @@ namespace c2_eskolar.Controllers
     [ApiController]
     public class DocumentController : ControllerBase
     {
-        private readonly BlobStorageService _blobStorageService;
+    private readonly BlobStorageService _blobStorageService;
+    private readonly DocumentIntelligenceService _documentIntelligenceService;
 
-        public DocumentController(BlobStorageService blobStorageService)
+        public DocumentController(BlobStorageService blobStorageService, DocumentIntelligenceService documentIntelligenceService)
         {
             _blobStorageService = blobStorageService;
+            _documentIntelligenceService = documentIntelligenceService;
         }
 
         /// <summary>
@@ -41,6 +43,49 @@ namespace c2_eskolar.Controllers
         public class UploadResultDto
         {
             public string Url { get; set; } = string.Empty;
+        }
+
+        /// <summary>
+        /// Analyzes a Student ID document and returns extracted fields (name, sex, birthday, etc).
+        /// </summary>
+        /// <param name="file">The Student ID file to analyze.</param>
+        /// <returns>ExtractedIdData with fields from the document.</returns>
+        [HttpPost("analyze-id")]
+        public async Task<IActionResult> AnalyzeIdDocument([FromForm] IFormFile file)
+        {
+            if (file == null || file.Length == 0)
+                return BadRequest("No file uploaded.");
+
+            // Convert IFormFile to IBrowserFile-like stream for DocumentIntelligenceService
+            using var memoryStream = new MemoryStream();
+            await file.CopyToAsync(memoryStream);
+            memoryStream.Position = 0;
+
+            // Create a minimal IBrowserFile implementation for backend use
+            var browserFile = new SimpleBrowserFile(file.FileName, file.ContentType, file.Length, memoryStream);
+            var extracted = await _documentIntelligenceService.AnalyzeIdDocumentAsync(browserFile);
+            if (extracted == null)
+                return BadRequest("Could not extract fields from document.");
+            return Ok(extracted);
+        }
+
+        // Minimal IBrowserFile implementation for backend use
+        private class SimpleBrowserFile : Microsoft.AspNetCore.Components.Forms.IBrowserFile
+        {
+            public SimpleBrowserFile(string name, string contentType, long size, Stream stream)
+            {
+                Name = name;
+                LastModified = DateTimeOffset.Now;
+                Size = size;
+                ContentType = contentType;
+                _stream = stream;
+            }
+            public string Name { get; }
+            public DateTimeOffset LastModified { get; }
+            public long Size { get; }
+            public string ContentType { get; }
+            private readonly Stream _stream;
+            public Stream OpenReadStream(long maxAllowedSize = 512000, CancellationToken cancellationToken = default) => _stream;
         }
 
         /// <summary>

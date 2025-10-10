@@ -1,0 +1,333 @@
+@inherits LayoutComponentBase
+@implements IDisposable
+
+@inject NavigationManager Navigation
+@inject IJSRuntime JSRuntime
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject UserManager<IdentityUser> UserManager
+
+@using Microsoft.AspNetCore.Components.Web
+@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.AspNetCore.Identity
+@using c2_eskolar.Components.UI
+
+@rendermode @(RenderMode.InteractiveServer)
+
+<div class="d-flex min-vh-100">
+    <!-- --- SIDEBAR --- -->
+    <nav class="sidebar d-flex flex-column justify-content-between"
+         style="width: 260px; background: linear-gradient(180deg, #1560d4 0%, #0d387e 100%); padding: 2rem 1.5rem 1rem 1.5rem;">
+        <div>
+            <!-- Logo Section -->
+            <div class="sidebar-brand-container text-center">
+                <a class="eskolar-logo" href="/dashboard/unverified">
+                    <img src="images/main/eSkolar-White.svg" alt="eSkolar Logo" class="eskolar-logo-img" />
+                </a>
+            </div>
+            <!-- Navigation Links -->
+            <ul class="nav flex-column gap-1">
+                <li class="nav-item">
+                    <a href="/dashboard/unverified" class=@GetSidebarLinkClass("/dashboard/unverified")>
+                        <i class="fa fa-home"></i> Dashboard
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="/dashboard/unverified/about" class=@GetSidebarLinkClass("/dashboard/unverified/about")>
+                        <i class="fa fa-info-circle"></i> About
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="/dashboard/unverified/settings" class=@GetSidebarLinkClass("/dashboard/unverified/settings")>
+                        <i class="fa fa-cog"></i> Settings
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="/dashboard/unverified/faqs" class=@GetSidebarLinkClass("/dashboard/unverified/faqs")>
+                        <i class="fa fa-question-circle"></i> FAQs
+                    </a>
+                </li>
+            </ul>
+            <!-- Logout Button in Main Navigation -->
+            <div class="sidebar-logout-section mt-4 pt-3" style="border-top: 1px solid rgba(255,255,255,0.2);">
+                <button class="sidebar-link logout-link w-100 border-0 text-start" 
+                        @onclick="ShowLogoutModal"
+                        style="background: transparent; color: rgba(255,255,255,0.8); padding: 12px 16px; border-radius: 8px; transition: all 0.3s ease;">
+                    <i class="fa fa-sign-out-alt"></i> Logout
+                </button>
+            </div>
+        </div>
+        <!-- Help Box Button (opens chatbot) -->
+        <button class="help-box-bottom" @onclick="OpenChatbot" type="button">
+            <div class="help-box-content">
+                <img src="images/NeedHelp.svg" alt="Help" class="help-box-img" />
+                <div class="help-box-text">
+                    <div class="help-box-title">Need help?</div>
+                    <div class="help-box-desc">Having trouble using eSkolar?<br />We're here to assist you!</div>
+                </div>
+            </div>
+        </button>
+    </nav>
+    <!-- --- PROFILE SIDEBAR (Bootstrap Offcanvas) --- -->
+    <button class="dashboard-profile-absolute mt-3" type="button" data-bs-toggle="offcanvas" data-bs-target="#rightSidebar" aria-controls="rightSidebar">
+        <svg width="32" height="32" fill="none" viewBox="0 0 24 24">
+            <circle cx="12" cy="8" r="4" stroke="#222" stroke-width="2"/>
+            <circle cx="12" cy="12" r="11" stroke="#222" stroke-width="2"/>
+            <path d="M4 20c1.5-3 5.5-5 8-5s6.5 2 8 5" stroke="#222" stroke-width="2"/>
+        </svg>
+    </button>
+    <!-- Profile Sidebar Content -->
+    <div class="offcanvas offcanvas-end" tabindex="-1" id="rightSidebar" aria-labelledby="rightSidebarLabel" data-bs-backdrop="false">
+      <div class="offcanvas-header">
+        <h5 class="offcanvas-title" id="rightSidebarLabel">Profile</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+      </div>
+      <div class="offcanvas-body">
+        <!-- Sidebar Profile Section -->
+        <div class="sidebar-profile">
+            <svg width="32" height="32" fill="none" viewBox="0 0 24 24">
+                <circle cx="12" cy="8" r="4" stroke="#222" stroke-width="2"/>
+                <circle cx="12" cy="12" r="11" stroke="#222" stroke-width="2"/>
+                <path d="M4 20c1.5-3 5.5-5 8-5s6.5 2 8 5" stroke="#222" stroke-width="2"/>
+            </svg>
+            <div class="sidebar-profile-name">Unverified User</div>
+            <div class="sidebar-profile-role">Account Pending Verification</div>
+        </div>
+        <!-- Sidebar Calendar -->
+        <div class="sidebar-calendar">
+            <div class="rounded-lg border p-3 bg-white shadow-sm">
+                <DashboardCalendar CurrentMonth="@currentMonth" CurrentMonthChanged="@(m => currentMonth = m)" />
+            </div>
+        </div>
+        <!-- Sidebar Notifications -->
+        <div class="sidebar-notifications">
+            <div class="sidebar-notifications-header">
+                Notifications
+            </div>
+            <div class="sidebar-notification-list">
+                <div class="text-center text-muted p-3">
+                    <i class="fa fa-bell mb-2"></i><br />
+                    Please verify your account to access full features.
+                </div>
+            </div>
+        </div>
+      </div>
+    </div>
+    <!-- --- MAIN CONTENT AREA --- -->
+    <main class="main-content" style="flex:1; min-width:0; background: #f5f6fa;">
+        @Body
+    </main>
+    @if (ShowChatbot)
+    {
+        <ChatBot CloseChatbot="CloseChatbot" MinimizeChatbot="MinimizeChatbot" />
+    }
+</div>
+<!-- Logout Confirmation Modal -->
+<div class="modal fade" id="logoutModal" tabindex="-1" aria-labelledby="logoutModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header border-0">
+                <h5 class="modal-title text-danger" id="logoutModalLabel">
+                    <i class="fas fa-sign-out-alt me-2"></i>
+                    Confirm Logout
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center py-4">
+                <i class="fas fa-exclamation-triangle text-warning mb-3" style="font-size: 3rem;"></i>
+                <h6>Are you sure you want to logout?</h6>
+                <p class="text-muted mb-0">You will be redirected to the login page.</p>
+            </div>
+            <div class="modal-footer border-0 justify-content-center">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-2"></i>Cancel
+                </button>
+                <button type="button" class="btn btn-danger" @onclick="LogOut" data-bs-dismiss="modal">
+                    <i class="fas fa-sign-out-alt me-2"></i>Yes, Logout
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- JavaScript helper to close Bootstrap offcanvas programmatically -->
+<script>
+document.addEventListener('click', function(event) {
+    const offcanvas = document.getElementById('rightSidebar');
+    if (offcanvas && offcanvas.classList.contains('show')) {
+        // Ignore clicks inside the offcanvas or on the toggle button
+        if (!offcanvas.contains(event.target) && !event.target.matches('[data-bs-toggle="offcanvas"]')) {
+            const bsOffcanvas = bootstrap.Offcanvas.getInstance(offcanvas);
+            if (bsOffcanvas) {
+                bsOffcanvas.hide();
+            }
+        }
+    }
+});
+</script>
+<!-- Styles for notification enhancements -->
+<style>
+.approval-notification {
+    border-left: 3px solid #28a745 !important;
+    background-color: #f8fff9 !important;
+}
+.sidebar-notification-time {
+    font-size: 0.75rem;
+    color: #6c757d;
+    margin-top: 4px;
+}
+.sidebar-notification.approval-notification .sidebar-notification-title {
+    color: #28a745;
+    font-weight: 600;
+}
+.logout-link:hover {
+    background: rgba(255,255,255,0.1) !important;
+    color: rgba(255,255,255,1) !important;
+    transform: translateX(4px);
+}
+.logout-link:active {
+    background: rgba(255,255,255,0.15) !important;
+}
+</style>
+
+@code {
+    string currentUserName = "Loading...";
+    string currentUserEmail = "";
+    DateTime currentMonth = new(DateTime.Now.Year, DateTime.Now.Month, 1);
+    bool ShowChatbot = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Navigation.LocationChanged += OnLocationChanged;
+        await LoadCurrentUser();
+    }
+
+    async Task LoadCurrentUser()
+    {
+        try
+        {
+            var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+            if (authState.User.Identity?.IsAuthenticated == true)
+            {
+                var user = await UserManager.GetUserAsync(authState.User);
+                if (user != null)
+                {
+                    currentUserEmail = user.Email ?? "";
+                    if (!string.IsNullOrEmpty(user.Email))
+                    {
+                        var emailParts = user.Email.Split('@');
+                        currentUserName = emailParts.Length > 0 ? char.ToUpper(emailParts[0][0]) + emailParts[0].Substring(1) : "User";
+                    }
+                    else
+                    {
+                        currentUserName = "User";
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading user: {ex.Message}");
+            currentUserName = "User";
+        }
+        StateHasChanged();
+    }
+
+    void OnLocationChanged(object? sender, Microsoft.AspNetCore.Components.Routing.LocationChangedEventArgs e)
+    {
+        InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        Navigation.LocationChanged -= OnLocationChanged;
+    }
+
+    string GetSidebarLinkClass(string href)
+    {
+        var currentPath = Navigation.ToBaseRelativePath(Navigation.Uri).Split('?')[0].TrimEnd('/');
+        var linkPath = href.TrimStart('/').TrimEnd('/');
+        if (currentPath == linkPath)
+            return "nav-link d-flex align-items-center gap-2 sidebar-link active";
+        return "nav-link d-flex align-items-center gap-2 sidebar-link";
+    }
+
+    void OpenChatbot() => ShowChatbot = true;
+    void CloseChatbot() => ShowChatbot = false;
+    void MinimizeChatbot() => ShowChatbot = false;
+
+    void LogOut()
+    {
+        try
+        {
+            Navigation.NavigateTo("/api/auth/logout", true);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Logout error: {ex.Message}");
+        }
+    }
+
+    async Task ShowLogoutModal()
+    {
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("eval", @"
+                if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+                    const modal = new bootstrap.Modal(document.getElementById('logoutModal'));
+                    modal.show();
+                } else {
+                    console.error('Bootstrap not loaded');
+                }
+            ");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Modal error: {ex.Message}");
+            LogOut();
+        }
+    }
+}
+            <!-- ...existing code... -->
+
+<!-- Logout Confirmation Modal -->
+<div class="modal fade" id="logoutModal" tabindex="-1" aria-labelledby="logoutModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header border-0">
+                <h5 class="modal-title text-danger" id="logoutModalLabel">
+                    <i class="fas fa-sign-out-alt me-2"></i>
+                    Confirm Logout
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center py-4">
+                <i class="fas fa-exclamation-triangle text-warning mb-3" style="font-size: 3rem;"></i>
+                <h6>Are you sure you want to logout?</h6>
+                <p class="text-muted mb-0">You will be redirected to the login page.</p>
+            </div>
+            <div class="modal-footer border-0 justify-content-center">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-2"></i>Cancel
+                </button>
+                <button type="button" class="btn btn-danger" @onclick="LogOut" data-bs-dismiss="modal">
+                    <i class="fas fa-sign-out-alt me-2"></i>Yes, Logout
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- JavaScript helper to close Bootstrap offcanvas programmatically -->
+<script>
+document.addEventListener('click', function(event) {
+    const offcanvas = document.getElementById('rightSidebar');
+    if (offcanvas && offcanvas.classList.contains('show')) {
+        // Ignore clicks inside the offcanvas or on the toggle button
+        if (!offcanvas.contains(event.target) && !event.target.matches('[data-bs-toggle="offcanvas"]')) {
+            const bsOffcanvas = bootstrap.Offcanvas.getInstance(offcanvas);
+            if (bsOffcanvas) {
+                bsOffcanvas.hide();
+            }
+        }
+    }
+});
+</script>
