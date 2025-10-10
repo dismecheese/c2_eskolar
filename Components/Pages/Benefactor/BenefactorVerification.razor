@@ -62,7 +62,7 @@
 					</div>
 				</div>
 				<div class="sv-upload-field">
-					<label for="authLetterUploadInput" class="sv-field-label">Organization/Company Documents <span class="sv-required">*</span></label>
+					<label for="authLetterUploadInput" class="sv-field-label">Letter of Authorization </label>
 					<div class="sv-upload-area">
 						<InputFile id="authLetterUploadInput" style="display:none" accept="image/*,.pdf" OnChange="OnAuthLetterFileChange" />
 						<label for="authLetterUploadInput" class="sv-upload-placeholder" style="cursor:pointer;">
@@ -71,7 +71,7 @@
 								<path d="M20 6H16L14 4H10L8 6H4C2.9 6 2 6.9 2 8V18C2 19.1 2.9 20 4 20H20C21.1 20 22 19.1 22 18V8C22 6.9 21.1 6 20 6Z" fill="currentColor"/>
 							</svg>
 							<span>@(AuthLetterUploadStatus ?? "Click to upload or drag and drop")</span>
-							<small>PNG, JPG or PDF (max. 5MB) - AI will extract organization info</small>
+							<small>PNG, JPG or PDF (max. 5MB) - Not required for individual donors.</small>
 							@if (!string.IsNullOrEmpty(AuthLetterFileName))
 							{
 								<div style="font-size:0.9em; display:flex; align-items:center; gap:0.5em;">
@@ -229,15 +229,16 @@
 					</div>
 				</div>
 				<div class="sv-field sv-field-vertical sv-field-full">
-					<label for="contactPersonName" class="sv-field-label">Authorized Representative or Supervisor <span class="sv-required">*</span></label>
-					<InputText id="contactPersonName" class="sv-input" placeholder="Enter name of supervisor or manager who can verify your employment" @bind-Value="verificationModel.DeanName" />
+					<label for="contactPersonName" class="sv-field-label">Authorizing Supervisor/Organization Head <span class="sv-required">*</span></label>
+					<InputText id="contactPersonName" class="sv-input" placeholder="Enter name of director, head, or supervisor who authorized you" @bind-Value="verificationModel.DeanName" />
 					<ValidationMessage For="@(() => verificationModel.DeanName)" />
-					<small style="color: #6b7280; font-size: 0.875rem; margin-top: 0.25rem;">Someone with authority who can verify that you represent this organization</small>
+					<small style="color: #6b7280; font-size: 0.875rem; margin-top: 0.25rem;">The person with authority who signed the authorization letter (Director, Head, Supervisor, etc.)</small>
 				</div>
 				<div class="sv-field sv-field-vertical sv-field-full">
-					<label for="contactPersonEmail" class="sv-field-label">Representative Official Email <span class="sv-required">*</span></label>
-					<InputText id="contactPersonEmail" class="sv-input" placeholder="supervisor@organization.com" @bind-Value="verificationModel.DeanEmail" />
+					<label for="contactPersonEmail" class="sv-field-label">Supervisor's Official Email <span class="sv-required">*</span></label>
+					<InputText id="contactPersonEmail" class="sv-input" placeholder="director@organization.com" @bind-Value="verificationModel.DeanEmail" />
 					<ValidationMessage For="@(() => verificationModel.DeanEmail)" />
+					<small style="color: #6b7280; font-size: 0.875rem; margin-top: 0.25rem;">Email address of the person who authorized you (from the authorization letter)</small>
 				</div>
 				<div class="sv-field sv-field-vertical sv-field-full">
 					<label for="website" class="sv-field-label">Website</label>
