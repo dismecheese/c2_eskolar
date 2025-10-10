@@ -109,40 +109,6 @@
     private void CloseChatbot() => ShowChatbot = false;
     private void MinimizeChatbot() => ShowChatbot = false;
     
-    // --- LOGOUT FUNCTIONALITY ---
-    private void LogOut()
-    {
-        try
-        {
-            Navigation.NavigateTo("/api/auth/logout", forceLoad: true);
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Logout error: {ex.Message}");
-        }
-    }
-
-    private async Task ShowLogoutModal()
-    {
-        try
-        {
-            await JSRuntime.InvokeVoidAsync("eval", @"
-                if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
-                    const modal = new bootstrap.Modal(document.getElementById('logoutModal'));
-                    modal.show();
-                } else {
-                    console.error('Bootstrap not loaded');
-                }
-            ");
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Modal error: {ex.Message}");
-            // Fallback to direct logout if modal fails
-            LogOut();
-        }
-    }
-    
     // --- VERIFICATION MODAL ACTIONS ---
     private void GoToVerification()
     {

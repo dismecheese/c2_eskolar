@@ -89,118 +89,33 @@
                 </div>
             </div>
 
-            <!-- Help Box Button -->
-            <button class="help-box-bottom" @onclick="OpenChatbot" type="button">
-                <div class="help-box-content">
-                    <img src="images/NeedHelp.svg" alt="Help" class="help-box-img" />
-                    <div class="help-box-text">
-                        <div class="help-box-title">Need help?</div>
-                        <div class="help-box-desc">Having trouble using eSkolar?<br />We're here to assist you!</div>
-                    </div>
-                </div>
-            </button>
-        </nav>
-
-        <!-- --- PROFILE SIDEBAR (Bootstrap Offcanvas) --- -->
-        <button class="dashboard-profile-absolute mt-3" type="button" data-bs-toggle="offcanvas" data-bs-target="#rightSidebar" aria-controls="rightSidebar">
-            <svg width="32" height="32" fill="none" viewBox="0 0 24 24">
-                <circle cx="12" cy="8" r="4" stroke="#222" stroke-width="2"/>
-                <circle cx="12" cy="12" r="11" stroke="#222" stroke-width="2"/>
-                <path d="M4 20c1.5-3 5.5-5 8-5s6.5 2 8 5" stroke="#222" stroke-width="2"/>
-            </svg>
-        </button>
-
-        <!-- Profile Sidebar Content -->
-        <div class="offcanvas offcanvas-end" tabindex="-1" id="rightSidebar" aria-labelledby="rightSidebarLabel" data-bs-backdrop="false">
-            <div class="offcanvas-header">
-                <h5 class="offcanvas-title" id="rightSidebarLabel">SuperAdmin Profile</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
-            </div>
-
-            <div class="offcanvas-body">
-                <!-- Sidebar Profile Section -->
-                <div class="sidebar-profile">
-                    <div class="user-avatar-large">
-                        <i class="fas fa-crown" style="font-size: 2rem; color: #FFD700;"></i>
-                    </div>
-                    <div class="sidebar-profile-name">@currentUserName</div>
-                    <div class="sidebar-profile-role">SuperAdmin</div>
-                    <div class="sidebar-profile-email">@currentUserEmail</div>
-                </div>
-                </div>
-                
-                <!-- System Status -->
-                <div class="sidebar-calendar">
-                    <div style="background: #fff; padding: 20px; border-radius: 12px; margin: 0 0 18px 0; box-shadow: 0 2px 8px rgba(0,0,0,0.06); text-align: center;">
-                        <h6 style="margin-bottom: 10px; color: #333;">System Status</h6>
-                        <div style="color: #28a745; font-weight: 600;">
-                            <i class="fas fa-circle" style="font-size: 8px; margin-right: 5px;"></i>
-                            All Systems Operational
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Quick Actions -->
-                <div class="sidebar-notifications">
-                    <div class="sidebar-notifications-header">
-                        Quick Actions
-                    </div>
-                    <div class="sidebar-notification-list">
-                        <div class="sidebar-notification">
-                            <div class="sidebar-notification-title">Web Scraping</div>
-                            <div class="sidebar-notification-desc">Monitor and manage scraping operations</div>
-                        </div>
-                        <div class="sidebar-notification">
-                            <div class="sidebar-notification-title">User Management</div>
-                            <div class="sidebar-notification-desc">Manage system users and permissions</div>
-                        </div>
-                        <div class="sidebar-notification">
-                            <div class="sidebar-notification-title">System Settings</div>
-                            <div class="sidebar-notification-desc">Configure system parameters</div>
-                        </div>
-                    </div>
-                </div>
+            <!-- Main Content Area -->
+            <div class="col-md-9 col-lg-10">
+                @Body
             </div>
         </div>
 
-        <!-- --- MAIN CONTENT AREA --- -->
-        <main class="main-content" style="flex:1; min-width:0; background: #f5f6fa;">
-            @Body
-        </main>
+        <!-- Help Box Button -->
+        <button class="help-box-bottom" @onclick="OpenChatbot" type="button">
+            <div class="help-box-content">
+                <img src="images/NeedHelp.svg" alt="Help" class="help-box-img" />
+                <div class="help-box-text">
+                    <div class="help-box-title">Need help?</div>
+                    <div class="help-box-desc">Having trouble using eSkolar?<br />We're here to assist you!</div>
+                </div>
+            </div>
+        </button>
 
         @if (ShowChatbot)
         {
             <ChatBot CloseChatbot="CloseChatbot" MinimizeChatbot="MinimizeChatbot" />
         }
     </div>
+</div>
 
 <!-- Logout Confirmation Modal -->
 <div class="modal fade" id="logoutModal" tabindex="-1" aria-labelledby="logoutModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
-<<<<<<< HEAD
-        <div class="modal-content">
-            <div class="modal-header border-0">
-                <h5 class="modal-title text-danger" id="logoutModalLabel">
-                    <i class="fas fa-sign-out-alt me-2"></i>
-                    Confirm Logout
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body text-center py-4">
-                <i class="fas fa-exclamation-triangle text-warning mb-3" style="font-size: 3rem;"></i>
-                <h6>Are you sure you want to logout?</h6>
-                <p class="text-muted mb-0">You will be redirected to the login page.</p>
-            </div>
-            <div class="modal-footer border-0 justify-content-center">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                    <i class="fas fa-times me-2"></i>Cancel
-                </button>
-                <button type="button" class="btn btn-danger" @onclick="LogOut" data-bs-dismiss="modal">
-                    <i class="fas fa-sign-out-alt me-2"></i>Yes, Logout
-                </button>
-            </div>
-        </div>
-=======
         <div class="modal-content border-0 shadow">
             <div class="modal-header border-0 pb-0">
                 <h5 class="modal-title fw-bold text-dark" id="logoutModalLabel">
@@ -221,150 +136,115 @@
     </div>
 </div>
 
-    <div id="blazor-error-ui">
-        An unhandled error has occurred.
-        <a href="" class="reload">Reload</a>
-        <a class="dismiss">🗙</a>
->>>>>>> b5fa8f877685eb2acd7431b8d28dde22af7a8e5d
-    </div>
-</div>
-
 <style>
-    .user-avatar-large {
-        width: 80px;
-        height: 80px;
-        background: linear-gradient(135deg, #1560d4, #0d387e);
+    .superadmin-sidebar {
+        background: linear-gradient(180deg, #1560d4 0%, #0d387e 100%);
+        min-height: 100vh;
+    }
+
+    .user-avatar {
+        width: 32px;
+        height: 32px;
+        background: rgba(255,255,255,0.2);
         border-radius: 50%;
         display: flex;
         align-items: center;
         justify-content: center;
-        margin: 0 auto 15px auto;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-    }
-    
-    .sidebar-profile-email {
-        font-size: 0.9rem;
-        color: #666;
-        margin-bottom: 15px;
-        text-align: center;
-    }
-    
-    .logout-link:hover {
-        background: rgba(255,255,255,0.1) !important;
-        color: rgba(255,255,255,1) !important;
-        transform: translateX(4px);
+        color: #FFD700;
     }
 
-    .logout-link:active {
-        background: rgba(255,255,255,0.15) !important;
+    .nav-link {
+        color: rgba(255,255,255,0.8) !important;
+        padding: 0.75rem 1rem;
+        border-radius: 0.5rem;
+        margin-bottom: 0.25rem;
+        transition: all 0.3s ease;
+    }
+
+    .nav-link:hover {
+        background: rgba(255,255,255,0.1);
+        color: white !important;
+    }
+
+    .nav-link.active {
+        background: rgba(255,255,255,0.2);
+        color: white !important;
+    }
+
+    .help-box-bottom {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        z-index: 1000;
+        background: linear-gradient(135deg, #1560d4, #0d387e);
+        border: none;
+        border-radius: 12px;
+        padding: 1rem;
+        color: white;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+        transition: all 0.3s ease;
+    }
+
+    .help-box-bottom:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+    }
+
+    .help-box-content {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .help-box-img {
+        width: 32px;
+        height: 32px;
+    }
+
+    .help-box-title {
+        font-weight: 600;
+        margin-bottom: 0.25rem;
+    }
+
+    .help-box-desc {
+        font-size: 0.875rem;
+        opacity: 0.9;
     }
 </style>
 
 @code {
-    private string currentUserName = "Loading...";
-    private string currentUserEmail = "";
+    private string? currentUserName;
+    private string? currentUserEmail;
 
     protected override async Task OnInitializedAsync()
     {
-        await LoadUserInfo();
-    }
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
 
-    private async Task LoadUserInfo()
-    {
-        try
+        if (user.Identity?.IsAuthenticated == true)
         {
-            var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
-            var user = authState.User;
-
-            if (user.Identity?.IsAuthenticated == true)
-            {
-                var identityUser = await UserManager.GetUserAsync(user);
-                if (identityUser != null)
-                {
-                    currentUserEmail = identityUser.Email ?? "";
-                    currentUserName = identityUser.Email?.Split('@')[0] ?? "SuperAdmin";
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error loading user info: {ex.Message}");
-            currentUserName = "SuperAdmin";
+            currentUserName = user.Identity.Name;
+            currentUserEmail = user.FindFirst("email")?.Value;
         }
     }
 
-    private string GetSidebarLinkClass(string href)
+    private string IsActiveRoute(string route)
     {
-        var currentPath = Navigation.ToBaseRelativePath(Navigation.Uri).Split('?')[0].TrimEnd('/');
-        var linkPath = href.TrimStart('/').TrimEnd('/');
-        
-        // Exact match
-        if (currentPath == linkPath)
-            return "nav-link d-flex align-items-center gap-2 sidebar-link active";
-            
-        return "nav-link d-flex align-items-center gap-2 sidebar-link";
+        var currentUrl = Navigation.Uri;
+        return currentUrl.Contains(route) ? "active" : "";
     }
 
-    private string GetPageTitle()
-    {
-        var currentUrl = Navigation.ToBaseRelativePath(Navigation.Uri);
-        return currentUrl switch
-        {
-            "dashboard/superadmin" => "SuperAdmin Dashboard",
-            "admin/webscraping" => "Web Scraping Management",
-            "demo/scraping" => "Scraping Demo",
-            "admin/users" => "User Management",
-            "admin/scholarship-management" => "Scholarship Management",
-            "admin/scholarships" => "Scholarship Management",
-            "admin/system" => "System Settings",
-            _ => "SuperAdmin Panel"
-        };
-    }
-
-    private string GetPageSubtitle()
-    {
-        var currentUrl = Navigation.ToBaseRelativePath(Navigation.Uri);
-        return currentUrl switch
-        {
-            "dashboard/superadmin" => "System overview and statistics",
-            "admin/webscraping" => "Configure and monitor web scraping operations",
-            "demo/scraping" => "Test scraping functionality with real websites",
-            "admin/users" => "Manage system users and permissions",
-            "admin/scholarship-management" => "AI-curated scholarship management with EskoBot Intelligence",
-            "admin/scholarships" => "Oversee scholarship listings and applications",
-            "admin/system" => "Configure system settings and maintenance",
-            _ => "Administrative functions and system control"
-        };
-    }
-
+    // --- LOGOUT FUNCTIONALITY ---
     private void LogOut()
     {
-        try
-        {
-            Navigation.NavigateTo("/api/auth/logout", forceLoad: true);
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Logout error: {ex.Message}");
-        }
+        Navigation.NavigateTo("/api/auth/logout", forceLoad: true);
     }
 
     private async Task ShowLogoutModal()
     {
         try
         {
-<<<<<<< HEAD
-            await JSRuntime.InvokeVoidAsync("eval", @"
-                if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
-                    const modal = new bootstrap.Modal(document.getElementById('logoutModal'));
-                    modal.show();
-                } else {
-                    console.error('Bootstrap not loaded');
-                }
-            ");
-=======
             await JSRuntime.InvokeVoidAsync("eval", "new bootstrap.Modal(document.getElementById('logoutModal')).show()");
->>>>>>> b5fa8f877685eb2acd7431b8d28dde22af7a8e5d
         }
         catch (Exception ex)
         {
@@ -374,15 +254,12 @@
         }
     }
 
-<<<<<<< HEAD
     // --- CHATBOT STATE ---
     private bool ShowChatbot = false;
     private void OpenChatbot() => ShowChatbot = true;
     private void CloseChatbot() => ShowChatbot = false;
     private void MinimizeChatbot() => ShowChatbot = false;
 
-=======
->>>>>>> b5fa8f877685eb2acd7431b8d28dde22af7a8e5d
     public void Dispose()
     {
         // Cleanup if needed
