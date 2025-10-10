@@ -31,7 +31,12 @@ namespace c2_eskolar.Services
         private BlobContainerClient GetContainerClient(string containerName)
         {
             var client = new BlobContainerClient(_connectionString, containerName);
+            
+            // Since the storage account doesn't allow public access, 
+            // we'll create containers with private access only
+            // Ensure container exists with private access
             client.CreateIfNotExists(PublicAccessType.None);
+            
             return client;
         }
 
@@ -49,9 +54,20 @@ namespace c2_eskolar.Services
             {
                 var containerClient = GetContainerClient(containerName);
                 var blobClient = containerClient.GetBlobClient(fileName);
-                await blobClient.DeleteIfExistsAsync();
-                await blobClient.UploadAsync(fileStream, new BlobHttpHeaders { ContentType = contentType });
-                return blobClient.Uri.ToString();
+                
+                // Don't try to delete existing blob - just overwrite it
+                // This avoids potential public access issues with delete operations
+                Console.WriteLine($"[BlobStorageService] Uploading blob '{fileName}' to container '{containerName}'");
+                
+                var uploadOptions = new BlobUploadOptions
+                {
+                    HttpHeaders = new BlobHttpHeaders { ContentType = contentType }
+                };
+                await blobClient.UploadAsync(fileStream, uploadOptions);
+                
+                var blobUrl = blobClient.Uri.ToString();
+                Console.WriteLine($"[BlobStorageService] Successfully uploaded blob '{fileName}' to '{blobUrl}'");
+                return blobUrl;
             }
             catch (Exception ex)
             {
@@ -98,6 +114,21 @@ namespace c2_eskolar.Services
         /// </summary>
         public async Task<string> UploadPhotoAsync(Stream fileStream, string fileName, string contentType)
         {
+            return await UploadFileAsync(_photosContainer, fileStream, fileName, contentType);
+        }
+
+        /// <summary>
+        /// Uploads a profile picture to the photos container with standardized naming.
+        /// </summary>
+        /// <param name="fileStream">The file stream to upload.</param>
+        /// <param name="userId">The user ID to create a unique filename.</param>
+        /// <param name="userType">The type of user (student, institution, benefactor).</param>
+        /// <param name="fileExtension">The file extension (e.g., .jpg, .png).</param>
+        /// <param name="contentType">The MIME type of the file.</param>
+        /// <returns>The URI of the uploaded blob.</returns>
+        public async Task<string> UploadProfilePictureAsync(Stream fileStream, string userId, string userType, string fileExtension, string contentType)
+        {
+            var fileName = $"{userType}_profile_{userId}_{Guid.NewGuid()}{fileExtension}";
             return await UploadFileAsync(_photosContainer, fileStream, fileName, contentType);
         }
 
@@ -173,6 +204,8 @@ namespace c2_eskolar.Services
 
         /// <summary>
         /// Gets the public URL for a photo (without SAS).
+        /// Since public access is disabled on this storage account, this returns the blob URI
+        /// but images won't be accessible without SAS tokens.
         /// </summary>
         public string GetPhotoUrl(string fileName)
         {
@@ -182,38 +215,50 @@ namespace c2_eskolar.Services
         }
 
         /// <summary>
-        /// Generates a SAS URL for a photo, valid for the specified duration (default 1 hour).
+        /// Generates a SAS URL for a photo, valid for the specified duration (default 8 hours).
+        /// Use this method to get accessible URLs for photos since public access is disabled.
         /// </summary>
         /// <param name="fileName">The blob file name.</param>
-        /// <param name="expiryMinutes">How long the SAS should be valid for (default 60 minutes).</param>
-        /// <returns>The SAS URL for the blob.</returns>
-        public string GetPhotoSasUrl(string fileName, int expiryMinutes = 60)
+        /// <param name="expiryMinutes">How long the SAS should be valid for (default 480 minutes = 8 hours).</param>
+        /// <returns>The SAS URL for the photo blob.</returns>
+        public string GetPhotoSasUrl(string fileName, int expiryMinutes = 480)
         {
             var containerClient = GetContainerClient(_photosContainer);
             var blobClient = containerClient.GetBlobClient(fileName);
             
             // Check if blob exists before generating SAS
             if (!blobClient.Exists())
-                throw new FileNotFoundException($"Blob '{fileName}' does not exist in container '{_photosContainer}'.");
+            {
+                Console.WriteLine($"[BlobStorageService] GetPhotoSasUrl: Blob '{fileName}' does not exist in container '{_photosContainer}'");
+                return GetPhotoUrl(fileName); // Return the direct URL as fallback
+            }
 
             if (!blobClient.CanGenerateSasUri)
             {
-                // Log diagnostic info
-                Console.WriteLine($"[BlobStorageService] Cannot generate SAS URI for blob '{fileName}'.");
-                throw new InvalidOperationException("BlobClient cannot generate SAS URI. Ensure you are using a key credential.");
+                Console.WriteLine($"[BlobStorageService] Cannot generate SAS URI for photo blob '{fileName}'.");
+                return GetPhotoUrl(fileName); // Return the direct URL as fallback
             }
 
-            var sasBuilder = new BlobSasBuilder
+            try
             {
-                BlobContainerName = _photosContainer,
-                BlobName = fileName,
-                Resource = "b",
-                ExpiresOn = DateTimeOffset.UtcNow.AddMinutes(expiryMinutes)
-            };
-            sasBuilder.SetPermissions(BlobSasPermissions.Read);
+                var sasBuilder = new BlobSasBuilder
+                {
+                    BlobContainerName = _photosContainer,
+                    BlobName = fileName,
+                    Resource = "b",
+                    ExpiresOn = DateTimeOffset.UtcNow.AddMinutes(expiryMinutes)
+                };
+                sasBuilder.SetPermissions(BlobSasPermissions.Read);
 
-            var sasUri = blobClient.GenerateSasUri(sasBuilder);
-            return sasUri.ToString();
+                var sasUri = blobClient.GenerateSasUri(sasBuilder);
+                Console.WriteLine($"[BlobStorageService] Generated SAS URL for photo '{fileName}' valid for {expiryMinutes} minutes");
+                return sasUri.ToString();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[BlobStorageService] Error generating SAS URL for photo '{fileName}': {ex.Message}");
+                return GetPhotoUrl(fileName); // Return the direct URL as fallback
+            }
         }
 
         /// <summary>
@@ -234,6 +279,109 @@ namespace c2_eskolar.Services
             {
                 Console.WriteLine($"[BlobStorageService] DeleteDocumentAsync error: {ex.Message}");
                 throw new InvalidOperationException($"Failed to delete blob '{fileName}' from container '{_documentsContainer}'.", ex);
+            }
+        }
+
+        /// <summary>
+        /// Deletes a photo from the photos container in Azure Blob Storage.
+        /// </summary>
+        /// <param name="fileName">The name of the file to delete.</param>
+        /// <returns>True if the file was deleted, false if it did not exist.</returns>
+        public async Task<bool> DeletePhotoAsync(string fileName)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(fileName))
+                {
+                    Console.WriteLine($"[BlobStorageService] DeletePhotoAsync: fileName is null or empty");
+                    return false;
+                }
+
+                var containerClient = GetContainerClient(_photosContainer);
+                var blobClient = containerClient.GetBlobClient(fileName);
+                
+                // Check if blob exists first
+                var exists = await blobClient.ExistsAsync();
+                if (!exists.Value)
+                {
+                    Console.WriteLine($"[BlobStorageService] DeletePhotoAsync: Blob '{fileName}' does not exist in container '{_photosContainer}'");
+                    return false;
+                }
+
+                var response = await blobClient.DeleteIfExistsAsync();
+                Console.WriteLine($"[BlobStorageService] DeletePhotoAsync: Successfully deleted blob '{fileName}' from container '{_photosContainer}'");
+                return response.Value;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[BlobStorageService] DeletePhotoAsync error for file '{fileName}': {ex.Message}");
+                // Don't throw exception, just log and return false to allow the upload to continue
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// Extracts the blob filename from a full Azure Blob Storage URL.
+        /// </summary>
+        /// <param name="blobUrl">The full blob URL.</param>
+        /// <returns>The filename part of the URL, or null if extraction fails.</returns>
+        public string? ExtractBlobFileName(string blobUrl)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(blobUrl))
+                {
+                    Console.WriteLine($"[BlobStorageService] ExtractBlobFileName: blobUrl is null or empty");
+                    return null;
+                }
+
+                var uri = new Uri(blobUrl);
+                var segments = uri.Segments;
+                
+                // Segments should include container and blob name
+                // e.g., /photos/filename.jpg -> segments[0] = "/", segments[1] = "photos/", segments[2] = "filename.jpg"
+                if (segments.Length >= 2)
+                {
+                    var fileName = segments[segments.Length - 1];
+                    // Remove any trailing slash or encoding
+                    fileName = Uri.UnescapeDataString(fileName).TrimEnd('/');
+                    Console.WriteLine($"[BlobStorageService] ExtractBlobFileName: Extracted '{fileName}' from URL '{blobUrl}'");
+                    return fileName;
+                }
+                
+                Console.WriteLine($"[BlobStorageService] ExtractBlobFileName: Could not extract filename from URL '{blobUrl}' - insufficient segments");
+                return null;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[BlobStorageService] ExtractBlobFileName error for URL '{blobUrl}': {ex.Message}");
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Converts a blob URL to a SAS URL for photo access.
+        /// This is useful when you have a stored blob URL and need to make it accessible.
+        /// </summary>
+        /// <param name="blobUrl">The full blob URL.</param>
+        /// <param name="expiryMinutes">How long the SAS should be valid for (default 480 minutes = 8 hours).</param>
+        /// <returns>SAS URL if successful, original URL if extraction/generation fails.</returns>
+        public string GetPhotoSasUrlFromBlobUrl(string blobUrl, int expiryMinutes = 480)
+        {
+            try
+            {
+                var fileName = ExtractBlobFileName(blobUrl);
+                if (string.IsNullOrWhiteSpace(fileName))
+                {
+                    return blobUrl; // Return original URL if extraction fails
+                }
+
+                return GetPhotoSasUrl(fileName, expiryMinutes);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[BlobStorageService] GetPhotoSasUrlFromBlobUrl error: {ex.Message}");
+                return blobUrl; // Return original URL if conversion fails
             }
         }
     }
