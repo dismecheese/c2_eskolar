@@ -1,61 +1,5 @@
-/* Premium Form Input Styles - Modern & Smooth */
-.force-premium-input {
-    width: 100% !important;
-    padding: 0.875rem 1.25rem !important;
-    margin-bottom: 1.25rem !important;
-    border: 2px solid #e2e8f0 !important;
-    border-radius: 14px !important;
-    font-size: 0.95rem !important;
-    font-weight: 500 !important;
-    line-height: 1.5 !important;
-    background: #fff !important;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.05) !important;
-    font-family: inherit !important;
-    color: #2d3748 !important;
-    outline: none !important;
-    display: block !important;
-    box-sizing: border-box !important;
-    transition: border-color 0.3s, box-shadow 0.3s;
-}
-
-.force-premium-input:hover {
-    border-color: #1560d4 !important;
-    box-shadow: 0 4px 12px rgba(21,96,212,0.10) !important;
-}
-
-.force-premium-input:focus {
-    border-color: transparent !important;
-    background: white !important;
-    box-shadow: 0 0 0 3px rgba(21, 96, 212, 0.1), 0 6px 18px rgba(21, 96, 212, 0.12) !important;
-    transform: translateY(-2px) !important;
-    outline: none !important;
-    border: 2px solid #1560d4 !important;
-}
-
-.force-premium-input::placeholder {
-    color: #94a3b8 !important;
-    font-style: italic !important;
-    font-weight: 400 !important;
-    opacity: 0.7 !important;
-}
-
-/* Textarea Specific Styles */
-textarea.force-premium-input {
-    resize: vertical !important;
-    min-height: 120px !important;
-    line-height: 1.6 !important;
-    padding: 0.875rem 1.25rem !important;
-}
-
-/* Select Specific Styles */
-select.force-premium-input {
-    cursor: pointer !important;
-    appearance: none !important;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%231560d4' d='M6 9L1 4h10z'/%3E%3C/svg%3E") !important;
-    background-position: right 1rem center !important;
-    background-repeat: no-repeat !important;
-    padding-right: 3rem !important;
-}
+/* Isolated input style to override Bootstrap/global styles */
+/* Modern Form Input Styles - Clean & Rounded */
 
 /* SuperAdmin Announcements - Modern Gradient Design */
 
@@ -526,65 +470,6 @@ select.force-premium-input {
     letter-spacing: 0.025em;
 }
 
-/* Enhanced form controls - target Blazor InputText, InputTextArea, InputSelect, InputDate */
-.modern-form-control, 
-.modern-form-select, 
-.modern-form-textarea,
-input[class*="form-control"],
-select[class*="form-select"], 
-textarea[class*="form-control"],
-.form-control,
-.form-select {
-    width: 100% !important;
-    padding: 1.25rem 1.5rem !important;
-    border: 2px solid #e2e8f0 !important;
-    border-radius: 20px !important;
-    font-size: 1rem !important;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
-    background: white !important;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08) !important;
-    font-family: inherit !important;
-    color: #2d3748 !important;
-    outline: none !important;
-}
-
-.modern-form-control:focus, 
-.modern-form-select:focus, 
-.modern-form-textarea:focus,
-input[class*="form-control"]:focus,
-select[class*="form-select"]:focus, 
-textarea[class*="form-control"]:focus,
-.form-control:focus,
-.form-select:focus {
-    border-color: #1560d4 !important;
-    box-shadow: 0 0 0 4px rgba(21, 96, 212, 0.15), 0 8px 25px rgba(21, 96, 212, 0.2) !important;
-    transform: translateY(-2px) !important;
-    background: white !important;
-    outline: none !important;
-}
-
-.modern-form-control::placeholder, 
-.modern-form-textarea::placeholder,
-input[class*="form-control"]::placeholder,
-textarea[class*="form-control"]::placeholder {
-    color: #a0aec0 !important;
-    font-style: italic;
-}
-
-.modern-form-textarea,
-textarea[class*="form-control"] {
-    resize: vertical !important;
-    min-height: 160px !important;
-    line-height: 1.6 !important;
-}
-
-.modern-form-text {
-    font-size: 0.875rem;
-    color: #6b7280;
-    margin-top: 0.5rem;
-    display: block;
-    font-style: italic;
-}
 
 /* Enhanced Radio Group Styling */
 .modern-radio-group {

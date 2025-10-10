@@ -258,7 +258,7 @@
 <!-- CREATE/EDIT MODAL -->
 @if (showModal)
 {
-    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+    <div class="modal fade show d-block superadmin-modal" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
         <div class="modal-dialog modal-lg modal-dialog-centered">
             <div class="modal-content modern-modal">
                 <!-- Modal header -->
@@ -274,14 +274,14 @@
                         <!-- Title -->
                         <div class="modern-form-group">
                             <label class="modern-form-label">Title</label>
-                            <InputText @bind-Value="editingAnnouncement!.Title" class="modern-form-control force-premium-input" placeholder="Enter announcement title..." />
+                            <InputText @bind-Value="editingAnnouncement!.Title" class="modern-input" placeholder="Enter announcement title..." />
                             <ValidationMessage For="@(() => editingAnnouncement!.Title)" />
                         </div>
 
                         <!-- Organization -->
                         <div class="modern-form-group">
                             <label class="modern-form-label">Organization</label>
-                            <InputText @bind-Value="editingAnnouncement.OrganizationName" class="modern-form-control force-premium-input" 
+                            <InputText @bind-Value="editingAnnouncement.OrganizationName" class="modern-input"
                                       placeholder="e.g., System Administration" />
                             <small class="modern-form-text">Name of your organization or department</small>
                         </div>
@@ -289,7 +289,7 @@
                         <!-- Category -->
                         <div class="modern-form-group">
                             <label class="modern-form-label">Category</label>
-                            <InputSelect @bind-Value="editingAnnouncement.Category" class="modern-form-select force-premium-input">
+                            <InputSelect @bind-Value="editingAnnouncement.Category" class="modern-input">
                                 <option value="">Select Category</option>
                                 <option value="Requirements">Requirements</option>
                                 <option value="Results">Results</option>
@@ -303,14 +303,14 @@
                         <!-- Description -->
                         <div class="modern-form-group">
                             <label class="modern-form-label">Description</label>
-                            <InputTextArea @bind-Value="editingAnnouncement.Content" class="modern-form-textarea force-premium-input" rows="6" placeholder="Enter detailed description..." />
+                            <InputTextArea @bind-Value="editingAnnouncement.Content" class="modern-input" rows="6" placeholder="Enter detailed description..." />
                             <ValidationMessage For="@(() => editingAnnouncement.Content)" />
                         </div>
 
                         <!-- Deadline -->
                         <div class="modern-form-group">
                             <label class="modern-form-label">Deadline (Optional)</label>
-                            <InputDate @bind-Value="editingAnnouncement.ExpiryDate" class="modern-form-control force-premium-input" />
+                            <InputDate @bind-Value="editingAnnouncement.ExpiryDate" class="modern-input" />
                             <small class="modern-form-text">When this announcement expires or when the deadline is</small>
                         </div>
 
