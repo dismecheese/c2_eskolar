@@ -14,9 +14,19 @@
 
 <PageTitle>My Applications</PageTitle>
 
-<div class="minimal-bg" style="margin-top: 2.5rem;">
+<!-- Back Button and Title Row -->
+<div class="container px-2 px-md-4" style="margin-top: 2.5rem;">
+	<div class="d-flex align-items-center mb-3" style="gap: 1rem;">
+		<button class="btn btn-outline-primary d-flex align-items-center gap-2 back-button-top" style="background: rgba(255,255,255,0.9); border: 1px solid rgba(37,99,235,0.3); backdrop-filter: blur(10px); border-radius: 12px; font-weight: 500; transition: all 0.2s ease;" @onclick="GoBack" aria-label="Go Back">
+			<i class="bi bi-arrow-left"></i>
+			Back
+		</button>
+		<h2 class="minimal-title mb-0" style="flex: 1;">My Scholarship Applications</h2>
+	</div>
+</div>
+
+<div class="minimal-bg">
 	<div class="container px-2 px-md-4" style="margin-right: 2.5rem;">
-		<h2 class="minimal-title">My Scholarship Applications</h2>
 		@if (isLoading)
 		{
 			<div class="d-flex flex-column align-items-center justify-content-center my-5 py-5">
@@ -75,6 +85,10 @@
 	</div>
 
 @code {
+	private async Task GoBack()
+	{
+		await JS.InvokeVoidAsync("history.back");
+	}
 	private List<ApplicationViewModel>? applications;
 	private bool isLoading = true;
 	private string? errorMessage;

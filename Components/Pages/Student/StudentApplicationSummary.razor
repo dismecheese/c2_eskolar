@@ -18,128 +18,686 @@
 <PageTitle>Application Summary</PageTitle>
 
 <!-- Styles moved to wwwroot/app.css -->
+<style>
 
-<div class="container-fluid py-5" style="background: linear-gradient(135deg, #e0e7ff 60%, #f8fafc 100%); min-height: 100vh; margin-top: 40px;">
+    .app-summary-card {
+        border-radius: 20px;
+        max-width: 900px;
+        background: linear-gradient(145deg, #ffffff 0%, #f8fafc 100%);
+        border: 1px solid rgba(37,99,235,0.08);
+        box-shadow: 0 8px 32px rgba(37,99,235,0.12);
+        transition: all 0.3s ease;
+        overflow: hidden;
+    }
+    .app-summary-card:hover {
+        box-shadow: 0 12px 40px rgba(37,99,235,0.15);
+        transform: translateY(-2px);
+    }
+    .app-summary-card-body {
+        background: transparent;
+        padding: 2.5rem;
+    }
+    .category-card {
+        background: rgba(255,255,255,0.7);
+        border: 1px solid rgba(37,99,235,0.1);
+        border-radius: 16px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        backdrop-filter: blur(10px);
+        transition: all 0.3s ease;
+    }
+    .category-card:hover {
+        background: rgba(255,255,255,0.9);
+        border-color: rgba(37,99,235,0.2);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 20px rgba(37,99,235,0.08);
+    }
+    .app-summary-dl {
+        margin-bottom: 0;
+        font-size: 1rem;
+    }
+    .section-heading {
+        font-size: 1.15rem;
+        font-weight: 700;
+        color: #2563eb;
+        border-bottom: 1px solid #e0e7ff;
+        padding-bottom: 0.5rem;
+        margin-bottom: 1rem;
+        margin-top: 2rem;
+        letter-spacing: 0.5px;
+    }
+    .label {
+        font-weight: 500;
+        color: #2563eb;
+        font-size: 1.1rem;
+        margin-bottom: 0.5rem;
+    }
+    .value {
+        color: #2563eb;
+        font-size: 1.1rem;
+        font-weight: 500;
+        margin-bottom: 1.25rem;
+        word-break: break-word;
+    }
+    .app-status-badge {
+        outline: none;
+        transition: box-shadow 0.2s;
+    }
+    .app-status-badge:focus {
+        box-shadow: 0 0 0 2px #2563eb50;
+    }
+    .doc-link {
+        transition: color 0.2s, text-decoration 0.2s;
+    }
+    .doc-link:hover, .doc-link:focus {
+        color: #1d4ed8;
+        text-decoration: underline;
+        outline: none;
+    }
+    .nav-pills .nav-link {
+        background: rgba(37,99,235,0.08);
+        color: #2563eb;
+        border: 1px solid rgba(37,99,235,0.15);
+        border-radius: 12px;
+        font-weight: 500;
+        padding: 0.75rem 1.25rem;
+        transition: all 0.2s ease;
+        margin: 0.25rem;
+    }
+    .nav-pills .nav-link:hover {
+        background: rgba(37,99,235,0.15);
+        border-color: rgba(37,99,235,0.3);
+        transform: translateY(-1px);
+        box-shadow: 0 2px 8px rgba(37,99,235,0.15);
+    }
+    .nav-pills .nav-link.active {
+        background: linear-gradient(145deg, #2563eb, #3b82f6);
+        color: white;
+        border-color: #2563eb;
+        box-shadow: 0 4px 12px rgba(37,99,235,0.3);
+    }
+    .fade-in {
+        animation: fadeIn 0.4s ease-in;
+    }
+    @@keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    .back-button-external {
+        background: rgba(255,255,255,0.9) !important;
+        border: 1px solid rgba(37,99,235,0.3) !important;
+        backdrop-filter: blur(10px);
+        border-radius: 12px !important;
+        font-weight: 500;
+        transition: all 0.2s ease;
+        color: #2563eb !important;
+    }
+    .back-button-external:hover {
+        background: rgba(255,255,255,1) !important;
+        border-color: rgba(37,99,235,0.5) !important;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(37,99,235,0.15);
+        color: #1d4ed8 !important;
+    }
+    .title-banner {
+        background: #fff;
+        border-radius: 20px 20px 0 0;
+        padding: 2rem 2.5rem;
+        color: #2563eb;
+        position: relative;
+        overflow: hidden;
+        border-bottom: 1px solid #e0e7ff;
+    }
+    .title-banner::before {
+        content: '';
+        display: none;
+    }
+    .title-banner h1 {
+        margin: 0;
+        font-size: 1.75rem;
+        font-weight: 700;
+        text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        line-height: 1.2;
+    }
+    .title-banner .subtitle {
+        margin: 0.5rem 0 0 0;
+        font-size: 1rem;
+        opacity: 0.9;
+        font-weight: 400;
+    }
+
+    @@media (max-width: 600px) {
+        .app-summary-card {
+            max-width: 100%;
+            margin-top: 12px;
+        }
+        .app-summary-card-body {
+            padding: 1rem;
+        }
+        .section-heading {
+            font-size: 1rem;
+            margin-top: 1.2rem;
+        }
+        .label, .value {
+            font-size: 1rem;
+        }
+        .title-banner {
+            padding: 1.5rem 1rem;
+        }
+        .title-banner h1 {
+            font-size: 1.5rem;
+        }
+        .title-banner .subtitle {
+            font-size: 0.9rem;
+        }
+    }
+</style>
+
+<div class="container-fluid py-5" style="min-height: 100vh; margin-top: 40px;">
+    <!-- Back Button - Outside Container -->
+    <div class="container px-2 px-md-4 mb-3">
+        <button class="btn btn-outline-primary d-flex align-items-center gap-2 back-button-external" @onclick="GoBack" aria-label="Back to Applications">
+            <i class="bi bi-arrow-left"></i>
+            Back to Applications
+        </button>
+    </div>
+    
     <div class="container px-2 px-md-4">
         <div class="row justify-content-center">
-            <div class="col-12 col-md-10 col-lg-8">
-                <div class="app-summary-banner mb-4">
-                    <i class="bi bi-journal-text"></i>
-                    <span>Application Summary</span>
-                </div>
-                @if (isLoading)
-                {
-                    <div class="text-center my-5 py-5"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div></div>
-                }
-                else if (!string.IsNullOrEmpty(errorMessage))
-                {
-                    <div class="alert alert-danger">@errorMessage</div>
-                }
-                else if (application == null)
-                {
-                    <div class="alert alert-warning">Application not found.</div>
-                }
-                else
-                {
-                    <div class="card shadow-sm border-0 mx-auto mb-5" style="border-radius: 18px; max-width: 700px; background: linear-gradient(90deg, #2563eb 0%, #3b82f6 100%); color: #fff; margin-top: 24px; box-shadow: 0 2px 12px rgba(37,99,235,0.10);">
-                        <div class="card-body p-4 p-md-5" style="margin-bottom: 8px; background: rgba(255,255,255,0.85); border-radius: 14px; color: #222;">
-                            <dl class="row mb-0" style="margin-bottom: 0;">
-                                <dt class="col-sm-4 text-primary" style="margin-bottom: 0.5rem; font-size: 1.25rem; font-weight: 500;">Scholarship</dt>
-                                <dd class="col-sm-8 mb-3" style="margin-bottom: 1.25rem; color: #2563eb; font-size: 1.25rem; font-weight: 500;">
-                                    @(application?.Scholarship != null && !string.IsNullOrWhiteSpace(application.Scholarship.Title) ? application.Scholarship.Title : "(No Title)")
-                                </dd>
-
-                                <dt class="col-sm-4 text-primary" style="margin-bottom: 0.5rem; font-size: 1.25rem; font-weight: 500;">Provider</dt>
-                                <dd class="col-sm-8 mb-3" style="margin-bottom: 1.25rem; color: #2563eb; font-size: 1.25rem; font-weight: 500;">
-                                    @if (application?.Scholarship?.Institution != null && !string.IsNullOrEmpty(application.Scholarship.Institution.InstitutionName))
-                                    {
-                                        @application.Scholarship.Institution.InstitutionName
-                                    }
-                                    else if (application?.Scholarship?.Benefactor != null && !string.IsNullOrEmpty(application.Scholarship.Benefactor.OrganizationName))
-                                    {
-                                        @application.Scholarship.Benefactor.OrganizationName
-                                    }
-                                    else
-                                    {
-                                        <span>Unknown Provider</span>
-                                    }
-                                </dd>
-
-                                <dt class="col-sm-4 text-primary" style="margin-bottom: 0.5rem; font-size: 1.25rem; font-weight: 500;">Date Applied</dt>
-                                <dd class="col-sm-8 mb-3" style="margin-bottom: 1.25rem; color: #2563eb; font-size: 1.25rem; font-weight: 500;">
-                                    @(application?.ApplicationDate != null ? application.ApplicationDate.ToString("MMM dd, yyyy") : "N/A")
-                                </dd>
-
-                                @if (GetStatus(application?.Status) == ApplicationStatus.Rejected)
-                                {
-                                    <dt class="col-sm-4 text-muted" style="margin-bottom: 0.5rem; font-size: 1.25rem; font-weight: 500;">Status</dt>
-                                    <dd class="col-sm-8 mb-3" style="margin-bottom: 1.25rem; font-size: 1.25rem; font-weight: 500;">
-                                        <span class="badge px-3 py-2 fs-6 @GetStatusClass(ApplicationStatus.Rejected) text-light" style="font-size: 1rem; letter-spacing: 0.5px; background: #2563eb; color: #fff;">
-                                            Rejected
+                    <div class="card shadow-sm border-0 mx-auto mb-5 app-summary-card">
+                        @if (isLoading)
+                        {
+                            <div class="card-body p-4 p-md-5">
+                                <div class="d-flex justify-content-center align-items-center" style="min-height: 300px;">
+                                    <div class="text-center">
+                                        <div class="spinner-border text-primary mb-3" role="status" style="width: 3rem; height: 3rem;">
+                                            <span class="visually-hidden">Loading...</span>
+                                        </div>
+                                        <p class="text-muted">Loading application details...</p>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                        else if (!string.IsNullOrEmpty(errorMessage))
+                        {
+                            <div class="card-body p-4 p-md-5">
+                                <div class="alert alert-danger d-flex align-items-center" role="alert">
+                                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                                    <div>
+                                        <strong>Error:</strong> @errorMessage
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                        else if (application == null)
+                        {
+                            <div class="card-body p-4 p-md-5">
+                                <div class="alert alert-warning d-flex align-items-center" role="alert">
+                                    <i class="bi bi-info-circle-fill me-2"></i>
+                                    <div>
+                                        Application not found or you don't have permission to view it.
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                        else
+                        {
+                            <!-- Title Banner -->
+                            <div class="title-banner">
+                                <div class="text-center">
+                                    <h1>@(application?.Scholarship != null && !string.IsNullOrWhiteSpace(application.Scholarship.Title) ? application.Scholarship.Title : "Application Summary")</h1>
+                                    <p class="subtitle">
+                                        @if (application?.Scholarship?.Institution != null && !string.IsNullOrEmpty(application.Scholarship.Institution.InstitutionName))
+                                        {
+                                            <span>Provided by @application.Scholarship.Institution.InstitutionName</span>
+                                        }
+                                        else if (application?.Scholarship?.Benefactor != null && !string.IsNullOrEmpty(application.Scholarship.Benefactor.OrganizationName))
+                                        {
+                                            <span>Provided by @application.Scholarship.Benefactor.OrganizationName</span>
+                                        }
+                                        else
+                                        {
+                                            <span>Application Details</span>
+                                        }
+                                        <span class="d-none d-md-inline"> • </span><span class="d-md-none"><br></span>Applied on @(application?.ApplicationDate != null ? application.ApplicationDate.ToString("MMM dd, yyyy") : "N/A")
+                                    </p>
+                                </div>
+                            </div>
+                            
+                            <!-- Card Body -->
+                            <div class="card-body p-4 p-md-5 app-summary-card-body">
+                            <!-- Category Filter Bar -->
+                            <nav aria-label="Category filter" class="mb-4">
+                                <div class="d-flex flex-column">
+                                    <div class="text-center text-md-start mb-3">
+                                        <h5 class="mb-1" style="color: #2563eb; font-weight: 600;">
+                                            @if (selectedCategory == CategoryFilter.All)
+                                            {
+                                                <span>All Categories (@GetVisibleCategoriesCount())</span>
+                                            }
+                                            else
+                                            {
+                                                <span>@selectedCategory.ToString().Replace("Category", "") Information</span>
+                                            }
+                                        </h5>
+                                        <small class="text-muted">Filter information by category</small>
+                                    </div>
+                                <div class="d-flex flex-wrap justify-content-center justify-md-start gap-2 mb-4">
+                                <ul class="nav nav-pills flex-wrap" style="font-size: 1.05rem; gap: 0.5rem;">
+                                    <li class="nav-item">
+                                        <button class="nav-link @GetCategoryActiveClass(CategoryFilter.All)" @onclick="() => SelectCategory(CategoryFilter.All)" aria-label="Show all categories">Show All</button>
+                                    </li>
+                                    <li class="nav-item"><button class="nav-link @GetCategoryActiveClass(CategoryFilter.General)" @onclick="() => SelectCategory(CategoryFilter.General)" aria-label="General Information">General</button></li>
+                                    <li class="nav-item"><button class="nav-link @GetCategoryActiveClass(CategoryFilter.Review)" @onclick="() => SelectCategory(CategoryFilter.Review)" aria-label="Review Information">Review</button></li>
+                                    <li class="nav-item"><button class="nav-link @GetCategoryActiveClass(CategoryFilter.Timeline)" @onclick="() => SelectCategory(CategoryFilter.Timeline)" aria-label="Application Timeline">Timeline</button></li>
+                                    <li class="nav-item"><button class="nav-link @GetCategoryActiveClass(CategoryFilter.Student)" @onclick="() => SelectCategory(CategoryFilter.Student)" aria-label="Student Information">Student</button></li>
+                                    <li class="nav-item"><button class="nav-link @GetCategoryActiveClass(CategoryFilter.Application)" @onclick="() => SelectCategory(CategoryFilter.Application)" aria-label="Application Details">Application</button></li>
+                                    <li class="nav-item"><button class="nav-link @GetCategoryActiveClass(CategoryFilter.Academic)" @onclick="() => SelectCategory(CategoryFilter.Academic)" aria-label="Academic Information">Academic</button></li>
+                                    <li class="nav-item"><button class="nav-link @GetCategoryActiveClass(CategoryFilter.Verification)" @onclick="() => SelectCategory(CategoryFilter.Verification)" aria-label="Verification Status">Verification</button></li>
+                                    <li class="nav-item"><button class="nav-link @GetCategoryActiveClass(CategoryFilter.Documents)" @onclick="() => SelectCategory(CategoryFilter.Documents)" aria-label="Supporting Documents">Documents</button></li>
+                                </ul>
+                                </div>
+                                </div>
+                            </nav>
+                            <!-- General Information -->
+                            @if (selectedCategory == CategoryFilter.All || selectedCategory == CategoryFilter.General)
+                            {
+                            <div class="category-card mb-4 fade-in">
+                                <h2 class="section-heading mt-3 mb-2">General Information</h2>
+                                <dl class="row app-summary-dl">
+                                    <dt class="col-sm-4 text-primary label">Scholarship</dt>
+                                    <dd class="col-sm-8 mb-3 value">
+                                        @(application?.Scholarship != null && !string.IsNullOrWhiteSpace(application.Scholarship.Title) ? application.Scholarship.Title : "(No Title)")
+                                    </dd>
+                                    <dt class="col-sm-4 text-primary label">Provider</dt>
+                                    <dd class="col-sm-8 mb-3 value">
+                                        @if (application?.Scholarship?.Institution != null && !string.IsNullOrEmpty(application.Scholarship.Institution.InstitutionName))
+                                        {
+                                            @application.Scholarship.Institution.InstitutionName
+                                        }
+                                        else if (application?.Scholarship?.Benefactor != null && !string.IsNullOrEmpty(application.Scholarship.Benefactor.OrganizationName))
+                                        {
+                                            @application.Scholarship.Benefactor.OrganizationName
+                                        }
+                                        else
+                                        {
+                                            <span>Unknown Provider</span>
+                                        }
+                                    </dd>
+                                    <dt class="col-sm-4 text-primary label">Date Applied</dt>
+                                    <dd class="col-sm-8 mb-3 value">
+                                        @(application?.ApplicationDate != null ? application.ApplicationDate.ToString("MMM dd, yyyy") : "N/A")
+                                    </dd>
+                                    <dt class="col-sm-4 text-primary label">Application Status</dt>
+                                    <dd class="col-sm-8 mb-3 value">
+                                        <span class="badge px-3 py-2 fs-6 @GetStatusClass(GetStatus(application?.Status)) app-status-badge" tabindex="0" aria-label="@(application?.Status ?? "Unknown") status">
+                                            @(application?.Status ?? "Unknown")
                                         </span>
                                     </dd>
-                                }
-
-                                @if (!string.IsNullOrEmpty(application?.ReviewNotes))
-                                {
-                                    <dt class="col-sm-4 text-primary" style="margin-bottom: 0.5rem; font-size: 1.25rem; font-weight: 500;">Institution Review</dt>
-                                    <dd class="col-sm-8 mb-3" style="margin-bottom: 1.25rem; color: #2563eb; font-size: 1.25rem; font-weight: 500;">@application.ReviewNotes</dd>
-                                }
-
-                                <dt class="col-sm-4 text-primary" style="margin-bottom: 0.5rem; font-size: 1.25rem; font-weight: 500;">Personal Statement</dt>
-                                <dd class="col-sm-8 mb-3" style="white-space: pre-line; margin-bottom: 1.25rem; color: #2563eb; font-size: 1.25rem; font-weight: 500;">@(application?.PersonalStatement ?? "N/A")</dd>
-
-                                <dt class="col-sm-4 text-primary" style="margin-bottom: 0.5rem; font-size: 1.25rem; font-weight: 500;">Uploaded Documents</dt>
-                                <dd class="col-sm-8" style="margin-bottom: 1.25rem; color: #2563eb; font-size: 1.25rem; font-weight: 500;">
-                                    @if (documentLinks != null && documentLinks.Count > 0)
+                                    @if (!string.IsNullOrEmpty(application?.ApplicationReference))
                                     {
-                                        <ul class="list-unstyled mb-0">
-                                        @foreach (var doc in documentLinks)
+                                        <dt class="col-sm-4 text-primary label">Application Reference</dt>
+                                        <dd class="col-sm-8 mb-3 value">@application.ApplicationReference</dd>
+                                    }
+                                </dl>
+                            </div>
+                            }
+
+                            <!-- Review Information -->
+                            @if ((selectedCategory == CategoryFilter.All || selectedCategory == CategoryFilter.Review) && (!string.IsNullOrEmpty(application?.ReviewNotes) || application?.ReviewDate != null || !string.IsNullOrEmpty(application?.ReviewedBy)))
+                            {
+                                <div class="category-card mb-4 fade-in">
+                                    <h2 class="section-heading mt-3 mb-2">Review Information</h2>
+                                    <dl class="row app-summary-dl">
+                                        @if (!string.IsNullOrEmpty(application?.ReviewNotes))
                                         {
-                                            <li class="mb-1 d-flex flex-column">
-                                                <div class="d-flex align-items-center">
-                                                    <i class="@doc.IconClass me-2" style="font-size: 1.2em;"></i>
-                                                    @if (!string.IsNullOrEmpty(doc.SasUrl))
-                                                    {
-                                                        <a href="@doc.SasUrl" target="_blank" rel="noopener noreferrer" class="text-decoration-none doc-link" style="transition: color 0.2s; color: #2563eb; font-weight: 500;" aria-label="Open document @doc.DisplayName in new tab">
-                                                            @doc.DisplayName
-                                                        </a>
-                                                    }
-                                                    else
-                                                    {
-                                                        <span class="text-danger" style="color: #ef4444;">
-                                                            <i class="bi bi-exclamation-circle-fill me-1" title="File not found"></i>
-                                                            @doc.DisplayName
-                                                            <span class="ms-1" title="@doc.ErrorText">(File not found)</span>
-                                                        </span>
-                                                    }
-                                                </div>
-                                                <!-- Debug URLs removed for production -->
-                                            </li>
+                                            <dt class="col-sm-4 text-primary label">Review Notes</dt>
+                                            <dd class="col-sm-8 mb-3 value" style="white-space: pre-line;">@application.ReviewNotes</dd>
                                         }
-                                        </ul>
+                                        @if (application?.ReviewDate != null)
+                                        {
+                                            <dt class="col-sm-4 text-primary label">Review Date</dt>
+                                            <dd class="col-sm-8 mb-3 value">@application.ReviewDate.Value.ToString("MMM dd, yyyy - hh:mm tt")</dd>
+                                        }
+                                        @if (!string.IsNullOrEmpty(application?.ReviewedBy))
+                                        {
+                                            <dt class="col-sm-4 text-primary label">Reviewed By</dt>
+                                            <dd class="col-sm-8 mb-3 value">
+                                                @if (application?.Scholarship?.Institution != null && !string.IsNullOrEmpty(application.Scholarship.Institution.InstitutionName))
+                                                {
+                                                    @application.Scholarship.Institution.InstitutionName
+                                                }
+                                                else if (application?.Scholarship?.Benefactor != null && !string.IsNullOrEmpty(application.Scholarship.Benefactor.OrganizationName))
+                                                {
+                                                    @application.Scholarship.Benefactor.OrganizationName
+                                                }
+                                                else
+                                                {
+                                                    @(application?.ReviewedBy ?? "N/A")
+                                                }
+                                            </dd>
+                                        }
+                                    </dl>
+                                </div>
+                            }
+
+                            <!-- Application Timeline -->
+                            @if (selectedCategory == CategoryFilter.All || selectedCategory == CategoryFilter.Timeline)
+                            {
+                            <div class="category-card mb-4 fade-in">
+                                <h2 class="section-heading mt-3 mb-2">Application Timeline</h2>
+                                <dl class="row app-summary-dl">
+                                    @if (application?.ExternalApplicationDate != null)
+                                    {
+                                        <dt class="col-sm-4 text-primary label">External Application Date</dt>
+                                        <dd class="col-sm-8 mb-3 value">@application.ExternalApplicationDate.Value.ToString("MMM dd, yyyy - hh:mm tt")</dd>
+                                    }
+                                    @if (application?.UpdatedAt != null)
+                                    {
+                                        <dt class="col-sm-4 text-primary label">Last Updated</dt>
+                                        <dd class="col-sm-8 mb-3 value">@application.UpdatedAt.Value.ToString("MMM dd, yyyy - hh:mm tt")</dd>
+                                    }
+                                </dl>
+                            </div>
+                            }
+
+                            <!-- Student Information -->
+                            @if (selectedCategory == CategoryFilter.All || selectedCategory == CategoryFilter.Student)
+                            {
+                            <div class="category-card mb-4 fade-in">
+                                <h2 class="section-heading mt-3 mb-2">Student Information</h2>
+                                <dl class="row app-summary-dl">
+                                    <dt class="col-sm-4 text-primary" style="margin-bottom: 0.5rem; font-size: 1.25rem; font-weight: 500;">Full Name</dt>
+                                    <dd class="col-sm-8 mb-3" style="margin-bottom: 1.25rem; color: #2563eb; font-size: 1.25rem; font-weight: 500;">
+                                        @(application?.Student?.FullName ?? "N/A")
+                                    </dd>
+                                    <dt class="col-sm-4 text-primary" style="margin-bottom: 0.5rem; font-size: 1.25rem; font-weight: 500;">Email</dt>
+                                    <dd class="col-sm-8 mb-3" style="margin-bottom: 1.25rem; color: #2563eb; font-size: 1.25rem; font-weight: 500;">
+                                        @(application?.Student?.Email ?? "N/A")
+                                    </dd>
+                                    <dt class="col-sm-4 text-primary" style="margin-bottom: 0.5rem; font-size: 1.25rem; font-weight: 500;">Mobile Number</dt>
+                                    <dd class="col-sm-8 mb-3" style="margin-bottom: 1.25rem; color: #2563eb; font-size: 1.25rem; font-weight: 500;">
+                                        @(application?.Student?.MobileNumber ?? "N/A")
+                                    </dd>
+                                    <dt class="col-sm-4 text-primary" style="margin-bottom: 0.5rem; font-size: 1.25rem; font-weight: 500;">University</dt>
+                                    <dd class="col-sm-8 mb-3" style="margin-bottom: 1.25rem; color: #2563eb; font-size: 1.25rem; font-weight: 500;">
+                                        @(application?.Student?.UniversityName ?? "N/A")
+                                    </dd>
+                                    <dt class="col-sm-4 text-primary" style="margin-bottom: 0.5rem; font-size: 1.25rem; font-weight: 500;">Course</dt>
+                                    <dd class="col-sm-8 mb-3" style="margin-bottom: 1.25rem; color: #2563eb; font-size: 1.25rem; font-weight: 500;">
+                                        @(application?.Student?.Course ?? "N/A")
+                                    </dd>
+                                    <dt class="col-sm-4 text-primary" style="margin-bottom: 0.5rem; font-size: 1.25rem; font-weight: 500;">Year Level</dt>
+                                    <dd class="col-sm-8 mb-3" style="margin-bottom: 1.25rem; color: #2563eb; font-size: 1.25rem; font-weight: 500;">
+                                        @(application?.Student?.YearLevel?.ToString() ?? "N/A")
+                                    </dd>
+                                    <dt class="col-sm-4 text-primary" style="margin-bottom: 0.5rem; font-size: 1.25rem; font-weight: 500;">Student Number</dt>
+                                    <dd class="col-sm-8 mb-3" style="margin-bottom: 1.25rem; color: #2563eb; font-size: 1.25rem; font-weight: 500;">
+                                        @(application?.Student?.StudentNumber ?? application?.StudentId ?? "N/A")
+                                    </dd>
+                                    @if (application?.Student?.BirthDate != null)
+                                    {
+                                        <dt class="col-sm-4 text-primary" style="margin-bottom: 0.5rem; font-size: 1.25rem; font-weight: 500;">Birth Date</dt>
+                                        <dd class="col-sm-8 mb-3" style="margin-bottom: 1.25rem; color: #2563eb; font-size: 1.25rem; font-weight: 500;">
+                                            @application.Student.BirthDate.Value.ToString("MMM dd, yyyy")
+                                            @{
+                                                var age = DateTime.Now.Year - application.Student.BirthDate.Value.Year;
+                                                if (DateTime.Now.Date < application.Student.BirthDate.Value.Date.AddYears(age)) age--;
+                                            }
+                                            <span class="text-muted">(@age years old)</span>
+                                        </dd>
+                                    }
+                                    @if (!string.IsNullOrEmpty(application?.Student?.Sex))
+                                    {
+                                        <dt class="col-sm-4 text-primary" style="margin-bottom: 0.5rem; font-size: 1.25rem; font-weight: 500;">Sex</dt>
+                                        <dd class="col-sm-8 mb-3" style="margin-bottom: 1.25rem; color: #2563eb; font-size: 1.25rem; font-weight: 500;">@application.Student.Sex</dd>
+                                    }
+                                    @if (!string.IsNullOrEmpty(application?.Student?.Nationality))
+                                    {
+                                        <dt class="col-sm-4 text-primary" style="margin-bottom: 0.5rem; font-size: 1.25rem; font-weight: 500;">Nationality</dt>
+                                        <dd class="col-sm-8 mb-3" style="margin-bottom: 1.25rem; color: #2563eb; font-size: 1.25rem; font-weight: 500;">@application.Student.Nationality</dd>
+                                    }
+                                    @if (!string.IsNullOrEmpty(application?.Student?.PermanentAddress))
+                                    {
+                                        <dt class="col-sm-4 text-primary" style="margin-bottom: 0.5rem; font-size: 1.25rem; font-weight: 500;">Permanent Address</dt>
+                                        <dd class="col-sm-8 mb-3" style="margin-bottom: 1.25rem; color: #2563eb; font-size: 1.25rem; font-weight: 500;">@application.Student.PermanentAddress</dd>
+                                    }
+                                </dl>
+                            </div>
+                            }
+
+                            <!-- Application Details -->
+                            @if (selectedCategory == CategoryFilter.All || selectedCategory == CategoryFilter.Application)
+                            {
+                            <div class="category-card mb-4 fade-in">
+                                <h2 class="section-heading mt-3 mb-2">Application Details</h2>
+                                <dl class="row app-summary-dl">
+                                    @if (application?.IsExternalApplication == true)
+                                    {
+                                        <dt class="col-sm-4 text-primary" style="margin-bottom: 0.5rem; font-size: 1.25rem; font-weight: 500;">Application Type</dt>
+                                        <dd class="col-sm-8 mb-3" style="margin-bottom: 1.25rem; color: #2563eb; font-size: 1.25rem; font-weight: 500;">
+                                            <span class="badge bg-info text-dark">External Application</span>
+                                        </dd>
+                                        <dt class="col-sm-4 text-primary" style="margin-bottom: 0.5rem; font-size: 1.25rem; font-weight: 500;">External URL</dt>
+                                        <dd class="col-sm-8 mb-3" style="margin-bottom: 1.25rem; color: #2563eb; font-size: 1.25rem; font-weight: 500;">
+                                            @if (!string.IsNullOrEmpty(application.ExternalApplicationUrl))
+                                            {
+                                                <a href="@application.ExternalApplicationUrl" target="_blank" rel="noopener noreferrer" class="text-decoration-none">
+                                                    @application.ExternalApplicationUrl <i class="bi bi-box-arrow-up-right ms-1"></i>
+                                                </a>
+                                            }
+                                            else
+                                            {
+                                                <span>N/A</span>
+                                            }
+                                        </dd>
+                                        <dt class="col-sm-4 text-primary" style="margin-bottom: 0.5rem; font-size: 1.25rem; font-weight: 500;">External Application Status</dt>
+                                        <dd class="col-sm-8 mb-3" style="margin-bottom: 1.25rem; color: #2563eb; font-size: 1.25rem; font-weight: 500;">
+                                            @if (application.HasAppliedExternally)
+                                            {
+                                                <span class="badge bg-success">Applied Externally</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-warning text-dark">Not Applied Externally</span>
+                                            }
+                                        </dd>
                                     }
                                     else
                                     {
-                                        <span class="text-muted">No documents uploaded.</span>
+                                        <dt class="col-sm-4 text-primary" style="margin-bottom: 0.5rem; font-size: 1.25rem; font-weight: 500;">Application Type</dt>
+                                        <dd class="col-sm-8 mb-3" style="margin-bottom: 1.25rem; color: #2563eb; font-size: 1.25rem; font-weight: 500;">
+                                            <span class="badge bg-primary">Internal Application</span>
+                                        </dd>
+                                        <dt class="col-sm-4 text-primary" style="margin-bottom: 0.5rem; font-size: 1.25rem; font-weight: 500;">Personal Statement</dt>
+                                        <dd class="col-sm-8 mb-3" style="white-space: pre-line; margin-bottom: 1.25rem; color: #2563eb; font-size: 1.25rem; font-weight: 500;">@(application?.PersonalStatement ?? "N/A")</dd>
                                     }
-                                </dd>
-                            </dl>
-                            <hr class="my-4" />
-                            <div class="d-flex justify-content-end" style="margin-top: 16px;">
-                                <button class="btn btn-outline-primary px-4 py-2 app-btn" style="border-color: #2563eb; color: #2563eb; background: #fff; font-weight: 500;" @onclick="GoBack" aria-label="Back to Applications">
-                                    <i class="bi bi-arrow-left me-2"></i>Back to Applications
-                                </button>
+                                </dl>
                             </div>
-                        </div>
+                            }
+
+                            <!-- Academic Information -->
+                            @if (selectedCategory == CategoryFilter.All || selectedCategory == CategoryFilter.Academic)
+                            {
+                            <div class="category-card mb-4 fade-in">
+                                <h2 class="section-heading mt-3 mb-2">Academic Information</h2>
+                                <dl class="row app-summary-dl">
+                                    <dt class="col-sm-4 text-primary" style="margin-bottom: 0.5rem; font-size: 1.25rem; font-weight: 500;">General Weighted Average (GWA)</dt>
+                                    <dd class="col-sm-8 mb-3" style="margin-bottom: 1.25rem; color: #2563eb; font-size: 1.25rem; font-weight: 500;">
+                                        @if (application?.GWA != null)
+                                        {
+                                            <span class="badge bg-success fs-6 px-3 py-2">@application.GWA.Value.ToString("0.00")</span>
+                                        }
+                                        else
+                                        {
+                                            <span>N/A</span>
+                                        }
+                                    </dd>
+                                    @if (!string.IsNullOrWhiteSpace(application?.FirstSemesterGrades))
+                                    {
+                                        <dt class="col-sm-4 text-primary" style="margin-bottom: 0.5rem; font-size: 1.25rem; font-weight: 500;">First Semester Grades</dt>
+                                        <dd class="col-sm-8 mb-3" style="white-space: pre-line; margin-bottom: 1.25rem; color: #2563eb; font-size: 1rem; font-weight: 400; font-family: monospace; background: #f8f9fa; padding: 12px; border-radius: 6px; border: 1px solid #e9ecef;">@application.FirstSemesterGrades</dd>
+                                    }
+                                    @if (!string.IsNullOrWhiteSpace(application?.SecondSemesterGrades))
+                                    {
+                                        <dt class="col-sm-4 text-primary" style="margin-bottom: 0.5rem; font-size: 1.25rem; font-weight: 500;">Second Semester Grades</dt>
+                                        <dd class="col-sm-8 mb-3" style="white-space: pre-line; margin-bottom: 1.25rem; color: #2563eb; font-size: 1rem; font-weight: 400; font-family: monospace; background: #f8f9fa; padding: 12px; border-radius: 6px; border: 1px solid #e9ecef;">@application.SecondSemesterGrades</dd>
+                                    }
+                                    @if (application?.Student?.GPA != null)
+                                    {
+                                        <dt class="col-sm-4 text-primary" style="margin-bottom: 0.5rem; font-size: 1.25rem; font-weight: 500;">Overall GPA</dt>
+                                        <dd class="col-sm-8 mb-3" style="margin-bottom: 1.25rem; color: #2563eb; font-size: 1.25rem; font-weight: 500;">
+                                            <span class="badge bg-info fs-6 px-3 py-2">@application.Student.GPA.Value.ToString("0.00")</span>
+                                        </dd>
+                                    }
+                                </dl>
+                            </div>
+                            }
+
+                            <!-- Verification Status -->
+                            @if (selectedCategory == CategoryFilter.All || selectedCategory == CategoryFilter.Verification)
+                            {
+                            <div class="category-card mb-4 fade-in">
+                                <h2 class="section-heading mt-3 mb-2">Verification Status</h2>
+                                <dl class="row app-summary-dl">
+                                    <dt class="col-sm-4 text-primary" style="margin-bottom: 0.5rem; font-size: 1.25rem; font-weight: 500;">Student Verification</dt>
+                                    <dd class="col-sm-8 mb-3" style="margin-bottom: 1.25rem; color: #2563eb; font-size: 1.25rem; font-weight: 500;">
+                                        @if (application?.Student?.IsVerified == true)
+                                        {
+                                            <span class="badge bg-success px-3 py-2">
+                                                <i class="bi bi-check-circle me-1"></i>Verified
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-warning text-dark px-3 py-2">
+                                                <i class="bi bi-clock me-1"></i>@(application?.Student?.VerificationStatus ?? "Pending")
+                                            </span>
+                                        }
+                                    </dd>
+                                    @if (application?.Student?.VerificationDate != null)
+                                    {
+                                        <dt class="col-sm-4 text-primary" style="margin-bottom: 0.5rem; font-size: 1.25rem; font-weight: 500;">Verification Date</dt>
+                                        <dd class="col-sm-8 mb-3" style="margin-bottom: 1.25rem; color: #2563eb; font-size: 1.25rem; font-weight: 500;">@application.Student.VerificationDate.Value.ToString("MMM dd, yyyy")</dd>
+                                    }
+                                    @if (application?.Student?.IsPartnerInstitution == true && !string.IsNullOrEmpty(application?.Student?.PartnerInstitutionName))
+                                    {
+                                        <dt class="col-sm-4 text-primary" style="margin-bottom: 0.5rem; font-size: 1.25rem; font-weight: 500;">Partner Institution</dt>
+                                        <dd class="col-sm-8 mb-3" style="margin-bottom: 1.25rem; color: #2563eb; font-size: 1.25rem; font-weight: 500;">
+                                            <span class="badge bg-success px-3 py-2">
+                                                <i class="bi bi-building me-1"></i>@application.Student.PartnerInstitutionName
+                                            </span>
+                                        </dd>
+                                    }
+                                </dl>
+                            </div>
+                            }
+
+                            <!-- Supporting Documents -->
+                            @if (selectedCategory == CategoryFilter.All || selectedCategory == CategoryFilter.Documents)
+                            {
+                            <div class="category-card mb-4 fade-in">
+                                <h2 class="section-heading mt-3 mb-2">Supporting Documents</h2>
+                                <dl class="row app-summary-dl">
+                                    <dt class="col-sm-4 text-primary label">Uploaded Documents</dt>
+                                    <dd class="col-sm-8 value">
+                                        @if (documentLinks != null && documentLinks.Count > 0)
+                                        {
+                                            <ul class="list-unstyled mb-0">
+                                                @foreach (var doc in documentLinks)
+                                                {
+                                                    <li class="mb-1 d-flex flex-column">
+                                                        <div class="d-flex align-items-center">
+                                                            <i class="@doc.IconClass me-2" style="font-size: 1.2em;" aria-hidden="true"></i>
+                                                            @if (!string.IsNullOrEmpty(doc.SasUrl))
+                                                            {
+                                                                <a href="@doc.SasUrl" target="_blank" rel="noopener noreferrer" class="text-decoration-none doc-link" style="transition: color 0.2s; color: #2563eb; font-weight: 500;" aria-label="Open document @doc.DisplayName in new tab" tabindex="0">
+                                                                    @doc.DisplayName
+                                                                </a>
+                                                            }
+                                                            else
+                                                            {
+                                                                <span class="text-danger" style="color: #ef4444;">
+                                                                    <i class="bi bi-exclamation-circle-fill me-1" title="File not found" aria-hidden="true"></i>
+                                                                    @doc.DisplayName
+                                                                    <span class="ms-1" title="@doc.ErrorText">(File not found)</span>
+                                                                </span>
+                                                            }
+                                                        </div>
+                                                    </li>
+                                                }
+                                            </ul>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted" aria-live="polite">No documents uploaded.</span>
+                                        }
+                                    </dd>
+                                </dl>
+                            </div>
+                            }
+
+                            <hr class="my-4" style="border-color: rgba(37,99,235,0.15);" />
+                            <div class="d-flex justify-content-center" style="margin-top: 2rem;">
+                                <div class="text-muted small">
+                                    <i class="bi bi-clock me-1"></i>
+                                    Last updated: @DateTime.Now.ToString("MMM dd, yyyy - hh:mm tt")
+                                </div>
+                            </div>
+                            </div>
+                        }
                     </div>
-                }
             </div>
         </div>
     </div>
-</div>
+@* --- Custom styles for improved UI/UX --- *@
+
 
 @code {
+    // Category filter enum
+    public enum CategoryFilter
+    {
+        All,
+        General,
+        Review,
+        Timeline,
+        Student,
+        Application,
+        Academic,
+        Verification,
+        Documents
+    }
+
+    private CategoryFilter selectedCategory = CategoryFilter.All;
+
+    private void SelectCategory(CategoryFilter category)
+    {
+        selectedCategory = category;
+        StateHasChanged(); // Force re-render for smooth animations
+    }
+
+    private string GetCategoryActiveClass(CategoryFilter category)
+    {
+        return selectedCategory == category ? "active" : "";
+    }
+
+    private int GetVisibleCategoriesCount()
+    {
+        int count = 0;
+        if (application != null)
+        {
+            count++; // General Information always visible
+            if (!string.IsNullOrEmpty(application.ReviewNotes) || application.ReviewDate != null || !string.IsNullOrEmpty(application.ReviewedBy))
+                count++; // Review Information
+            count++; // Timeline always visible
+            count++; // Student Information always visible
+            count++; // Application Details always visible
+            count++; // Academic Information always visible
+            count++; // Verification Status always visible
+            count++; // Supporting Documents always visible
+        }
+        return count;
+    }
     [Parameter] public Guid ApplicationId { get; set; }
 
     private ScholarshipApplication? application;
@@ -230,6 +788,7 @@
                     .ThenInclude(s => s.Institution)
                 .Include(a => a.Scholarship)
                     .ThenInclude(s => s.Benefactor)
+                .Include(a => a.Student) // Include student profile data
                 .FirstOrDefaultAsync(_cts.Token);
 
             // Precompute document links

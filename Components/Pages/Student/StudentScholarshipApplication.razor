@@ -19,6 +19,7 @@
 @inject Microsoft.Extensions.Logging.ILogger<StudentScholarshipApplication> Logger
 @inject IConfiguration Configuration
 @inject IJSRuntime JSRuntime
+@inject c2_eskolar.Services.OpenAIService OpenAIService
 
 <PageTitle>Scholarship Application</PageTitle>
 
@@ -645,6 +646,13 @@
                 {
                     Logger?.LogInformation("Starting automatic OCR processing for file {FileName}", file.Name);
                     
+                    // Update status to show processing with AI
+                    await InvokeAsync(() =>
+                    {
+                        successMessage = $"🤖 Processing '{file.Name}' with Azure Document Intelligence...";
+                        StateHasChanged();
+                    });
+                    
                     await using var stream = file.OpenReadStream(perFileMaxBytes);
                     using var ms = new MemoryStream();
                     await stream.CopyToAsync(ms);
@@ -812,7 +820,7 @@
         return true;
     }
 
-    // Extracts grades from a document using Azure Document Intelligence API.
+    // Extracts grades from a document using Azure Document Intelligence API with improved multi-step processing.
     private async Task<ExtractedGradeData> ExtractGradesFromDocumentAsync(Stream fileStream, string fileName, string contentType)
     {
         // Read endpoint and key from configuration
@@ -835,55 +843,52 @@
         {
             using var httpClient = new HttpClient();
             httpClient.Timeout = TimeSpan.FromMinutes(5);
+            httpClient.DefaultRequestHeaders.Clear();
             httpClient.DefaultRequestHeaders.Add("Ocp-Apim-Subscription-Key", apiKey);
 
             var cleanEndpoint = endpoint.TrimEnd('/');
-            // Enable high-res OCR and font/style extraction
-            var url = $"{cleanEndpoint}/formrecognizer/documentModels/{modelId}:analyze?api-version=2023-07-31&features=ocrHighResolution,styleFont";
+            // Use the updated API endpoint format like institution verification
+            var url = $"{cleanEndpoint}/documentintelligence/documentModels/{modelId}:analyze?_overload=analyzeDocument&api-version=2024-11-30";
 
             var fileBytes = new byte[fileStream.Length];
             fileStream.Position = 0;
             await fileStream.ReadExactlyAsync(fileBytes);
-            using var httpContent = new ByteArrayContent(fileBytes);
-            httpContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue(contentType);
+            var base64Content = Convert.ToBase64String(fileBytes);
+
+            // Create JSON request body with base64Source as required by the new API
+            var requestBody = new
+            {
+                base64Source = base64Content
+            };
+            var jsonContent = new StringContent(System.Text.Json.JsonSerializer.Serialize(requestBody), System.Text.Encoding.UTF8, "application/json");
 
             Logger?.LogInformation("Sending document {FileName} ({ContentType}, {Size} bytes) to Azure Document Intelligence at {Url}", fileName, contentType, fileBytes.Length, url);
-            var response = await httpClient.PostAsync(url, httpContent);
+            var response = await httpClient.PostAsync(url, jsonContent);
             var responseContent = await response.Content.ReadAsStringAsync();
 
-            if (!response.IsSuccessStatusCode)
+            if (response.StatusCode == System.Net.HttpStatusCode.Accepted)
+            {
+                // Handle async processing - get operation location and poll for results
+                var operationLocation = response.Headers.GetValues("Operation-Location").FirstOrDefault();
+                if (string.IsNullOrEmpty(operationLocation))
+                {
+                    Logger?.LogError("No Operation-Location header found in Document Intelligence response");
+                    throw new InvalidOperationException("Document Intelligence API error: No operation location provided");
+                }
+
+                Logger?.LogInformation("Document Intelligence analysis started. Polling for results...");
+                
+                // Poll for results with better error handling
+                responseContent = await PollForDocumentResults(httpClient, operationLocation, apiKey);
+                if (string.IsNullOrEmpty(responseContent))
+                {
+                    throw new InvalidOperationException("Document processing failed or timed out");
+                }
+            }
+            else if (!response.IsSuccessStatusCode)
             {
                 Logger?.LogError("Azure Document Intelligence API error. Status: {StatusCode}, Response: {Response}", response.StatusCode, responseContent);
                 throw new InvalidOperationException($"Document Intelligence API error: {response.StatusCode} - {responseContent}");
-            }
-
-            // Handle async processing (202 Accepted response)
-            if (response.StatusCode == System.Net.HttpStatusCode.Accepted)
-            {
-                var operationLocation = response.Headers.GetValues("Operation-Location").FirstOrDefault();
-                if (!string.IsNullOrEmpty(operationLocation))
-                {
-                    for (int i = 0; i < 30; i++)
-                    {
-                        await Task.Delay(10000);
-                        var pollResponse = await httpClient.GetAsync(operationLocation);
-                        var pollContent = await pollResponse.Content.ReadAsStringAsync();
-                        if (pollResponse.IsSuccessStatusCode && !string.IsNullOrWhiteSpace(pollContent))
-                        {
-                            using var pollDoc = System.Text.Json.JsonDocument.Parse(pollContent);
-                            var status = pollDoc.RootElement.GetProperty("status").GetString();
-                            if (status == "succeeded")
-                            {
-                                responseContent = pollContent;
-                                break;
-                            }
-                            else if (status == "failed")
-                            {
-                                throw new InvalidOperationException("Document processing failed on Azure side.");
-                            }
-                        }
-                    }
-                }
             }
 
             if (string.IsNullOrWhiteSpace(responseContent))
@@ -903,44 +908,67 @@
             string? secondSemGrades = null;
             bool foundTableGrades = false;
 
-            // Try to extract tables
+            // Try to extract tables with enhanced confidence filtering and structured data extraction
             if (root.TryGetProperty("analyzeResult", out var analyzeResult) && analyzeResult.TryGetProperty("tables", out var tablesElem))
             {
                 foreach (var table in tablesElem.EnumerateArray())
                 {
-                    // Use confidence score to filter
+                    // Use confidence score to filter - slightly lower threshold for more inclusive extraction
                     double tableConfidence = table.TryGetProperty("confidence", out var confElem) ? confElem.GetDouble() : 0.0;
-                    if (tableConfidence < 0.7) continue; // skip low-confidence tables
+                    if (tableConfidence < 0.5) continue; // Lowered from 0.7 to catch more valid tables
+                    
+                    Logger?.LogDebug("Processing table with confidence: {Confidence}", tableConfidence);
+                    
+                    // Extract structured table data for grade tables
+                    var extractedTableData = ExtractGradeTableData(table);
+                    if (extractedTableData.Any())
+                    {
+                        // Convert table data to semester grades format
+                        var tableGradeText = string.Join("\n", extractedTableData);
+                        if (!string.IsNullOrEmpty(tableGradeText))
+                        {
+                            // Try to determine if it's first or second semester based on context
+                            if (tableGradeText.ToLower().Contains("first") || tableGradeText.ToLower().Contains("1st"))
+                            {
+                                firstSemGrades = (firstSemGrades ?? "") + tableGradeText + "\n";
+                            }
+                            else if (tableGradeText.ToLower().Contains("second") || tableGradeText.ToLower().Contains("2nd"))
+                            {
+                                secondSemGrades = (secondSemGrades ?? "") + tableGradeText + "\n";
+                            }
+                            else
+                            {
+                                // Default to first semester if unclear
+                                firstSemGrades = (firstSemGrades ?? "") + tableGradeText + "\n";
+                            }
+                            foundTableGrades = true;
+                        }
+                    }
+                    
+                    // Original cell-by-cell processing for GWA and basic extraction
                     var rows = table.GetProperty("rows");
                     foreach (var row in rows.EnumerateArray())
                     {
                         double rowConfidence = row.TryGetProperty("confidence", out var rConfElem) ? rConfElem.GetDouble() : 0.0;
-                        if (rowConfidence < 0.7) continue; // skip low-confidence rows
+                        if (rowConfidence < 0.5) continue; // Lowered threshold
                         var cells = row.GetProperty("cells");
                         foreach (var cell in cells.EnumerateArray())
                         {
                             double cellConfidence = cell.TryGetProperty("confidence", out var cConfElem) ? cConfElem.GetDouble() : 0.0;
-                            if (cellConfidence < 0.7) continue; // skip low-confidence cells
+                            if (cellConfidence < 0.5) continue; // Lowered threshold
                             var cellText = cell.GetProperty("content").GetString() ?? "";
-                            // Try to match GWA or semester grades
-                            if (cellText.ToLower().Contains("gwa") || cellText.ToLower().Contains("gpa"))
+                            
+                            // Enhanced GWA/GPA detection with exclusion patterns
+                            if ((cellText.ToLower().Contains("gwa") || cellText.ToLower().Contains("gpa")) && 
+                                !cellText.ToLower().Contains("subject") && !cellText.ToLower().Contains("course"))
                             {
                                 var match = System.Text.RegularExpressions.Regex.Match(cellText, @"([0-9]+\.[0-9]+)");
-                                if (match.Success && double.TryParse(match.Groups[1].Value, out var val))
+                                if (match.Success && double.TryParse(match.Groups[1].Value, out var val) && val >= 1.0 && val <= 4.0)
                                 {
                                     gwaValue = val;
                                     foundTableGrades = true;
+                                    Logger?.LogDebug("Found GWA in table: {GWA}", val);
                                 }
-                            }
-                            if (cellText.ToLower().Contains("1st semester") || cellText.ToLower().Contains("first semester") || cellText.ToLower().Contains("fall semester"))
-                            {
-                                firstSemGrades = (firstSemGrades ?? "") + cellText + "\n";
-                                foundTableGrades = true;
-                            }
-                            if (cellText.ToLower().Contains("2nd semester") || cellText.ToLower().Contains("second semester") || cellText.ToLower().Contains("spring semester"))
-                            {
-                                secondSemGrades = (secondSemGrades ?? "") + cellText + "\n";
-                                foundTableGrades = true;
                             }
                         }
                     }
@@ -957,13 +985,42 @@
                 return result;
             }
 
-            // Fallback: extract from text as before
+            // Fallback: extract from text using AI for better accuracy
             var allText = "";
             if (root.TryGetProperty("analyzeResult", out var analyzeResult2) && analyzeResult2.TryGetProperty("content", out var content))
             {
                 allText = content.GetString() ?? "";
             }
-            // --- Enhanced regex extraction logic for GWA and semester grades ---
+
+            // Try AI extraction first for better subject-grade parsing
+            if (!string.IsNullOrEmpty(allText))
+            {
+                Logger?.LogInformation("Attempting AI-powered subject and grade extraction for {FileName}", fileName);
+                try
+                {
+                    var aiExtracted = await ExtractSubjectsAndGradesWithAIAsync(allText);
+                    if (aiExtracted != null)
+                    {
+                        var aiResult = ConvertAIDataToExtractedData(aiExtracted);
+                        
+                        // Use AI results if they contain useful data
+                        if (!string.IsNullOrEmpty(aiResult.GWA) || 
+                            !string.IsNullOrEmpty(aiResult.FirstSemesterGrades) || 
+                            !string.IsNullOrEmpty(aiResult.SecondSemesterGrades))
+                        {
+                            Logger?.LogInformation("AI extraction successful: GWA={GWA}, FirstSem={FirstSemLength}, SecondSem={SecondSemLength}", 
+                                aiResult.GWA, aiResult.FirstSemesterGrades?.Length ?? 0, aiResult.SecondSemesterGrades?.Length ?? 0);
+                            return aiResult;
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Logger?.LogWarning(ex, "AI extraction failed, falling back to regex extraction");
+                }
+            }
+
+            // --- Enhanced regex extraction logic for GWA and semester grades (fallback) ---
             var gwaPatterns = new[]
             {
                 // Enhanced patterns for GPA/GWA with exclusions and notes
@@ -1042,6 +1099,29 @@
         public string? GWA { get; set; }
         public string? FirstSemesterGrades { get; set; }
         public string? SecondSemesterGrades { get; set; }
+    }
+
+    // --- Helper class for AI-extracted subject-grade data ---
+    public class AIExtractedGradeData
+    {
+        public string? GWA { get; set; }
+        public List<SubjectGrade>? FirstSemesterSubjects { get; set; }
+        public List<SubjectGrade>? SecondSemesterSubjects { get; set; }
+        public List<SubjectGrade>? SummerSemesterSubjects { get; set; }
+        public string? AcademicYear { get; set; }
+        public string? StudentName { get; set; }
+        public string? StudentNumber { get; set; }
+        public string? Program { get; set; }
+        public string? YearLevel { get; set; }
+    }
+
+    public class SubjectGrade
+    {
+        public string? SubjectCode { get; set; }
+        public string? SubjectTitle { get; set; }
+        public string? Units { get; set; }
+        public string? Grade { get; set; }
+        public string? Remarks { get; set; }
     }
 
     // Cleans semester grades text and extracts only the actual grades.
@@ -1298,6 +1378,329 @@
     }
 
     // --- Progress bar updates are handled automatically by Blazor reactivity ---
+
+    // Extracts structured grade data from a table element
+    private List<string> ExtractGradeTableData(System.Text.Json.JsonElement table)
+    {
+        var gradeEntries = new List<string>();
+        
+        try
+        {
+            if (!table.TryGetProperty("cells", out var cellsArray))
+                return gradeEntries;
+
+            var cellsByRowCol = new Dictionary<string, string>();
+            
+            // Build a map of cells by row/column position
+            foreach (var cell in cellsArray.EnumerateArray())
+            {
+                if (cell.TryGetProperty("rowIndex", out var rowIdx) && 
+                    cell.TryGetProperty("columnIndex", out var colIdx) &&
+                    cell.TryGetProperty("content", out var content))
+                {
+                    var key = $"{rowIdx.GetInt32()},{colIdx.GetInt32()}";
+                    cellsByRowCol[key] = content.GetString() ?? "";
+                }
+            }
+            
+            // Try to identify grade table patterns - look for subject codes, descriptions, and grades
+            var maxRow = cellsByRowCol.Keys.Max(k => int.Parse(k.Split(',')[0]));
+            var maxCol = cellsByRowCol.Keys.Max(k => int.Parse(k.Split(',')[1]));
+            
+            for (int row = 0; row <= maxRow; row++)
+            {
+                var rowCells = new List<string>();
+                for (int col = 0; col <= maxCol; col++)
+                {
+                    if (cellsByRowCol.TryGetValue($"{row},{col}", out var cellContent))
+                    {
+                        rowCells.Add(cellContent.Trim());
+                    }
+                    else
+                    {
+                        rowCells.Add("");
+                    }
+                }
+                
+                // Skip empty rows or header rows
+                var rowText = string.Join(" ", rowCells).Trim();
+                if (string.IsNullOrEmpty(rowText) || IsHeaderLine(rowText))
+                    continue;
+                
+                // Try to extract subject-grade pairs from the row
+                var pairs = ExtractSubjectGradePairs(rowText);
+                if (pairs.Any())
+                {
+                    foreach (var pair in pairs)
+                    {
+                        var display = !string.IsNullOrEmpty(pair.SubjectCode) && !string.IsNullOrEmpty(pair.SubjectDesc)
+                            ? $"{pair.SubjectCode} - {pair.SubjectDesc} - {pair.Grade}"
+                            : !string.IsNullOrEmpty(pair.SubjectCode)
+                                ? $"{pair.SubjectCode} - {pair.Grade}"
+                                : !string.IsNullOrEmpty(pair.SubjectDesc)
+                                    ? $"{pair.SubjectDesc} - {pair.Grade}"
+                                    : pair.Grade;
+                        gradeEntries.Add(display);
+                    }
+                }
+                else
+                {
+                    // Fallback: if we detect grades in the row, add the whole row
+                    if (System.Text.RegularExpressions.Regex.IsMatch(rowText, @"[0-4]\.\d{2}|[ABCDF][+-]?|P|INC|W|NG|NP|F|DRP|AUD|CR|NC"))
+                    {
+                        gradeEntries.Add(rowText);
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger?.LogWarning(ex, "Error extracting grade table data");
+        }
+        
+        return gradeEntries;
+    }
+
+    // Extracts subjects and grades using AI for better accuracy and structured data
+    private async Task<AIExtractedGradeData?> ExtractSubjectsAndGradesWithAIAsync(string rawText)
+    {
+        string prompt = $@"You are an expert at extracting academic grade information from Philippine educational documents like transcripts, grade reports, and Certificate of Registration (COR).
+
+Analyze the OCR text below and extract the following structured information. Return ONLY a JSON object with these exact field names:
+
+GWA: The General Weighted Average or GPA (extract the numerical value like ""1.75"", ""2.25"", etc.)
+FirstSemesterSubjects: Array of subjects for first semester
+SecondSemesterSubjects: Array of subjects for second semester  
+SummerSemesterSubjects: Array of subjects for summer semester (if any)
+AcademicYear: The academic year (like ""2023-2024"", ""AY 2023-2024"")
+StudentName: Full name of the student
+StudentNumber: Student ID or student number
+Program: Degree program or course (like ""BSIT"", ""Bachelor of Science in Information Technology"")
+YearLevel: Year level (like ""1st Year"", ""2nd Year"", ""3rd Year"", ""4th Year"")
+
+Each subject in the arrays should have:
+SubjectCode: Course code (like ""IT 101"", ""MATH 101"", ""ELEC IT-E3"", ""GEED 037"")
+SubjectTitle: Full subject title/description (like ""Introduction to Computing"", ""College Algebra"")
+Units: Credit units (like ""3.0"", ""2.0"", ""1.0"")
+Grade: The grade received (numerical like ""1.00"", ""1.25"", ""2.50"" or letter like ""A"", ""B+"" or status like ""P"", ""INC"", ""W"")
+Remarks: Any remarks or status (like ""PASSED"", ""FAILED"", ""INCOMPLETE"", ""WITHDRAWN"", etc.)
+
+IMPORTANT EXTRACTION RULES:
+1. Look for semester headers like ""1st Semester"", ""First Semester"", ""2nd Semester"", ""Second Semester"", ""Summer""
+2. For GWA/GPA: Look for patterns like ""GPA (excludes NSTP and subjects with non-numeric ratings)"" and extract the number
+3. Handle both numeric grades (1.00-4.00 scale) and letter grades (A-F) 
+4. Handle non-numeric grades like P (Pass), INC (Incomplete), W (Withdrawn), NG (No Grade), etc.
+5. Subject codes can be in various formats: ""IT 101"", ""ELEC IT-E3"", ""GEED 037"", ""NSTP 101""
+6. Extract the complete subject title, not just partial descriptions
+7. If semester is unclear, put subjects in FirstSemesterSubjects by default
+8. Look for academic year patterns like ""School Year 2023-2024"", ""AY 2023-24"", ""Academic Year 2023-2024""
+
+Raw OCR Text:
+{rawText}
+
+Return only valid JSON:";
+
+        try
+        {
+            var response = await OpenAIService.GetChatCompletionAsync(prompt);
+            
+            // Clean up the JSON response (remove markdown code block markers if present)
+            var json = response.Trim();
+            if (json.StartsWith("```json"))
+                json = json.Substring(7);
+            if (json.StartsWith("```"))
+                json = json.Substring(3);
+            if (json.EndsWith("```"))
+                json = json.Substring(0, json.Length - 3);
+            json = json.Trim();
+
+            Logger?.LogDebug("AI extracted grade data JSON: {Json}", json);
+
+            var extracted = System.Text.Json.JsonSerializer.Deserialize<AIExtractedGradeData>(json, new System.Text.Json.JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            });
+
+            Logger?.LogInformation("AI successfully extracted grade data: GWA={GWA}, FirstSem={FirstSemCount}, SecondSem={SecondSemCount}", 
+                extracted?.GWA, extracted?.FirstSemesterSubjects?.Count ?? 0, extracted?.SecondSemesterSubjects?.Count ?? 0);
+
+            return extracted;
+        }
+        catch (Exception ex)
+        {
+            Logger?.LogError(ex, "Error during AI grade extraction");
+            return null;
+        }
+    }
+
+    // Converts AI extracted data to the format expected by the application
+    private ExtractedGradeData ConvertAIDataToExtractedData(AIExtractedGradeData aiData)
+    {
+        var result = new ExtractedGradeData
+        {
+            GWA = aiData.GWA
+        };
+
+        // Convert first semester subjects to text format
+        if (aiData.FirstSemesterSubjects?.Any() == true)
+        {
+            var firstSemLines = new List<string>();
+            foreach (var subject in aiData.FirstSemesterSubjects)
+            {
+                var line = "";
+                if (!string.IsNullOrEmpty(subject.SubjectCode) && !string.IsNullOrEmpty(subject.SubjectTitle))
+                {
+                    line = $"{subject.SubjectCode} - {subject.SubjectTitle} - {subject.Grade}";
+                }
+                else if (!string.IsNullOrEmpty(subject.SubjectCode))
+                {
+                    line = $"{subject.SubjectCode} - {subject.Grade}";
+                }
+                else if (!string.IsNullOrEmpty(subject.SubjectTitle))
+                {
+                    line = $"{subject.SubjectTitle} - {subject.Grade}";
+                }
+                else
+                {
+                    line = subject.Grade ?? "";
+                }
+                
+                if (!string.IsNullOrEmpty(line))
+                    firstSemLines.Add(line);
+            }
+            result.FirstSemesterGrades = string.Join("\n", firstSemLines);
+        }
+
+        // Convert second semester subjects to text format
+        if (aiData.SecondSemesterSubjects?.Any() == true)
+        {
+            var secondSemLines = new List<string>();
+            foreach (var subject in aiData.SecondSemesterSubjects)
+            {
+                var line = "";
+                if (!string.IsNullOrEmpty(subject.SubjectCode) && !string.IsNullOrEmpty(subject.SubjectTitle))
+                {
+                    line = $"{subject.SubjectCode} - {subject.SubjectTitle} - {subject.Grade}";
+                }
+                else if (!string.IsNullOrEmpty(subject.SubjectCode))
+                {
+                    line = $"{subject.SubjectCode} - {subject.Grade}";
+                }
+                else if (!string.IsNullOrEmpty(subject.SubjectTitle))
+                {
+                    line = $"{subject.SubjectTitle} - {subject.Grade}";
+                }
+                else
+                {
+                    line = subject.Grade ?? "";
+                }
+                
+                if (!string.IsNullOrEmpty(line))
+                    secondSemLines.Add(line);
+            }
+            result.SecondSemesterGrades = string.Join("\n", secondSemLines);
+        }
+
+        // Include summer semester subjects in second semester if any
+        if (aiData.SummerSemesterSubjects?.Any() == true)
+        {
+            var summerLines = new List<string>();
+            foreach (var subject in aiData.SummerSemesterSubjects)
+            {
+                var line = "";
+                if (!string.IsNullOrEmpty(subject.SubjectCode) && !string.IsNullOrEmpty(subject.SubjectTitle))
+                {
+                    line = $"{subject.SubjectCode} - {subject.SubjectTitle} - {subject.Grade} (Summer)";
+                }
+                else if (!string.IsNullOrEmpty(subject.SubjectCode))
+                {
+                    line = $"{subject.SubjectCode} - {subject.Grade} (Summer)";
+                }
+                else if (!string.IsNullOrEmpty(subject.SubjectTitle))
+                {
+                    line = $"{subject.SubjectTitle} - {subject.Grade} (Summer)";
+                }
+                else
+                {
+                    line = $"{subject.Grade} (Summer)";
+                }
+                
+                if (!string.IsNullOrEmpty(line))
+                    summerLines.Add(line);
+            }
+            
+            // Append summer subjects to second semester grades
+            if (summerLines.Any())
+            {
+                var summerText = string.Join("\n", summerLines);
+                result.SecondSemesterGrades = string.IsNullOrEmpty(result.SecondSemesterGrades) 
+                    ? summerText 
+                    : result.SecondSemesterGrades + "\n" + summerText;
+            }
+        }
+
+        return result;
+    }
+
+    // Polls for Document Intelligence results with improved error handling
+    private async Task<string?> PollForDocumentResults(HttpClient httpClient, string operationLocation, string apiKey)
+    {
+        var maxAttempts = 30; // 30 attempts with 2-second delays = 1 minute max
+        var delay = TimeSpan.FromSeconds(2);
+
+        for (int attempt = 0; attempt < maxAttempts; attempt++)
+        {
+            try
+            {
+                httpClient.DefaultRequestHeaders.Clear();
+                httpClient.DefaultRequestHeaders.Add("Ocp-Apim-Subscription-Key", apiKey);
+
+                var response = await httpClient.GetAsync(operationLocation);
+                if (!response.IsSuccessStatusCode)
+                {
+                    Logger?.LogError("Error polling for results: {StatusCode}", response.StatusCode);
+                    continue;
+                }
+
+                var responseContent = await response.Content.ReadAsStringAsync();
+                using var resultDoc = System.Text.Json.JsonDocument.Parse(responseContent);
+                
+                if (resultDoc.RootElement.TryGetProperty("status", out var statusElement))
+                {
+                    var status = statusElement.GetString();
+                    Logger?.LogDebug("Polling attempt {Attempt}: Status = {Status}", attempt + 1, status);
+
+                    if (status == "succeeded")
+                    {
+                        Logger?.LogInformation("Document analysis completed successfully");
+                        return responseContent;
+                    }
+                    else if (status == "failed")
+                    {
+                        Logger?.LogError("Document analysis failed");
+                        return null;
+                    }
+                    // If status is "running" or "notStarted", continue polling
+                }
+
+                if (attempt < maxAttempts - 1)
+                {
+                    await Task.Delay(delay);
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger?.LogError(ex, "Error during polling attempt {Attempt}", attempt + 1);
+                if (attempt < maxAttempts - 1)
+                {
+                    await Task.Delay(delay);
+                }
+            }
+        }
+
+        Logger?.LogError("Polling timeout - analysis did not complete within expected time");
+        return null;
+    }
 
     // Simple fallback for testing - returns sample values for grades if extraction fails.
     private ExtractedGradeData ExtractGradesFromSimpleTextSearch(string fileName)
