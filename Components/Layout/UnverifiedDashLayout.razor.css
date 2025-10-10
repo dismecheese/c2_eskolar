@@ -85,3 +85,29 @@
         padding: 0 8px;
     }
 }
+
+.approval-notification {
+    border-left: 3px solid #28a745 !important;
+    background-color: #f8fff9 !important;
+}
+
+.sidebar-notification-time {
+    font-size: 0.75rem;
+    color: #6c757d;
+    margin-top: 4px;
+}
+
+.sidebar-notification.approval-notification .sidebar-notification-title {
+    color: #28a745;
+    font-weight: 600;
+}
+
+.logout-link:hover {
+    background: rgba(255,255,255,0.1) !important;
+    color: rgba(255,255,255,1) !important;
+    transform: translateX(4px);
+}
+
+.logout-link:active {
+    background: rgba(255,255,255,0.15) !important;
+}
