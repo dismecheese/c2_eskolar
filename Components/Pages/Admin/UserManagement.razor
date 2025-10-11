@@ -11,6 +11,7 @@
 @inject NavigationManager Navigation
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @using c2_eskolar.Data
+@using c2_eskolar.Models
 @using Microsoft.EntityFrameworkCore
 @using Microsoft.AspNetCore.Identity
 @using Microsoft.AspNetCore.Authorization
@@ -103,10 +104,33 @@
         <button class="filter-tab @(activeFilter == "Requests" ? "active" : "")" @onclick="@(() => SetFilter("Requests"))">
             <i class="bi bi-inbox me-2"></i>Requests
         </button>
+        <button class="filter-tab @(activeFilter == "Archive" ? "active" : "")" @onclick="@(() => SetFilter("Archive"))">
+            <i class="bi bi-archive me-2"></i>Archive
+        </button>
     </div>
 
     <!-- Users Table -->
     <div class="users-table-container">
+        @if (showDeleteModal)
+        {
+            <div class="sv-modal sv-modal-backdrop sv-modal-fixed">
+                <div class="sv-modal-content">
+                    <div class="sv-modal-header">
+                        <h2>Confirm User Deletion</h2>
+                    </div>
+                    <div class="sv-modal-body">
+                        <p class="sv-modal-justify">
+                            Are you sure you want to delete <b>@userNameToDelete</b>?<br />
+                            This action will move the account to the Archive tab and mark it as deleted. You can restore it later if needed.
+                        </p>
+                    </div>
+                    <div class="sv-modal-footer" style="display:flex;gap:16px;justify-content:flex-end;">
+                        <button class="sv-btn sv-btn-secondary" @onclick="CancelDeleteUser">Cancel</button>
+                        <button class="sv-btn sv-btn-primary" @onclick="ConfirmDeleteUser">Delete</button>
+                    </div>
+                </div>
+            </div>
+        }
         <div class="table-header">
         <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
             <div style="position: relative; flex: 1; max-width: 400px;">
@@ -174,7 +198,7 @@
                                         <th style="width: 200px; white-space: nowrap;">Name</th>
                                         <th style="width: 220px; white-space: nowrap;">Affiliation</th>
                                         <th style="width: 140px; white-space: nowrap;">Registered</th>
-                                        <th style="width: 140px; white-space: nowrap;">Actions</th>
+                                        <th style="width: 140px; white-space: nowrap; padding-right: 2.5rem;">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -193,10 +217,10 @@
                                     <td>
                                         @if (!string.IsNullOrEmpty(inst.Id))
                                         {
-                                                                    <div class="action-buttons">
-                                                                        <button class="btn btn-accept-light btn-sm me-2" @onclick="async () => await AcceptInstitution(inst.Id!)">Accept</button>
-                                                                        <button class="btn btn-reject-light btn-sm" @onclick="async () => await RejectInstitution(inst.Id!)">Reject</button>
-                                                                    </div>
+                                            <div class="action-buttons" style="padding-right: 2.5rem;">
+                                                <button class="btn btn-accept-light btn-sm me-2" @onclick="async () => await AcceptInstitution(inst.Id!)">Accept</button>
+                                                <button class="btn btn-reject-light btn-sm" @onclick="async () => await RejectInstitution(inst.Id!)">Reject</button>
+                                            </div>
                                         }
                                         else
                                         {
@@ -217,50 +241,62 @@
                 </div>
             }
         }
+        else if (activeFilter == "Archive")
+        {
+            <div class="table-responsive">
+                <div class="empty-state">
+                    <i class="bi bi-archive" style="font-size: 4rem; color: #ccc;"></i>
+                    <h4>No Archived Users</h4>
+                    <p>There are currently no archived users.</p>
+                </div>
+            </div>
+        }
         else if (filteredUsers.Any())
         {
             <div class="table-responsive">
                 <table class="table users-table" style="table-layout: fixed;">
                     <thead>
                         <tr>
-                            <th style="width: 200px; white-space: nowrap;">User</th>
-                            <th style="width: 220px; white-space: nowrap;">Email</th>
-                            <th style="width: 140px; white-space: nowrap;">Registration Date</th>
-                            <th style="width: 100px; white-space: nowrap;">Status</th>
-                            <th style="width: 140px; white-space: nowrap;">Actions</th>
+                            <th style="width: 280px; white-space: nowrap;">Name</th>
+                            <th style="width: 240px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Email</th>
+                            <th style="width: 32px;"></th>
+                            <!-- Removed Actions column header -->
                         </tr>
                     </thead>
                     <tbody>
                         @foreach (var user in filteredUsers.Take(pageSize))
                         {
+                            string fullName = "No Name";
+                            string affiliation = "Unknown";
+                            if (studentProfilesByUserId.TryGetValue(user.Id, out var student))
+                            {
+                                fullName = $"{student.FirstName} {(string.IsNullOrEmpty(student.MiddleName) ? "" : student.MiddleName + " ")}{student.LastName}";
+                                affiliation = !string.IsNullOrEmpty(student.UniversityName) ? student.UniversityName : "Unknown Institution";
+                            }
+                            else if (institutionProfilesByUserId.TryGetValue(user.Id, out var institution))
+                            {
+                                fullName = $"{institution.AdminFirstName} {(string.IsNullOrEmpty(institution.AdminMiddleName) ? "" : institution.AdminMiddleName + " ")}{institution.AdminLastName}";
+                                affiliation = !string.IsNullOrEmpty(institution.InstitutionName) ? institution.InstitutionName : "Unknown Institution";
+                            }
+                            else if (benefactorProfilesByUserId.TryGetValue(user.Id, out var benefactor))
+                            {
+                                fullName = $"{benefactor.AdminFirstName} {(string.IsNullOrEmpty(benefactor.AdminMiddleName) ? "" : benefactor.AdminMiddleName + " ")}{benefactor.AdminLastName}";
+                                affiliation = !string.IsNullOrEmpty(benefactor.OrganizationName) ? benefactor.OrganizationName : "Unknown Organization";
+                            }
                             <tr>
                                 <td>
                                     <div class="user-info">
-                                        <div class="user-avatar">
-                                            <i class="bi bi-person-circle"></i>
-                                        </div>
                                         <div class="user-details">
-                                            <div class="user-name">@(user.UserName ?? "No Name")</div>
-                                            <div class="user-id">ID: @user.Id.Substring(0, 8)...</div>
+                                            <div class="user-name">@fullName</div>
+                                            <div class="user-institution">@affiliation</div>
                                         </div>
                                     </div>
                                 </td>
-                                <td>@user.Email</td>
-                                <td>@(user.LockoutEnd?.ToString("MMM dd, yyyy") ?? "Unknown")</td>
-                                <td>
-                                    <span class="status-badge @(GetUserVerificationStatus(user.Id) == "Verified" ? "status-active" : "status-pending")">
-                                        @(GetUserVerificationStatus(user.Id) == "Verified" ? "Verified" : "Pending")
-                                    </span>
-                                </td>
+                                <td style="max-width: 240px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">@user.Email</td>
                                 <td>
                                     <div class="action-buttons">
-                                        <button class="btn btn-sm btn-outline-primary" @onclick="() => ViewUser(user.Id)">
-                                            <i class="bi bi-eye"></i>
-                                        </button>
-                                        <button class="btn btn-sm btn-outline-warning" @onclick="() => EditUser(user.Id)">
-                                            <i class="bi bi-pencil"></i>
-                                        </button>
-                                        <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteUser(user.Id)">
+                                        <!-- Only show delete button -->
+                                        <button class="btn btn-sm btn-outline-danger" @onclick="() => PromptDeleteUser(user.Id)">
                                             <i class="bi bi-trash"></i>
                                         </button>
                                     </div>
@@ -270,7 +306,6 @@
                     </tbody>
                 </table>
             </div>
-            
             @if (filteredUsers.Count() > pageSize)
             {
                 <div class="pagination-container">
@@ -292,6 +327,105 @@
 </div>
 
 <style>
+    /* --- Verification Modal Styles (copied from InstitutionDashLayout.razor.css) --- */
+    .sv-modal-justify {
+        text-align: justify;
+    }
+    .sv-btn {
+        font-size: 1rem;
+        padding: 0.75rem 2rem;
+        border-radius: 8px;
+        border: 2px solid transparent;
+        font-weight: 600;
+        transition: all 0.2s ease;
+        cursor: pointer;
+        text-transform: none;
+        letter-spacing: 0.01em;
+        text-decoration: none;
+        display: inline-block;
+        text-align: center;
+        font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+    }
+    .sv-btn-primary {
+        background: #1976d2;
+        color: #ffffff;
+        border-color: #1976d2;
+    }
+    .sv-btn-primary:hover:not(:disabled) {
+        background: #1565c0;
+        border-color: #1565c0;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(25, 118, 210, 0.3);
+        color: #ffffff;
+    }
+    .sv-btn-primary:disabled {
+        background: #9ca3af;
+        border-color: #9ca3af;
+        cursor: not-allowed;
+        transform: none;
+        box-shadow: none;
+    }
+    .sv-btn-secondary {
+        background: #ffffff;
+        color: #374151;
+        border-color: #d1d5db;
+    }
+    .sv-btn-secondary:hover {
+        background: #f9fafb;
+        border-color: #9ca3af;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        color: #374151;
+    }
+    .sv-modal-header h2 {
+        color: #1f2937;
+        font-size: 1.5rem;
+        font-weight: 600;
+        margin: 0 0 0.5rem 0;
+        line-height: 1.4;
+        font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+    }
+    .sv-modal-header p {
+        color: #6b7280;
+        font-size: 1rem;
+        margin: 0 0 1.5rem 0;
+        line-height: 1.5;
+        font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+    }
+    .sv-modal-body p {
+        color: #374151;
+        font-size: 0.95rem;
+        line-height: 1.6;
+        margin: 0 0 1rem 0;
+        font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+    }
+    .sv-modal-body p:last-child {
+        margin-bottom: 0;
+    }
+    .sv-modal-footer {
+        margin-top: 2rem;
+        padding-top: 1.5rem;
+        border-top: 1px solid #e5e7eb;
+    }
+    .sv-modal-fixed {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        z-index: 9999;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .sv-modal-content {
+        max-width: 600px;
+        width: 90vw;
+        background: #fff;
+        border-radius: 20px;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+        padding: 2.5rem 2rem 2rem 2rem;
+    }
     .dashboard-center-container {
         padding: 2rem;
         max-width: 1400px;
@@ -427,9 +561,10 @@
     }
 
     .filter-tab.active {
-        background: linear-gradient(135deg, #1560d4, #0d387e);
-        color: white;
-        border-color: #1560d4;
+           background: linear-gradient(135deg, #1560d4, #0d387e);
+           color: white;
+           border-color: #1560d4;
+           pointer-events: auto;
     }
 
     .users-table-container {
@@ -593,6 +728,10 @@
     private IEnumerable<IdentityUser> filteredUsers = new List<IdentityUser>();
     private Dictionary<string, string> userRoles = new();
     private Dictionary<string, string> userVerificationStatuses = new();
+    // Profile caches for instant lookup
+    private Dictionary<string, StudentProfile> studentProfilesByUserId = new();
+    private Dictionary<string, InstitutionProfile> institutionProfilesByUserId = new();
+    private Dictionary<string, BenefactorProfile> benefactorProfilesByUserId = new();
     
     private int totalUsers = 0;
     private int studentCount = 0;
@@ -672,25 +811,24 @@
         {
             isLoading = true;
             StateHasChanged();
-            
             Console.WriteLine("LoadUsersData: Starting to load users data...");
-            
-            // Use separate context for each operation to avoid conflicts
             using var context = DbContextFactory.CreateDbContext();
-            
-            // Load all users using the UserManager
+            // Load all users
             allUsers = await UserManager.Users.ToListAsync();
             totalUsers = allUsers.Count;
-            
+            // Bulk load all profiles and cache by UserId
+            studentProfilesByUserId = (await context.StudentProfiles.ToListAsync())
+                .ToDictionary(sp => sp.UserId ?? "", sp => sp);
+            institutionProfilesByUserId = (await context.InstitutionProfiles.ToListAsync())
+                .ToDictionary(ip => ip.UserId ?? "", ip => ip);
+            benefactorProfilesByUserId = (await context.BenefactorProfiles.ToListAsync())
+                .ToDictionary(bp => bp.UserId ?? "", bp => bp);
             // Load role counts and user roles
             await LoadUserRoles();
-            
             // Load verification statuses
             await LoadUserVerificationStatuses();
-            
             // Apply current filter
             ApplyFilter();
-            
             Console.WriteLine($"LoadUsersData: Loaded {totalUsers} users successfully");
         }
         catch (Exception ex)
@@ -950,10 +1088,37 @@
         Console.WriteLine($"Edit user: {userId}");
     }
     
-    private void DeleteUser(string userId)
+    // --- DELETE CONFIRMATION MODAL STATE ---
+    private bool showDeleteModal = false;
+    private string? userIdToDelete;
+    private string? userNameToDelete;
+
+    private void PromptDeleteUser(string userId)
     {
-        // TODO: Implement delete user confirmation
-        Console.WriteLine($"Delete user: {userId}");
+        userIdToDelete = userId;
+        var user = allUsers.FirstOrDefault(u => u.Id == userId);
+        userNameToDelete = user?.UserName ?? "Unknown User";
+        showDeleteModal = true;
+        StateHasChanged();
+    }
+
+    private async Task ConfirmDeleteUser()
+    {
+        if (string.IsNullOrEmpty(userIdToDelete)) return;
+        // TODO: Update user status to "deleted" in backend
+        // For now, just hide modal and log
+        showDeleteModal = false;
+        Console.WriteLine($"Confirmed delete for user: {userIdToDelete}");
+        // Implement backend update in next step
+        StateHasChanged();
+    }
+
+    private void CancelDeleteUser()
+    {
+        showDeleteModal = false;
+        userIdToDelete = null;
+        userNameToDelete = null;
+        StateHasChanged();
     }
     
     public void Dispose()
