@@ -849,10 +849,6 @@
                                 }
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label class="form-label profile-label-bold">Permanent Address</label>
-                                <input type="text" class="form-control" @bind="PermanentAddress" maxlength="200" />
-                            </div>
-                            <div class="col-md-6 mb-3">
                                 <label class="form-label profile-label-bold">Phone</label>
                                 <input type="tel" class="form-control @GetValidationErrorClass("Phone")" @bind="Phone" 
                                        @onblur="@(() => ValidateField("Phone", Phone, "Phone Number"))" 
@@ -861,6 +857,10 @@
                                 {
                                     <div class="invalid-feedback d-block">@GetValidationMessage("Phone")</div>
                                 }
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label profile-label-bold">Permanent Address</label>
+                                <input type="text" class="form-control" @bind="PermanentAddress" maxlength="200" />
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label class="form-label profile-label-bold">Email</label>
@@ -896,18 +896,19 @@
                                 <div class="form-control-plaintext">@Nationality</div>
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label class="form-label profile-label-bold">Permanent Address</label>
-                                <div class="form-control-plaintext">@PermanentAddress</div>
-                            </div>
-                            <div class="col-md-6 mb-3">
                                 <label class="form-label profile-label-bold">Phone</label>
                                 <div class="form-control-plaintext">@Phone</div>
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label class="form-label profile-label-bold">Email</label>
+                                <label class="form-label profile-label-bold">Permanent Address</label>
+                                <div class="form-control-plaintext">@PermanentAddress</div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label profile-label-bold">Personal Email</label>
                                 <div class="form-control-plaintext">@Email</div>
                             </div>
                         </div>
+                        
                     }
                 </div>
             </div>
