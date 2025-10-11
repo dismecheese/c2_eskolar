@@ -46,15 +46,6 @@
 
     <!-- Statistics Cards -->
     <div class="stats-grid-users">
-        <div class="stat-card">
-            <div class="stat-card-header">
-                <div class="stat-icon users">
-                    <i class="bi bi-people"></i>
-                </div>
-            </div>
-            <div class="stat-value">@totalUsers</div>
-            <div class="stat-label">Total Users</div>
-        </div>
         
         <div class="stat-card">
             <div class="stat-card-header">
@@ -85,6 +76,37 @@
             <div class="stat-value">@benefactorCount</div>
             <div class="stat-label">Benefactors</div>
         </div>
+
+                <div class="stat-card">
+            <div class="stat-card-header">
+                <div class="stat-icon users">
+                    <i class="bi bi-people"></i>
+                </div>
+            </div>
+            <div class="stat-value">@totalUsers</div>
+            <div class="stat-label">Total Users</div>
+        </div>
+
+                <div class="stat-card">
+            <div class="stat-card-header">
+                <div class="stat-icon requests">
+                    <i class="bi bi-inbox"></i>
+                </div>
+            </div>
+            <div class="stat-value">@totalRequests</div>
+            <div class="stat-label">Total Requests</div>
+        </div>
+
+                <div class="stat-card">
+            <div class="stat-card-header">
+                <div class="stat-icon archive">
+                    <i class="bi bi-archive"></i>
+                </div>
+            </div>
+            <div class="stat-value">@totalArchived</div>
+            <div class="stat-label">Total Archived</div>
+        </div>
+
     </div>
 
     <!-- Filter Tabs -->
@@ -443,6 +465,8 @@
     private int institutionCount = 0;
     private int benefactorCount = 0;
     private int superAdminCount = 0;
+    private int totalRequests = 0;
+    private int totalArchived = 0;
     
     private string activeFilter = "All";
     // Only for requests tab
@@ -532,6 +556,12 @@
             await LoadUserRoles();
             // Load verification statuses
             await LoadUserVerificationStatuses();
+            // Calculate totalArchived
+            totalArchived = allUsers.Count(u =>
+                (studentProfilesByUserId.TryGetValue(u.Id, out var student) && student.AccountStatus == "Deleted") ||
+                (institutionProfilesByUserId.TryGetValue(u.Id, out var institution) && institution.AccountStatus == "Deleted") ||
+                (benefactorProfilesByUserId.TryGetValue(u.Id, out var benefactor) && benefactor.AccountStatus == "Deleted")
+            );
             // Apply current filter
             ApplyFilter();
             Console.WriteLine($"LoadUsersData: Loaded {totalUsers} users successfully");
@@ -1085,6 +1115,8 @@
         
         // Fetch pending institutions from backend
         pendingInstitutions = await FetchPendingInstitutionsAsync();
+        // Update totalRequests after fetching
+        totalRequests = pendingInstitutions.Count;
         
         // Apply current filter after loading
         ApplyFilter();

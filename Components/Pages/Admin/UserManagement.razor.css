@@ -190,6 +190,8 @@
     .stat-icon.students { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
     .stat-icon.institutions { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
     .stat-icon.benefactors { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); }
+    .stat-icon.requests { background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); }
+    .stat-icon.archive { background: linear-gradient(135deg, #ff6a6a 0%, #f5576c 100%); }
 
     .stat-value {
         font-size: 2.5rem;
