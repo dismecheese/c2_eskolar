@@ -36,6 +36,49 @@
     // --- NOTIFICATION STATE ---
     private List<NotificationItem> notifications = new();
     private bool isLoadingNotifications = false;
+
+        // --- VERIFICATION MODAL STATE ---
+        private bool showVerificationModal = false;
+        private bool? isVerified = null;
+        private string? verificationStatus = null;
+        private string? userId;
+
+        // --- VERIFICATION MODAL LOGIC ---
+        private async Task CheckVerificationStatus()
+        {
+            try
+            {
+                var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+                userId = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+                if (!string.IsNullOrEmpty(userId))
+                {
+                    var profile = await StudentProfileService.GetProfileByUserIdAsync(userId);
+                    isVerified = profile?.IsVerified;
+                    verificationStatus = profile?.VerificationStatus;
+                    // Show modal if not verified (null or false) or status is not "Verified"
+                    if (isVerified != true && (string.IsNullOrEmpty(verificationStatus) || verificationStatus != "Verified"))
+                    {
+                        showVerificationModal = true;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error checking verification status: {ex.Message}");
+            }
+        }
+
+        private void GoToVerification()
+        {
+            showVerificationModal = false;
+            Navigation.NavigateTo("/student/verification");
+        }
+
+        private void SkipVerification()
+        {
+            showVerificationModal = false;
+            Navigation.NavigateTo("/dashboard/unverified");
+        }
     
     // --- LIFECYCLE METHODS ---
 
@@ -46,6 +89,7 @@
         await LoadCurrentUser();
         await LoadStudentProfile();
         await LoadNotifications();
+            await CheckVerificationStatus();
     }
 
         private async Task LoadStudentProfile()
@@ -431,6 +475,24 @@
         <ChatBot CloseChatbot="CloseChatbot" MinimizeChatbot="MinimizeChatbot" />
     }
 
+        @if (showVerificationModal)
+        {
+                <div class="sv-modal sv-modal-backdrop sv-modal-fixed">
+                    <div class="sv-modal-content">
+                        <div class="sv-modal-header">
+                            <h2>Student Verification Required</h2>
+                        </div>
+                        <div class="sv-modal-body">
+                            <p class="sv-modal-justify">To maintain the integrity of eSkolar, all students must complete verification before gaining full access to platform features. Please verify your student profile by providing accurate details and the necessary supporting documents.</p>
+                        </div>
+                        <div class="sv-modal-footer" style="display:flex;gap:16px;justify-content:flex-end;">
+                            <button class="sv-btn sv-btn-secondary" @onclick="SkipVerification">Skip for Now</button>
+                            <button class="sv-btn sv-btn-primary" @onclick="GoToVerification">Verify Profile</button>
+                        </div>
+                    </div>
+                </div>
+        }
+
 </div>
 
 <!-- Logout Confirmation Modal -->
@@ -476,32 +538,3 @@ document.addEventListener('click', function(event) {
     }
 });
 </script>
-
-<!-- Styles for notification enhancements -->
-<style>
-.approval-notification {
-    border-left: 3px solid #28a745 !important;
-    background-color: #f8fff9 !important;
-}
-
-.sidebar-notification-time {
-    font-size: 0.75rem;
-    color: #6c757d;
-    margin-top: 4px;
-}
-
-.sidebar-notification.approval-notification .sidebar-notification-title {
-    color: #28a745;
-    font-weight: 600;
-}
-
-.logout-link:hover {
-    background: rgba(255,255,255,0.1) !important;
-    color: rgba(255,255,255,1) !important;
-    transform: translateX(4px);
-}
-
-.logout-link:active {
-    background: rgba(255,255,255,0.15) !important;
-}
-</style>

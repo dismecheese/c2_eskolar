@@ -67,6 +67,9 @@ namespace c2_eskolar.Models
     public string? VerificationStatus { get; set; } = "Pending"; // Pending, Verified, Rejected
     public DateTime? VerificationDate { get; set; }
 
+    // Account lifecycle status
+    public string AccountStatus { get; set; } = "Active"; // Active, Deleted, Locked
+
     // Document Uploads
     [StringLength(255)]
     public string? StudentIdDocumentPath { get; set; }

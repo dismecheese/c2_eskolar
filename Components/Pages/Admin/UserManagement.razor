@@ -11,6 +11,7 @@
 @inject NavigationManager Navigation
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @using c2_eskolar.Data
+@using c2_eskolar.Models
 @using Microsoft.EntityFrameworkCore
 @using Microsoft.AspNetCore.Identity
 @using Microsoft.AspNetCore.Authorization
@@ -20,9 +21,9 @@
 
 <div class="dashboard-center-container">
     <!-- Top Bar -->
-        <div class="dashboard-topbar">
-            <span class="dashboard-date">@DateTime.Now.ToString("dd MMM yyyy, ddd")</span>
-        </div>
+    <div class="dashboard-topbar">
+        <span class="dashboard-date">@DateTime.Now.ToString("dd MMM yyyy, ddd")</span>
+    </div>
 
     <!-- Page Header -->
     <div class="page-header-section">
@@ -45,15 +46,6 @@
 
     <!-- Statistics Cards -->
     <div class="stats-grid-users">
-        <div class="stat-card">
-            <div class="stat-card-header">
-                <div class="stat-icon users">
-                    <i class="bi bi-people"></i>
-                </div>
-            </div>
-            <div class="stat-value">@totalUsers</div>
-            <div class="stat-label">Total Users</div>
-        </div>
         
         <div class="stat-card">
             <div class="stat-card-header">
@@ -84,6 +76,37 @@
             <div class="stat-value">@benefactorCount</div>
             <div class="stat-label">Benefactors</div>
         </div>
+
+                <div class="stat-card">
+            <div class="stat-card-header">
+                <div class="stat-icon users">
+                    <i class="bi bi-people"></i>
+                </div>
+            </div>
+            <div class="stat-value">@totalUsers</div>
+            <div class="stat-label">Total Users</div>
+        </div>
+
+                <div class="stat-card">
+            <div class="stat-card-header">
+                <div class="stat-icon requests">
+                    <i class="bi bi-inbox"></i>
+                </div>
+            </div>
+            <div class="stat-value">@totalRequests</div>
+            <div class="stat-label">Total Requests</div>
+        </div>
+
+                <div class="stat-card">
+            <div class="stat-card-header">
+                <div class="stat-icon archive">
+                    <i class="bi bi-archive"></i>
+                </div>
+            </div>
+            <div class="stat-value">@totalArchived</div>
+            <div class="stat-label">Total Archived</div>
+        </div>
+
     </div>
 
     <!-- Filter Tabs -->
@@ -103,41 +126,105 @@
         <button class="filter-tab @(activeFilter == "Requests" ? "active" : "")" @onclick="@(() => SetFilter("Requests"))">
             <i class="bi bi-inbox me-2"></i>Requests
         </button>
+        <button class="filter-tab @(activeFilter == "Archive" ? "active" : "")" @onclick="@(() => SetFilter("Archive"))">
+            <i class="bi bi-archive me-2"></i>Archive
+        </button>
     </div>
 
     <!-- Users Table -->
     <div class="users-table-container">
-        <div class="table-header">
-        <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
-            <div style="position: relative; flex: 1; max-width: 400px;">
-                <i class="bi bi-search" style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: #64748b; z-index: 1;"></i>
-                <input class="university-input" type="text" placeholder="Search users..." 
-                    style="padding-left: 45px; padding-right: 38px; width: 100%;" 
-                    @bind="searchQuery" @bind:event="oninput" />
-                @if (!string.IsNullOrEmpty(searchQuery))
-                {
-                    <button type="button" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: none; border: none; color: #64748b; font-size: 1.2rem; cursor: pointer;" @onclick="ClearSearch">
-                        <i class="bi bi-x-circle"></i>
-                    </button>
-                }
-            </div>
-            <div style="display: flex; align-items: center; gap: 1rem; margin-left: auto;">
-                @if (activeFilter == "Requests")
-                {
-                    <select class="form-select" style="width: 160px; min-width: 120px;" @onchange="OnRequestTypeDropdownChanged" value="@requestTypeDropdownValue">
-                        <option value="All">All Requests</option>
-                        <option value="Institution">Institutions</option>
-                        <option value="Student">Students</option>
-                        <option value="Benefactor">Benefactors</option>
-                    </select>
-                }
-                <div class="table-actions">
-                    <button class="btn btn-outline-primary btn-sm" @onclick="RefreshUsers">
-                        <i class="bi bi-arrow-clockwise me-2"></i>Refresh
-                    </button>
+        @if (showDeleteModal)
+        {
+            <div class="sv-modal sv-modal-backdrop sv-modal-fixed">
+                <div class="sv-modal-content">
+                    <div class="sv-modal-header">
+                        <h2>Confirm User Deletion</h2>
+                    </div>
+                    <div class="sv-modal-body">
+                        <p class="sv-modal-justify">
+                            Are you sure you want to delete <b>@userNameToDelete</b>?<br />
+                            This action will move the account to the Archive tab and mark it as deleted. You can restore it later if needed.
+                        </p>
+                    </div>
+                    <div class="sv-modal-footer" style="display:flex;gap:16px;justify-content:flex-end;">
+                        <button class="sv-btn sv-btn-secondary" @onclick="CancelDeleteUser">Cancel</button>
+                        <button class="sv-btn sv-btn-primary" @onclick="ConfirmDeleteUser">Delete</button>
+                    </div>
                 </div>
             </div>
-        </div>
+        }
+        @if (showPermanentDeleteModal)
+        {
+            <div class="sv-modal sv-modal-backdrop sv-modal-fixed">
+                <div class="sv-modal-content">
+                    <div class="sv-modal-header">
+                        <h2>Remove User</h2>
+                    </div>
+                    <div class="sv-modal-body">
+                        <p class="sv-modal-justify">
+                            Are you sure you want to <b> permanently remove</b> <b>@userNameToPermanentDelete</b>?<br />
+                            This action cannot be undone. All data for this account will be removed from the system.
+                        </p>
+                    </div>
+                    <div class="sv-modal-footer" style="display:flex;gap:16px;justify-content:flex-end;">
+                        <button class="sv-btn sv-btn-secondary" @onclick="CancelPermanentDeleteUser">Cancel</button>
+                        <button class="sv-btn sv-btn-primary" @onclick="ConfirmPermanentDeleteUser">Remove</button>
+                    </div>
+                </div>
+            </div>
+        }
+        @if (showRestoreModal)
+        {
+            <div class="sv-modal sv-modal-backdrop sv-modal-fixed">
+                <div class="sv-modal-content">
+                    <div class="sv-modal-header">
+                        <h2>Restore User</h2>
+                    </div>
+                    <div class="sv-modal-body">
+                        <p class="sv-modal-justify">
+                            Are you sure you want to restore <b>@userNameToRestore</b>?<br />
+                            This action will reactivate the account and make it visible in the appropriate user tab.
+                        </p>
+                    </div>
+                    <div class="sv-modal-footer" style="display:flex;gap:16px;justify-content:flex-end;">
+                        <button class="sv-btn sv-btn-secondary" @onclick="CancelRestoreUser">Cancel</button>
+                        <button class="sv-btn sv-btn-primary" @onclick="ConfirmRestoreUser">Restore</button>
+                    </div>
+                </div>
+            </div>
+        }
+        
+        <div class="table-header">
+            <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
+                <div style="position: relative; flex: 1; max-width: 400px;">
+                    <i class="bi bi-search" style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: #64748b; z-index: 1;"></i>
+                    <input class="university-input" type="text" placeholder="Search users..." 
+                        style="padding-left: 45px; padding-right: 38px; width: 100%;" 
+                        @bind="searchQuery" @bind:event="oninput" />
+                    @if (!string.IsNullOrEmpty(searchQuery))
+                    {
+                        <button type="button" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: none; border: none; color: #64748b; font-size: 1.2rem; cursor: pointer;" @onclick="ClearSearch">
+                            <i class="bi bi-x-circle"></i>
+                        </button>
+                    }
+                </div>
+                <div style="display: flex; align-items: center; gap: 1rem; margin-left: auto;">
+                    @if (activeFilter == "Requests")
+                    {
+                        <select class="form-select" style="width: 160px; min-width: 120px;" @onchange="OnRequestTypeDropdownChanged" value="@requestTypeDropdownValue">
+                            <option value="All">All Requests</option>
+                            <option value="Institution">Institutions</option>
+                            <option value="Student">Students</option>
+                            <option value="Benefactor">Benefactors</option>
+                        </select>
+                    }
+                    <div class="table-actions">
+                        <button class="btn btn-outline-primary btn-sm" @onclick="RefreshUsers">
+                            <i class="bi bi-arrow-clockwise me-2"></i>Refresh
+                        </button>
+                    </div>
+                </div>
+            </div>
         </div>
 
         @if (isLoading)
@@ -171,10 +258,10 @@
                     <table class="table users-table" style="table-layout: fixed;">
                         <thead>
                             <tr>
-                                        <th style="width: 200px; white-space: nowrap;">Name</th>
-                                        <th style="width: 220px; white-space: nowrap;">Affiliation</th>
-                                        <th style="width: 140px; white-space: nowrap;">Registered</th>
-                                        <th style="width: 140px; white-space: nowrap;">Actions</th>
+                                <th style="width: 200px; white-space: nowrap;">Name</th>
+                                <th style="width: 220px; white-space: nowrap;">Affiliation</th>
+                                <th style="width: 140px; white-space: nowrap;">Registered</th>
+                                <th style="width: 140px; white-space: nowrap; padding-right: 2.5rem;">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -193,9 +280,9 @@
                                     <td>
                                         @if (!string.IsNullOrEmpty(inst.Id))
                                         {
-                                            <div class="action-buttons">
-                                                <button class="btn btn-accept-light btn-sm me-2" @onclick="() => AcceptInstitution(inst.Id!)">Accept</button>
-                                                <button class="btn btn-reject-light btn-sm" @onclick="() => RejectInstitution(inst.Id!)">Reject</button>
+                                            <div class="action-buttons" style="padding-right: 2.5rem;">
+                                                <button class="btn btn-accept-light btn-sm me-2" @onclick="async () => await AcceptInstitution(inst.Id!)">Accept</button>
+                                                <button class="btn btn-reject-light btn-sm" @onclick="async () => await RejectInstitution(inst.Id!)">Reject</button>
                                             </div>
                                         }
                                         else
@@ -217,56 +304,128 @@
                 </div>
             }
         }
-        else if (filteredUsers.Any())
+        else if (activeFilter == "Archive")
+        {
+            var archivedUsers = allUsers.Where(u =>
+                (studentProfilesByUserId.TryGetValue(u.Id, out var student) && student.AccountStatus == "Deleted") ||
+                (institutionProfilesByUserId.TryGetValue(u.Id, out var institution) && institution.AccountStatus == "Deleted") ||
+                (benefactorProfilesByUserId.TryGetValue(u.Id, out var benefactor) && benefactor.AccountStatus == "Deleted")
+            ).ToList();
+            
+            if (archivedUsers.Any())
+            {
+                <div class="table-responsive">
+                    <table class="table users-table" style="table-layout: fixed;">
+                        <thead>
+                            <tr>
+                                <th style="width: 280px; white-space: nowrap;">Name</th>
+                                <th style="width: 180px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Email</th>
+                                <th style="width: 90px; text-align: left;">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var archivedUser in archivedUsers.Take(pageSize))
+                            {
+                                string archivedFullName = "No Name";
+                                string archivedAffiliation = "Unknown";
+                                if (studentProfilesByUserId.TryGetValue(archivedUser.Id, out var studentProfile))
+                                {
+                                    archivedFullName = $"{studentProfile.FirstName} {(string.IsNullOrEmpty(studentProfile.MiddleName) ? "" : studentProfile.MiddleName + " ")}{studentProfile.LastName}";
+                                    archivedAffiliation = !string.IsNullOrEmpty(studentProfile.UniversityName) ? studentProfile.UniversityName : "Unknown Institution";
+                                }
+                                else if (institutionProfilesByUserId.TryGetValue(archivedUser.Id, out var institutionProfile))
+                                {
+                                    archivedFullName = $"{institutionProfile.AdminFirstName} {(string.IsNullOrEmpty(institutionProfile.AdminMiddleName) ? "" : institutionProfile.AdminMiddleName + " ")}{institutionProfile.AdminLastName}";
+                                    archivedAffiliation = !string.IsNullOrEmpty(institutionProfile.InstitutionName) ? institutionProfile.InstitutionName : "Unknown Institution";
+                                }
+                                else if (benefactorProfilesByUserId.TryGetValue(archivedUser.Id, out var benefactorProfile))
+                                {
+                                    archivedFullName = $"{benefactorProfile.AdminFirstName} {(string.IsNullOrEmpty(benefactorProfile.AdminMiddleName) ? "" : benefactorProfile.AdminMiddleName + " ")}{benefactorProfile.AdminLastName}";
+                                    archivedAffiliation = !string.IsNullOrEmpty(benefactorProfile.OrganizationName) ? benefactorProfile.OrganizationName : "Unknown Organization";
+                                }
+                                <tr>
+                                    <td>
+                                        <div class="user-info">
+                                            <div class="user-details">
+                                                <div class="user-name">@archivedFullName</div>
+                                                <div class="user-institution">@archivedAffiliation</div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td style="max-width: 180px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">@archivedUser.Email</td>
+                                    <td>
+                                        <div class="action-buttons">
+                                            <button class="btn btn-accept-light btn-sm me-2" @onclick="() => PromptRestoreUser(archivedUser.Id)" title="Restore User">Restore</button>
+                                            <button class="btn btn-reject-light btn-sm" @onclick="() => PromptPermanentDeleteUser(archivedUser.Id)" title="Permanently Delete User">Remove</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+                @if (archivedUsers.Count > pageSize)
+                {
+                    <div class="pagination-container">
+                        <button class="btn btn-outline-primary" @onclick="LoadMoreUsers">
+                            Load More Users (@(archivedUsers.Count - pageSize) remaining)
+                        </button>
+                    </div>
+                }
+            }
+            else
+            {
+                <div class="empty-state">
+                    <i class="bi bi-people" style="font-size: 4rem; color: #ccc;"></i>
+                    <h4>No Users Found</h4>
+                    <p>@(string.IsNullOrEmpty(searchQuery) ? "No users match the current filter." : $"No users found matching \"{searchQuery}\".")</p>
+                </div>
+            }
+        }
+        else
         {
             <div class="table-responsive">
                 <table class="table users-table" style="table-layout: fixed;">
                     <thead>
                         <tr>
-                            <th style="width: 200px; white-space: nowrap;">User</th>
-                            <th style="width: 220px; white-space: nowrap;">Email</th>
-                            <th style="width: 120px; white-space: nowrap;">Role</th>
-                            <th style="width: 140px; white-space: nowrap;">Registration Date</th>
-                            <th style="width: 100px; white-space: nowrap;">Status</th>
-                            <th style="width: 140px; white-space: nowrap;">Actions</th>
+                            <th style="width: 280px; white-space: nowrap;">Name</th>
+                            <th style="width: 240px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Email</th>
+                            <th style="width: 32px;"></th>
                         </tr>
                     </thead>
                     <tbody>
                         @foreach (var user in filteredUsers.Take(pageSize))
                         {
+                            string fullName = "No Name";
+                            string affiliation = "Unknown";
+                            if (studentProfilesByUserId.TryGetValue(user.Id, out var student))
+                            {
+                                fullName = $"{student.FirstName} {(string.IsNullOrEmpty(student.MiddleName) ? "" : student.MiddleName + " ")}{student.LastName}";
+                                affiliation = !string.IsNullOrEmpty(student.UniversityName) ? student.UniversityName : "Unknown Institution";
+                            }
+                            else if (institutionProfilesByUserId.TryGetValue(user.Id, out var institution))
+                            {
+                                fullName = $"{institution.AdminFirstName} {(string.IsNullOrEmpty(institution.AdminMiddleName) ? "" : institution.AdminMiddleName + " ")}{institution.AdminLastName}";
+                                affiliation = !string.IsNullOrEmpty(institution.InstitutionName) ? institution.InstitutionName : "Unknown Institution";
+                            }
+                            else if (benefactorProfilesByUserId.TryGetValue(user.Id, out var benefactor))
+                            {
+                                fullName = $"{benefactor.AdminFirstName} {(string.IsNullOrEmpty(benefactor.AdminMiddleName) ? "" : benefactor.AdminMiddleName + " ")}{benefactor.AdminLastName}";
+                                affiliation = !string.IsNullOrEmpty(benefactor.OrganizationName) ? benefactor.OrganizationName : "Unknown Organization";
+                            }
                             <tr>
                                 <td>
                                     <div class="user-info">
-                                        <div class="user-avatar">
-                                            <i class="bi bi-person-circle"></i>
-                                        </div>
                                         <div class="user-details">
-                                            <div class="user-name">@(user.UserName ?? "No Name")</div>
-                                            <div class="user-id">ID: @user.Id.Substring(0, 8)...</div>
+                                            <div class="user-name">@fullName</div>
+                                            <div class="user-institution">@affiliation</div>
                                         </div>
                                     </div>
                                 </td>
-                                <td>@user.Email</td>
-                                <td>
-                                    <span class="role-badge role-@(GetUserRole(user.Id).ToLower())">
-                                        @GetUserRole(user.Id)
-                                    </span>
-                                </td>
-                                <td>@(user.LockoutEnd?.ToString("MMM dd, yyyy") ?? "Unknown")</td>
-                                <td>
-                                    <span class="status-badge @(user.EmailConfirmed ? "status-active" : "status-pending")">
-                                        @(user.EmailConfirmed ? "Active" : "Pending")
-                                    </span>
-                                </td>
+                                <td style="max-width: 240px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">@user.Email</td>
                                 <td>
                                     <div class="action-buttons">
-                                        <button class="btn btn-sm btn-outline-primary" @onclick="() => ViewUser(user.Id)">
-                                            <i class="bi bi-eye"></i>
-                                        </button>
-                                        <button class="btn btn-sm btn-outline-warning" @onclick="() => EditUser(user.Id)">
-                                            <i class="bi bi-pencil"></i>
-                                        </button>
-                                        <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteUser(user.Id)">
+                                        <button class="btn btn-sm btn-outline-danger" @onclick="() => PromptDeleteUser(user.Id)">
                                             <i class="bi bi-trash"></i>
                                         </button>
                                     </div>
@@ -276,7 +435,6 @@
                     </tbody>
                 </table>
             </div>
-            
             @if (filteredUsers.Count() > pageSize)
             {
                 <div class="pagination-container">
@@ -286,311 +444,9 @@
                 </div>
             }
         }
-        else
-        {
-            <div class="empty-state">
-                <i class="bi bi-people" style="font-size: 4rem; color: #ccc;"></i>
-                <h4>No Users Found</h4>
-                <p>@(string.IsNullOrEmpty(searchQuery) ? "No users match the current filter." : $"No users found matching \"{searchQuery}\".")</p>
-            </div>
-        }
     </div>
 </div>
 
-<style>
-    .dashboard-center-container {
-        padding: 2rem;
-        max-width: 1400px;
-        margin: 0 auto;
-    }
-
-    .page-header-section {
-        background: linear-gradient(135deg, #fff 0%, #f8fafc 100%);
-        border-radius: 16px;
-        padding: 2rem;
-        margin-bottom: 2rem;
-        box-shadow: 0 4px 16px rgba(0,0,0,0.08);
-        border: 1px solid rgba(0,0,0,0.05);
-    }
-
-    .page-header-content {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        flex-wrap: wrap;
-        gap: 1rem;
-    }
-
-    .page-title {
-        font-size: 2.5rem;
-        font-weight: 700;
-        color: #2d3748;
-        margin: 0;
-        display: flex;
-        align-items: center;
-    }
-
-    .page-subtitle {
-        color: #4a5568;
-        font-size: 1.1rem;
-        margin: 0.5rem 0 0 0;
-    }
-
-    .stats-grid-users {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-        gap: 1.5rem;
-        margin-bottom: 2rem;
-    }
-
-    .stat-card {
-        background: linear-gradient(135deg, #fff 0%, #f8fafc 100%);
-        border-radius: 16px;
-        padding: 1.5rem;
-        box-shadow: 0 4px 16px rgba(0,0,0,0.08);
-        border: 1px solid rgba(0,0,0,0.05);
-        transition: all 0.3s ease;
-        position: relative;
-        overflow: hidden;
-    }
-
-    .stat-card::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        height: 4px;
-        background: linear-gradient(90deg, #1560d4, #0d387e);
-    }
-
-    .stat-card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 8px 25px rgba(0,0,0,0.15);
-    }
-
-    .stat-card-header {
-        display: flex;
-        align-items: center;
-        margin-bottom: 1rem;
-    }
-
-    .stat-icon {
-        width: 48px;
-        height: 48px;
-        border-radius: 12px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 20px;
-        color: white;
-        margin-right: 1rem;
-    }
-
-    .stat-icon.users { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
-    .stat-icon.students { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
-    .stat-icon.institutions { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
-    .stat-icon.benefactors { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); }
-
-    .stat-value {
-        font-size: 2.5rem;
-        font-weight: 700;
-        color: #2d3748;
-        line-height: 1;
-        margin-bottom: 0.5rem;
-    }
-
-    .stat-label {
-        font-size: 1rem;
-        font-weight: 600;
-        color: #4a5568;
-    }
-
-    .filter-tabs {
-        display: flex;
-        gap: 0.5rem;
-        margin-bottom: 2rem;
-        flex-wrap: wrap;
-    }
-
-    .filter-tab {
-        background: #f8fafc;
-        border: 1px solid #e2e8f0;
-        color: #4a5568;
-        padding: 0.75rem 1rem;
-        border-radius: 8px;
-        font-weight: 500;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        text-decoration: none;
-        display: flex;
-        align-items: center;
-    }
-
-    .filter-tab:hover {
-        background: #e2e8f0;
-        transform: translateY(-1px);
-    }
-
-    .filter-tab.active {
-        background: linear-gradient(135deg, #1560d4, #0d387e);
-        color: white;
-        border-color: #1560d4;
-    }
-
-    .users-table-container {
-        background: linear-gradient(135deg, #fff 0%, #f8fafc 100%);
-        border-radius: 16px;
-        box-shadow: 0 4px 16px rgba(0,0,0,0.08);
-        border: 1px solid rgba(0,0,0,0.05);
-        overflow: hidden;
-    }
-
-    .table-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 1.5rem 2rem;
-        border-bottom: 1px solid #e2e8f0;
-        background: #f8fafc;
-    }
-
-    .table-header h3 {
-        margin: 0;
-        color: #2d3748;
-        font-weight: 600;
-    }
-
-    .users-table {
-        width: 100%;
-        margin: 0;
-    }
-
-    .users-table th {
-        background: #f8fafc;
-        border: none;
-        padding: 1rem 1.5rem;
-        font-weight: 600;
-        color: #4a5568;
-        border-bottom: 1px solid #e2e8f0;
-    }
-
-    .users-table td {
-        padding: 1rem 1.5rem;
-        border: none;
-        border-bottom: 1px solid #f1f5f9;
-    }
-
-    .user-info {
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-    }
-
-    .user-avatar {
-        width: 40px;
-        height: 40px;
-        background: linear-gradient(135deg, #1560d4, #0d387e);
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: white;
-        font-size: 1.25rem;
-    }
-
-    .user-name {
-        font-weight: 600;
-        color: #2d3748;
-    }
-
-    .user-id {
-        font-size: 0.875rem;
-        color: #6b7280;
-    }
-
-    .role-badge {
-        padding: 0.25rem 0.75rem;
-        border-radius: 20px;
-        font-size: 0.75rem;
-        font-weight: 600;
-        text-transform: uppercase;
-    }
-
-    .role-student { background: #fef3c7; color: #d97706; }
-    .role-institution { background: #dbeafe; color: #2563eb; }
-    .role-benefactor { background: #dcfce7; color: #16a34a; }
-    .role-superadmin { background: #fce7f3; color: #be185d; }
-
-    .status-badge {
-        padding: 0.25rem 0.75rem;
-        border-radius: 20px;
-        font-size: 0.75rem;
-        font-weight: 600;
-        text-transform: uppercase;
-    }
-
-    .status-active { background: #dcfce7; color: #16a34a; }
-    .status-pending { background: #fef3c7; color: #d97706; }
-
-    .action-buttons {
-        display: flex;
-        gap: 0.5rem;
-    }
-
-    .btn-accept-light {
-        background: #e6f4ea;
-        color: #218838;
-        border: 1px solid #b7e4c7;
-        transition: background 0.2s;
-    }
-    .btn-accept-light:hover {
-        background: #c7e9d7;
-        color: #218838;
-    }
-
-    .btn-reject-light {
-        background: #fdeaea;
-        color: #c82333;
-        border: 1px solid #f5c6cb;
-        transition: background 0.2s;
-    }
-    .btn-reject-light:hover {
-        background: #f8d7da;
-        color: #c82333;
-    }
-
-    .loading-container, .empty-state {
-        text-align: center;
-        padding: 3rem 2rem;
-        color: #6b7280;
-    }
-
-    .pagination-container {
-        padding: 1.5rem 2rem;
-        text-align: center;
-        border-top: 1px solid #e2e8f0;
-    }
-
-    @@media (max-width: 768px) {
-        .page-header-content {
-            flex-direction: column;
-            align-items: flex-start;
-        }
-        
-        .stats-grid-users {
-            grid-template-columns: 1fr;
-        }
-        
-        .filter-tabs {
-            flex-direction: column;
-        }
-        
-        .table-responsive {
-            font-size: 0.875rem;
-        }
-    }
-</style>
 
 @code {
     private string? currentUserName;
@@ -598,12 +454,19 @@
     private List<IdentityUser> allUsers = new();
     private IEnumerable<IdentityUser> filteredUsers = new List<IdentityUser>();
     private Dictionary<string, string> userRoles = new();
+    private Dictionary<string, string> userVerificationStatuses = new();
+    // Profile caches for instant lookup
+    private Dictionary<string, StudentProfile> studentProfilesByUserId = new();
+    private Dictionary<string, InstitutionProfile> institutionProfilesByUserId = new();
+    private Dictionary<string, BenefactorProfile> benefactorProfilesByUserId = new();
     
     private int totalUsers = 0;
     private int studentCount = 0;
     private int institutionCount = 0;
     private int benefactorCount = 0;
     private int superAdminCount = 0;
+    private int totalRequests = 0;
+    private int totalArchived = 0;
     
     private string activeFilter = "All";
     // Only for requests tab
@@ -677,22 +540,30 @@
         {
             isLoading = true;
             StateHasChanged();
-            
             Console.WriteLine("LoadUsersData: Starting to load users data...");
-            
-            // Use separate context for each operation to avoid conflicts
             using var context = DbContextFactory.CreateDbContext();
-            
-            // Load all users using the UserManager
+            // Load all users
             allUsers = await UserManager.Users.ToListAsync();
             totalUsers = allUsers.Count;
-            
+            // Bulk load all profiles and cache by UserId
+            studentProfilesByUserId = (await context.StudentProfiles.ToListAsync())
+                .ToDictionary(sp => sp.UserId ?? "", sp => sp);
+            institutionProfilesByUserId = (await context.InstitutionProfiles.ToListAsync())
+                .ToDictionary(ip => ip.UserId ?? "", ip => ip);
+            benefactorProfilesByUserId = (await context.BenefactorProfiles.ToListAsync())
+                .ToDictionary(bp => bp.UserId ?? "", bp => bp);
             // Load role counts and user roles
             await LoadUserRoles();
-            
+            // Load verification statuses
+            await LoadUserVerificationStatuses();
+            // Calculate totalArchived
+            totalArchived = allUsers.Count(u =>
+                (studentProfilesByUserId.TryGetValue(u.Id, out var student) && student.AccountStatus == "Deleted") ||
+                (institutionProfilesByUserId.TryGetValue(u.Id, out var institution) && institution.AccountStatus == "Deleted") ||
+                (benefactorProfilesByUserId.TryGetValue(u.Id, out var benefactor) && benefactor.AccountStatus == "Deleted")
+            );
             // Apply current filter
             ApplyFilter();
-            
             Console.WriteLine($"LoadUsersData: Loaded {totalUsers} users successfully");
         }
         catch (Exception ex)
@@ -751,6 +622,62 @@
         return userRoles.TryGetValue(userId, out var role) ? role : "Unknown";
     }
     
+    private async Task LoadUserVerificationStatuses()
+    {
+        try
+        {
+            userVerificationStatuses.Clear();
+            using var context = DbContextFactory.CreateDbContext();
+            
+            // Load all verification statuses in bulk
+            var studentStatuses = await context.StudentProfiles
+                .Select(sp => new { sp.UserId, sp.VerificationStatus })
+                .ToListAsync();
+                
+            var institutionStatuses = await context.InstitutionProfiles
+                .Select(ip => new { ip.UserId, ip.VerificationStatus })
+                .ToListAsync();
+                
+            var benefactorStatuses = await context.BenefactorProfiles
+                .Select(bp => new { bp.UserId, bp.VerificationStatus })
+                .ToListAsync();
+            
+            // Populate the dictionary
+            foreach (var status in studentStatuses)
+                userVerificationStatuses[status.UserId] = status.VerificationStatus ?? "Pending";
+                
+            foreach (var status in institutionStatuses)
+                userVerificationStatuses[status.UserId] = status.VerificationStatus ?? "Pending";
+                
+            foreach (var status in benefactorStatuses)
+                userVerificationStatuses[status.UserId] = status.VerificationStatus ?? "Pending";
+            
+            // Set SuperAdmins as verified
+            foreach (var user in allUsers)
+            {
+                var role = GetUserRole(user.Id);
+                if (role == "SuperAdmin")
+                {
+                    userVerificationStatuses[user.Id] = "Verified";
+                }
+                else if (!userVerificationStatuses.ContainsKey(user.Id))
+                {
+                    // Fall back to email confirmation for users without profiles
+                    userVerificationStatuses[user.Id] = user.EmailConfirmed ? "Verified" : "Pending";
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading user verification statuses: {ex.Message}");
+        }
+    }
+    
+    private string GetUserVerificationStatus(string userId)
+    {
+        return userVerificationStatuses.TryGetValue(userId, out var status) ? status : "Pending";
+    }
+    
     private void SetFilter(string filter)
     {
         activeFilter = filter;
@@ -762,56 +689,101 @@
         try
         {
             Console.WriteLine($"ApplyFilter called - Search query: '{searchQuery}', Active filter: '{activeFilter}', Total users: {allUsers.Count}");
-            
-            // Filter regular users
-            if (activeFilter != "Requests")
-            {
-                var filtered = allUsers.AsEnumerable();
-                
-                // Apply role filter
-                if (activeFilter != "All")
-                {
-                    filtered = filtered.Where(u => GetUserRole(u.Id) == activeFilter);
-                    Console.WriteLine($"After role filter: {filtered.Count()} users");
-                }
-                
-                // Apply search filter
-                if (!string.IsNullOrEmpty(searchQuery))
-                {
-                    var query = searchQuery.ToLower();
-                    filtered = filtered.Where(u => 
-                        (u.UserName?.ToLower().Contains(query) ?? false) ||
-                        (u.Email?.ToLower().Contains(query) ?? false) ||
-                        u.Id.ToLower().Contains(query));
-                    Console.WriteLine($"After search filter: {filtered.Count()} users");
-                }
-                
-                filteredUsers = filtered.OrderBy(u => u.UserName);
-                Console.WriteLine($"Final filtered users count: {filteredUsers.Count()}");
-            }
-            
-            // Filter requests
+
+            // Handle Requests tab filtering separately
             if (activeFilter == "Requests")
             {
-                var filtered = pendingInstitutions.AsEnumerable();
-                // Filter by request type dropdown
+                var reqs = pendingInstitutions.AsEnumerable();
+
                 if (requestTypeDropdownValue != "All")
                 {
-                    filtered = filtered.Where(r => r.InstitutionType == requestTypeDropdownValue);
+                    reqs = reqs.Where(r => string.Equals(r.InstitutionType, requestTypeDropdownValue, StringComparison.OrdinalIgnoreCase));
+                    Console.WriteLine($"After request type filter: {reqs.Count()} requests");
                 }
-                // Apply search filter for requests
+
                 if (!string.IsNullOrEmpty(searchQuery))
                 {
-                    var query = searchQuery.ToLower();
-                    filtered = filtered.Where(r => 
-                        (r.Name?.ToLower().Contains(query) ?? false) ||
-                        (r.InstitutionName?.ToLower().Contains(query) ?? false) ||
-                        (r.Email?.ToLower().Contains(query) ?? false));
-                    Console.WriteLine($"After search filter: {filtered.Count()} requests");
+                    var q = searchQuery.ToLower();
+                    reqs = reqs.Where(r =>
+                        (r.Name?.ToLower().Contains(q) ?? false) ||
+                        (r.InstitutionName?.ToLower().Contains(q) ?? false) ||
+                        (r.Email?.ToLower().Contains(q) ?? false) ||
+                        (r.Id?.ToLower().Contains(q) ?? false));
+                    Console.WriteLine($"After request search filter: {reqs.Count()} requests");
                 }
-                filteredRequests = filtered.OrderBy(r => r.Name);
+
+                filteredRequests = reqs.OrderBy(r => r.SubmittedAt);
                 Console.WriteLine($"Final filtered requests count: {filteredRequests.Count()}");
+                StateHasChanged();
+                return;
             }
+
+            // Filter regular users
+            var filtered = allUsers.AsEnumerable();
+
+            // Apply role filter
+            if (activeFilter != "All")
+            {
+                filtered = filtered.Where(u => GetUserRole(u.Id) == activeFilter);
+                Console.WriteLine($"After role filter: {filtered.Count()} users");
+            }
+            else if (activeFilter == "All")
+            {
+                // For "All" tab, exclude deleted users
+                filtered = filtered.Where(u => 
+                    !((studentProfilesByUserId.TryGetValue(u.Id, out var student) && student.AccountStatus == "Deleted") ||
+                      (institutionProfilesByUserId.TryGetValue(u.Id, out var institution) && institution.AccountStatus == "Deleted") ||
+                      (benefactorProfilesByUserId.TryGetValue(u.Id, out var benefactor) && benefactor.AccountStatus == "Deleted")));
+                Console.WriteLine($"After excluding deleted users from All tab: {filtered.Count()} users");
+            }
+
+            // For Students tab, only show verified and non-deleted students
+            if (activeFilter == "Student")
+            {
+                using var context = DbContextFactory.CreateDbContext();
+                var verifiedStudentIds = context.StudentProfiles
+                    .Where(sp => sp.VerificationStatus == "Verified" && sp.AccountStatus != "Deleted")
+                    .Select(sp => sp.UserId)
+                    .ToHashSet();
+                filtered = filtered.Where(u => verifiedStudentIds.Contains(u.Id));
+                Console.WriteLine($"After verified filter: {filtered.Count()} users");
+            }
+            // For Institutions tab, only show verified and non-deleted institutions
+            if (activeFilter == "Institution")
+            {
+                using var context = DbContextFactory.CreateDbContext();
+                var verifiedInstitutionIds = context.InstitutionProfiles
+                    .Where(ip => ip.VerificationStatus == "Verified" && ip.AccountStatus != "Deleted")
+                    .Select(ip => ip.UserId)
+                    .ToHashSet();
+                filtered = filtered.Where(u => verifiedInstitutionIds.Contains(u.Id));
+                Console.WriteLine($"After verified institution filter: {filtered.Count()} users");
+            }
+            // For Benefactor tab, only show verified and non-deleted benefactors
+            if (activeFilter == "Benefactor")
+            {
+                using var context = DbContextFactory.CreateDbContext();
+                var verifiedBenefactorIds = context.BenefactorProfiles
+                    .Where(bp => bp.VerificationStatus == "Verified" && bp.AccountStatus != "Deleted")
+                    .Select(bp => bp.UserId)
+                    .ToHashSet();
+                filtered = filtered.Where(u => verifiedBenefactorIds.Contains(u.Id));
+                Console.WriteLine($"After verified benefactor filter: {filtered.Count()} users");
+            }
+
+            // Apply search filter
+            if (!string.IsNullOrEmpty(searchQuery))
+            {
+                var query = searchQuery.ToLower();
+                filtered = filtered.Where(u =>
+                    (u.UserName?.ToLower().Contains(query) ?? false) ||
+                    (u.Email?.ToLower().Contains(query) ?? false) ||
+                    (u.Id?.ToLower().Contains(query) ?? false));
+                Console.WriteLine($"After search filter: {filtered.Count()} users");
+            }
+
+            filteredUsers = filtered.OrderBy(u => u.UserName);
+            Console.WriteLine($"Final filtered users count: {filteredUsers.Count()}");
         }
         catch (Exception ex)
         {
@@ -832,6 +804,7 @@
     private async Task RefreshUsers()
     {
         await LoadUsersData();
+        await LoadUserVerificationStatuses();
     }
     
     private void LoadMoreUsers()
@@ -859,10 +832,267 @@
         Console.WriteLine($"Edit user: {userId}");
     }
     
-    private void DeleteUser(string userId)
+    // --- DELETE CONFIRMATION MODAL STATE ---
+    private bool showDeleteModal = false;
+    private string? userIdToDelete;
+    private string? userNameToDelete;
+
+    // --- PERMANENT DELETE MODAL STATE ---
+    private bool showPermanentDeleteModal = false;
+    private string? userIdToPermanentDelete;
+    private string? userNameToPermanentDelete;
+
+    // --- RESTORE MODAL STATE ---
+    private bool showRestoreModal = false;
+    private string? userIdToRestore;
+    private string? userNameToRestore;
+
+    private void PromptPermanentDeleteUser(string userId)
     {
-        // TODO: Implement delete user confirmation
-        Console.WriteLine($"Delete user: {userId}");
+        userIdToPermanentDelete = userId;
+        var user = allUsers.FirstOrDefault(u => u.Id == userId);
+        userNameToPermanentDelete = user?.UserName ?? "Unknown User";
+        showPermanentDeleteModal = true;
+        StateHasChanged();
+    }
+
+    private async Task ConfirmPermanentDeleteUser()
+    {
+        if (string.IsNullOrEmpty(userIdToPermanentDelete)) return;
+        try
+        {
+            await using var context = DbContextFactory.CreateDbContext();
+            // Remove profile
+            var student = await context.StudentProfiles.FirstOrDefaultAsync(sp => sp.UserId == userIdToPermanentDelete);
+            if (student != null)
+            {
+                context.StudentProfiles.Remove(student);
+                await context.SaveChangesAsync();
+                Console.WriteLine($"Student {userIdToPermanentDelete} permanently deleted.");
+            }
+            else
+            {
+                var institution = await context.InstitutionProfiles.FirstOrDefaultAsync(ip => ip.UserId == userIdToPermanentDelete);
+                if (institution != null)
+                {
+                    context.InstitutionProfiles.Remove(institution);
+                    await context.SaveChangesAsync();
+                    Console.WriteLine($"Institution {userIdToPermanentDelete} permanently deleted.");
+                }
+                else
+                {
+                    var benefactor = await context.BenefactorProfiles.FirstOrDefaultAsync(bp => bp.UserId == userIdToPermanentDelete);
+                    if (benefactor != null)
+                    {
+                        context.BenefactorProfiles.Remove(benefactor);
+                        await context.SaveChangesAsync();
+                        Console.WriteLine($"Benefactor {userIdToPermanentDelete} permanently deleted.");
+                    }
+                    else
+                    {
+                        Console.WriteLine($"No profile found for user {userIdToPermanentDelete}.");
+                    }
+                }
+            }
+            // Remove IdentityUser
+            var identityUser = await UserManager.FindByIdAsync(userIdToPermanentDelete);
+            if (identityUser != null)
+            {
+                await UserManager.DeleteAsync(identityUser);
+                Console.WriteLine($"IdentityUser {userIdToPermanentDelete} permanently deleted.");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error permanently deleting user: {ex.Message}");
+        }
+        showPermanentDeleteModal = false;
+        await RefreshUsers();
+        StateHasChanged();
+    }
+
+    private void CancelPermanentDeleteUser()
+    {
+        showPermanentDeleteModal = false;
+        userIdToPermanentDelete = null;
+        userNameToPermanentDelete = null;
+        StateHasChanged();
+    }
+
+    private void PromptRestoreUser(string userId)
+    {
+        userIdToRestore = userId;
+        var user = allUsers.FirstOrDefault(u => u.Id == userId);
+        userNameToRestore = user?.UserName ?? "Unknown User";
+        showRestoreModal = true;
+        StateHasChanged();
+    }
+
+    private async Task ConfirmRestoreUser()
+    {
+        if (string.IsNullOrEmpty(userIdToRestore)) return;
+        try
+        {
+            await using var context = DbContextFactory.CreateDbContext();
+            // Try to find the profile type for this user and restore it
+            var student = await context.StudentProfiles.FirstOrDefaultAsync(sp => sp.UserId == userIdToRestore);
+            if (student != null)
+            {
+                student.AccountStatus = "Active";
+                context.StudentProfiles.Update(student);
+                await context.SaveChangesAsync();
+                
+                // Update local cache immediately
+                if (studentProfilesByUserId.ContainsKey(userIdToRestore))
+                {
+                    studentProfilesByUserId[userIdToRestore].AccountStatus = "Active";
+                }
+                Console.WriteLine($"Student {userIdToRestore} restored to Active status.");
+            }
+            else
+            {
+                var institution = await context.InstitutionProfiles.FirstOrDefaultAsync(ip => ip.UserId == userIdToRestore);
+                if (institution != null)
+                {
+                    institution.AccountStatus = "Active";
+                    context.InstitutionProfiles.Update(institution);
+                    await context.SaveChangesAsync();
+                    
+                    // Update local cache immediately
+                    if (institutionProfilesByUserId.ContainsKey(userIdToRestore))
+                    {
+                        institutionProfilesByUserId[userIdToRestore].AccountStatus = "Active";
+                    }
+                    Console.WriteLine($"Institution {userIdToRestore} restored to Active status.");
+                }
+                else
+                {
+                    var benefactor = await context.BenefactorProfiles.FirstOrDefaultAsync(bp => bp.UserId == userIdToRestore);
+                    if (benefactor != null)
+                    {
+                        benefactor.AccountStatus = "Active";
+                        context.BenefactorProfiles.Update(benefactor);
+                        await context.SaveChangesAsync();
+                        
+                        // Update local cache immediately
+                        if (benefactorProfilesByUserId.ContainsKey(userIdToRestore))
+                        {
+                            benefactorProfilesByUserId[userIdToRestore].AccountStatus = "Active";
+                        }
+                        Console.WriteLine($"Benefactor {userIdToRestore} restored to Active status.");
+                    }
+                    else
+                    {
+                        Console.WriteLine($"No profile found for user {userIdToRestore}.");
+                    }
+                }
+            }
+            
+            // Apply filter to update the UI immediately without full refresh
+            ApplyFilter();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error restoring user: {ex.Message}");
+        }
+        showRestoreModal = false;
+        StateHasChanged();
+    }
+
+    private void CancelRestoreUser()
+    {
+        showRestoreModal = false;
+        userIdToRestore = null;
+        userNameToRestore = null;
+        StateHasChanged();
+    }
+
+    private void PromptDeleteUser(string userId)
+    {
+        userIdToDelete = userId;
+        var user = allUsers.FirstOrDefault(u => u.Id == userId);
+        userNameToDelete = user?.UserName ?? "Unknown User";
+        showDeleteModal = true;
+        StateHasChanged();
+    }
+
+    private async Task ConfirmDeleteUser()
+    {
+        if (string.IsNullOrEmpty(userIdToDelete)) return;
+        try
+        {
+            await using var context = DbContextFactory.CreateDbContext();
+            // Try to find the profile type for this user
+            var student = await context.StudentProfiles.FirstOrDefaultAsync(sp => sp.UserId == userIdToDelete);
+            if (student != null)
+            {
+                student.AccountStatus = "Deleted";
+                context.StudentProfiles.Update(student);
+                await context.SaveChangesAsync();
+                
+                // Update local cache immediately
+                if (studentProfilesByUserId.ContainsKey(userIdToDelete))
+                {
+                    studentProfilesByUserId[userIdToDelete].AccountStatus = "Deleted";
+                }
+                Console.WriteLine($"Student {userIdToDelete} marked as Deleted.");
+            }
+            else
+            {
+                var institution = await context.InstitutionProfiles.FirstOrDefaultAsync(ip => ip.UserId == userIdToDelete);
+                if (institution != null)
+                {
+                    institution.AccountStatus = "Deleted";
+                    context.InstitutionProfiles.Update(institution);
+                    await context.SaveChangesAsync();
+                    
+                    // Update local cache immediately
+                    if (institutionProfilesByUserId.ContainsKey(userIdToDelete))
+                    {
+                        institutionProfilesByUserId[userIdToDelete].AccountStatus = "Deleted";
+                    }
+                    Console.WriteLine($"Institution {userIdToDelete} marked as Deleted.");
+                }
+                else
+                {
+                    var benefactor = await context.BenefactorProfiles.FirstOrDefaultAsync(bp => bp.UserId == userIdToDelete);
+                    if (benefactor != null)
+                    {
+                        benefactor.AccountStatus = "Deleted";
+                        context.BenefactorProfiles.Update(benefactor);
+                        await context.SaveChangesAsync();
+                        
+                        // Update local cache immediately
+                        if (benefactorProfilesByUserId.ContainsKey(userIdToDelete))
+                        {
+                            benefactorProfilesByUserId[userIdToDelete].AccountStatus = "Deleted";
+                        }
+                        Console.WriteLine($"Benefactor {userIdToDelete} marked as Deleted. AccountStatus: {benefactor.AccountStatus}");
+                    }
+                    else
+                    {
+                        Console.WriteLine($"No profile found for user {userIdToDelete}.");
+                    }
+                }
+            }
+            
+            // Apply filter to update the UI immediately without full refresh
+            ApplyFilter();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error marking user as deleted: {ex.Message}");
+        }
+        showDeleteModal = false;
+        StateHasChanged();
+    }
+
+    private void CancelDeleteUser()
+    {
+        showDeleteModal = false;
+        userIdToDelete = null;
+        userNameToDelete = null;
+        StateHasChanged();
     }
     
     public void Dispose()
@@ -885,6 +1115,8 @@
         
         // Fetch pending institutions from backend
         pendingInstitutions = await FetchPendingInstitutionsAsync();
+        // Update totalRequests after fetching
+        totalRequests = pendingInstitutions.Count;
         
         // Apply current filter after loading
         ApplyFilter();
@@ -959,13 +1191,182 @@
 
     private async Task AcceptInstitution(string institutionId)
     {
-        if (!string.IsNullOrEmpty(institutionId))
+        if (string.IsNullOrEmpty(institutionId)) return;
+
+        Console.WriteLine($"AcceptInstitution: attempting to accept request {institutionId}");
+
+        try
         {
-            // TODO: Accept logic
-            await Task.Delay(200);
+            await using var context = DbContextFactory.CreateDbContext();
+
+            // Find the request type from the local pending list
+            var req = pendingInstitutions.FirstOrDefault(i => i.Id == institutionId);
+            if (req == null)
+            {
+                Console.WriteLine($"AcceptInstitution: request {institutionId} not found in pending list");
+                return;
+            }
+
+            if (req.InstitutionType == "Student")
+            {
+                var student = await context.StudentProfiles.FirstOrDefaultAsync(sp => sp.UserId == institutionId);
+                if (student != null)
+                {
+                    student.VerificationStatus = "Verified";
+                    student.IsVerified = true;
+                    context.StudentProfiles.Update(student);
+                    await context.SaveChangesAsync();
+                    Console.WriteLine($"AcceptInstitution: student {institutionId} marked Verified in DB");
+                    // Ensure the AspNet Identity user has the Student role so the Students tab filter includes them
+                    try
+                    {
+                        var identityUser = await UserManager.FindByIdAsync(institutionId);
+                        if (identityUser != null)
+                        {
+                            var roles = await UserManager.GetRolesAsync(identityUser);
+                            if (!roles.Contains("Student"))
+                            {
+                                var addRoleResult = await UserManager.AddToRoleAsync(identityUser, "Student");
+                                if (addRoleResult.Succeeded)
+                                {
+                                    Console.WriteLine($"AcceptInstitution: added 'Student' role to user {institutionId}");
+                                }
+                                else
+                                {
+                                    Console.WriteLine($"AcceptInstitution: failed to add 'Student' role to user {institutionId}: {string.Join(',', addRoleResult.Errors.Select(e => e.Description))}");
+                                }
+                            }
+                        }
+                        else
+                        {
+                            Console.WriteLine($"AcceptInstitution: Identity user {institutionId} not found to add role");
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"AcceptInstitution: error ensuring Student role for {institutionId}: {ex.Message}");
+                    }
+                }
+                else
+                {
+                    Console.WriteLine($"AcceptInstitution: student record for {institutionId} not found in DB");
+                }
+            }
+            else if (req.InstitutionType == "Institution")
+            {
+                var institution = await context.InstitutionProfiles.FirstOrDefaultAsync(ip => ip.UserId == institutionId);
+                if (institution != null)
+                {
+                    institution.VerificationStatus = "Verified";
+                    institution.IsVerified = true;
+                    context.InstitutionProfiles.Update(institution);
+                    await context.SaveChangesAsync();
+                    Console.WriteLine($"AcceptInstitution: institution {institutionId} marked Verified in DB");
+                    // Ensure the AspNet Identity user has the Institution role
+                    try
+                    {
+                        var identityUser = await UserManager.FindByIdAsync(institutionId);
+                        if (identityUser != null)
+                        {
+                            var roles = await UserManager.GetRolesAsync(identityUser);
+                            if (!roles.Contains("Institution"))
+                            {
+                                var addRoleResult = await UserManager.AddToRoleAsync(identityUser, "Institution");
+                                if (addRoleResult.Succeeded)
+                                {
+                                    Console.WriteLine($"AcceptInstitution: added 'Institution' role to user {institutionId}");
+                                }
+                                else
+                                {
+                                    Console.WriteLine($"AcceptInstitution: failed to add 'Institution' role to user {institutionId}: {string.Join(',', addRoleResult.Errors.Select(e => e.Description))}");
+                                }
+                            }
+                        }
+                        else
+                        {
+                            Console.WriteLine($"AcceptInstitution: Identity user {institutionId} not found to add role");
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"AcceptInstitution: error ensuring Institution role for {institutionId}: {ex.Message}");
+                    }
+                }
+                else
+                {
+                    Console.WriteLine($"AcceptInstitution: institution record for {institutionId} not found in DB");
+                }
+            }
+            else if (req.InstitutionType == "Benefactor")
+            {
+                var benefactor = await context.BenefactorProfiles.FirstOrDefaultAsync(bp => bp.UserId == institutionId);
+                if (benefactor != null)
+                {
+                    benefactor.VerificationStatus = "Verified";
+                    benefactor.IsVerified = true;
+                    context.BenefactorProfiles.Update(benefactor);
+                    await context.SaveChangesAsync();
+                    Console.WriteLine($"AcceptInstitution: benefactor {institutionId} marked Verified in DB");
+                    // Ensure the AspNet Identity user has the Benefactor role
+                    try
+                    {
+                        var identityUser = await UserManager.FindByIdAsync(institutionId);
+                        if (identityUser != null)
+                        {
+                            var roles = await UserManager.GetRolesAsync(identityUser);
+                            if (!roles.Contains("Benefactor"))
+                            {
+                                var addRoleResult = await UserManager.AddToRoleAsync(identityUser, "Benefactor");
+                                if (addRoleResult.Succeeded)
+                                {
+                                    Console.WriteLine($"AcceptInstitution: added 'Benefactor' role to user {institutionId}");
+                                }
+                                else
+                                {
+                                    Console.WriteLine($"AcceptInstitution: failed to add 'Benefactor' role to user {institutionId}: {string.Join(',', addRoleResult.Errors.Select(e => e.Description))}");
+                                }
+                            }
+                        }
+                        else
+                        {
+                            Console.WriteLine($"AcceptInstitution: Identity user {institutionId} not found to add role");
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"AcceptInstitution: error ensuring Benefactor role for {institutionId}: {ex.Message}");
+                    }
+                }
+                else
+                {
+                    Console.WriteLine($"AcceptInstitution: benefactor record for {institutionId} not found in DB");
+                }
+            }
+            else
+            {
+                Console.WriteLine($"AcceptInstitution: request {institutionId} is of type {req.InstitutionType}; no DB action implemented yet");
+            }
+
+            // Remove from pending list and refresh both pending and users
             pendingInstitutions.RemoveAll(i => i.Id == institutionId);
+            await RefreshPendingAndUsers();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error accepting institution/student: {ex.Message}");
+        }
+        finally
+        {
             StateHasChanged();
         }
+    }
+
+    private async Task RefreshPendingAndUsers()
+    {
+        // Reload pending requests and users to ensure UI consistency
+        pendingInstitutions = await FetchPendingInstitutionsAsync();
+        await LoadUsersData();
+        await LoadUserVerificationStatuses();
     }
 
     private async Task RejectInstitution(string institutionId)
