@@ -21,9 +21,9 @@
 
 <div class="dashboard-center-container">
     <!-- Top Bar -->
-        <div class="dashboard-topbar">
-            <span class="dashboard-date">@DateTime.Now.ToString("dd MMM yyyy, ddd")</span>
-        </div>
+    <div class="dashboard-topbar">
+        <span class="dashboard-date">@DateTime.Now.ToString("dd MMM yyyy, ddd")</span>
+    </div>
 
     <!-- Page Header -->
     <div class="page-header-section">
@@ -131,37 +131,78 @@
                 </div>
             </div>
         }
-        <div class="table-header">
-        <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
-            <div style="position: relative; flex: 1; max-width: 400px;">
-                <i class="bi bi-search" style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: #64748b; z-index: 1;"></i>
-                <input class="university-input" type="text" placeholder="Search users..." 
-                    style="padding-left: 45px; padding-right: 38px; width: 100%;" 
-                    @bind="searchQuery" @bind:event="oninput" />
-                @if (!string.IsNullOrEmpty(searchQuery))
-                {
-                    <button type="button" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: none; border: none; color: #64748b; font-size: 1.2rem; cursor: pointer;" @onclick="ClearSearch">
-                        <i class="bi bi-x-circle"></i>
-                    </button>
-                }
-            </div>
-            <div style="display: flex; align-items: center; gap: 1rem; margin-left: auto;">
-                @if (activeFilter == "Requests")
-                {
-                    <select class="form-select" style="width: 160px; min-width: 120px;" @onchange="OnRequestTypeDropdownChanged" value="@requestTypeDropdownValue">
-                        <option value="All">All Requests</option>
-                        <option value="Institution">Institutions</option>
-                        <option value="Student">Students</option>
-                        <option value="Benefactor">Benefactors</option>
-                    </select>
-                }
-                <div class="table-actions">
-                    <button class="btn btn-outline-primary btn-sm" @onclick="RefreshUsers">
-                        <i class="bi bi-arrow-clockwise me-2"></i>Refresh
-                    </button>
+        @if (showPermanentDeleteModal)
+        {
+            <div class="sv-modal sv-modal-backdrop sv-modal-fixed">
+                <div class="sv-modal-content">
+                    <div class="sv-modal-header">
+                        <h2>Remove User</h2>
+                    </div>
+                    <div class="sv-modal-body">
+                        <p class="sv-modal-justify">
+                            Are you sure you want to <b> permanently remove</b> <b>@userNameToPermanentDelete</b>?<br />
+                            This action cannot be undone. All data for this account will be removed from the system.
+                        </p>
+                    </div>
+                    <div class="sv-modal-footer" style="display:flex;gap:16px;justify-content:flex-end;">
+                        <button class="sv-btn sv-btn-secondary" @onclick="CancelPermanentDeleteUser">Cancel</button>
+                        <button class="sv-btn sv-btn-primary" @onclick="ConfirmPermanentDeleteUser">Remove</button>
+                    </div>
                 </div>
             </div>
-        </div>
+        }
+        @if (showRestoreModal)
+        {
+            <div class="sv-modal sv-modal-backdrop sv-modal-fixed">
+                <div class="sv-modal-content">
+                    <div class="sv-modal-header">
+                        <h2>Restore User</h2>
+                    </div>
+                    <div class="sv-modal-body">
+                        <p class="sv-modal-justify">
+                            Are you sure you want to restore <b>@userNameToRestore</b>?<br />
+                            This action will reactivate the account and make it visible in the appropriate user tab.
+                        </p>
+                    </div>
+                    <div class="sv-modal-footer" style="display:flex;gap:16px;justify-content:flex-end;">
+                        <button class="sv-btn sv-btn-secondary" @onclick="CancelRestoreUser">Cancel</button>
+                        <button class="sv-btn sv-btn-primary" @onclick="ConfirmRestoreUser">Restore</button>
+                    </div>
+                </div>
+            </div>
+        }
+        
+        <div class="table-header">
+            <div style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
+                <div style="position: relative; flex: 1; max-width: 400px;">
+                    <i class="bi bi-search" style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: #64748b; z-index: 1;"></i>
+                    <input class="university-input" type="text" placeholder="Search users..." 
+                        style="padding-left: 45px; padding-right: 38px; width: 100%;" 
+                        @bind="searchQuery" @bind:event="oninput" />
+                    @if (!string.IsNullOrEmpty(searchQuery))
+                    {
+                        <button type="button" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: none; border: none; color: #64748b; font-size: 1.2rem; cursor: pointer;" @onclick="ClearSearch">
+                            <i class="bi bi-x-circle"></i>
+                        </button>
+                    }
+                </div>
+                <div style="display: flex; align-items: center; gap: 1rem; margin-left: auto;">
+                    @if (activeFilter == "Requests")
+                    {
+                        <select class="form-select" style="width: 160px; min-width: 120px;" @onchange="OnRequestTypeDropdownChanged" value="@requestTypeDropdownValue">
+                            <option value="All">All Requests</option>
+                            <option value="Institution">Institutions</option>
+                            <option value="Student">Students</option>
+                            <option value="Benefactor">Benefactors</option>
+                        </select>
+                    }
+                    <div class="table-actions">
+                        <button class="btn btn-outline-primary btn-sm" @onclick="RefreshUsers">
+                            <i class="bi bi-arrow-clockwise me-2"></i>Refresh
+                        </button>
+                    </div>
+                </div>
+            </div>
         </div>
 
         @if (isLoading)
@@ -195,10 +236,10 @@
                     <table class="table users-table" style="table-layout: fixed;">
                         <thead>
                             <tr>
-                                        <th style="width: 200px; white-space: nowrap;">Name</th>
-                                        <th style="width: 220px; white-space: nowrap;">Affiliation</th>
-                                        <th style="width: 140px; white-space: nowrap;">Registered</th>
-                                        <th style="width: 140px; white-space: nowrap; padding-right: 2.5rem;">Actions</th>
+                                <th style="width: 200px; white-space: nowrap;">Name</th>
+                                <th style="width: 220px; white-space: nowrap;">Affiliation</th>
+                                <th style="width: 140px; white-space: nowrap;">Registered</th>
+                                <th style="width: 140px; white-space: nowrap; padding-right: 2.5rem;">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -243,15 +284,83 @@
         }
         else if (activeFilter == "Archive")
         {
-            <div class="table-responsive">
-                <div class="empty-state">
-                    <i class="bi bi-archive" style="font-size: 4rem; color: #ccc;"></i>
-                    <h4>No Archived Users</h4>
-                    <p>There are currently no archived users.</p>
+            var archivedUsers = allUsers.Where(u =>
+                (studentProfilesByUserId.TryGetValue(u.Id, out var student) && student.AccountStatus == "Deleted") ||
+                (institutionProfilesByUserId.TryGetValue(u.Id, out var institution) && institution.AccountStatus == "Deleted") ||
+                (benefactorProfilesByUserId.TryGetValue(u.Id, out var benefactor) && benefactor.AccountStatus == "Deleted")
+            ).ToList();
+            
+            if (archivedUsers.Any())
+            {
+                <div class="table-responsive">
+                    <table class="table users-table" style="table-layout: fixed;">
+                        <thead>
+                            <tr>
+                                <th style="width: 280px; white-space: nowrap;">Name</th>
+                                <th style="width: 180px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Email</th>
+                                <th style="width: 90px; text-align: left;">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var archivedUser in archivedUsers.Take(pageSize))
+                            {
+                                string archivedFullName = "No Name";
+                                string archivedAffiliation = "Unknown";
+                                if (studentProfilesByUserId.TryGetValue(archivedUser.Id, out var studentProfile))
+                                {
+                                    archivedFullName = $"{studentProfile.FirstName} {(string.IsNullOrEmpty(studentProfile.MiddleName) ? "" : studentProfile.MiddleName + " ")}{studentProfile.LastName}";
+                                    archivedAffiliation = !string.IsNullOrEmpty(studentProfile.UniversityName) ? studentProfile.UniversityName : "Unknown Institution";
+                                }
+                                else if (institutionProfilesByUserId.TryGetValue(archivedUser.Id, out var institutionProfile))
+                                {
+                                    archivedFullName = $"{institutionProfile.AdminFirstName} {(string.IsNullOrEmpty(institutionProfile.AdminMiddleName) ? "" : institutionProfile.AdminMiddleName + " ")}{institutionProfile.AdminLastName}";
+                                    archivedAffiliation = !string.IsNullOrEmpty(institutionProfile.InstitutionName) ? institutionProfile.InstitutionName : "Unknown Institution";
+                                }
+                                else if (benefactorProfilesByUserId.TryGetValue(archivedUser.Id, out var benefactorProfile))
+                                {
+                                    archivedFullName = $"{benefactorProfile.AdminFirstName} {(string.IsNullOrEmpty(benefactorProfile.AdminMiddleName) ? "" : benefactorProfile.AdminMiddleName + " ")}{benefactorProfile.AdminLastName}";
+                                    archivedAffiliation = !string.IsNullOrEmpty(benefactorProfile.OrganizationName) ? benefactorProfile.OrganizationName : "Unknown Organization";
+                                }
+                                <tr>
+                                    <td>
+                                        <div class="user-info">
+                                            <div class="user-details">
+                                                <div class="user-name">@archivedFullName</div>
+                                                <div class="user-institution">@archivedAffiliation</div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td style="max-width: 180px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">@archivedUser.Email</td>
+                                    <td>
+                                        <div class="action-buttons">
+                                            <button class="btn btn-accept-light btn-sm me-2" @onclick="() => PromptRestoreUser(archivedUser.Id)" title="Restore User">Restore</button>
+                                            <button class="btn btn-reject-light btn-sm" @onclick="() => PromptPermanentDeleteUser(archivedUser.Id)" title="Permanently Delete User">Remove</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
                 </div>
-            </div>
+                @if (archivedUsers.Count > pageSize)
+                {
+                    <div class="pagination-container">
+                        <button class="btn btn-outline-primary" @onclick="LoadMoreUsers">
+                            Load More Users (@(archivedUsers.Count - pageSize) remaining)
+                        </button>
+                    </div>
+                }
+            }
+            else
+            {
+                <div class="empty-state">
+                    <i class="bi bi-people" style="font-size: 4rem; color: #ccc;"></i>
+                    <h4>No Users Found</h4>
+                    <p>@(string.IsNullOrEmpty(searchQuery) ? "No users match the current filter." : $"No users found matching \"{searchQuery}\".")</p>
+                </div>
+            }
         }
-        else if (filteredUsers.Any())
+        else
         {
             <div class="table-responsive">
                 <table class="table users-table" style="table-layout: fixed;">
@@ -260,7 +369,6 @@
                             <th style="width: 280px; white-space: nowrap;">Name</th>
                             <th style="width: 240px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Email</th>
                             <th style="width: 32px;"></th>
-                            <!-- Removed Actions column header -->
                         </tr>
                     </thead>
                     <tbody>
@@ -295,7 +403,6 @@
                                 <td style="max-width: 240px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">@user.Email</td>
                                 <td>
                                     <div class="action-buttons">
-                                        <!-- Only show delete button -->
                                         <button class="btn btn-sm btn-outline-danger" @onclick="() => PromptDeleteUser(user.Id)">
                                             <i class="bi bi-trash"></i>
                                         </button>
@@ -315,411 +422,9 @@
                 </div>
             }
         }
-        else
-        {
-            <div class="empty-state">
-                <i class="bi bi-people" style="font-size: 4rem; color: #ccc;"></i>
-                <h4>No Users Found</h4>
-                <p>@(string.IsNullOrEmpty(searchQuery) ? "No users match the current filter." : $"No users found matching \"{searchQuery}\".")</p>
-            </div>
-        }
     </div>
 </div>
 
-<style>
-    /* --- Verification Modal Styles (copied from InstitutionDashLayout.razor.css) --- */
-    .sv-modal-justify {
-        text-align: justify;
-    }
-    .sv-btn {
-        font-size: 1rem;
-        padding: 0.75rem 2rem;
-        border-radius: 8px;
-        border: 2px solid transparent;
-        font-weight: 600;
-        transition: all 0.2s ease;
-        cursor: pointer;
-        text-transform: none;
-        letter-spacing: 0.01em;
-        text-decoration: none;
-        display: inline-block;
-        text-align: center;
-        font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
-    }
-    .sv-btn-primary {
-        background: #1976d2;
-        color: #ffffff;
-        border-color: #1976d2;
-    }
-    .sv-btn-primary:hover:not(:disabled) {
-        background: #1565c0;
-        border-color: #1565c0;
-        transform: translateY(-1px);
-        box-shadow: 0 4px 12px rgba(25, 118, 210, 0.3);
-        color: #ffffff;
-    }
-    .sv-btn-primary:disabled {
-        background: #9ca3af;
-        border-color: #9ca3af;
-        cursor: not-allowed;
-        transform: none;
-        box-shadow: none;
-    }
-    .sv-btn-secondary {
-        background: #ffffff;
-        color: #374151;
-        border-color: #d1d5db;
-    }
-    .sv-btn-secondary:hover {
-        background: #f9fafb;
-        border-color: #9ca3af;
-        transform: translateY(-1px);
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-        color: #374151;
-    }
-    .sv-modal-header h2 {
-        color: #1f2937;
-        font-size: 1.5rem;
-        font-weight: 600;
-        margin: 0 0 0.5rem 0;
-        line-height: 1.4;
-        font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
-    }
-    .sv-modal-header p {
-        color: #6b7280;
-        font-size: 1rem;
-        margin: 0 0 1.5rem 0;
-        line-height: 1.5;
-        font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
-    }
-    .sv-modal-body p {
-        color: #374151;
-        font-size: 0.95rem;
-        line-height: 1.6;
-        margin: 0 0 1rem 0;
-        font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
-    }
-    .sv-modal-body p:last-child {
-        margin-bottom: 0;
-    }
-    .sv-modal-footer {
-        margin-top: 2rem;
-        padding-top: 1.5rem;
-        border-top: 1px solid #e5e7eb;
-    }
-    .sv-modal-fixed {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100vw;
-        height: 100vh;
-        z-index: 9999;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-    .sv-modal-content {
-        max-width: 600px;
-        width: 90vw;
-        background: #fff;
-        border-radius: 20px;
-        box-shadow: 0 8px 32px rgba(0,0,0,0.18);
-        padding: 2.5rem 2rem 2rem 2rem;
-    }
-    .dashboard-center-container {
-        padding: 2rem;
-        max-width: 1400px;
-        margin: 0 auto;
-    }
-
-    .page-header-section {
-        background: linear-gradient(135deg, #fff 0%, #f8fafc 100%);
-        border-radius: 16px;
-        padding: 2rem;
-        margin-bottom: 2rem;
-        box-shadow: 0 4px 16px rgba(0,0,0,0.08);
-        border: 1px solid rgba(0,0,0,0.05);
-    }
-
-    .page-header-content {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        flex-wrap: wrap;
-        gap: 1rem;
-    }
-
-    .page-title {
-        font-size: 2.5rem;
-        font-weight: 700;
-        color: #2d3748;
-        margin: 0;
-        display: flex;
-        align-items: center;
-    }
-
-    .page-subtitle {
-        color: #4a5568;
-        font-size: 1.1rem;
-        margin: 0.5rem 0 0 0;
-    }
-
-    .stats-grid-users {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-        gap: 1.5rem;
-        margin-bottom: 2rem;
-    }
-
-    .stat-card {
-        background: linear-gradient(135deg, #fff 0%, #f8fafc 100%);
-        border-radius: 16px;
-        padding: 1.5rem;
-        box-shadow: 0 4px 16px rgba(0,0,0,0.08);
-        border: 1px solid rgba(0,0,0,0.05);
-        transition: all 0.3s ease;
-        position: relative;
-        overflow: hidden;
-    }
-
-    .stat-card::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        height: 4px;
-        background: linear-gradient(90deg, #1560d4, #0d387e);
-    }
-
-    .stat-card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 8px 25px rgba(0,0,0,0.15);
-    }
-
-    .stat-card-header {
-        display: flex;
-        align-items: center;
-        margin-bottom: 1rem;
-    }
-
-    .stat-icon {
-        width: 48px;
-        height: 48px;
-        border-radius: 12px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 20px;
-        color: white;
-        margin-right: 1rem;
-    }
-
-    .stat-icon.users { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
-    .stat-icon.students { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
-    .stat-icon.institutions { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
-    .stat-icon.benefactors { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); }
-
-    .stat-value {
-        font-size: 2.5rem;
-        font-weight: 700;
-        color: #2d3748;
-        line-height: 1;
-        margin-bottom: 0.5rem;
-    }
-
-    .stat-label {
-        font-size: 1rem;
-        font-weight: 600;
-        color: #4a5568;
-    }
-
-    .filter-tabs {
-        display: flex;
-        gap: 0.5rem;
-        margin-bottom: 2rem;
-        flex-wrap: wrap;
-    }
-
-    .filter-tab {
-        background: #f8fafc;
-        border: 1px solid #e2e8f0;
-        color: #4a5568;
-        padding: 0.75rem 1rem;
-        border-radius: 8px;
-        font-weight: 500;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        text-decoration: none;
-        display: flex;
-        align-items: center;
-    }
-
-    .filter-tab:hover {
-        background: #e2e8f0;
-        transform: translateY(-1px);
-    }
-
-    .filter-tab.active {
-           background: linear-gradient(135deg, #1560d4, #0d387e);
-           color: white;
-           border-color: #1560d4;
-           pointer-events: auto;
-    }
-
-    .users-table-container {
-        background: linear-gradient(135deg, #fff 0%, #f8fafc 100%);
-        border-radius: 16px;
-        box-shadow: 0 4px 16px rgba(0,0,0,0.08);
-        border: 1px solid rgba(0,0,0,0.05);
-        overflow: hidden;
-    }
-
-    .table-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 1.5rem 2rem;
-        border-bottom: 1px solid #e2e8f0;
-        background: #f8fafc;
-    }
-
-    .table-header h3 {
-        margin: 0;
-        color: #2d3748;
-        font-weight: 600;
-    }
-
-    .users-table {
-        width: 100%;
-        margin: 0;
-    }
-
-    .users-table th {
-        background: #f8fafc;
-        border: none;
-        padding: 1rem 1.5rem;
-        font-weight: 600;
-        color: #4a5568;
-        border-bottom: 1px solid #e2e8f0;
-    }
-
-    .users-table td {
-        padding: 1rem 1.5rem;
-        border: none;
-        border-bottom: 1px solid #f1f5f9;
-    }
-
-    .user-info {
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-    }
-
-    .user-avatar {
-        width: 40px;
-        height: 40px;
-        background: linear-gradient(135deg, #1560d4, #0d387e);
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: white;
-        font-size: 1.25rem;
-    }
-
-    .user-name {
-        font-weight: 600;
-        color: #2d3748;
-    }
-
-    .user-id {
-        font-size: 0.875rem;
-        color: #6b7280;
-    }
-
-    .role-badge {
-        padding: 0.25rem 0.75rem;
-        border-radius: 20px;
-        font-size: 0.75rem;
-        font-weight: 600;
-        text-transform: uppercase;
-    }
-
-    .role-student { background: #fef3c7; color: #d97706; }
-    .role-institution { background: #dbeafe; color: #2563eb; }
-    .role-benefactor { background: #dcfce7; color: #16a34a; }
-    .role-superadmin { background: #fce7f3; color: #be185d; }
-
-    .status-badge {
-        padding: 0.25rem 0.75rem;
-        border-radius: 20px;
-        font-size: 0.75rem;
-        font-weight: 600;
-        text-transform: uppercase;
-    }
-
-    .status-active { background: #dcfce7; color: #16a34a; }
-    .status-pending { background: #fef3c7; color: #d97706; }
-
-    .action-buttons {
-        display: flex;
-        gap: 0.5rem;
-    }
-
-    .btn-accept-light {
-        background: #e6f4ea;
-        color: #218838;
-        border: 1px solid #b7e4c7;
-        transition: background 0.2s;
-    }
-    .btn-accept-light:hover {
-        background: #c7e9d7;
-        color: #218838;
-    }
-
-    .btn-reject-light {
-        background: #fdeaea;
-        color: #c82333;
-        border: 1px solid #f5c6cb;
-        transition: background 0.2s;
-    }
-    .btn-reject-light:hover {
-        background: #f8d7da;
-        color: #c82333;
-    }
-
-    .loading-container, .empty-state {
-        text-align: center;
-        padding: 3rem 2rem;
-        color: #6b7280;
-    }
-
-    .pagination-container {
-        padding: 1.5rem 2rem;
-        text-align: center;
-        border-top: 1px solid #e2e8f0;
-    }
-
-    @@media (max-width: 768px) {
-        .page-header-content {
-            flex-direction: column;
-            align-items: flex-start;
-        }
-        
-        .stats-grid-users {
-            grid-template-columns: 1fr;
-        }
-        
-        .filter-tabs {
-            flex-direction: column;
-        }
-        
-        .table-responsive {
-            font-size: 0.875rem;
-        }
-    }
-</style>
 
 @code {
     private string? currentUserName;
@@ -992,35 +697,44 @@
                 filtered = filtered.Where(u => GetUserRole(u.Id) == activeFilter);
                 Console.WriteLine($"After role filter: {filtered.Count()} users");
             }
+            else if (activeFilter == "All")
+            {
+                // For "All" tab, exclude deleted users
+                filtered = filtered.Where(u => 
+                    !((studentProfilesByUserId.TryGetValue(u.Id, out var student) && student.AccountStatus == "Deleted") ||
+                      (institutionProfilesByUserId.TryGetValue(u.Id, out var institution) && institution.AccountStatus == "Deleted") ||
+                      (benefactorProfilesByUserId.TryGetValue(u.Id, out var benefactor) && benefactor.AccountStatus == "Deleted")));
+                Console.WriteLine($"After excluding deleted users from All tab: {filtered.Count()} users");
+            }
 
-            // For Students tab, only show verified students
+            // For Students tab, only show verified and non-deleted students
             if (activeFilter == "Student")
             {
                 using var context = DbContextFactory.CreateDbContext();
                 var verifiedStudentIds = context.StudentProfiles
-                    .Where(sp => sp.VerificationStatus == "Verified")
+                    .Where(sp => sp.VerificationStatus == "Verified" && sp.AccountStatus != "Deleted")
                     .Select(sp => sp.UserId)
                     .ToHashSet();
                 filtered = filtered.Where(u => verifiedStudentIds.Contains(u.Id));
                 Console.WriteLine($"After verified filter: {filtered.Count()} users");
             }
-            // For Institutions tab, only show verified institutions
+            // For Institutions tab, only show verified and non-deleted institutions
             if (activeFilter == "Institution")
             {
                 using var context = DbContextFactory.CreateDbContext();
                 var verifiedInstitutionIds = context.InstitutionProfiles
-                    .Where(ip => ip.VerificationStatus == "Verified")
+                    .Where(ip => ip.VerificationStatus == "Verified" && ip.AccountStatus != "Deleted")
                     .Select(ip => ip.UserId)
                     .ToHashSet();
                 filtered = filtered.Where(u => verifiedInstitutionIds.Contains(u.Id));
                 Console.WriteLine($"After verified institution filter: {filtered.Count()} users");
             }
-            // For Benefactor tab, only show verified benefactors
+            // For Benefactor tab, only show verified and non-deleted benefactors
             if (activeFilter == "Benefactor")
             {
                 using var context = DbContextFactory.CreateDbContext();
                 var verifiedBenefactorIds = context.BenefactorProfiles
-                    .Where(bp => bp.VerificationStatus == "Verified")
+                    .Where(bp => bp.VerificationStatus == "Verified" && bp.AccountStatus != "Deleted")
                     .Select(bp => bp.UserId)
                     .ToHashSet();
                 filtered = filtered.Where(u => verifiedBenefactorIds.Contains(u.Id));
@@ -1093,6 +807,176 @@
     private string? userIdToDelete;
     private string? userNameToDelete;
 
+    // --- PERMANENT DELETE MODAL STATE ---
+    private bool showPermanentDeleteModal = false;
+    private string? userIdToPermanentDelete;
+    private string? userNameToPermanentDelete;
+
+    // --- RESTORE MODAL STATE ---
+    private bool showRestoreModal = false;
+    private string? userIdToRestore;
+    private string? userNameToRestore;
+
+    private void PromptPermanentDeleteUser(string userId)
+    {
+        userIdToPermanentDelete = userId;
+        var user = allUsers.FirstOrDefault(u => u.Id == userId);
+        userNameToPermanentDelete = user?.UserName ?? "Unknown User";
+        showPermanentDeleteModal = true;
+        StateHasChanged();
+    }
+
+    private async Task ConfirmPermanentDeleteUser()
+    {
+        if (string.IsNullOrEmpty(userIdToPermanentDelete)) return;
+        try
+        {
+            await using var context = DbContextFactory.CreateDbContext();
+            // Remove profile
+            var student = await context.StudentProfiles.FirstOrDefaultAsync(sp => sp.UserId == userIdToPermanentDelete);
+            if (student != null)
+            {
+                context.StudentProfiles.Remove(student);
+                await context.SaveChangesAsync();
+                Console.WriteLine($"Student {userIdToPermanentDelete} permanently deleted.");
+            }
+            else
+            {
+                var institution = await context.InstitutionProfiles.FirstOrDefaultAsync(ip => ip.UserId == userIdToPermanentDelete);
+                if (institution != null)
+                {
+                    context.InstitutionProfiles.Remove(institution);
+                    await context.SaveChangesAsync();
+                    Console.WriteLine($"Institution {userIdToPermanentDelete} permanently deleted.");
+                }
+                else
+                {
+                    var benefactor = await context.BenefactorProfiles.FirstOrDefaultAsync(bp => bp.UserId == userIdToPermanentDelete);
+                    if (benefactor != null)
+                    {
+                        context.BenefactorProfiles.Remove(benefactor);
+                        await context.SaveChangesAsync();
+                        Console.WriteLine($"Benefactor {userIdToPermanentDelete} permanently deleted.");
+                    }
+                    else
+                    {
+                        Console.WriteLine($"No profile found for user {userIdToPermanentDelete}.");
+                    }
+                }
+            }
+            // Remove IdentityUser
+            var identityUser = await UserManager.FindByIdAsync(userIdToPermanentDelete);
+            if (identityUser != null)
+            {
+                await UserManager.DeleteAsync(identityUser);
+                Console.WriteLine($"IdentityUser {userIdToPermanentDelete} permanently deleted.");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error permanently deleting user: {ex.Message}");
+        }
+        showPermanentDeleteModal = false;
+        await RefreshUsers();
+        StateHasChanged();
+    }
+
+    private void CancelPermanentDeleteUser()
+    {
+        showPermanentDeleteModal = false;
+        userIdToPermanentDelete = null;
+        userNameToPermanentDelete = null;
+        StateHasChanged();
+    }
+
+    private void PromptRestoreUser(string userId)
+    {
+        userIdToRestore = userId;
+        var user = allUsers.FirstOrDefault(u => u.Id == userId);
+        userNameToRestore = user?.UserName ?? "Unknown User";
+        showRestoreModal = true;
+        StateHasChanged();
+    }
+
+    private async Task ConfirmRestoreUser()
+    {
+        if (string.IsNullOrEmpty(userIdToRestore)) return;
+        try
+        {
+            await using var context = DbContextFactory.CreateDbContext();
+            // Try to find the profile type for this user and restore it
+            var student = await context.StudentProfiles.FirstOrDefaultAsync(sp => sp.UserId == userIdToRestore);
+            if (student != null)
+            {
+                student.AccountStatus = "Active";
+                context.StudentProfiles.Update(student);
+                await context.SaveChangesAsync();
+                
+                // Update local cache immediately
+                if (studentProfilesByUserId.ContainsKey(userIdToRestore))
+                {
+                    studentProfilesByUserId[userIdToRestore].AccountStatus = "Active";
+                }
+                Console.WriteLine($"Student {userIdToRestore} restored to Active status.");
+            }
+            else
+            {
+                var institution = await context.InstitutionProfiles.FirstOrDefaultAsync(ip => ip.UserId == userIdToRestore);
+                if (institution != null)
+                {
+                    institution.AccountStatus = "Active";
+                    context.InstitutionProfiles.Update(institution);
+                    await context.SaveChangesAsync();
+                    
+                    // Update local cache immediately
+                    if (institutionProfilesByUserId.ContainsKey(userIdToRestore))
+                    {
+                        institutionProfilesByUserId[userIdToRestore].AccountStatus = "Active";
+                    }
+                    Console.WriteLine($"Institution {userIdToRestore} restored to Active status.");
+                }
+                else
+                {
+                    var benefactor = await context.BenefactorProfiles.FirstOrDefaultAsync(bp => bp.UserId == userIdToRestore);
+                    if (benefactor != null)
+                    {
+                        benefactor.AccountStatus = "Active";
+                        context.BenefactorProfiles.Update(benefactor);
+                        await context.SaveChangesAsync();
+                        
+                        // Update local cache immediately
+                        if (benefactorProfilesByUserId.ContainsKey(userIdToRestore))
+                        {
+                            benefactorProfilesByUserId[userIdToRestore].AccountStatus = "Active";
+                        }
+                        Console.WriteLine($"Benefactor {userIdToRestore} restored to Active status.");
+                    }
+                    else
+                    {
+                        Console.WriteLine($"No profile found for user {userIdToRestore}.");
+                    }
+                }
+            }
+            
+            // Apply filter to update the UI immediately without full refresh
+            ApplyFilter();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error restoring user: {ex.Message}");
+        }
+        showRestoreModal = false;
+        StateHasChanged();
+    }
+
+    private void CancelRestoreUser()
+    {
+        showRestoreModal = false;
+        userIdToRestore = null;
+        userNameToRestore = null;
+        StateHasChanged();
+    }
+
     private void PromptDeleteUser(string userId)
     {
         userIdToDelete = userId;
@@ -1105,11 +989,71 @@
     private async Task ConfirmDeleteUser()
     {
         if (string.IsNullOrEmpty(userIdToDelete)) return;
-        // TODO: Update user status to "deleted" in backend
-        // For now, just hide modal and log
+        try
+        {
+            await using var context = DbContextFactory.CreateDbContext();
+            // Try to find the profile type for this user
+            var student = await context.StudentProfiles.FirstOrDefaultAsync(sp => sp.UserId == userIdToDelete);
+            if (student != null)
+            {
+                student.AccountStatus = "Deleted";
+                context.StudentProfiles.Update(student);
+                await context.SaveChangesAsync();
+                
+                // Update local cache immediately
+                if (studentProfilesByUserId.ContainsKey(userIdToDelete))
+                {
+                    studentProfilesByUserId[userIdToDelete].AccountStatus = "Deleted";
+                }
+                Console.WriteLine($"Student {userIdToDelete} marked as Deleted.");
+            }
+            else
+            {
+                var institution = await context.InstitutionProfiles.FirstOrDefaultAsync(ip => ip.UserId == userIdToDelete);
+                if (institution != null)
+                {
+                    institution.AccountStatus = "Deleted";
+                    context.InstitutionProfiles.Update(institution);
+                    await context.SaveChangesAsync();
+                    
+                    // Update local cache immediately
+                    if (institutionProfilesByUserId.ContainsKey(userIdToDelete))
+                    {
+                        institutionProfilesByUserId[userIdToDelete].AccountStatus = "Deleted";
+                    }
+                    Console.WriteLine($"Institution {userIdToDelete} marked as Deleted.");
+                }
+                else
+                {
+                    var benefactor = await context.BenefactorProfiles.FirstOrDefaultAsync(bp => bp.UserId == userIdToDelete);
+                    if (benefactor != null)
+                    {
+                        benefactor.AccountStatus = "Deleted";
+                        context.BenefactorProfiles.Update(benefactor);
+                        await context.SaveChangesAsync();
+                        
+                        // Update local cache immediately
+                        if (benefactorProfilesByUserId.ContainsKey(userIdToDelete))
+                        {
+                            benefactorProfilesByUserId[userIdToDelete].AccountStatus = "Deleted";
+                        }
+                        Console.WriteLine($"Benefactor {userIdToDelete} marked as Deleted. AccountStatus: {benefactor.AccountStatus}");
+                    }
+                    else
+                    {
+                        Console.WriteLine($"No profile found for user {userIdToDelete}.");
+                    }
+                }
+            }
+            
+            // Apply filter to update the UI immediately without full refresh
+            ApplyFilter();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error marking user as deleted: {ex.Message}");
+        }
         showDeleteModal = false;
-        Console.WriteLine($"Confirmed delete for user: {userIdToDelete}");
-        // Implement backend update in next step
         StateHasChanged();
     }
 
