@@ -18,17 +18,21 @@
             <p class="role-label">Please select your role:</p>
 
                 <div class="role-options-wrapper">
-                    <div class="form-group signup-dropdown-wrapper" style="position:relative;">
-                        <select class="signup-input signup-dropdown" @onchange="OnRoleDropdownChanged" value="@registerModel.UserRole">
-                            <option value="@UserRole.Student">Student</option>
-                            <option value="@UserRole.Institution">Institution</option>
-                            <option value="@UserRole.Benefactor">Benefactor</option>
-                        </select>
-                        <span class="dropdown-icon">
-                            <svg width="22" height="22" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M6 8l4 4 4-4" stroke="#6366f1" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
-                            </svg>
-                        </span>
+                    <div class="form-group">
+                        <div class="sv-custom-select" tabindex="0"
+                             @onclick="ToggleRoleDropdown"
+                             @onblur="CloseRoleDropdown">
+                            <span class="sv-custom-select-value">@GetRoleDisplayText(registerModel.UserRole)</span>
+                            <svg class="sv-custom-select-arrow" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+                            @if (showRoleDropdown)
+                            {
+                                <ul class="sv-custom-select-list">
+                                    <li class="sv-custom-select-item @(registerModel.UserRole == UserRole.Student ? "selected" : "")" @onmousedown="() => SelectRole(UserRole.Student)">Student</li>
+                                    <li class="sv-custom-select-item @(registerModel.UserRole == UserRole.Institution ? "selected" : "")" @onmousedown="() => SelectRole(UserRole.Institution)">Institution</li>
+                                    <li class="sv-custom-select-item @(registerModel.UserRole == UserRole.Benefactor ? "selected" : "")" @onmousedown="() => SelectRole(UserRole.Benefactor)">Benefactor</li>
+                                </ul>
+                            }
+                        </div>
                     </div>
                     @if (registerModel.UserRole == UserRole.Institution || registerModel.UserRole == UserRole.Benefactor)
                     {
@@ -161,13 +165,38 @@
     // True if institution email is valid and role is Institution
     private bool ShowInstitutionEmailValid => registerModel.UserRole == UserRole.Institution && !string.IsNullOrEmpty(registerModel.Email) && IsInstitutionEmail(registerModel.Email);
 
-    // Dropdown change handler
-    private void OnRoleDropdownChanged(ChangeEventArgs e)
+    // Role dropdown state
+    private bool showRoleDropdown = false;
+
+    // Get display text for role
+    private string GetRoleDisplayText(UserRole role)
     {
-        if (Enum.TryParse<UserRole>(e.Value?.ToString(), out var selectedRole))
+        return role switch
         {
-            OnRoleChanged(selectedRole);
-        }
+            UserRole.Student => "Student",
+            UserRole.Institution => "Institution",
+            UserRole.Benefactor => "Benefactor",
+            _ => "Select Role"
+        };
+    }
+
+    // Toggle role dropdown
+    private void ToggleRoleDropdown()
+    {
+        showRoleDropdown = !showRoleDropdown;
+    }
+
+    // Close role dropdown
+    private void CloseRoleDropdown()
+    {
+        showRoleDropdown = false;
+    }
+
+    // Select role from dropdown
+    private void SelectRole(UserRole selectedRole)
+    {
+        showRoleDropdown = false;
+        OnRoleChanged(selectedRole);
     }
     // Registration model bound to the form
     private RegisterViewModel registerModel = new();

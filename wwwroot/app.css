@@ -69,6 +69,105 @@
     box-shadow: 0 0 0 2px rgba(25, 118, 210, 0.1);
 }
 
+/* Custom Select Dropdowns (Modern, Flat, Professional) */
+.sv-custom-select {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    min-width: 180px;
+    background: #fff;
+    border: 2px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
+    font-size: 1rem;
+    font-family: inherit;
+    cursor: pointer;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    box-sizing: border-box;
+}
+.sv-custom-select:focus, .sv-custom-select:focus-visible {
+    outline: none;
+    border-color: #1976d2;
+    box-shadow: 0 0 0 3px rgba(25, 118, 210, 0.1);
+    background: #f8faff;
+}
+.sv-custom-select-value {
+    flex: 1;
+    color: #1e293b;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.sv-custom-select-arrow {
+    margin-left: 0.5rem;
+    color: #9ca3af;
+    pointer-events: none;
+    transition: transform 0.2s;
+}
+.sv-custom-select[aria-expanded="true"] .sv-custom-select-arrow {
+    transform: rotate(180deg);
+}
+.sv-custom-select-list {
+    position: absolute;
+    top: 110%;
+    left: 0;
+    width: 100%;
+    background: #fff;
+    border: 1.5px solid #e5e7eb;
+    border-radius: 8px;
+    box-shadow: 0 8px 32px rgba(30, 40, 90, 0.10);
+    z-index: 10;
+    margin-top: 0.25rem;
+    padding: 0.25rem 0;
+    max-height: 220px;
+    overflow-y: auto;
+    animation: sv-select-fade-in 0.15s ease;
+}
+@keyframes sv-select-fade-in {
+    from { opacity: 0; transform: translateY(-8px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+.sv-custom-select-item {
+    padding: 0.75rem 1rem;
+    font-size: 1rem;
+    color: #374151;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+    border: none;
+    background: none;
+    text-align: left;
+    width: 100%;
+}
+.sv-custom-select-item:hover, .sv-custom-select-item.selected {
+    background: #f0f7ff;
+    color: #1976d2;
+}
+.sv-custom-select-item.selected {
+    font-weight: 600;
+}
+.sv-custom-select-list::-webkit-scrollbar {
+    width: 8px;
+    background: #f3f4f6;
+    border-radius: 8px;
+}
+.sv-custom-select-list::-webkit-scrollbar-thumb {
+    background: #e5e7eb;
+    border-radius: 8px;
+}
+@media (max-width: 768px) {
+    .sv-custom-select, .sv-custom-select-list, .sv-custom-select-item {
+        font-size: 0.98rem;
+    }
+}
+@media (max-width: 480px) {
+    .sv-custom-select, .sv-custom-select-list, .sv-custom-select-item {
+        font-size: 0.92rem;
+    }
+}
+
 /* Import Inter font from Google Fonts */
 @import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
 
