@@ -52,6 +52,8 @@ namespace c2_eskolar.Services
         {
             try
             {
+                Console.WriteLine($"BlobStorageService: Starting upload - Container: {containerName}, File: {fileName}, Size: {fileStream.Length} bytes, ContentType: {contentType}");
+                
                 var containerClient = GetContainerClient(containerName);
                 var blobClient = containerClient.GetBlobClient(fileName);
                 
@@ -72,7 +74,8 @@ namespace c2_eskolar.Services
             catch (Exception ex)
             {
                 // Log error (replace with your logger if available)
-                Console.WriteLine($"[BlobStorageService] UploadFileAsync error: {ex.Message}");
+                Console.WriteLine($"[BlobStorageService] UploadFileAsync error for {fileName}: {ex.Message}");
+                Console.WriteLine($"[BlobStorageService] Stack trace: {ex.StackTrace}");
                 throw new InvalidOperationException($"Failed to upload file '{fileName}' to container '{containerName}'.", ex);
             }
         }
