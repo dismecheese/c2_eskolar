@@ -10,6 +10,8 @@ using Microsoft.EntityFrameworkCore;
 using BlazorBootstrap;
 using Blazored.LocalStorage;
 
+using MudBlazor.Services;
+
 try
 {
     var builder = WebApplication.CreateBuilder(args);
@@ -20,6 +22,8 @@ try
 
     builder.Services.AddBlazorBootstrap();
     builder.Services.AddBlazoredLocalStorage();
+
+    builder.Services.AddMudServices();
 
     // Add Controllers for API endpoints
     builder.Services.AddControllers();
@@ -69,13 +73,25 @@ builder.Services.AddDbContextFactory<ApplicationDbContext>(options =>
     // Register AuthService
     builder.Services.AddScoped<AuthService>();
 
-    // Register HttpClient for DI in Blazor Server
+    // Register HttpClient for DI in Blazor Server and API Controllers
     builder.Services.AddHttpClient();
-    // Register a default HttpClient with NavigationManager.BaseUri for direct injection
+    
+    // Register a named HttpClient for Document Intelligence without NavigationManager dependency
+    builder.Services.AddHttpClient("DocumentIntelligence");
+    
+    // Register a default HttpClient with NavigationManager.BaseUri for Blazor components
     builder.Services.AddScoped<HttpClient>(sp =>
     {
-        var navigationManager = sp.GetRequiredService<Microsoft.AspNetCore.Components.NavigationManager>();
-        return new HttpClient { BaseAddress = new Uri(navigationManager.BaseUri) };
+        try 
+        {
+            var navigationManager = sp.GetRequiredService<Microsoft.AspNetCore.Components.NavigationManager>();
+            return new HttpClient { BaseAddress = new Uri(navigationManager.BaseUri) };
+        }
+        catch
+        {
+            // Fallback for API controllers where NavigationManager is not available
+            return new HttpClient();
+        }
     });
 
 
@@ -101,8 +117,16 @@ builder.Services.Configure<c2_eskolar.Services.WebScraping.ScrapingConfiguration
 // Register ScrapedScholarshipService - Enhanced AI-powered scholarship management
 builder.Services.AddScoped<IScrapedScholarshipService, ScrapedScholarshipService>();
 
-// Register DocumentIntelligenceService
-builder.Services.AddScoped<DocumentIntelligenceService>();
+// Register DocumentIntelligenceService with named HttpClient
+builder.Services.AddScoped<DocumentIntelligenceService>(sp =>
+{
+    var httpClientFactory = sp.GetRequiredService<IHttpClientFactory>();
+    var httpClient = httpClientFactory.CreateClient("DocumentIntelligence");
+    var config = sp.GetRequiredService<IConfiguration>();
+    var logger = sp.GetRequiredService<ILogger<DocumentIntelligenceService>>();
+    var openAIService = sp.GetRequiredService<OpenAIService>();
+    return new DocumentIntelligenceService(httpClient, config, logger, openAIService);
+});
 builder.Services.AddScoped<VerificationDocumentService>();
 
 // Register AI Services

@@ -43,29 +43,29 @@
 <div class="dashboard-center-container">
 
     <!-- Top Bar -->
-    <div class="dashboard-topbar">
-        <div style="position:relative;display:inline-block;width:320px;">
-            <input class="university-input" type="text" placeholder="Search scholarships..."
-                @bind="scholarshipSearchBarQuery" @bind:event="oninput"
-                @onfocus="ShowScholarshipDropdown" @onblur="HideScholarshipDropdownWithDelay"
-                @onkeydown="ScholarshipSearchBarKeyDown"
-                style="width:100%;padding:10px 16px;border-radius:8px;border:1.5px solid #d1d5db;font-size:16px;box-sizing:border-box;outline:none;"
-                aria-label="Search scholarships" autocomplete="off" />
-            @if (showScholarshipDropdown && filteredScholarshipBarResults.Any())
-            {
-                <ul style="position:absolute;z-index:10;top:110%;left:0;width:100%;background:#fff;border:1.5px solid #d1d5db;border-radius:0 0 8px 8px;max-height:220px;overflow-y:auto;box-shadow:0 2px 8px rgba(0,0,0,0.08);margin:0;padding:0;list-style:none;">
-                    @foreach (var s in filteredScholarshipBarResults)
-                    {
-                        <li style="padding:10px 16px;cursor:pointer;display:flex;flex-direction:column;" @onclick="() => SelectScholarshipBarResult(s)">
-                            <span style="font-weight:500;">@s.Title</span>
-                            <span style="font-size:13px;color:#888;">@((s.Institution?.InstitutionName ?? s.Benefactor?.OrganizationName) ?? "")</span>
-                        </li>
-                    }
-                </ul>
-            }
+        <div class="dashboard-topbar">
+            <div style="position:relative;display:inline-block;width:320px;">
+                <input class="university-input" type="text" placeholder="Search scholarships..."
+                    @bind="scholarshipSearchBarQuery" @bind:event="oninput"
+                    @onfocus="ShowScholarshipDropdown" @onblur="HideScholarshipDropdownWithDelay"
+                    @onkeydown="ScholarshipSearchBarKeyDown"
+                    style="width:100%;padding:10px 16px;border-radius:8px;border:1.5px solid #d1d5db;font-size:16px;box-sizing:border-box;outline:none;"
+                    aria-label="Search scholarships" autocomplete="off" />
+                @if (showScholarshipDropdown && filteredScholarshipBarResults.Any())
+                {
+                    <ul style="position:absolute;z-index:10;top:110%;left:0;width:100%;background:#fff;border:1.5px solid #d1d5db;border-radius:0 0 8px 8px;max-height:220px;overflow-y:auto;box-shadow:0 2px 8px rgba(0,0,0,0.08);margin:0;padding:0;list-style:none;">
+                        @foreach (var s in filteredScholarshipBarResults)
+                        {
+                            <li style="padding:10px 16px;cursor:pointer;display:flex;flex-direction:column;" @onclick="() => SelectScholarshipBarResult(s)">
+                                <span style="font-weight:500;">@s.Title</span>
+                                <span style="font-size:13px;color:#888;">@((s.Institution?.InstitutionName ?? s.Benefactor?.OrganizationName) ?? "")</span>
+                            </li>
+                        }
+                    </ul>
+                }
+            </div>
+            <span class="dashboard-date">@DateTime.Now.ToString("dd MMM yyyy, ddd")</span>
         </div>
-        <span class="dashboard-date">@DateTime.Now.ToString("dd MMM yyyy, ddd")</span>
-    </div>
 
     <!-- Welcome Banner -->
     <div class="dashboard-banner-centered">

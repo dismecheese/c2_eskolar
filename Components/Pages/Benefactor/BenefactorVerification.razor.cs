@@ -167,7 +167,7 @@ namespace c2_eskolar.Components.Pages.Benefactor
                     // Step 2: Analyze the document with Document Intelligence
                     try
                     {
-                        var extractedData = await DocumentIntelligenceService.AnalyzeInstitutionIdDocumentAsync(file);
+                        var extractedData = await DocumentIntelligenceService.AnalyzeBenefactorIdDocumentAsync(file);
                         if (extractedData != null)
                         {
                             PrepopulateFromIdDocument(extractedData);
@@ -240,20 +240,20 @@ namespace c2_eskolar.Components.Pages.Benefactor
                     // Step 2: Analyze the document with Document Intelligence
                     try
                     {
-                        var extractedData = await DocumentIntelligenceService.AnalyzeInstitutionAuthLetterAsync(file);
+                        var extractedData = await DocumentIntelligenceService.AnalyzeBenefactorAuthLetterAsync(file);
                         if (extractedData != null)
                         {
-                            PrepopulateFromOrgDocument(extractedData);
+                            PrepopulateFromBenefactorAuthLetter(extractedData);
                             AuthLetterUploadStatus = "Uploaded & Data Extracted!";
                         }
                         else
                         {
-                            AuthLetterUploadStatus = "Uploaded! (AI extraction failed). Please check file clarity and type.";
+                            AuthLetterUploadStatus = "Uploaded! (AI extraction failed). Document may not contain clear organization information or may be in an unsupported format. Please verify file is an official authorization letter with clear text.";
                         }
                     }
                     catch (Exception ex)
                     {
-                        AuthLetterUploadStatus = $"AI extraction error: {ex.Message}";
+                        AuthLetterUploadStatus = $"AI extraction error: {ex.Message}. Please check that the document is clear and contains organization information.";
                     }
                 }
                 else
@@ -269,7 +269,7 @@ namespace c2_eskolar.Components.Pages.Benefactor
             StateHasChanged();
         }
 
-        private void PrepopulateFromIdDocument(Services.ExtractedInstitutionIdData extractedData)
+        private void PrepopulateFromIdDocument(Services.ExtractedBenefactorIdData extractedData)
         {
             // Prepopulate personal information fields
             if (!string.IsNullOrEmpty(extractedData.AdminFirstName))
@@ -284,6 +284,15 @@ namespace c2_eskolar.Components.Pages.Benefactor
                 verificationModel.AdminContactNumber = extractedData.AdminContactNumber;
             if (!string.IsNullOrEmpty(extractedData.AdminPosition))
                 verificationModel.AdminPosition = extractedData.AdminPosition;
+            
+            // Prepopulate additional benefactor-specific fields
+            if (!string.IsNullOrEmpty(extractedData.Sex))
+                verificationModel.Sex = extractedData.Sex;
+            if (extractedData.DateOfBirth.HasValue)
+                verificationModel.BirthDate = extractedData.DateOfBirth;
+            if (!string.IsNullOrEmpty(extractedData.Nationality))
+                verificationModel.Nationality = extractedData.Nationality;
+                
             // Show success message
             ProfileErrorMessage = "Personal information has been automatically filled from your ID document. Please review and complete any missing fields.";
             StateHasChanged();
@@ -310,6 +319,35 @@ namespace c2_eskolar.Components.Pages.Benefactor
                 verificationModel.DeanEmail = extractedData.DeanEmail;
             // Show success message
             ProfileErrorMessage = "Organization information has been automatically filled from your document. Please review and complete any missing fields.";
+            StateHasChanged();
+        }
+
+        private void PrepopulateFromBenefactorAuthLetter(Services.ExtractedBenefactorAuthLetterData extractedData)
+        {
+            // Prepopulate organization information fields for benefactor
+            if (!string.IsNullOrEmpty(extractedData.OrganizationName))
+                verificationModel.InstitutionName = extractedData.OrganizationName;
+            if (!string.IsNullOrEmpty(extractedData.OrganizationType))
+                verificationModel.InstitutionType = extractedData.OrganizationType;
+            if (!string.IsNullOrEmpty(extractedData.Address))
+                verificationModel.Address = extractedData.Address;
+            if (!string.IsNullOrEmpty(extractedData.ContactNumber))
+                verificationModel.ContactNumber = extractedData.ContactNumber;
+            if (!string.IsNullOrEmpty(extractedData.Website))
+                verificationModel.Website = extractedData.Website;
+            if (!string.IsNullOrEmpty(extractedData.OfficialEmailDomain))
+                verificationModel.Description = extractedData.OfficialEmailDomain; // Maps to "Official Email Domain" field
+            if (!string.IsNullOrEmpty(extractedData.AuthorizedRepresentativeName))
+                verificationModel.DeanName = extractedData.AuthorizedRepresentativeName;
+            if (!string.IsNullOrEmpty(extractedData.AuthorizedRepresentativeEmail))
+                verificationModel.DeanEmail = extractedData.AuthorizedRepresentativeEmail;
+            
+            // Also try to set the organization contact email if we have the representative email
+            if (!string.IsNullOrEmpty(extractedData.AuthorizedRepresentativeEmail))
+                verificationModel.ContactEmail = extractedData.AuthorizedRepresentativeEmail;
+                
+            // Show success message
+            ProfileErrorMessage = "Organization information has been automatically filled from your authorization letter. Please review and complete any missing fields.";
             StateHasChanged();
         }
 

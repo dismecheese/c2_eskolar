@@ -97,16 +97,15 @@
                         }
                     </div>
                     <h4 class="card-title mb-1 profile-name">@FullName</h4>
-                    <div class="text-muted mb-2">@Email</div>
                     <div class="d-flex flex-column align-items-center gap-2">
-                        <span class="badge profile-badge-status @(Status == "Active" ? "profile-badge-active" : Status == "Pending" ? "profile-badge-pending" : Status == "On Leave" ? "profile-badge-onleave" : Status == "Graduated" ? "profile-badge-graduated" : "")">@Status</span>
+                        <span class="badge profile-badge-status @(EmailVerified && PhoneVerified && StudentIdVerified && AcademicRecordsVerified ? "profile-badge-verified" : "profile-badge-unverified")">
+                            @(EmailVerified && PhoneVerified && StudentIdVerified && AcademicRecordsVerified ? "Verified" : "Unverified")
+                        </span>
                     </div>
                     <div class="text-start mt-3">
-                        <div class="mb-2"><span class="profile-label-bold">Role:</span> <span>@Role</span></div>
-                        <div class="mb-2"><span class="profile-label-bold">Phone:</span> <span>@AdminContactNumber</span></div>
+                        <div class="mb-2"><span class="profile-label-bold">Position:</span> <span>@Position</span></div>
                         <div class="mb-2"><span class="profile-label-bold">Institution:</span> <span>@InstitutionName</span></div>
-                        <div class="mb-2"><span class="profile-label-bold">Location:</span> <span>@InstitutionAddress</span></div>
-                        <div class="mb-0"><span class="profile-label-bold">Member since:</span> <span>@CreatedDate.ToString("MMM yyyy")</span></div>
+                        <div class="mb-0"><span class="profile-label-bold">Member since:</span> <span>@CreatedDate.ToString("MMMMMMMMM yyyy")</span></div>
                     </div>
                 </div>
             </div>
@@ -513,6 +512,7 @@
     // Personal contact info (admin personal info)
     private string AdminContactNumber = ""; // Personal phone of admin
     private string AdminAddress = ""; // Personal address of admin
+    private string Position = "";
     
     private string ContactNumber = ""; // For backward compatibility
     private string ContactEmail = "";
@@ -668,6 +668,7 @@
                 // Admin personal contact (we'll use AdminPosition field to store admin phone temporarily)
                 // This is a workaround until the model is updated with separate fields
                 AdminContactNumber = profile.AdminPosition ?? ""; // Temporary storage
+                Position = profile.AdminPosition ?? "";
                 AdminAddress = profile.Mission ?? ""; // Use Mission field for admin personal address temporarily
                 
                 FullName = profile.AdminFullName;

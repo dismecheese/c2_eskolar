@@ -461,19 +461,18 @@
 </div>
     @if (showVerificationModal)
     {
-        <div class="sv-modal sv-modal-backdrop">
+        <div class="sv-modal sv-modal-backdrop sv-modal-fixed">
             <div class="sv-modal-content">
                 <div class="sv-modal-header">
                     <h2>Benefactor Verification Required</h2>
-                    <p>Your organization needs to be verified to access all features. Please complete the verification process.</p>
                 </div>
                 <div class="sv-modal-body">
-                    <p>To continue using eSkolar as a benefactor, you must verify your organization profile and upload required documents.</p>
-                    <p>Click "Verify Organization" to complete your verification with organization details, admin information, and required documents.</p>
+                    <p class="sv-modal-justify">To maintain the integrity of eSkolar, all benefactors must complete verification before gaining full access to platform features.
+                    Please verify your organization by providing accurate details, administrator information, and the necessary supporting documents.</p>
                 </div>
                 <div class="sv-modal-footer" style="display:flex;gap:16px;justify-content:flex-end;">
                     <button class="sv-btn sv-btn-secondary" @onclick="SkipVerification">Skip for Now</button>
-                    <button class="sv-btn sv-btn-primary" @onclick="GoToVerification">Verify Organization</button>
+                    <button class="sv-btn sv-btn-primary" @onclick="GoToVerification">Verify Benefactor</button>
                 </div>
             </div>
         </div>

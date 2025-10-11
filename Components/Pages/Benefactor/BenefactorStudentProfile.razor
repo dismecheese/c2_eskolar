@@ -1,0 +1,899 @@
+@page "/dashboard/benefactor/profile/{StudentId:guid}"
+@attribute [Authorize(Roles = "Benefactor,SuperAdmin")]
+@layout Layout.BenefactorDashLayout
+
+@using c2_eskolar.Data
+@using c2_eskolar.Models
+@using Microsoft.EntityFrameworkCore
+@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.AspNetCore.Identity
+@using Microsoft.JSInterop
+
+@inject c2_eskolar.Services.StudentProfileService StudentProfileService
+@inject c2_eskolar.Services.VerificationDocumentService VerificationDocumentService
+@inject c2_eskolar.Services.BenefactorProfileService BenefactorProfileService
+@inject IDbContextFactory<ApplicationDbContext> DbContextFactory
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject UserManager<IdentityUser> UserManager
+@inject Microsoft.Extensions.Logging.ILogger<BenefactorStudentProfile> Logger
+@inject c2_eskolar.Services.BlobStorageService BlobStorageService
+@inject NavigationManager NavigationManager
+@inject IJSRuntime JSRuntime
+@inject MudBlazor.IDialogService DialogService
+
+@code {
+    [Parameter] public Guid StudentId { get; set; }
+
+    public class StudentDocument
+    {
+        public string Name { get; set; } = "";
+        public string DateUploaded { get; set; } = "";
+        public string Status { get; set; } = "";
+        public string StatusClass { get; set; } = "";
+        public string FileType { get; set; } = "";
+        public string FilePath { get; set; } = "";
+        public string DocumentSource { get; set; } = ""; // "Verification" or "Application"
+        public string ApplicationTitle { get; set; } = ""; // For application documents
+        public int DocumentId { get; set; } = 0;
+    }
+
+    private StudentProfile? student = null;
+    private List<StudentDocument> allDocuments = new List<StudentDocument>();
+    private List<ScholarshipApplication> scholarshipApplications = new List<ScholarshipApplication>();
+    private bool isLoading = true;
+    private string? loadError = null;
+    private string currentBenefactorName = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadCurrentBenefactor();
+        await LoadStudentProfile();
+    }
+
+    private async Task LoadCurrentBenefactor()
+    {
+        try
+        {
+            var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+            if (authState.User.Identity?.IsAuthenticated == true)
+            {
+                var user = await UserManager.GetUserAsync(authState.User);
+                if (user != null)
+                {
+                    var benefactorProfile = await BenefactorProfileService.GetProfileByUserIdAsync(user.Id);
+                    currentBenefactorName = benefactorProfile?.OrganizationName ?? "";
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger?.LogWarning(ex, "Error loading benefactor profile");
+        }
+    }
+
+    private async Task LoadStudentProfile()
+    {
+        try
+        {
+            isLoading = true;
+            loadError = null;
+
+            using var dbContext = await DbContextFactory.CreateDbContextAsync();
+
+            // Load student profile
+            student = await dbContext.StudentProfiles
+                .FirstOrDefaultAsync(sp => sp.StudentProfileId == StudentId);
+
+            if (student == null)
+            {
+                loadError = "Student profile not found.";
+                return;
+            }
+
+            // Load scholarship applications for this student
+            scholarshipApplications = await dbContext.ScholarshipApplications
+                .Include(a => a.Scholarship)
+                .ThenInclude(s => s.Institution)
+                .Include(a => a.Documents)
+                .Where(a => a.StudentProfileId == StudentId)
+                .OrderByDescending(a => a.ApplicationDate)
+                .ToListAsync();
+
+            // Load verification documents
+            var verificationDocs = new List<c2_eskolar.Models.VerificationDocument>();
+            if (!string.IsNullOrWhiteSpace(student.UserId))
+            {
+                verificationDocs = await dbContext.VerificationDocuments
+                    .Where(d => d.UserId == student.UserId)
+                    .ToListAsync();
+            }
+
+            // Compile all documents
+            allDocuments = new List<StudentDocument>();
+
+            // Add verification documents
+            foreach (var doc in verificationDocs)
+            {
+                allDocuments.Add(new StudentDocument
+                {
+                    Name = doc.DocumentType ?? "Document",
+                    DateUploaded = doc.UploadedAt?.ToString("MM/dd/yyyy") ?? "",
+                    Status = doc.Status ?? "Pending",
+                    StatusClass = GetStatusClass(doc.Status ?? "Pending"),
+                    FileType = GetFileTypeFromPath(doc.FilePath ?? ""),
+                    FilePath = doc.FilePath ?? "",
+                    DocumentSource = "Verification",
+                    ApplicationTitle = "",
+                    DocumentId = doc.DocumentId
+                });
+            }
+
+            // Add application documents
+            foreach (var application in scholarshipApplications)
+            {
+                // Documents collection
+                if (application.Documents != null)
+                {
+                    foreach (var doc in application.Documents)
+                    {
+                        allDocuments.Add(new StudentDocument
+                        {
+                            Name = doc.FileName,
+                            DateUploaded = doc.UploadedAt.ToString("MM/dd/yyyy"),
+                            Status = "Submitted",
+                            StatusClass = "text-info",
+                            FileType = GetFileTypeFromPath(doc.FilePath),
+                            FilePath = doc.FilePath,
+                            DocumentSource = "Application",
+                            ApplicationTitle = application.Scholarship?.Title ?? "Unknown Scholarship",
+                            DocumentId = doc.DocumentId.GetHashCode() // Convert Guid to int
+                        });
+                    }
+                }
+
+                // UploadedDocuments property
+                if (!string.IsNullOrEmpty(application.UploadedDocuments))
+                {
+                    var uploadedDocPaths = application.UploadedDocuments.Split(',', StringSplitOptions.RemoveEmptyEntries);
+                    for (int i = 0; i < uploadedDocPaths.Length; i++)
+                    {
+                        var path = uploadedDocPaths[i].Trim();
+                        allDocuments.Add(new StudentDocument
+                        {
+                            Name = GetFileName(path),
+                            DateUploaded = application.ApplicationDate.ToString("MM/dd/yyyy"),
+                            Status = application.Status ?? "Pending",
+                            StatusClass = GetStatusClass(application.Status ?? "Pending"),
+                            FileType = GetFileTypeFromPath(path),
+                            FilePath = path,
+                            DocumentSource = "Application",
+                            ApplicationTitle = application.Scholarship?.Title ?? "Unknown Scholarship",
+                            DocumentId = application.ScholarshipApplicationId.GetHashCode() + i // Unique ID for uploaded docs
+                        });
+                    }
+                }
+            }
+
+            // Sort documents by date uploaded (newest first)
+            allDocuments = allDocuments
+                .OrderByDescending(d => DateTime.TryParse(d.DateUploaded, out var dt) ? dt : DateTime.MinValue)
+                .ToList();
+        }
+        catch (Exception ex)
+        {
+            Logger?.LogError(ex, "Error loading student profile for ID: {StudentId}", StudentId);
+            loadError = "An error occurred while loading the student profile. Please try again.";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private string GetFileName(string path)
+    {
+        if (string.IsNullOrWhiteSpace(path)) return "";
+        try
+        {
+            var parts = path.Split(new[] { '/', '\\' }, StringSplitOptions.RemoveEmptyEntries);
+            var fileName = parts.Length > 0 ? parts[^1] : path;
+            if (fileName.Length > 50)
+                return fileName.Substring(0, 25) + "..." + fileName.Substring(fileName.Length - 22);
+            return fileName;
+        }
+        catch { return path; }
+    }
+
+    private string GetFileTypeFromPath(string path)
+    {
+        if (string.IsNullOrWhiteSpace(path)) return "Other";
+        if (path.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase)) return "PDF";
+        if (path.EndsWith(".docx", StringComparison.OrdinalIgnoreCase) || path.EndsWith(".doc", StringComparison.OrdinalIgnoreCase)) return "DOCX";
+        if (path.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase) || path.EndsWith(".jpeg", StringComparison.OrdinalIgnoreCase) || path.EndsWith(".png", StringComparison.OrdinalIgnoreCase)) return "Image";
+        return "Other";
+    }
+
+    private string GetStatusClass(string status)
+    {
+        return status switch
+        {
+            "Approved" => "text-success",
+            "Pending" => "text-warning",
+            "Submitted" => "text-info",
+            "Under Review" => "text-info",
+            "Needs Revision" => "text-danger",
+            "Rejected" => "text-danger",
+            _ => "text-secondary"
+        };
+    }
+
+    private void GoBackToScholars()
+    {
+        NavigationManager.NavigateTo("/dashboard/benefactor/scholars");
+    }
+
+    private string GetAffiliationStatus()
+    {
+        if (student == null) return "Unknown";
+        
+        // For benefactors, all students are scholars they fund
+        return "Funded Scholar";
+    }
+
+    private string GetAffiliationBadgeClass()
+    {
+        var status = GetAffiliationStatus();
+        return status == "Funded Scholar" ? "bg-success" : "bg-secondary";
+    }
+
+    private string GetBlobNameFromPath(string filePath)
+    {
+        if (string.IsNullOrWhiteSpace(filePath))
+            return string.Empty;
+
+        try
+        {
+            // Handle different path formats
+            var trimmed = filePath.Trim();
+            
+            // Remove any URL encoding
+            trimmed = Uri.UnescapeDataString(trimmed);
+            
+            // Extract blob name from various path formats
+            string blobName;
+            
+            if (trimmed.Contains("/"))
+            {
+                // Extract from URL or path with forward slashes
+                blobName = trimmed.Substring(trimmed.LastIndexOf('/') + 1);
+            }
+            else if (trimmed.Contains("\\"))
+            {
+                // Extract from Windows path with backslashes
+                blobName = trimmed.Substring(trimmed.LastIndexOf('\\') + 1);
+            }
+            else
+            {
+                // Assume it's already just the blob name
+                blobName = trimmed;
+            }
+            
+            // Clean up any remaining URL encoding or special characters
+            blobName = blobName.Trim();
+            
+            return blobName;
+        }
+        catch (Exception ex)
+        {
+            Logger?.LogWarning(ex, "Error extracting blob name from path: {FilePath}", filePath);
+            return string.Empty;
+        }
+    }
+
+    private bool CanViewInBrowser(string fileType)
+    {
+        return fileType switch
+        {
+            "PDF" => true,
+            "Image" => true,
+            "DOCX" => false, // DOCX files cannot be reliably viewed in browser modal
+            "Other" => false,
+            _ => false
+        };
+    }
+
+    private string GetViewButtonText(string fileType)
+    {
+        return fileType switch
+        {
+            "PDF" => "View PDF Document",
+            "Image" => "View Image", 
+            "DOCX" => "Download Document",
+            _ => "View Document"
+        };
+    }
+
+    private string GetViewButtonIcon(string fileType)
+    {
+        return fileType switch
+        {
+            "PDF" => Icons.Material.Filled.PictureAsPdf,
+            "Image" => Icons.Material.Filled.Image,
+            "DOCX" => Icons.Material.Filled.Download,
+            _ => Icons.Material.Filled.Visibility
+        };
+    }
+
+    private void OpenDocumentModal(string filePath, string documentName, string fileType)
+    {
+        try
+        {
+            Logger?.LogInformation("=== OPENING DOCUMENT MODAL ===");
+            Logger?.LogInformation("FilePath: {FilePath}", filePath);
+            Logger?.LogInformation("DocumentName: {DocumentName}", documentName);
+            Logger?.LogInformation("FileType: {FileType}", fileType);
+
+            string streamingUrl = "";
+            string error = "";
+            bool loading = true;
+
+            try
+            {
+                // Create streaming URL that handles both Azure Blob and local files
+                if (filePath.StartsWith("https://") || filePath.StartsWith("http://"))
+                {
+                    var blobName = GetBlobNameFromPath(filePath);
+                    if (string.IsNullOrWhiteSpace(blobName))
+                    {
+                        error = "Cannot extract blob name from file path.";
+                        loading = false;
+                    }
+                    else
+                    {
+                        streamingUrl = $"/api/document/stream/{Uri.EscapeDataString(blobName)}";
+                    }
+                }
+                else
+                {
+                    streamingUrl = $"/api/document/stream/{Uri.EscapeDataString(filePath)}";
+                }
+            }
+            catch (Exception ex)
+            {
+                error = $"Error opening document: {ex.Message}";
+                Logger?.LogError(ex, "Error creating streaming URL");
+            }
+            finally
+            {
+                loading = false;
+            }
+
+            Logger?.LogInformation("StreamingUrl: {StreamingUrl}", streamingUrl);
+            Logger?.LogInformation("Error: {Error}", error);
+            Logger?.LogInformation("Loading: {Loading}", loading);
+
+            var parameters = new MudBlazor.DialogParameters
+            {
+                ["Title"] = documentName,
+                ["DocumentType"] = fileType,
+                ["DocumentUrl"] = streamingUrl,
+                ["Error"] = error,
+                ["Loading"] = loading
+            };
+
+            var options = new MudBlazor.DialogOptions 
+            { 
+                CloseOnEscapeKey = true, 
+                MaxWidth = MudBlazor.MaxWidth.ExtraLarge, 
+                FullWidth = true 
+            };
+
+            Logger?.LogInformation("About to show dialog with DialogService");
+            var dialogReference = DialogService.Show<Components.UI.DocumentViewerDialog>(documentName, parameters, options);
+            Logger?.LogInformation("Dialog shown successfully, DialogReference: {DialogReference}", dialogReference != null);
+        }
+        catch (Exception ex)
+        {
+            Logger?.LogError(ex, "Error in OpenDocumentModal");
+            // Fallback - try to open in new tab
+            if (!string.IsNullOrWhiteSpace(filePath))
+            {
+                try
+                {
+                    var fallbackUrl = filePath.StartsWith("http") ? filePath : $"/api/document/stream/{Uri.EscapeDataString(filePath)}";
+                    JSRuntime.InvokeVoidAsync("open", fallbackUrl, "_blank");
+                }
+                catch (Exception fallbackEx)
+                {
+                    Logger?.LogError(fallbackEx, "Fallback also failed");
+                }
+            }
+        }
+    }
+
+    private async Task TestModal()
+    {
+        try
+        {
+            Logger?.LogInformation("=== TESTING MODAL ===");
+            
+            // First try a simple dialog to test if DialogService works at all
+            try
+            {
+                Logger?.LogInformation("Testing basic dialog service...");
+                var simpleParams = new MudBlazor.DialogParameters();
+                var simpleOptions = new MudBlazor.DialogOptions { CloseOnEscapeKey = true };
+                
+                // Test with a simple message dialog first
+                var result = await DialogService.ShowMessageBox("Test", "This is a test dialog. If you see this, the dialog service is working!", yesText: "OK");
+                Logger?.LogInformation("Basic dialog test result: {Result}", result);
+                
+                if (result.HasValue)
+                {
+                    Logger?.LogInformation("Basic dialog service works! Now testing document modal...");
+                }
+            }
+            catch (Exception basicEx)
+            {
+                Logger?.LogError(basicEx, "Basic dialog service test failed");
+                await JSRuntime.InvokeVoidAsync("alert", $"Basic dialog service failed: {basicEx.Message}");
+                return;
+            }
+
+            // Test with the first document if available
+            if (allDocuments.Any())
+            {
+                var firstDoc = allDocuments.First();
+                if (!string.IsNullOrWhiteSpace(firstDoc.FilePath))
+                {
+                    try
+                    {
+                        Logger?.LogInformation("Testing modal with real document: {DocumentName}, FilePath: {FilePath}", firstDoc.Name, firstDoc.FilePath);
+                        OpenDocumentModal(firstDoc.FilePath, firstDoc.Name, firstDoc.FileType);
+                        return;
+                    }
+                    catch (Exception docEx)
+                    {
+                        Logger?.LogWarning(docEx, "Failed to open document for test, falling back to sample PDF");
+                    }
+                }
+            }
+            
+            // Fallback to sample PDF URL for testing
+            var testPdfUrl = "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf";
+            Logger?.LogInformation("Testing with sample PDF URL: {TestPdfUrl}", testPdfUrl);
+            OpenDocumentModal(testPdfUrl, "Test Document.pdf", "PDF");
+        }
+        catch (Exception ex)
+        {
+            Logger?.LogError(ex, "Error testing modal");
+            // Show an alert to the user
+            await JSRuntime.InvokeVoidAsync("alert", $"Modal test failed: {ex.Message}");
+        }
+    }
+}
+
+<MudContainer MaxWidth="MaxWidth.False" Class="py-4" style="background: linear-gradient(135deg, #e3f2fd 0%, #90caf9 100%); min-height: 100vh;">
+    @if (isLoading)
+    {
+        <MudGrid Justify="Justify.Center">
+            <MudItem xs="12" Class="text-center py-5">
+                <MudProgressCircular Color="Color.Primary" Size="Size.Large" Class="mb-3" />
+                <MudText Typo="Typo.h6" Color="Color.Secondary">Loading student profile...</MudText>
+            </MudItem>
+        </MudGrid>
+    }
+    else if (loadError != null)
+    {
+        <MudGrid Justify="Justify.Center">
+            <MudItem xs="12" md="8">
+                <MudAlert Severity="Severity.Error" Elevation="2" Variant="Variant.Filled" Class="text-center mb-4">
+                    <MudIcon Icon="@Icons.Material.Filled.Error" Size="Size.Large" Class="mb-2" />
+                    <MudText Typo="Typo.h5">Error Loading Profile</MudText>
+                    <MudText Typo="Typo.body1">@loadError</MudText>
+                    <MudStack Row="true" Spacing="2" Justify="Justify.Center" Class="mt-3">
+                        <MudButton Variant="Variant.Outlined" Color="Color.Secondary" OnClick="GoBackToScholars" StartIcon="@Icons.Material.Filled.ArrowBack">
+                            Back to Scholars
+                        </MudButton>
+                        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="LoadStudentProfile" StartIcon="@Icons.Material.Filled.Refresh">
+                            Try Again
+                        </MudButton>
+                    </MudStack>
+                </MudAlert>
+            </MudItem>
+        </MudGrid>
+    }
+    else if (student != null)
+    {
+        <div class="row justify-content-center">
+            <div class="col-12 col-xl-10">
+                
+                <!-- Navigation Breadcrumb -->
+                <nav aria-label="breadcrumb" class="mb-4">
+                    <ol class="breadcrumb bg-white rounded shadow-sm p-3">
+                        <li class="breadcrumb-item">
+                            <a href="/dashboard/benefactor/scholars" class="text-decoration-none">
+                                <i class="fa fa-graduation-cap me-1"></i>Scholar Management
+                            </a>
+                        </li>
+                        <li class="breadcrumb-item active" aria-current="page">
+                            <i class="fa fa-user me-1"></i>@student.FullName
+                        </li>
+                    </ol>
+                </nav>
+
+                <!-- Header Section with Student Basic Info -->
+                <MudPaper Elevation="6" Class="mb-4" Style="background: linear-gradient(135deg, #1976d2 0%, #64b5f6 100%); border-radius: 18px;">
+                    <div class="card-body text-white">
+                        <MudGrid>
+                            <MudItem xs="12" md="2" Class="text-center mb-3 mb-md-0">
+                                <MudAvatar Size="Size.Large" Color="Color.Info" Class="mx-auto" Style="width:100px;height:100px;font-size:2.5rem;">
+                                    @(string.IsNullOrWhiteSpace(student.FullName) ? "?" : student.FullName.Substring(0, 1))
+                                </MudAvatar>
+                            </MudItem>
+                            <MudItem xs="12" md="7">
+                                <MudText Typo="Typo.h4" Class="fw-bold mb-1" Style="color: #fff; text-shadow: 0 1px 4px #1976d2;">@student.FullName</MudText>
+                                <MudText Typo="Typo.subtitle1" Color="Color.Info" Class="mb-2" Style="color: #e3f2fd; font-weight: 600;">@student.Email</MudText>
+                                <MudStack Row="true" Spacing="2" Class="mb-2">
+                                    <MudChip T="string" Color="Color.Primary" Variant="Variant.Filled" Class="px-3 py-2 fs-6">@GetAffiliationStatus()</MudChip>
+                                    <MudChip T="string" Color="@(student.VerificationStatus == "Verified" ? Color.Success : student.VerificationStatus == "Pending" ? Color.Warning : Color.Secondary)" Variant="Variant.Filled" Class="px-3 py-2 fs-6">
+                                        @(student.VerificationStatus ?? "Pending Verification")
+                                    </MudChip>
+                                </MudStack>
+                                <MudGrid>
+                                    <MudItem xs="6">
+                                        <MudText Typo="Typo.caption" Style="color: #1a237e; font-weight: 600;">University: @(student.UniversityName ?? "Not specified")</MudText>
+                                    </MudItem>
+                                    <MudItem xs="6">
+                                        <MudText Typo="Typo.caption" Style="color: #1a237e; font-weight: 600;">Student ID: @(student.StudentNumber ?? "Not provided")</MudText>
+                                    </MudItem>
+                                </MudGrid>
+                            </MudItem>
+                            <MudItem xs="12" md="3" Class="text-end">
+                                <MudStack Spacing="2">
+                                    <MudPaper Class="text-center p-2" Style="background:rgba(255,255,255,0.15);border-radius:12px;">
+                                        <MudText Typo="Typo.h5" Class="fw-bold">@(student.GPA?.ToString("0.0") ?? "N/A")</MudText>
+                                        <MudText Typo="Typo.caption" Style="color: #1a237e; font-weight: 600;">Current GPA</MudText>
+                                    </MudPaper>
+                                    <MudPaper Class="text-center p-2" Style="background:rgba(255,255,255,0.15);border-radius:12px;">
+                                        <MudText Typo="Typo.h6" Class="fw-bold">@allDocuments.Count</MudText>
+                                        <MudText Typo="Typo.caption" Style="color: #1a237e; font-weight: 600;">Documents</MudText>
+                                    </MudPaper>
+                                </MudStack>
+                            </MudItem>
+                        </MudGrid>
+                    </div>
+                </MudPaper>
+
+                <!-- Main Content -->
+                <div class="row">
+                    
+                    <!-- Left Column - Personal Information -->
+                    <div class="col-lg-4 mb-4">
+                        
+                        <!-- Personal Details Card -->
+                        <MudPaper Elevation="3" Class="mb-4" Style="border-radius:14px; background: #fff; color: #1a237e;">
+                            <MudStack Spacing="0">
+                                <MudPaper Class="px-3 py-2" Style="background:linear-gradient(90deg,#1976d2 0%,#64b5f6 100%);border-radius:14px 14px 0 0; color: #fff; font-weight: 600;">
+                                    <MudText Typo="Typo.h6" Class="fw-bold">
+                                        <MudIcon Icon="@Icons.Material.Filled.Person" Class="me-2" />Personal Information
+                                    </MudText>
+                                </MudPaper>
+                                <MudPaper Class="px-3 py-3" Style="border-radius:0 0 14px 14px; background: #fff; color: #1a237e;">
+                                    <MudText Typo="Typo.body2" Class="mb-1"><b>Full Name:</b> @student.FullName</MudText>
+                                    <MudText Typo="Typo.body2" Class="mb-1"><b>First Name:</b> @(student.FirstName ?? "Not provided")</MudText>
+                                    <MudText Typo="Typo.body2" Class="mb-1"><b>Middle Name:</b> @(student.MiddleName ?? "Not provided")</MudText>
+                                    <MudText Typo="Typo.body2" Class="mb-1"><b>Last Name:</b> @(student.LastName ?? "Not provided")</MudText>
+                                    <MudText Typo="Typo.body2" Class="mb-1"><b>Sex:</b> @(student.Sex ?? "Not specified")</MudText>
+                                    <MudText Typo="Typo.body2" Class="mb-1"><b>Nationality:</b> @(student.Nationality ?? "Not specified")</MudText>
+                                    <MudText Typo="Typo.body2" Class="mb-1"><b>Birth Date:</b> @(student.BirthDate?.ToString("MMMM dd, yyyy") ?? "Not provided")</MudText>
+                                    <MudText Typo="Typo.body2" Class="mb-1"><b>Mobile Number:</b> @(student.MobileNumber ?? "Not provided")</MudText>
+                                    <MudText Typo="Typo.body2"><b>Permanent Address:</b> @(student.PermanentAddress ?? "Not provided")</MudText>
+                                </MudPaper>
+                            </MudStack>
+                        </MudPaper>
+
+                        <!-- Academic Information Card -->
+                        <MudPaper Elevation="3" Class="mb-4" Style="border-radius:14px; background: #fff; color: #1a237e;">
+                            <MudStack Spacing="0">
+                                <MudPaper Class="px-3 py-2" Style="background:linear-gradient(90deg,#1565c0 0%,#90caf9 100%);border-radius:14px 14px 0 0; color: #fff; font-weight: 600;">
+                                    <MudText Typo="Typo.h6" Class="fw-bold">
+                                        <MudIcon Icon="@Icons.Material.Filled.School" Class="me-2" />Academic Information
+                                    </MudText>
+                                </MudPaper>
+                                <MudPaper Class="px-3 py-3" Style="border-radius:0 0 14px 14px; background: #fff; color: #1a237e;">
+                                    <MudText Typo="Typo.body2" Class="mb-1"><b>University:</b> @(student.UniversityName ?? "Not specified")</MudText>
+                                    <MudText Typo="Typo.body2" Class="mb-1"><b>Student Number:</b> @(student.StudentNumber ?? "Not provided")</MudText>
+                                    <MudText Typo="Typo.body2" Class="mb-1"><b>Course/Program:</b> @(student.Course ?? "Not specified")</MudText>
+                                    <MudText Typo="Typo.body2" Class="mb-1"><b>Year Level:</b> @(student.YearLevel.HasValue ? $"{student.YearLevel} Year" : "Not specified")</MudText>
+                                    <MudText Typo="Typo.body2" Class="mb-1"><b>Current GPA:</b> <span class="text-info fw-bold">@(student.GPA?.ToString("0.0") ?? "N/A")</span></MudText>
+                                    <MudText Typo="Typo.body2"><b>Verification Status:</b> <MudChip T="string" Color="@(student.VerificationStatus == "Verified" ? Color.Success : student.VerificationStatus == "Pending" ? Color.Warning : Color.Secondary)" Variant="Variant.Filled" Class="px-3 py-2">@(student.VerificationStatus ?? "Pending")</MudChip></MudText>
+                                </MudPaper>
+                            </MudStack>
+                        </MudPaper>
+
+                        <!-- Account Information Card -->
+                        <MudPaper Elevation="3" Style="border-radius:14px; background: #fff; color: #1a237e;">
+                            <MudStack Spacing="0">
+                                <MudPaper Class="px-3 py-2" Style="background:linear-gradient(90deg,#0288d1 0%,#b3e5fc 100%);border-radius:14px 14px 0 0; color: #fff; font-weight: 600;">
+                                    <MudText Typo="Typo.h6" Class="fw-bold">
+                                        <MudIcon Icon="@Icons.Material.Filled.Info" Class="me-2" />Account Information
+                                    </MudText>
+                                </MudPaper>
+                                <MudPaper Class="px-3 py-3" Style="border-radius:0 0 14px 14px; background: #fff; color: #1a237e;">
+                                    <MudText Typo="Typo.body2" Class="mb-1"><b>Profile Created:</b> @student.CreatedAt.ToString("MMMM dd, yyyy")</MudText>
+                                    <MudText Typo="Typo.body2" Class="mb-1"><b>Last Updated:</b> @(student.UpdatedAt?.ToString("MMMM dd, yyyy") ?? "Not updated")</MudText>
+                                    <MudText Typo="Typo.body2"><b>Profile ID:</b> <span class="text-muted">@student.StudentProfileId</span></MudText>
+                                </MudPaper>
+                            </MudStack>
+                        </MudPaper>
+                    </div>
+
+                    <!-- Right Column - Documents and Applications -->
+                    <div class="col-lg-8">
+                        
+                        <!-- Scholarship Applications Card -->
+                        <MudPaper Elevation="3" Class="mb-4" Style="border-radius:14px; background: #fff; color: #1a237e;">
+                            <MudStack Spacing="0">
+                                <MudPaper Class="px-3 py-2" Style="background:linear-gradient(90deg,#1976d2 0%,#90caf9 100%);border-radius:14px 14px 0 0; color: #fff; font-weight: 600;">
+                                    <MudText Typo="Typo.h6" Class="fw-bold">
+                                        <MudIcon Icon="@Icons.Material.Filled.Description" Class="me-2" />Scholarship Applications
+                                        <MudChip T="int" Color="Color.Dark" Class="ms-2">@scholarshipApplications.Count</MudChip>
+                                    </MudText>
+                                </MudPaper>
+                                <MudPaper Class="px-3 py-3" Style="border-radius:0 0 14px 14px;">
+                                @if (scholarshipApplications.Any())
+                                {
+                                    <div class="table-responsive">
+                                        <table class="table table-hover">
+                                            <thead class="table-light">
+                                                <tr>
+                                                    <th>Scholarship</th>
+                                                    <th>Institution</th>
+                                                    <th>Applied Date</th>
+                                                    <th>Status</th>
+                                                    <th>Documents</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @foreach (var app in scholarshipApplications)
+                                                {
+                                                    <tr>
+                                                        <td>
+                                                            <div class="fw-semibold">@(app.Scholarship?.Title ?? "Unknown")</div>
+                                                            <small class="text-muted">ID: @app.ScholarshipApplicationId</small>
+                                                        </td>
+                                                        <td>
+                                                            <small>@(app.Scholarship?.Institution?.InstitutionName ?? "Unknown")</small>
+                                                        </td>
+                                                        <td>
+                                                            <small>@app.ApplicationDate.ToString("MM/dd/yyyy")</small>
+                                                        </td>
+                                                        <td>
+                                                            <span class="badge @(app.Status == "Approved" ? "bg-success" : app.Status == "Pending" ? "bg-warning" : app.Status == "Rejected" ? "bg-danger" : "bg-info")">
+                                                                @(app.Status ?? "Pending")
+                                                            </span>
+                                                        </td>
+                                                        <td>
+                                                            <span class="badge bg-secondary">
+                                                                @((app.Documents?.Count ?? 0) + (string.IsNullOrEmpty(app.UploadedDocuments) ? 0 : app.UploadedDocuments.Split(',').Length))
+                                                            </span>
+                                                        </td>
+                                                    </tr>
+                                                }
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div class="text-center py-4 text-muted">
+                                        <i class="fa fa-file-o fa-3x mb-3"></i>
+                                        <h6>No scholarship applications found</h6>
+                                        <p class="mb-0">This student has not applied for any scholarships yet.</p>
+                                    </div>
+                                }
+                                </MudPaper>
+                            </MudStack>
+                        </MudPaper>
+
+                        <!-- Documents Card -->
+                        <MudPaper Elevation="3" Style="border-radius:14px; background: #fff; color: #1a237e;">
+                            <MudStack Spacing="0">
+                                <MudPaper Class="px-3 py-2" Style="background:linear-gradient(90deg,#1565c0 0%,#90caf9 100%);border-radius:14px 14px 0 0; color: #fff; font-weight: 600;">
+                                    <MudText Typo="Typo.h6" Class="fw-bold">
+                                        <MudIcon Icon="@Icons.Material.Filled.Folder" Class="me-2" />Submitted Documents
+                                        <MudChip T="int" Color="Color.Info" Class="ms-2">@allDocuments.Count</MudChip>
+                                    </MudText>
+                                </MudPaper>
+                                <MudPaper Class="px-3 py-3" Style="border-radius:0 0 14px 14px;">
+                                @if (allDocuments.Any())
+                                {
+                                    <div class="table-responsive">
+                                        <table class="table table-hover">
+                                            <thead class="table-light">
+                                                <tr>
+                                                    <th>Document</th>
+                                                    <th>Source</th>
+                                                    <th>Type</th>
+                                                    <th>Date Submitted</th>
+                                                    <th>Status</th>
+                                                    <th>Actions</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @foreach (var doc in allDocuments)
+                                                {
+                                                    <tr>
+                                                        <td>
+                                                            <div class="d-flex align-items-center">
+                                                                <i class="fa @(doc.FileType == "PDF" ? "fa-file-pdf-o text-danger" : doc.FileType == "DOCX" ? "fa-file-word-o text-primary" : doc.FileType == "Image" ? "fa-file-image-o text-success" : "fa-file-o text-secondary") me-2"></i>
+                                                                <div>
+                                                                    <div class="fw-semibold">@doc.Name</div>
+                                                                    @if (!string.IsNullOrEmpty(doc.ApplicationTitle))
+                                                                    {
+                                                                        <small class="text-muted">@doc.ApplicationTitle</small>
+                                                                    }
+                                                                </div>
+                                                            </div>
+                                                        </td>
+                                                        <td>
+                                                            <span class="badge @(doc.DocumentSource == "Verification" ? "bg-info" : "bg-primary") text-white">
+                                                                @doc.DocumentSource
+                                                            </span>
+                                                        </td>
+                                                        <td>
+                                                            <span class="badge bg-light text-dark border">@doc.FileType</span>
+                                                        </td>
+                                                        <td>
+                                                            <small class="text-muted">@doc.DateUploaded</small>
+                                                        </td>
+                                                        <td>
+                                                            <span class="@doc.StatusClass fw-semibold">
+                                                                <i class="fa @(doc.Status == "Approved" ? "fa-check-circle" : doc.Status.Contains("Pending") || doc.Status == "Submitted" ? "fa-clock-o" : doc.Status.Contains("Review") ? "fa-eye" : "fa-times-circle") me-1"></i>
+                                                                @doc.Status
+                                                            </span>
+                                                        </td>
+                                                        <td>
+                                                            <div class="btn-group btn-group-sm">
+                                                                @{
+                                                                    string? streamingUrl = null;
+                                                                    string? errorMessage = null;
+                                                                    
+                                                                    if (!string.IsNullOrWhiteSpace(doc.FilePath))
+                                                                    {
+                                                                        try
+                                                                        {
+                                                                            Logger?.LogInformation("Processing document: {DocumentName}, FilePath: {FilePath}", doc.Name, doc.FilePath);
+                                                                            
+                                                                            // Create streaming URL for both Azure Blob and local files
+                                                                            if (doc.FilePath.StartsWith("https://") || doc.FilePath.StartsWith("http://"))
+                                                                            {
+                                                                                // Azure Blob Storage URL - extract blob name
+                                                                                var blobName = GetBlobNameFromPath(doc.FilePath);
+                                                                                if (!string.IsNullOrWhiteSpace(blobName))
+                                                                                {
+                                                                                    streamingUrl = $"/api/document/stream/{Uri.EscapeDataString(blobName)}";
+                                                                                }
+                                                                                else
+                                                                                {
+                                                                                    errorMessage = "Invalid blob name";
+                                                                                }
+                                                                            }
+                                                                            else
+                                                                            {
+                                                                                // Local file path
+                                                                                streamingUrl = $"/api/document/stream/{Uri.EscapeDataString(doc.FilePath)}";
+                                                                            }
+                                                                            
+                                                                            if (!string.IsNullOrEmpty(streamingUrl))
+                                                                            {
+                                                                                Logger?.LogInformation("Generated streaming URL for document: {StreamingUrl}", streamingUrl);
+                                                                            }
+                                                                        }
+                                                                        catch (Exception ex)
+                                                                        {
+                                                                            errorMessage = $"Error generating link: {ex.Message}";
+                                                                            Logger?.LogWarning(ex, "Failed to generate streaming URL for document: {FilePath}", doc.FilePath);
+                                                                        }
+                                                                    }
+                                                                    else
+                                                                    {
+                                                                        errorMessage = "No file path available";
+                                                                    }
+                                                                }
+                                                                @if (!string.IsNullOrEmpty(streamingUrl))
+                                                                {
+                                                                    @if (CanViewInBrowser(doc.FileType))
+                                                                    {
+                                                                        <MudTooltip Text="@GetViewButtonText(doc.FileType)">
+                                                                            <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Small" StartIcon="@GetViewButtonIcon(doc.FileType)" OnClick="() => OpenDocumentModal(doc.FilePath, doc.Name, doc.FileType)">
+                                                                                View
+                                                                            </MudButton>
+                                                                        </MudTooltip>
+                                                                        <MudTooltip Text=@($"Download {doc.Name}")>
+                                                                            <a href="@streamingUrl" class="btn btn-outline-secondary btn-sm" aria-label="Download @doc.Name" target="_blank">
+                                                                                <i class="fa fa-download me-1"></i>Download
+                                                                            </a>
+                                                                        </MudTooltip>
+                                                                    }
+                                                                    else
+                                                                    {
+                                                                        <MudTooltip Text=@($"Download {doc.FileType} File")>
+                                                                            <a href="@streamingUrl" class="btn btn-primary btn-sm me-1" aria-label="Download @doc.FileType File" target="_blank">
+                                                                                <i class="fa fa-download me-1"></i>Download
+                                                                            </a>
+                                                                        </MudTooltip>
+                                                                        <MudTooltip Text="Open in new tab">
+                                                                            <a href="@streamingUrl" class="btn btn-outline-info btn-sm" aria-label="Open in new tab" target="_blank">
+                                                                                <i class="fa fa-external-link me-1"></i>Open
+                                                                            </a>
+                                                                        </MudTooltip>
+                                                                    }
+                                                                }
+                                                                else
+                                                                {
+                                                                    <button type="button" class="btn btn-outline-primary btn-sm me-1" disabled title="@(errorMessage ?? "Document not available")">
+                                                                        <i class="fa fa-eye me-1"></i>View
+                                                                    </button>
+                                                                    <button type="button" class="btn btn-outline-secondary btn-sm" disabled title="@(errorMessage ?? "Document not available")">
+                                                                        <i class="fa fa-download me-1"></i>Download
+                                                                    </button>
+                                                                    @if (!string.IsNullOrEmpty(errorMessage))
+                                                                    {
+                                                                        <div class="mt-1">
+                                                                            <small class="text-danger"><i class="fa fa-exclamation-triangle me-1"></i>@errorMessage</small>
+                                                                        </div>
+                                                                    }
+                                                                }
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                }
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div class="text-center py-5 text-muted">
+                                        <i class="fa fa-file-o fa-4x mb-3"></i>
+                                        <h5>No documents submitted</h5>
+                                        <p class="mb-0">This student has not submitted any documents yet.</p>
+                                    </div>
+                                }
+                                </MudPaper>
+                            </MudStack>
+                        </MudPaper>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <MudGrid Class="mt-4">
+                    <MudItem xs="12">
+                        <MudStack Row="true" Justify="Justify.SpaceBetween">
+                            <MudButton Variant="Variant.Outlined" Color="Color.Secondary" Size="Size.Large" StartIcon="@Icons.Material.Filled.ArrowBack" OnClick="GoBackToScholars">
+                                Back to Scholar Management
+                            </MudButton>
+                            <MudStack Row="true" Spacing="2">
+                                <MudButton Variant="Variant.Outlined" Color="Color.Info" Size="Size.Large" StartIcon="@Icons.Material.Filled.Refresh" OnClick="LoadStudentProfile">
+                                    Refresh Data
+                                </MudButton>
+                                <MudButton Variant="Variant.Outlined" Color="Color.Primary" Size="Size.Large" StartIcon="@Icons.Material.Filled.PlayArrow" OnClick="TestModal">
+                                    Test Modal
+                                </MudButton>
+                                <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Large" StartIcon="@Icons.Material.Filled.Groups" OnClick="GoBackToScholars">
+                                    View All Scholars
+                                </MudButton>
+                            </MudStack>
+                        </MudStack>
+                    </MudItem>
+                </MudGrid>
+            </div>
+        </div>
+    }
+</MudContainer>
+
+
+<!-- Modal is now handled by MudBlazor dialog service and DocumentViewerDialog component -->
+
