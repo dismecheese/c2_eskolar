@@ -1,6 +1,0 @@
-@startuml
-class InstitutionContextService {
-    + InstitutionContextService(contextFactory:IDbContextFactory<ApplicationDbContext>)
-    + <<async>> GenerateInstitutionContextAsync(userId:string, userMessage:string) : Task<string>
-}
-@enduml

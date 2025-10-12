@@ -1,9 +1,0 @@
-@startuml
-class ScholarshipType {
-    + ScholarshipTypeId : int <<get>> <<set>>
-    + TypeName : string <<get>> <<set>> = ""
-}
-class "ICollection`1"<T> {
-}
-ScholarshipType o-> "Scholarships<Scholarship>" "ICollection`1"
-@enduml

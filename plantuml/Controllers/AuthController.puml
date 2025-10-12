@@ -1,8 +1,0 @@
-@startuml
-class AuthController {
-    + AuthController(authService:AuthService)
-    + <<async>> Login(email:string, password:string, remember:bool) : Task<IActionResult>
-    + <<async>> Logout() : Task<IActionResult>
-}
-ControllerBase <|-- AuthController
-@enduml

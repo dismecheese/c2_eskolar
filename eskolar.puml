@@ -1,244 +1,924 @@
-@startuml
-' Core user and role entities
+@startuml c2_eskolar_complete_normalized_diagram
+
+!theme aws-orange
+
+' ==========================================
+' COMPLETE NORMALIZED C2 ESKOLAR CLASS DIAGRAM
+' ==========================================
+' This is the complete system - use individual modules for document sections
+' 
+' Individual modules available in /class_diagram_modules/ folder:
+' - module_01_authentication.puml
+' - module_02_lookup_tables.puml  
+' - module_03_user_profiles.puml
+' - module_04_scholarship_management.puml
+' - module_05_application_system.puml
+' - module_06_document_management.puml
+' - module_07_activity_tracking.puml
+' - module_08_bookmark_system.puml
+' - module_09_announcements.puml
+' - module_10_analytics.puml
+' - module_11_security_audit.puml
+
+' ==========================================
+' MODULE 1: CORE AUTHENTICATION & AUTHORIZATION
+' ==========================================
+' Use this module for: User management, roles, and security
+' Key classes: User, Role, UserRole enum
 class User {
-  int UserID
-  string Email
-  string PasswordHash
-  int RoleID
-  boolean IsVerified
-  datetime CreatedAt
+  - UserId : string <<PK>>
+  - Email : string <<required>>
+  - PasswordHash : string <<required>>
+  - RoleId : int <<FK>>
+  - IsVerified : boolean
+  - CreatedAt : DateTime
+  --
+  + GetUserId() : string
+  + GetEmail() : string
+  + IsUserVerified() : boolean
+  + VerifyUser() : void
+  + ChangePassword(newPasswordHash : string) : void
+  --
+  + Role : Role
 }
+
 class Role {
-  int RoleID
-  string RoleName
+  - RoleId : int <<PK>>
+  - RoleName : string <<required>>
+  - Description : string
+  - Permissions : string
+  --
+  + GetRoleId() : int
+  + GetRoleName() : string
+  + HasPermission(permission : string) : boolean
+  --
+  + Users : ICollection<User>
 }
 
-' Profiles
+' ==========================================
+' MODULE 2: LOOKUP TABLES & REFERENCE DATA
+' ==========================================
+' Use this module for: Status codes, categories, and reference data
+' Key classes: VerificationStatus, AccountStatus, ApplicationStatus, etc.
+
+class VerificationStatus {
+  - VerificationStatusId : int <<PK>>
+  - StatusName : string <<required>>
+  - StatusCode : string <<unique>>
+  - Description : string
+  - IsActive : boolean
+  --
+  + GetStatusByCode(code : string) : VerificationStatus
+}
+
+class AccountStatus {
+  - AccountStatusId : int <<PK>>
+  - StatusName : string <<required>>
+  - StatusCode : string <<unique>>
+  - Description : string
+  - IsActive : boolean
+  --
+  + GetStatusByCode(code : string) : AccountStatus
+}
+
+class ApplicationStatus {
+  - ApplicationStatusId : int <<PK>>
+  - StatusName : string <<required>>
+  - StatusCode : string <<unique>>
+  - Description : string
+  - IsActive : boolean
+  - AllowsModification : boolean
+  --
+  + CanModifyApplication() : boolean
+}
+
+class OrganizationType {
+  - OrganizationTypeId : int <<PK>>
+  - TypeName : string <<required>>
+  - TypeCode : string <<unique>>
+  - Description : string
+  - IsActive : boolean
+  --
+  + GetTypeByCode(code : string) : OrganizationType
+}
+
+class ScholarshipCategory {
+  - CategoryId : int <<PK>>
+  - CategoryName : string <<required>>
+  - CategoryCode : string <<unique>>
+  - Description : string
+  - ParentCategoryId : int? <<FK>>
+  - IsActive : boolean
+  --
+  + GetSubcategories() : ICollection<ScholarshipCategory>
+  + ParentCategory : ScholarshipCategory?
+  + Subcategories : ICollection<ScholarshipCategory>
+}
+
+class University {
+  - UniversityId : Guid <<PK>>
+  - UniversityName : string <<required>>
+  - UniversityCode : string <<unique>>
+  - Address : string
+  - Website : string
+  - IsPartnerInstitution : boolean
+  - AccreditationId : int? <<FK>>
+  --
+  + GetCourses() : ICollection<Course>
+  + IsAccredited() : boolean
+  --
+  + Accreditation : Accreditation?
+  + Courses : ICollection<Course>
+}
+
+class Course {
+  - CourseId : Guid <<PK>>
+  - CourseName : string <<required>>
+  - CourseCode : string <<unique>>
+  - Description : string
+  - DepartmentId : Guid? <<FK>>
+  - DurationYears : int
+  - IsActive : boolean
+  --
+  + GetRequiredSubjects() : ICollection<Subject>
+  --
+  + Department : Department?
+}
+
+class Department {
+  - DepartmentId : Guid <<PK>>
+  - DepartmentName : string <<required>>
+  - DepartmentCode : string <<unique>>
+  - UniversityId : Guid <<FK>>
+  - IsActive : boolean
+  --
+  + University : University
+  + Courses : ICollection<Course>
+}
+
+class Accreditation {
+  - AccreditationId : int <<PK>>
+  - AccreditationName : string <<required>>
+  - AccreditationCode : string <<unique>>
+  - Description : string
+  - IsGovernmentRecognized : boolean
+  - IsActive : boolean
+}
+
+class EnrollmentStatus {
+  - EnrollmentStatusId : int <<PK>>
+  - StatusName : string <<required>>
+  - StatusCode : string <<unique>>
+  - Description : string
+  - IsActive : boolean
+}
+
+enum UserRole {
+  Student = 1
+  Institution = 2
+  Benefactor = 3
+  SuperAdmin = 4
+}
+
+enum ProviderType {
+  Institution
+  Benefactor
+  Government
+  Private
+}
+
+' ==========================================
+' MODULE 3: USER PROFILE SYSTEM
+' ==========================================
+' Use this module for: Profile management and user information
+' Key classes: BaseProfile, StudentProfile, InstitutionProfile, BenefactorProfile
+' Supporting classes: PersonalInfo, AcademicInfo, ContactInfo, etc.
+
+' Base Profile Entity (Common fields extracted)
+abstract class BaseProfile {
+  # ProfileId : Guid <<PK>>
+  # UserId : string <<FK>>
+  # FirstName : string <<required>>
+  # MiddleName : string
+  # LastName : string <<required>>
+  # IsVerified : boolean
+  # VerificationStatusId : int <<FK>>
+  # AccountStatusId : int <<FK>>
+  # CreatedAt : DateTime
+  # UpdatedAt : DateTime?
+  --
+  + GetFullName() : string
+  + GetVerificationStatus() : VerificationStatus
+  + UpdateProfile(profileData : object) : void
+  # ValidateProfileData() : boolean
+}
+
 class StudentProfile {
-  int StudentProfileID
-  int UserID
-  string FullName
-  date BirthDate
-  string Address
-  string ContactNumber
-  string UniversityName
-  int YearLevel
-  string Course
-  string StudentNumber
-  string ProfilePicture
-}
-class InstitutionAdminProfile {
-  int InstitutionAdminProfileID
-  int UserID
-  string FullName
-  date BirthDate
-  string Address
-  string ContactNumber
-  int InstitutionID
-  string Position
-  string ProfilePicture
-}
-class BenefactorAdminProfile {
-  int BenefactorAdminProfileID
-  int UserID
-  string FullName
-  date BirthDate
-  string Address
-  string ContactNumber
-  int BenefactorID
-  string Position
-  string ProfilePicture
+  - StudentProfileId : Guid <<PK>>
+  - PersonalInfoId : Guid <<FK>>
+  - AcademicInfoId : Guid <<FK>>
+  - ContactInfoId : Guid <<FK>>
+  - DocumentInfoId : Guid <<FK>>
+  --
+  + GetAcademicInfo() : AcademicInfo
+  + GetContactInfo() : ContactInfo
+  + UpdateGPA(newGPA : decimal) : void
+  + ApplyForScholarship(scholarshipId : int) : ScholarshipApplication
+  + GetApplicationHistory() : ICollection<ScholarshipApplication>
+  --
+  + PersonalInfo : PersonalInfo
+  + AcademicInfo : AcademicInfo
+  + ContactInfo : ContactInfo
+  + DocumentInfo : DocumentInfo
+  + Applications : ICollection<ScholarshipApplication>
 }
 
-' Organizations
-class Institution {
-  int InstitutionID
-  string Name
-  string Address
-  string Email
-  string ContactNumber
-  text Description
-  string Logo
-}
-class Benefactor {
-  int BenefactorID
-  string Name
-  string Address
-  string Email
-  string ContactNumber
-  text Description
-  string Logo
-}
-class InstitutionBenefactorPartnership {
-  int PartnershipID
-  int InstitutionID
-  int BenefactorID
-  string Status
-  datetime CreatedAt
+' Normalized Personal Information
+class PersonalInfo {
+  - PersonalInfoId : Guid <<PK>>
+  - Sex : string
+  - Nationality : string
+  - BirthDate : DateTime?
+  - PermanentAddress : string
+  - ProfilePicture : string
+  --
+  + GetAge() : int
+  + UpdateAddress(newAddress : string) : void
 }
 
-' Scholarships
-class ScholarshipType {
-  int ScholarshipTypeID
-  string TypeName
+' Normalized Academic Information
+class AcademicInfo {
+  - AcademicInfoId : Guid <<PK>>
+  - UniversityId : Guid? <<FK>>
+  - CourseId : Guid? <<FK>>
+  - YearLevel : int?
+  - StudentNumber : string
+  - EnrollmentStatusId : int <<FK>>
+  - GPA : decimal?
+  - IsPartnerInstitution : boolean?
+  --
+  + CalculateGPA(grades : ICollection<Grade>) : decimal
+  + GetCurrentSemester() : int
+  + IsEligibleForScholarship(requirements : ScholarshipRequirement) : boolean
+  --
+  + University : University
+  + Course : Course
+  + EnrollmentStatus : EnrollmentStatus
 }
+
+' Normalized Contact Information
+class ContactInfo {
+  - ContactInfoId : Guid <<PK>>
+  - PrimaryEmail : string
+  - InstitutionalEmail : string
+  - MobileNumber : string
+  - AlternativeNumber : string
+  --
+  + ValidateEmail(email : string) : boolean
+  + UpdateContactInfo(contactData : object) : void
+}
+
+' Normalized Document Information
+class DocumentInfo {
+  - DocumentInfoId : Guid <<PK>>
+  - StudentIdDocumentPath : string
+  - CorDocumentPath : string
+  - VerificationDocumentPath : string
+  --
+  + UploadDocument(docType : string, filePath : string) : void
+  + ValidateDocuments() : boolean
+}
+
+class InstitutionProfile {
+  - InstitutionProfileId : Guid <<PK>>
+  - OrganizationInfoId : Guid <<FK>>
+  - AdminInfoId : Guid <<FK>>
+  - InstitutionDetailsId : Guid <<FK>>
+  --
+  + CreateScholarship(scholarshipData : object) : Scholarship
+  + ManageApplications() : ICollection<ScholarshipApplication>
+  + GetInstitutionMetrics() : InstitutionMetrics
+  + VerifyStudentEligibility(studentId : Guid) : boolean
+  --
+  + OrganizationInfo : OrganizationInfo
+  + AdminInfo : AdminInfo
+  + InstitutionDetails : InstitutionDetails
+  + ManagedScholarships : ICollection<Scholarship>
+}
+
+class BenefactorProfile {
+  - BenefactorProfileId : Guid <<PK>>
+  - OrganizationInfoId : Guid <<FK>>
+  - AdminInfoId : Guid <<FK>>
+  - BenefactorDetailsId : Guid <<FK>>
+  --
+  + CreateScholarship(scholarshipData : object) : Scholarship
+  + ReviewApplications() : ICollection<ScholarshipApplication>
+  + GetDonationMetrics() : DonationMetrics
+  + SetScholarshipCriteria(criteria : object) : void
+  --
+  + OrganizationInfo : OrganizationInfo
+  + AdminInfo : AdminInfo
+  + BenefactorDetails : BenefactorDetails
+  + ProvidedScholarships : ICollection<Scholarship>
+}
+
+' Normalized Organization Information (shared by Institution and Benefactor)
+class OrganizationInfo {
+  - OrganizationInfoId : Guid <<PK>>
+  - OrganizationName : string <<required>>
+  - OrganizationTypeId : int <<FK>>
+  - Address : string
+  - ContactNumber : string
+  - Website : string
+  - ContactEmail : string
+  - Mission : string
+  - Description : string
+  - Logo : string
+  --
+  + UpdateOrganizationInfo(orgData : object) : void
+  + ValidateContactInfo() : boolean
+  --
+  + OrganizationType : OrganizationType
+}
+
+' Normalized Admin Information (shared by Institution and Benefactor)
+class AdminInfo {
+  - AdminInfoId : Guid <<PK>>
+  - FirstName : string <<required>>
+  - MiddleName : string
+  - LastName : string <<required>>
+  - Position : string
+  - Sex : string
+  - Nationality : string
+  - BirthDate : DateTime?
+  --
+  + GetFullName() : string
+  + UpdateAdminInfo(adminData : object) : void
+}
+
+' Institution-specific details
+class InstitutionDetails {
+  - InstitutionDetailsId : Guid <<PK>>
+  - TotalStudents : int?
+  - EstablishedDate : DateTime?
+  - AccreditationId : int? <<FK>>
+  - AdminValidationDocument : string
+  - GovernmentIdDocument : string
+  - AuthorizationLetterDocument : string
+  --
+  + GetAccreditationInfo() : Accreditation
+  + UpdateStudentCount(count : int) : void
+  --
+  + Accreditation : Accreditation
+}
+
+' Benefactor-specific details
+class BenefactorDetails {
+  - BenefactorDetailsId : Guid <<PK>>
+  - TotalDonations : decimal?
+  - ActiveSince : DateTime?
+  - TaxExemptionNumber : string
+  - CompanyRegistrationNumber : string
+  --
+  + GetDonationHistory() : ICollection<Donation>
+  + CalculateTotalDonations() : decimal
+}
+
+' ==========================================
+' MODULE 4: SCHOLARSHIP MANAGEMENT SYSTEM
+' ==========================================
+' Use this module for: Scholarship creation, management, and eligibility
+' Key classes: Scholarship, ScholarshipInfo, ScholarshipEligibility, ApplicationInfo
+
 class Scholarship {
-  int ScholarshipID
-  string Title
-  string ProviderType
-  int ProviderID
-  text Description
-  text Qualifications
-  text Requirements
-  text Benefits
-  int ScholarshipTypeID
-  string ApplicationMethod
-  string ExternalLink
-  date StartDate
-  date EndDate
-  datetime CreatedAt
+  - ScholarshipId : int <<PK>>
+  - ScholarshipInfoId : Guid <<FK>>
+  - EligibilityId : Guid <<FK>>
+  - ApplicationInfoId : Guid <<FK>>
+  - ProviderId : Guid <<FK>>
+  - ProviderType : ProviderType
+  - IsActive : boolean
+  - CreatedAt : DateTime
+  - UpdatedAt : DateTime?
+  --
+  + IsEligible(student : StudentProfile) : boolean
+  + ProcessApplication(application : ScholarshipApplication) : void
+  + GetApplicationsCount() : int
+  + DeactivateScholarship() : void
+  + ExtendDeadline(newDeadline : DateTime) : void
+  --
+  + ScholarshipInfo : ScholarshipInfo
+  + Eligibility : ScholarshipEligibility
+  + ApplicationInfo : ApplicationInfo
+  + Applications : ICollection<ScholarshipApplication>
+  + Photos : ICollection<Photo>
 }
+
+class ScholarshipInfo {
+  - ScholarshipInfoId : Guid <<PK>>
+  - Title : string <<required>>
+  - Description : string
+  - Benefits : string <<required>>
+  - MonetaryValue : decimal?
+  - Requirements : string
+  - CategoryId : int <<FK>>
+  --
+  + UpdateScholarshipInfo(data : object) : void
+  + CalculateMonetaryValue() : decimal
+  --
+  + Category : ScholarshipCategory
+}
+
 class ScholarshipEligibility {
-  int EligibilityID
-  int ScholarshipID
-  decimal MinGPA
-  string RequiredCourse
-  int YearLevel
-  text OtherCriteria
+  - EligibilityId : Guid <<PK>>
+  - MinimumGPA : decimal?
+  - RequiredCourseId : Guid? <<FK>>
+  - RequiredYearLevel : int?
+  - RequiredUniversityId : Guid? <<FK>>
+  - AgeRange : string
+  - IncomeRequirement : decimal?
+  - SpecialCriteria : string
+  --
+  + CheckEligibility(student : StudentProfile) : boolean
+  + UpdateCriteria(criteria : object) : void
+  --
+  + RequiredCourse : Course?
+  + RequiredUniversity : University?
 }
+
+class ApplicationInfo {
+  - ApplicationInfoId : Guid <<PK>>
+  - ApplicationDeadline : DateTime <<required>>
+  - SlotsAvailable : int?
+  - IsInternal : boolean
+  - ExternalApplicationUrl : string
+  - RequiredDocuments : string
+  - ApplicationFee : decimal?
+  --
+  + IsApplicationOpen() : boolean
+  + GetRemainingSlots() : int
+  + ExtendDeadline(newDate : DateTime) : void
+}
+
+' ==========================================
+' MODULE 5: APPLICATION & REVIEW SYSTEM
+' ==========================================
+' Use this module for: Application processing, reviews, and academic data
+' Key classes: ScholarshipApplication, ApplicationData, AcademicData, ApplicationReview
+
 class ScholarshipApplication {
-  int ApplicationID
-  int ScholarshipID
-  int StudentID
-  datetime ApplicationDate
-  string Status
-  text SubmittedDocuments
-}
-class ScholarshipGrant {
-  int GrantID
-  int ScholarshipID
-  int StudentID
-  datetime AwardedDate
-  string Status
-}
-class RecentlyViewedScholarship {
-  int ViewID
-  int StudentID
-  int ScholarshipID
-  datetime ViewedAt
-}
-
-' Announcements
-class Announcement {
-  int AnnouncementID
-  string Title
-  text Content
-  string AnnouncementType
-  int RelatedID
-  int CreatedBy
-  datetime CreatedAt
-  boolean VisibleToAll
-}
-class AnnouncementRecipient {
-  int AnnouncementRecipientID
-  int AnnouncementID
-  int UserID
+  - ScholarshipApplicationId : Guid <<PK>>
+  - StudentProfileId : Guid <<FK>>
+  - ScholarshipId : int <<FK>>
+  - ApplicationStatusId : int <<FK>>
+  - ApplicationReference : string <<unique>>
+  - ApplicationDate : DateTime
+  - UpdatedAt : DateTime?
+  --
+  + SubmitApplication() : void
+  + UpdateStatus(newStatus : ApplicationStatus) : void
+  + AddReview(review : ApplicationReview) : void
+  + CalculateMatchScore() : decimal
+  + WithdrawApplication() : void
+  --
+  + Student : StudentProfile
+  + Scholarship : Scholarship
+  + ApplicationStatus : ApplicationStatus
+  + ApplicationData : ApplicationData
+  + Documents : ICollection<Document>
+  + Reviews : ICollection<ApplicationReview>
 }
 
-' Bookmarks
+class ApplicationData {
+  - ApplicationDataId : Guid <<PK>>
+  - ApplicationId : Guid <<FK>>
+  - IsExternalApplication : boolean
+  - ExternalApplicationUrl : string
+  - ExternalApplicationDate : DateTime?
+  - HasAppliedExternally : boolean
+  - PersonalStatement : string
+  - AcademicDataId : Guid? <<FK>>
+  --
+  + UpdateApplicationData(data : object) : void
+  + ValidateApplicationData() : boolean
+  --
+  + AcademicData : AcademicData
+}
+
+class AcademicData {
+  - AcademicDataId : Guid <<PK>>
+  - StudentId : string
+  - GWA : double?
+  - FirstSemesterGrades : string
+  - SecondSemesterGrades : string
+  - Transcript : string
+  - RecommendationLetters : string
+  --
+  + CalculateGWA() : double
+  + ValidateGrades() : boolean
+}
+
+class ApplicationReview {
+  - ReviewId : Guid <<PK>>
+  - ApplicationId : Guid <<FK>>
+  - ReviewerId : string <<FK>>
+  - ReviewDate : DateTime
+  - Score : decimal?
+  - Comments : string
+  - Recommendation : string
+  - IsFinalized : boolean
+  --
+  + FinalizeReview() : void
+  + UpdateScore(newScore : decimal) : void
+  --
+  + Application : ScholarshipApplication
+  + Reviewer : User
+}
+
+' ==========================================
+' MODULE 6: DOCUMENT & MEDIA MANAGEMENT
+' ==========================================
+' Use this module for: File uploads, document types, and media handling
+' Key classes: Document, DocumentType, Photo
+
+class Document {
+  - DocumentId : Guid <<PK>>
+  - DocumentTypeId : int <<FK>>
+  - EntityType : string
+  - EntityId : Guid
+  - FileName : string <<required>>
+  - FilePath : string <<required>>
+  - FileSize : long
+  - MimeType : string
+  - ChecksumHash : string
+  - UploadedBy : string <<FK>>
+  - UploadedAt : DateTime
+  - IsVerified : boolean
+  - VerificationDate : DateTime?
+  --
+  + ValidateDocument() : boolean
+  + GenerateChecksum() : string
+  + GetFileInfo() : FileInfo
+  --
+  + DocumentType : DocumentType
+  + UploadedByUser : User
+}
+
+class DocumentType {
+  - DocumentTypeId : int <<PK>>
+  - TypeName : string <<required>>
+  - TypeCode : string <<unique>>
+  - Description : string
+  - MaxFileSize : long
+  - AllowedExtensions : string
+  - IsRequired : boolean
+  - IsActive : boolean
+  --
+  + ValidateFile(fileName : string, size : long) : boolean
+}
+
+class Photo {
+  - PhotoId : Guid <<PK>>
+  - EntityType : string
+  - EntityId : Guid
+  - FileName : string <<required>>
+  - FilePath : string <<required>>
+  - ThumbnailPath : string
+  - FileSize : long
+  - Width : int?
+  - Height : int?
+  - SortOrder : int
+  - Caption : string
+  - AltText : string
+  - UploadedBy : string <<FK>>
+  - UploadedAt : DateTime
+  --
+  + GenerateThumbnail() : void
+  + ValidateImageFile() : boolean
+  + GetImageInfo() : ImageInfo
+  --
+  + UploadedByUser : User
+}
+
+' ==========================================
+' MODULE 7: USER ACTIVITY & TRACKING
+' ==========================================
+' Use this module for: User activity logging and behavioral analytics
+' Key classes: UserActivity, ActivityType
+
+class UserActivity {
+  - ActivityId : Guid <<PK>>
+  - UserId : string <<FK>>
+  - ActivityTypeId : int <<FK>>
+  - EntityType : string
+  - EntityId : Guid
+  - ActivityDate : DateTime
+  - SessionId : string
+  - IpAddress : string
+  - UserAgent : string
+  --
+  + LogActivity(activityType : ActivityType, entityId : Guid) : void
+  --
+  + User : User
+  + ActivityType : ActivityType
+}
+
+class ActivityType {
+  - ActivityTypeId : int <<PK>>
+  - TypeName : string <<required>>
+  - TypeCode : string <<unique>>
+  - Description : string
+  - IsTrackable : boolean
+  - IsActive : boolean
+}
+
+' ==========================================
+' MODULE 8: BOOKMARK & REMINDER SYSTEM
+' ==========================================
+' Use this module for: Scholarship bookmarking and reminder management
+' Key classes: BookmarkedScholarship, BookmarkReason, BookmarkReminder
+
 class BookmarkedScholarship {
-  int BookmarkID
-  int UserID
-  int ScholarshipID
-  datetime CreatedAt
-}
-class BookmarkedAnnouncement {
-  int BookmarkID
-  int UserID
-  int AnnouncementID
-  datetime CreatedAt
+  - BookmarkId : Guid <<PK>>
+  - UserId : string <<FK>>
+  - ScholarshipId : int <<FK>>
+  - BookmarkReasonId : int? <<FK>>
+  - PriorityLevel : int
+  - Notes : string
+  - Tags : string
+  - MatchScore : decimal
+  - CreatedAt : DateTime
+  - LastViewedAt : DateTime?
+  - UpdatedAt : DateTime?
+  --
+  + UpdateMatchScore(score : decimal) : void
+  + AddNote(note : string) : void
+  + SetPriority(priority : int) : void
+  --
+  + User : User
+  + Scholarship : Scholarship
+  + BookmarkReason : BookmarkReason?
+  + Reminders : ICollection<BookmarkReminder>
 }
 
-' Verification and compliance
-class VerificationDocument {
-  int DocumentID
-  int UserID
-  string DocumentType
-  string FilePath
-  text OCRExtractedData
-  datetime UploadedAt
-  string Status
+class BookmarkReason {
+  - BookmarkReasonId : int <<PK>>
+  - ReasonName : string <<required>>
+  - ReasonCode : string <<unique>>
+  - Description : string
+  - IsActive : boolean
 }
-class ComplianceDocument {
-  int ComplianceDocumentID
-  int InstitutionID
-  string DocumentType
-  string FilePath
-  datetime UploadedAt
-  string Status
-  text Notes
+
+class BookmarkReminder {
+  - ReminderId : Guid <<PK>>
+  - BookmarkId : Guid <<FK>>
+  - ReminderDate : DateTime
+  - ReminderType : string
+  - Message : string
+  - IsSent : boolean
+  - SentAt : DateTime?
+  --
+  + SendReminder() : void
+  + MarkAsSent() : void
+  --
+  + Bookmark : BookmarkedScholarship
 }
+
+' ==========================================
+' MODULE 9: ANNOUNCEMENT & COMMUNICATION
+' ==========================================
+' Use this module for: System announcements and user communication
+' Key classes: Announcement, AnnouncementType, AnnouncementRecipient
+
+class Announcement {
+  - AnnouncementId : Guid <<PK>>
+  - Title : string <<required>>
+  - Content : string <<required>>
+  - AnnouncementTypeId : int <<FK>>
+  - Priority : int
+  - ExpiryDate : DateTime?
+  - IsPublished : boolean
+  - VisibleToAll : boolean
+  - CreatedBy : string <<FK>>
+  - CreatedAt : DateTime
+  - UpdatedAt : DateTime?
+  --
+  + PublishAnnouncement() : void
+  + ScheduleAnnouncement(publishDate : DateTime) : void
+  + AddRecipients(userIds : ICollection<string>) : void
+  + ExpireAnnouncement() : void
+  --
+  + AnnouncementType : AnnouncementType
+  + CreatedByUser : User
+  + Recipients : ICollection<AnnouncementRecipient>
+  + Photos : ICollection<Photo>
+}
+
+class AnnouncementType {
+  - AnnouncementTypeId : int <<PK>>
+  - TypeName : string <<required>>
+  - TypeCode : string <<unique>>
+  - Description : string
+  - DefaultPriority : int
+  - IsActive : boolean
+}
+
+class AnnouncementRecipient {
+  - RecipientId : Guid <<PK>>
+  - AnnouncementId : Guid <<FK>>
+  - UserId : string <<FK>>
+  - IsRead : boolean
+  - ReadAt : DateTime?
+  - IsBookmarked : boolean
+  - BookmarkedAt : DateTime?
+  --
+  + MarkAsRead() : void
+  + ToggleBookmark() : void
+  --
+  + Announcement : Announcement
+  + User : User
+}
+
+' ==========================================
+' MODULE 10: ANALYTICS & MONITORING
+' ==========================================
+' Use this module for: AI cost tracking and system metrics
+' Key classes: AITokenUsage, SystemMetrics
+
+class AITokenUsage {
+  - Id : string <<PK>>
+  - Operation : string <<required>>
+  - Model : string <<required>>
+  - DeploymentName : string
+  - Region : string
+  - PromptTokens : int <<required>>
+  - CompletionTokens : int <<required>>
+  - EstimatedCost : decimal
+  - RequestDurationMs : int?
+  - UserId : string <<FK>>
+  - RequestId : string
+  - Timestamp : DateTime
+  - Success : boolean
+  - ErrorMessage : string
+  --
+  + CalculateTotalTokens() : int
+  + GetCostPerToken() : decimal
+  + LogFailure(error : string) : void
+  --
+  + User : User?
+}
+
+class SystemMetrics {
+  - MetricId : Guid <<PK>>
+  - MetricType : string <<required>>
+  - MetricValue : decimal
+  - Unit : string
+  - Timestamp : DateTime
+  - Tags : string
+  --
+  + RecordMetric(type : string, value : decimal) : void
+}
+
+' ==========================================
+' MODULE 11: c
+' ==========================================
+' Use this module for: Security management and audit logging
+' Key classes: AuditLog, PasswordReset, SecuritySettings
+
 class AuditLog {
-  int AuditLogID
-  int UserID
-  string Action
-  string EntityType
-  int EntityID
-  datetime Timestamp
-  text Details
+  - AuditLogId : Guid <<PK>>
+  - UserId : string? <<FK>>
+  - EntityType : string <<required>>
+  - EntityId : string <<required>>
+  - Action : string <<required>>
+  - OldValues : string
+  - NewValues : string
+  - Timestamp : DateTime
+  - IpAddress : string
+  - UserAgent : string
+  --
+  + LogChange(entity : object, action : string) : void
+  --
+  + User : User?
 }
 
-' Extensions
-class GeneralDocument {
-  int DocumentID
-  int OwnerID
-  string FileName
-  string FilePath
-  string DocumentType
-  datetime UploadedAt
-}
-class Notification {
-  int NotificationID
-  int UserID
-  string Type
-  string Message
-  boolean IsRead
-  datetime CreatedAt
+class PasswordReset {
+  - Id : Guid <<PK>>
+  - UserId : string <<FK>>
+  - Token : string <<required>>
+  - CreatedAt : DateTime
+  - ExpiresAt : DateTime
+  - IsUsed : boolean
+  - UsedAt : DateTime?
+  --
+  + IsExpired() : boolean
+  + MarkAsUsed() : void
+  + GenerateNewToken() : string
+  --
+  + User : User
 }
 
-' Relationships
-User "1" -- "*" StudentProfile : profiles
-User "1" -- "*" InstitutionAdminProfile : institutionAdmins
-User "1" -- "*" BenefactorAdminProfile : benefactorAdmins
-User "1" -- "*" VerificationDocument : verificationDocs
-User "1" -- "*" AuditLog : auditLogs
-User "1" -- "*" BookmarkedScholarship : bookmarks
-User "1" -- "*" BookmarkedAnnouncement : bookmarks
-User "1" -- "*" AnnouncementRecipient : announcementRecipients
-User "1" -- "*" ScholarshipApplication : applications
-User "1" -- "*" ScholarshipGrant : grants
+class SecuritySettings {
+  - SettingId : int <<PK>>
+  - SettingName : string <<required>>
+  - SettingValue : string <<required>>
+  - Description : string
+  - IsActive : boolean
+  - UpdatedAt : DateTime
+  --
+  + GetSetting(name : string) : string
+  + UpdateSetting(name : string, value : string) : void
+}
 
-Role "1" -- "*" User : users
+' ==========================================
+' MODULE 12: RELATIONSHIPS & DEPENDENCIES
+' ==========================================
+' Use this section for: Entity relationships and system architecture
+' Contains all the relationship mappings between modules
+BaseProfile <|-- StudentProfile
+BaseProfile <|-- InstitutionProfile 
+BaseProfile <|-- BenefactorProfile
 
-Institution "1" -- "*" InstitutionAdminProfile : admins
-Institution "1" -- "*" InstitutionBenefactorPartnership : partnerships
-Institution "1" -- "*" ComplianceDocument : complianceDocs
+' === NORMALIZED RELATIONSHIPS ===
 
-Benefactor "1" -- "*" BenefactorAdminProfile : admins
-Benefactor "1" -- "*" InstitutionBenefactorPartnership : partnerships
+' Core Authentication & Authorization
+Role ||--o{ User : "assigned to"
+User ||--o{ UserActivity : "performs"
+ActivityType ||--o{ UserActivity : "categorizes"
 
-ScholarshipType "1" -- "*" Scholarship : scholarships
-Scholarship "1" -- "*" ScholarshipEligibility : eligibility
-Scholarship "1" -- "*" ScholarshipApplication : applications
-Scholarship "1" -- "*" ScholarshipGrant : grants
-Scholarship "1" -- "*" RecentlyViewedScholarship : views
-Scholarship "1" -- "*" BookmarkedScholarship : bookmarks
+' Profile Management with Normalization
+User ||--o| StudentProfile : "has profile"
+User ||--o| InstitutionProfile : "has profile"
+User ||--o| BenefactorProfile : "has profile"
 
-Announcement "1" -- "*" BookmarkedAnnouncement : bookmarks
-Announcement "1" -- "*" AnnouncementRecipient : recipients
+' Student Profile Composition
+StudentProfile ||--|| PersonalInfo : "has personal info"
+StudentProfile ||--|| AcademicInfo : "has academic info"
+StudentProfile ||--|| ContactInfo : "has contact info"
+StudentProfile ||--|| DocumentInfo : "has documents"
 
-' Extension Relationships
-User "1" -- "*" GeneralDocument : documents
-User "1" -- "*" Notification : notifications
+' Academic Structure
+University ||--o{ Department : "has departments"
+Department ||--o{ Course : "offers courses"
+University ||--o{ AcademicInfo : "enrolls students"
+Course ||--o{ AcademicInfo : "has students"
+Accreditation ||--o{ University : "accredits"
+Accreditation ||--o{ InstitutionDetails : "validates"
+
+' Organization Profile Composition
+InstitutionProfile ||--|| OrganizationInfo : "has org info"
+InstitutionProfile ||--|| AdminInfo : "has admin info"
+InstitutionProfile ||--|| InstitutionDetails : "has details"
+BenefactorProfile ||--|| OrganizationInfo : "has org info"
+BenefactorProfile ||--|| AdminInfo : "has admin info"
+BenefactorProfile ||--|| BenefactorDetails : "has details"
+
+' Lookup Tables
+OrganizationType ||--o{ OrganizationInfo : "categorizes"
+EnrollmentStatus ||--o{ AcademicInfo : "defines status"
+VerificationStatus ||--o{ BaseProfile : "defines verification"
+AccountStatus ||--o{ BaseProfile : "defines account status"
+
+' Normalized Scholarship System
+Scholarship ||--|| ScholarshipInfo : "has info"
+Scholarship ||--|| ScholarshipEligibility : "has eligibility"
+Scholarship ||--|| ApplicationInfo : "has application info"
+ScholarshipCategory ||--o{ ScholarshipInfo : "categorizes"
+ScholarshipCategory ||--o{ ScholarshipCategory : "has subcategories"
+
+' Application System
+StudentProfile ||--o{ ScholarshipApplication : "submits"
+Scholarship ||--o{ ScholarshipApplication : "receives"
+ScholarshipApplication ||--|| ApplicationData : "contains data"
+ApplicationData ||--|| AcademicData : "includes academics"
+ApplicationStatus ||--o{ ScholarshipApplication : "defines status"
+ScholarshipApplication ||--o{ ApplicationReview : "reviewed by"
+
+' Document Management
+DocumentType ||--o{ Document : "categorizes"
+User ||--o{ Document : "uploads"
+User ||--o{ Photo : "uploads"
+
+' Activity Tracking & Bookmarks
+User ||--o{ BookmarkedScholarship : "bookmarks"
+Scholarship ||--o{ BookmarkedScholarship : "is bookmarked"
+BookmarkReason ||--o{ BookmarkedScholarship : "explains reason"
+BookmarkedScholarship ||--o{ BookmarkReminder : "has reminders"
+
+' Announcement System
+User ||--o{ Announcement : "creates"
+AnnouncementType ||--o{ Announcement : "categorizes"
+Announcement ||--o{ AnnouncementRecipient : "sent to"
+User ||--o{ AnnouncementRecipient : "receives"
+
+' Notes and Best Practices
+note top of BaseProfile : Abstract base class with common fields\nImplements shared validation logic
+note top of StudentProfile : Composition pattern used\nSeparates concerns for better maintainability
+note top of Scholarship : Highly normalized structure\nSupports complex eligibility rules
+note top of Document : Generic document storage\nSupports polymorphic associations
+note top of UserActivity : Comprehensive activity logging\nSupports audit trails and analytics
+note bottom of ScholarshipApplication : Normalized application process\nSeparates data from metadata
+note bottom of BookmarkedScholarship : Enhanced bookmark system\nwith AI-powered recommendations
 
 @enduml

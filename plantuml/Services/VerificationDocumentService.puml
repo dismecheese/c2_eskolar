@@ -1,6 +1,0 @@
-@startuml
-class VerificationDocumentService {
-    + VerificationDocumentService(contextFactory:IDbContextFactory<ApplicationDbContext>)
-    + <<async>> GetDocumentsByUserIdAsync(userId:string) : Task<List<VerificationDocument>>
-}
-@enduml

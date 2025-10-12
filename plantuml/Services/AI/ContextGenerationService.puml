@@ -1,6 +1,0 @@
-@startuml
-class ContextGenerationService {
-    + GenerateScholarshipContext(recommendations:List<ScholarshipRecommendation>) : string
-    + GenerateAnnouncementContext(recommendations:List<AnnouncementRecommendation>) : string
-}
-@enduml
