@@ -1,0 +1,227 @@
+/* Scholarship Applications Banner Styles */
+.minimal-banner {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    background: linear-gradient(90deg, #2563eb 0%, #3b82f6 100%);
+    border-radius: 18px;
+    box-shadow: 0 2px 12px rgba(37,99,235,0.10);
+    padding: 1.5rem 2rem;
+    margin-bottom: 2rem;
+    color: #fff;
+    position: relative;
+    min-height: 90px;
+}
+
+.banner-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255,255,255,0.18);
+    border-radius: 50%;
+    width: 64px;
+    height: 64px;
+    margin-right: 1.5rem;
+    box-shadow: 0 2px 8px rgba(37,99,235,0.10);
+}
+
+.banner-icon i {
+    font-size: 2.5rem;
+    color: #fff;
+    filter: drop-shadow(0 2px 6px rgba(37,99,235,0.18));
+}
+
+.banner-text {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.banner-title {
+    font-size: 2rem;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    color: #fff;
+    margin-bottom: 0.25rem;
+}
+
+.banner-subtitle {
+    font-size: 1.1rem;
+    color: #e0e7ff;
+    font-weight: 400;
+    opacity: 0.85;
+}
+
+@media (max-width: 600px) {
+    .minimal-banner {
+        flex-direction: column;
+        align-items: flex-start;
+        padding: 1rem 1rem;
+    }
+    .banner-icon {
+        margin-right: 0;
+        margin-bottom: 0.75rem;
+    }
+    .banner-title {
+        font-size: 1.3rem;
+    }
+    .banner-subtitle {
+        font-size: 0.95rem;
+    }
+}
+
+/* Application List Styles */
+.application-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.application-card {
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 2px 12px rgba(37,99,235,0.08);
+    border: 1px solid #e5e7eb;
+    padding: 1.25rem 1.5rem;
+    transition: box-shadow 0.2s, border-color 0.2s;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+.application-card:hover {
+    box-shadow: 0 4px 24px rgba(37,99,235,0.16);
+    border-color: #2563eb;
+}
+
+.application-card-header {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+    margin-bottom: 0.5rem;
+}
+.application-icon {
+    background: linear-gradient(135deg, #2563eb 60%, #3b82f6 100%);
+    border-radius: 50%;
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 8px rgba(37,99,235,0.10);
+}
+.application-icon i {
+    color: #fff;
+    font-size: 1.7rem;
+}
+.application-title-group {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+}
+.application-title {
+    font-size: 1.15rem;
+    font-weight: 600;
+    color: #1e293b;
+    margin-bottom: 0.1rem;
+}
+.application-provider {
+    font-size: 0.98rem;
+    color: #2563eb;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+.application-status {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+}
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    font-size: 1rem;
+    font-weight: 500;
+    border-radius: 8px;
+    padding: 0.35em 1em;
+    box-shadow: 0 1px 4px rgba(37,99,235,0.07);
+    background: #f3f4f6;
+    color: #374151;
+    border: none;
+}
+.bg-warning {
+    background: #fbbf24 !important;
+    color: #92400e !important;
+}
+.bg-success {
+    background: #34d399 !important;
+    color: #065f46 !important;
+}
+.bg-danger {
+    background: #f87171 !important;
+    color: #7f1d1d !important;
+}
+.bg-secondary {
+    background: #e5e7eb !important;
+    color: #374151 !important;
+}
+
+.application-card-body {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.5rem;
+    margin-top: 0.5rem;
+}
+.application-date {
+    font-size: 0.98rem;
+    color: #64748b;
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+.application-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+.btn-animate {
+    transition: box-shadow 0.2s, transform 0.2s;
+}
+.btn-animate:hover {
+    box-shadow: 0 2px 8px rgba(37,99,235,0.12);
+    transform: translateY(-2px) scale(1.04);
+}
+
+.minimal-empty {
+    text-align: center;
+    color: #64748b;
+    font-size: 1.1rem;
+    padding: 2rem 0;
+    background: #f3f4f6;
+    border-radius: 12px;
+    margin-top: 1.5rem;
+}
+
+@media (max-width: 700px) {
+    .application-card {
+        padding: 1rem 0.7rem;
+    }
+    .application-card-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.7rem;
+    }
+    .application-card-body {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.7rem;
+    }
+    .application-status {
+        margin-left: 0;
+        margin-top: 0.5rem;
+    }
+}
