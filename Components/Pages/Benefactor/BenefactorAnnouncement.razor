@@ -12,6 +12,7 @@
 @inject UserManager<IdentityUser> UserManager
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @inject BlobStorageService BlobStorageService
+@inject IJSRuntime JS
 
 <PageTitle>Announcements</PageTitle>
 
@@ -160,46 +161,46 @@
                                                                     <div class="top-row">
                                                                         <div class="photo-item">
                                                                             <img src="@GetSafePhotoUrl(photosList[0].Url)" 
-                                                                                 class="grid-photo cursor-pointer" 
-                                                                                 alt="@(photosList[0].Caption ?? "Announcement image")"
-                                                                                 @onclick="() => ToggleAnnouncementExpansion(announcement.AnnouncementId)"
-                                                                                 loading="lazy" />
+                                                                                     class="grid-photo cursor-pointer" 
+                                                                                     alt="@(photosList[0].Caption ?? "Announcement image")"
+                                                                                     @onclick="() => OpenPhotoViewer(photosList, 0)"
+                                                                                     loading="lazy" />
                                                                         </div>
                                                                         <div class="photo-item">
-                                                                            <img src="@GetSafePhotoUrl(photosList[1].Url)" 
-                                                                                 class="grid-photo cursor-pointer" 
-                                                                                 alt="@(photosList[1].Caption ?? "Announcement image")"
-                                                                                 @onclick="() => ToggleAnnouncementExpansion(announcement.AnnouncementId)"
-                                                                                 loading="lazy" />
+                                                             <img src="@GetSafePhotoUrl(photosList[1].Url)" 
+                                                                 class="grid-photo cursor-pointer" 
+                                                                 alt="@(photosList[1].Caption ?? "Announcement image")"
+                                                                 @onclick="() => OpenPhotoViewer(photosList, 1)"
+                                                                 loading="lazy" />
                                                                         </div>
                                                                     </div>
                                                                     <div class="bottom-row">
                                                                         <div class="photo-item">
-                                                                            <img src="@GetSafePhotoUrl(photosList[2].Url)" 
-                                                                                 class="grid-photo cursor-pointer" 
-                                                                                 alt="@(photosList[2].Caption ?? "Announcement image")"
-                                                                                 @onclick="() => ToggleAnnouncementExpansion(announcement.AnnouncementId)"
-                                                                                 loading="lazy" />
+                                                             <img src="@GetSafePhotoUrl(photosList[2].Url)" 
+                                                                 class="grid-photo cursor-pointer" 
+                                                                 alt="@(photosList[2].Caption ?? "Announcement image")"
+                                                                 @onclick="() => OpenPhotoViewer(photosList, 2)"
+                                                                 loading="lazy" />
                                                                         </div>
                                                                         <div class="photo-item">
-                                                                            <img src="@GetSafePhotoUrl(photosList[3].Url)" 
-                                                                                 class="grid-photo cursor-pointer" 
-                                                                                 alt="@(photosList[3].Caption ?? "Announcement image")"
-                                                                                 @onclick="() => ToggleAnnouncementExpansion(announcement.AnnouncementId)"
-                                                                                 loading="lazy" />
+                                                             <img src="@GetSafePhotoUrl(photosList[3].Url)" 
+                                                                 class="grid-photo cursor-pointer" 
+                                                                 alt="@(photosList[3].Caption ?? "Announcement image")"
+                                                                 @onclick="() => OpenPhotoViewer(photosList, 3)"
+                                                                 loading="lazy" />
                                                                         </div>
                                                                         <div class="photo-item photo-with-overlay">
-                                                                            <img src="@GetSafePhotoUrl(photosList[4].Url)" 
-                                                                                 class="grid-photo cursor-pointer" 
-                                                                                 alt="@(photosList[4].Caption ?? "Announcement image")"
-                                                                                 @onclick="() => ToggleAnnouncementExpansion(announcement.AnnouncementId)"
-                                                                                 loading="lazy" />
+                                                             <img src="@GetSafePhotoUrl(photosList[4].Url)" 
+                                                                 class="grid-photo cursor-pointer" 
+                                                                 alt="@(photosList[4].Caption ?? "Announcement image")"
+                                                                 @onclick="() => OpenPhotoViewer(photosList, 4)"
+                                                                 loading="lazy" />
                                                                             
                                                                             @if (photoCount > 5)
                                                                             {
                                                                                 <!-- Overlay showing remaining photo count -->
                                                                                 <div class="more-photos-overlay cursor-pointer"
-                                                                                     @onclick="() => ToggleAnnouncementExpansion(announcement.AnnouncementId)">
+                                                                                     @onclick="() => OpenPhotoViewer(photosList, 5)">
                                                                                     <span class="more-count">
                                                                                         <i class="bi bi-plus"></i>@(photoCount - 5)
                                                                                     </span>
@@ -219,7 +220,7 @@
                                                                             <img src="@GetSafePhotoUrl(photosList[i].Url)" 
                                                                                  class="grid-photo cursor-pointer" 
                                                                                  alt="@(photosList[i].Caption ?? "Announcement image")"
-                                                                                 @onclick="() => ToggleAnnouncementExpansion(announcement.AnnouncementId)"
+                                                                                 @onclick="() => OpenPhotoViewer(photosList, i)"
                                                                                  loading="lazy" />
                                                                         </div>
                                                                     }
@@ -233,7 +234,7 @@
                                                                         <img src="@GetSafePhotoUrl(photosList[0].Url)" 
                                                                              class="grid-photo cursor-pointer" 
                                                                              alt="@(photosList[0].Caption ?? "Announcement image")"
-                                                                             @onclick="() => ToggleAnnouncementExpansion(announcement.AnnouncementId)"
+                                                                             @onclick="() => OpenPhotoViewer(photosList, 0)"
                                                                              loading="lazy" />
                                                                     </div>
                                                                     <div class="side-photos">
@@ -243,7 +244,7 @@
                                                                                 <img src="@GetSafePhotoUrl(photosList[1].Url)" 
                                                                                      class="grid-photo cursor-pointer" 
                                                                                      alt="@(photosList[1].Caption ?? "Announcement image")"
-                                                                                     @onclick="() => ToggleAnnouncementExpansion(announcement.AnnouncementId)"
+                                                                                     @onclick="() => OpenPhotoViewer(photosList, 1)"
                                                                                      loading="lazy" />
                                                                             </div>
                                                                         }
@@ -253,7 +254,7 @@
                                                                                 <img src="@GetSafePhotoUrl(photosList[2].Url)" 
                                                                                      class="grid-photo cursor-pointer" 
                                                                                      alt="@(photosList[2].Caption ?? "Announcement image")"
-                                                                                     @onclick="() => ToggleAnnouncementExpansion(announcement.AnnouncementId)"
+                                                                                     @onclick="() => OpenPhotoViewer(photosList, 2)"
                                                                                      loading="lazy" />
                                                                             </div>
                                                                         }
@@ -264,13 +265,13 @@
                                                             {
                                                                 <!-- Two images - side by side, 1:1 aspect ratio -->
                                                                 <div class="two-photos-container">
-                                                                    @foreach (var photo in photosList.Take(2))
+                                                                    @for (int i = 0; i < Math.Min(2, photosList.Count); i++)
                                                                     {
                                                                         <div class="photo-item">
-                                                                            <img src="@GetSafePhotoUrl(photo.Url)" 
+                                                                            <img src="@GetSafePhotoUrl(photosList[i].Url)" 
                                                                                  class="grid-photo cursor-pointer" 
-                                                                                 alt="@(photo.Caption ?? "Announcement image")"
-                                                                                 @onclick="() => ToggleAnnouncementExpansion(announcement.AnnouncementId)"
+                                                                                 alt="@(photosList[i].Caption ?? "Announcement image")"
+                                                                                 @onclick="() => OpenPhotoViewer(photosList, i)"
                                                                                  loading="lazy" />
                                                                         </div>
                                                                     }
@@ -283,7 +284,7 @@
                                                                     <img src="@GetSafePhotoUrl(photosList[0].Url)" 
                                                                          class="single-photo cursor-pointer" 
                                                                          alt="@(photosList[0].Caption ?? "Announcement image")"
-                                                                         @onclick="() => ToggleAnnouncementExpansion(announcement.AnnouncementId)"
+                                                                         @onclick="() => OpenPhotoViewer(photosList, 0)"
                                                                          title="@(string.IsNullOrEmpty(photosList[0].Caption) ? "Click to view full size" : photosList[0].Caption)"
                                                                          loading="lazy"
                                                                          onload="this.parentElement.style.setProperty('--aspect-ratio', this.naturalWidth / this.naturalHeight)" />
@@ -605,7 +606,10 @@
                                             var index = i; // Capture for closure
                                             var image = processedImages[index];
                                             <div class="col-6 col-md-4 col-lg-3">
-                                                <div class="modern-image-preview-item position-relative">
+                                                <div class="modern-image-preview-item position-relative" draggable="true"
+                                                     @ondragstart="() => StartDrag(index)"
+                                                     @ondragover:preventDefault
+                                                     @ondrop="() => DropDrag(index)">
                                                     <div class="ratio ratio-1x1">
                                                         <img src="data:@(image.contentType);base64,@(Convert.ToBase64String(image.data))" 
                                                              class="object-fit-cover rounded w-100 h-100" 
@@ -809,8 +813,180 @@
 }
 
 <!-- BACKEND LOGIC -->
+<!-- Photo measurer script: sets CSS vars (--aspect, --bg) for single-photo containers. Added safely once here. -->
+<script defer src="/js/photo-measurer.js"></script>
+
+<!-- Photo viewer modal -->
+@if (_photoViewerOpen)
+{
+    <div class="photo-viewer-backdrop @( _viewerClosing ? "closing" : "")" tabindex="0" @onkeydown="OnViewerKeyDown" @onclick="ClosePhotoViewerAsync" @ref="_viewerBackdropRef">
+        <div class="photo-viewer-content" role="dialog" aria-modal="true" @onclick:stopPropagation="true">
+            <button class="viewer-close" data-autofocus @onclick="ClosePhotoViewerAsync" aria-label="Close viewer">✕</button>
+
+            <div class="viewer-index">@((_viewerIndex + 1)) / @(_viewerPhotos?.Count ?? 0)</div>
+
+            <button class="viewer-nav left" @onclick="PrevPhoto" aria-label="Previous photo">‹</button>
+
+            <div class="viewer-image-wrap">
+                <div class="viewer-spinner" aria-hidden="true"></div>
+                @if (_viewerPhotos != null && _viewerPhotos.Count > 0)
+                {
+                    var current = _viewerPhotos[_viewerIndex];
+                    <img src="@GetSafePhotoUrl(current.Url)" alt="@(current.Caption ?? "Photo")" class="viewer-image" onload="(function(img){try{var el=img.closest('.photo-viewer-content'); if(el){el.classList.add('loaded'); el.style.setProperty('--img-natural-width', img.naturalWidth); el.style.setProperty('--img-natural-height', img.naturalHeight); el.style.setProperty('--img-aspect', (img.naturalWidth / img.naturalHeight));}}catch(e){} })(this)" onerror="(function(img){try{var el=img.closest('.photo-viewer-content'); if(el){el.classList.add('loaded');}}catch(e){} })(this)" />
+                    <div class="viewer-caption">@current.Caption</div>
+                }
+            </div>
+
+            <button class="viewer-nav right" @onclick="NextPhoto" aria-label="Next photo">›</button>
+        </div>
+    </div>
+}
+
 @code {
-    // Main data and state variables
+        // Photo viewer modal state
+        private bool _photoViewerOpen = false;
+        private bool _viewerClosing = false;
+        private List<Models.Photo> _viewerPhotos = new List<Models.Photo>();
+        private int _viewerIndex = 0;
+        private ElementReference _viewerBackdropRef;
+        private ElementReference _viewerContentRef;
+        private bool _focusRequested = false;
+        private IJSObjectReference? _focusTrapModule;
+        private IJSObjectReference? _focusTrapHandle;
+        private IJSObjectReference? _viewerSizerModule;
+
+        // Keep a shim for existing sync callers
+        private void OpenPhotoViewer(List<Models.Photo> photos, int startIndex)
+        {
+            _ = OpenPhotoViewerAsync(photos, startIndex);
+        }
+
+        private async Task OpenPhotoViewerAsync(List<Models.Photo> photos, int startIndex)
+        {
+            if (photos == null || photos.Count == 0) return;
+            _viewerPhotos = photos.ToList();
+            _viewerIndex = Math.Max(0, Math.Min(startIndex, _viewerPhotos.Count - 1));
+            _photoViewerOpen = true;
+            _focusRequested = true;
+            StateHasChanged();
+
+            // Allow render
+            await Task.Yield();
+
+            // Activate focus trap
+            try
+            {
+                if (_focusTrapModule == null)
+                {
+                    _focusTrapModule = await JS.InvokeAsync<IJSObjectReference>("import", "/js/focusTrap.js");
+                }
+                if (_focusTrapModule != null)
+                {
+                    _focusTrapHandle = await _focusTrapModule.InvokeAsync<IJSObjectReference>("activate", _viewerContentRef);
+                }
+            }
+            catch { /* best-effort */ }
+
+            // Activate sizer
+            try
+            {
+                if (_viewerSizerModule == null)
+                {
+                    _viewerSizerModule = await JS.InvokeAsync<IJSObjectReference>("import", "/js/viewerSizer.js");
+                }
+                if (_viewerSizerModule != null)
+                {
+                    await _viewerSizerModule.InvokeVoidAsync("attach", _viewerContentRef);
+                }
+            }
+            catch { /* best-effort */ }
+        }
+
+        private void ClosePhotoViewer()
+        {
+            _ = ClosePhotoViewerAsync();
+        }
+
+        private async Task ClosePhotoViewerAsync()
+        {
+            if (!_photoViewerOpen) return;
+            _viewerClosing = true;
+            StateHasChanged();
+            // short delay for closing animation
+            await Task.Delay(180);
+
+            try
+            {
+                if (_focusTrapHandle != null)
+                {
+                    await _focusTrapHandle.InvokeVoidAsync("deactivate");
+                    await _focusTrapHandle.DisposeAsync();
+                    _focusTrapHandle = null;
+                }
+                if (_focusTrapModule != null)
+                {
+                    await _focusTrapModule.DisposeAsync();
+                    _focusTrapModule = null;
+                }
+            }
+            catch { /* best-effort */ }
+
+            try
+            {
+                if (_viewerSizerModule != null)
+                {
+                    await _viewerSizerModule.InvokeVoidAsync("detach", _viewerContentRef);
+                    await _viewerSizerModule.DisposeAsync();
+                    _viewerSizerModule = null;
+                }
+            }
+            catch { }
+
+            _photoViewerOpen = false;
+            _viewerClosing = false;
+            _viewerPhotos = new List<Models.Photo>();
+            _viewerIndex = 0;
+            StateHasChanged();
+        }
+
+        private void NextPhoto()
+        {
+            if (_viewerPhotos == null || _viewerPhotos.Count == 0) return;
+            _viewerIndex = (_viewerIndex + 1) % _viewerPhotos.Count;
+            StateHasChanged();
+        }
+
+        private void PrevPhoto()
+        {
+            if (_viewerPhotos == null || _viewerPhotos.Count == 0) return;
+            _viewerIndex = (_viewerIndex - 1 + _viewerPhotos.Count) % _viewerPhotos.Count;
+            StateHasChanged();
+        }
+
+        // Keyboard handling: attach to window via JS interop-less approach using onkeydown on body element in markup
+        private void OnViewerKeyDown(KeyboardEventArgs e)
+        {
+            if (!_photoViewerOpen) return;
+            if (e.Key == "ArrowRight") NextPhoto();
+            else if (e.Key == "ArrowLeft") PrevPhoto();
+            else if (e.Key == "Escape") ClosePhotoViewer();
+        }
+
+        protected override async Task OnAfterRenderAsync(bool firstRender)
+        {
+            if (_photoViewerOpen && _focusRequested)
+            {
+                try
+                {
+                    await _viewerBackdropRef.FocusAsync();
+                }
+                catch { /* best-effort */ }
+                _focusRequested = false;
+            }
+            await base.OnAfterRenderAsync(firstRender);
+        }
+
+        // Main data and state variables
     private List<Announcement>? announcements;
     private List<Announcement>? filteredAnnouncements;
     private string searchTerm = "";
@@ -829,12 +1005,15 @@
     
     // Image upload properties
     private List<IBrowserFile> selectedImages = new();
-    private List<(string fileName, string contentType, byte[] data)> processedImages = new();
+    // keep an explicit order so we preserve the user upload sequence
+    private List<(int order, string fileName, string contentType, byte[] data)> processedImages = new();
     private List<Photo> existingPhotos = new();
     private Dictionary<string, int> uploadProgress = new();
     private bool isUploadingImages = false;
     private List<Guid> photosToRemove = new();
     private string deadlineText = "";
+    // index of the dragged item during client-side reorder
+    private int? dragSourceIndex = null;
     
      // Model for editing
     private Announcement editingAnnouncement = new() 
@@ -1124,8 +1303,12 @@
     // IMAGE UPLOAD METHODS
     private async Task OnImageSelected(InputFileChangeEventArgs e)
     {
-        var files = e.GetMultipleFiles(5); // Limit to 5 images
-        
+        var files = e.GetMultipleFiles(); // Get selected files
+
+        // baseIndex ensures files from earlier selections keep lower order values
+        int baseIndex = processedImages.Count;
+        int fileIndex = 0;
+
         foreach (var file in files)
         {
             // Validate file type and size
@@ -1137,7 +1320,7 @@
                     using var stream = file.OpenReadStream(maxAllowedSize: 10 * 1024 * 1024);
                     var bytes = new byte[stream.Length];
                     var totalBytesRead = 0;
-                    
+
                     // Read the entire stream into the byte array
                     while (totalBytesRead < bytes.Length)
                     {
@@ -1146,9 +1329,10 @@
                             break; // End of stream
                         totalBytesRead += bytesRead;
                     }
-                    
+
                     Console.WriteLine($"✅ Successfully processed {file.Name}: {totalBytesRead} bytes");
-                    processedImages.Add((file.Name, file.ContentType, bytes));
+                    processedImages.Add((baseIndex + fileIndex, file.Name, file.ContentType, bytes));
+                    fileIndex++;
                 }
                 catch (Exception ex)
                 {
@@ -1180,36 +1364,36 @@
     // UPLOAD SELECTED IMAGES TO BLOB STORAGE
     private async Task<List<string>> UploadSelectedImages()
     {
-        var imageUrls = new List<string>();
-        
+        var uploaded = new List<(int order, string url)>();
+
         if (!processedImages.Any())
         {
-            return imageUrls;
+            return new List<string>();
         }
 
-        foreach (var (fileName, contentType, data) in processedImages)
+        foreach (var (order, fileName, contentType, data) in processedImages)
         {
             try
             {
                 Console.WriteLine($"📤 Uploading {fileName}: {data.Length} bytes, content type: {contentType}");
-                
+
                 // Validate the byte array is not empty or corrupted
                 if (data == null || data.Length == 0)
                 {
                     Console.WriteLine($"❌ Empty or null data for {fileName}");
                     continue;
                 }
-                
+
                 using var stream = new MemoryStream(data);
                 var uniqueFileName = Guid.NewGuid().ToString() + Path.GetExtension(fileName);
-                
+
                 Console.WriteLine($"📁 Generated unique filename: {uniqueFileName}");
-                
+
                 var imageUrl = await BlobStorageService.UploadPhotoAsync(stream, uniqueFileName, contentType);
                 if (!string.IsNullOrEmpty(imageUrl))
                 {
                     Console.WriteLine($"✅ Successfully uploaded {fileName} -> {imageUrl}");
-                    imageUrls.Add(imageUrl);
+                    uploaded.Add((order, imageUrl));
                 }
                 else
                 {
@@ -1222,7 +1406,8 @@
             }
         }
 
-        return imageUrls;
+        // Return URLs sorted by the original order value
+        return uploaded.OrderBy(x => x.order).Select(x => x.url).ToList();
     }
 
     private async Task UploadImages(Guid announcementId)
@@ -1235,7 +1420,7 @@
 
         try
         {
-            foreach (var (fileName, contentType, data) in processedImages)
+            foreach (var (order, fileName, contentType, data) in processedImages)
             {
                 uploadProgress[fileName] = 0;
                 StateHasChanged();
@@ -1259,6 +1444,7 @@
                 using var stream = new MemoryStream(data);
                 var photoUrl = await BlobStorageService.UploadPhotoAsync(stream, uniqueFileName, contentType);
                 Console.WriteLine($"📸 Uploaded photo: {uniqueFileName} -> URL: {photoUrl}");
+                // preserve original order by pairing it with returned URL
                 uploadedUrls.Add(photoUrl);
 
                 // Complete progress
@@ -1343,7 +1529,7 @@
             var controllerUrl = $"/api/photo/stream/{Uri.EscapeDataString(fileName)}";
             return controllerUrl;
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             // Fallback to original URL if parsing fails
             return photoUrl;
@@ -1361,7 +1547,42 @@
         if (index >= 0 && index < processedImages.Count)
         {
             processedImages.RemoveAt(index);
+            ReindexProcessedImages();
             StateHasChanged();
+        }
+    }
+
+    // Drag handling for reordering selected images
+    private void StartDrag(int index)
+    {
+        dragSourceIndex = index;
+    }
+
+    private void DropDrag(int targetIndex)
+    {
+        if (dragSourceIndex == null) return;
+        var source = dragSourceIndex.Value;
+        var dest = targetIndex;
+        if (source == dest) { dragSourceIndex = null; return; }
+
+        // Move item from source to dest
+        var item = processedImages[source];
+        processedImages.RemoveAt(source);
+        if (dest > processedImages.Count) dest = processedImages.Count;
+        processedImages.Insert(dest, item);
+
+        // Reindex orders to keep them sequential and deterministic
+        ReindexProcessedImages();
+        dragSourceIndex = null;
+        StateHasChanged();
+    }
+
+    private void ReindexProcessedImages()
+    {
+        for (int i = 0; i < processedImages.Count; i++)
+        {
+            var t = processedImages[i];
+            processedImages[i] = (i, t.fileName, t.contentType, t.data);
         }
     }
 
