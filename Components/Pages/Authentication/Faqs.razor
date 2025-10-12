@@ -1,6 +1,11 @@
 @page "/faqs"
 
 @using System.Linq
+@using Microsoft.AspNetCore.Identity
+@using c2_eskolar.Components.UI
+@inject IJSRuntime JSRuntime
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject UserManager<IdentityUser> UserManager
 
 <PageTitle>FAQs</PageTitle>
 
@@ -13,9 +18,9 @@
         <div class="faq-contact-block">
             <div class="faq-contact-label">Can’t find what you are looking for?</div>
             <div class="faq-contact-desc">We would like to chat with you.</div>
-            <a href="/contact" class="faq-contact-img-link" title="Contact Us">
+            <button type="button" class="faq-contact-img-link" title="Chat with AI Assistant" @onclick="OpenChatbot" style="background: none; border: none; padding: 0; cursor: pointer;">
                 <img src="/images/main/eskolar_logo.png" alt="eSkolar Chat" class="faq-contact-img" />
-            </a>
+            </button>
         </div>
     </div>
 
@@ -47,7 +52,35 @@
     </div>
 </div>
 
+<!-- Help Box Button (opens chatbot) -->
+<button class="help-box-bottom" @onclick="OpenChatbot" type="button">
+    <div class="help-box-content">
+        <img src="images/NeedHelp.svg" alt="Help" class="help-box-img" />
+        <div class="help-box-text">
+            <div class="help-box-title">Need help?</div>
+            <div class="help-box-desc">Having trouble with FAQs?<br />Ask our AI assistant!</div>
+        </div>
+    </div>
+</button>
+
+<!-- Floating Chatbot Window -->
+@if (ShowChatbot)
+{
+    <ChatBot CloseChatbot="CloseChatbot" MinimizeChatbot="MinimizeChatbot" 
+             CurrentPage="FAQs" 
+             CurrentSection="Frequently Asked Questions"
+             PageData="@(new Dictionary<string, object> { ["totalFaqs"] = faqs.Count, ["pageType"] = "FAQ" })"
+             VisibleItems="@(faqs.Cast<object>().ToList())" />
+}
+
 @code {
+    // Chatbot state
+    private bool ShowChatbot = false;
+    
+    private void OpenChatbot() => ShowChatbot = true;
+    private void CloseChatbot() => ShowChatbot = false;
+    private void MinimizeChatbot() => ShowChatbot = false;
+
     // FAQ items list
     private List<FaqItem> faqs = new()
     {

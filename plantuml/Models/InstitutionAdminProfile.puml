@@ -1,0 +1,11 @@
+@startuml
+class InstitutionAdminProfile {
+    + InstitutionAdminProfileId : int <<get>> <<set>>
+    + UserId : string <<get>> <<set>>
+    + ContactNumber : string? <<get>> <<set>>
+    + InstitutionId : int <<get>> <<set>>
+    + Position : string? <<get>> <<set>>
+    + ProfilePicture : string? <<get>> <<set>>
+}
+InstitutionAdminProfile o-> "Institution" Institution
+@enduml

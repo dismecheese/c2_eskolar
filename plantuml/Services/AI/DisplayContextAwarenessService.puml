@@ -1,0 +1,15 @@
+@startuml
+class ChatContext {
+    + CurrentPage : string <<get>> <<set>> = "Dashboard"
+    + CurrentSection : string <<get>> <<set>> = ""
+}
+class DisplayContextAwarenessService {
+    + GeneratePageContext(chatContext:ChatContext) : string
+}
+class "Dictionary`2"<T1,T2> {
+}
+class "List`1"<T> {
+}
+ChatContext o-> "PageData<string,object>" "Dictionary`2"
+ChatContext o-> "VisibleItems<object>" "List`1"
+@enduml

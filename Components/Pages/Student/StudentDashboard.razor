@@ -22,27 +22,6 @@
 @using Microsoft.AspNetCore.Components.Authorization
 @using System.Security.Claims
 
-
-
-
-@if (showVerificationModal)
-{
-    <div class="sv-modal sv-modal-backdrop">
-        <div class="sv-modal-content">
-            <div class="sv-modal-header">
-                <h2 class="sv-modal-title">Verify your account</h2>
-            </div>
-            <div class="sv-modal-body">
-                <p>To access all features and apply for scholarships, please verify your student account.</p>
-            </div>
-            <div class="sv-modal-footer" style="display:flex;gap:16px;justify-content:flex-end;">
-                <button class="sv-btn sv-btn-primary" @onclick="GoToVerification">Verify</button>
-                <button class="sv-btn sv-btn-secondary" @onclick="SkipVerification">Skip</button>
-            </div>
-        </div>
-    </div>
-}
-
 <div class="dashboard-center-container">
 
     <!-- Top Bar -->

@@ -1,0 +1,244 @@
+@startuml
+' Core user and role entities
+class User {
+  int UserID
+  string Email
+  string PasswordHash
+  int RoleID
+  boolean IsVerified
+  datetime CreatedAt
+}
+class Role {
+  int RoleID
+  string RoleName
+}
+
+' Profiles
+class StudentProfile {
+  int StudentProfileID
+  int UserID
+  string FullName
+  date BirthDate
+  string Address
+  string ContactNumber
+  string UniversityName
+  int YearLevel
+  string Course
+  string StudentNumber
+  string ProfilePicture
+}
+class InstitutionAdminProfile {
+  int InstitutionAdminProfileID
+  int UserID
+  string FullName
+  date BirthDate
+  string Address
+  string ContactNumber
+  int InstitutionID
+  string Position
+  string ProfilePicture
+}
+class BenefactorAdminProfile {
+  int BenefactorAdminProfileID
+  int UserID
+  string FullName
+  date BirthDate
+  string Address
+  string ContactNumber
+  int BenefactorID
+  string Position
+  string ProfilePicture
+}
+
+' Organizations
+class Institution {
+  int InstitutionID
+  string Name
+  string Address
+  string Email
+  string ContactNumber
+  text Description
+  string Logo
+}
+class Benefactor {
+  int BenefactorID
+  string Name
+  string Address
+  string Email
+  string ContactNumber
+  text Description
+  string Logo
+}
+class InstitutionBenefactorPartnership {
+  int PartnershipID
+  int InstitutionID
+  int BenefactorID
+  string Status
+  datetime CreatedAt
+}
+
+' Scholarships
+class ScholarshipType {
+  int ScholarshipTypeID
+  string TypeName
+}
+class Scholarship {
+  int ScholarshipID
+  string Title
+  string ProviderType
+  int ProviderID
+  text Description
+  text Qualifications
+  text Requirements
+  text Benefits
+  int ScholarshipTypeID
+  string ApplicationMethod
+  string ExternalLink
+  date StartDate
+  date EndDate
+  datetime CreatedAt
+}
+class ScholarshipEligibility {
+  int EligibilityID
+  int ScholarshipID
+  decimal MinGPA
+  string RequiredCourse
+  int YearLevel
+  text OtherCriteria
+}
+class ScholarshipApplication {
+  int ApplicationID
+  int ScholarshipID
+  int StudentID
+  datetime ApplicationDate
+  string Status
+  text SubmittedDocuments
+}
+class ScholarshipGrant {
+  int GrantID
+  int ScholarshipID
+  int StudentID
+  datetime AwardedDate
+  string Status
+}
+class RecentlyViewedScholarship {
+  int ViewID
+  int StudentID
+  int ScholarshipID
+  datetime ViewedAt
+}
+
+' Announcements
+class Announcement {
+  int AnnouncementID
+  string Title
+  text Content
+  string AnnouncementType
+  int RelatedID
+  int CreatedBy
+  datetime CreatedAt
+  boolean VisibleToAll
+}
+class AnnouncementRecipient {
+  int AnnouncementRecipientID
+  int AnnouncementID
+  int UserID
+}
+
+' Bookmarks
+class BookmarkedScholarship {
+  int BookmarkID
+  int UserID
+  int ScholarshipID
+  datetime CreatedAt
+}
+class BookmarkedAnnouncement {
+  int BookmarkID
+  int UserID
+  int AnnouncementID
+  datetime CreatedAt
+}
+
+' Verification and compliance
+class VerificationDocument {
+  int DocumentID
+  int UserID
+  string DocumentType
+  string FilePath
+  text OCRExtractedData
+  datetime UploadedAt
+  string Status
+}
+class ComplianceDocument {
+  int ComplianceDocumentID
+  int InstitutionID
+  string DocumentType
+  string FilePath
+  datetime UploadedAt
+  string Status
+  text Notes
+}
+class AuditLog {
+  int AuditLogID
+  int UserID
+  string Action
+  string EntityType
+  int EntityID
+  datetime Timestamp
+  text Details
+}
+
+' Extensions
+class GeneralDocument {
+  int DocumentID
+  int OwnerID
+  string FileName
+  string FilePath
+  string DocumentType
+  datetime UploadedAt
+}
+class Notification {
+  int NotificationID
+  int UserID
+  string Type
+  string Message
+  boolean IsRead
+  datetime CreatedAt
+}
+
+' Relationships
+User "1" -- "*" StudentProfile : profiles
+User "1" -- "*" InstitutionAdminProfile : institutionAdmins
+User "1" -- "*" BenefactorAdminProfile : benefactorAdmins
+User "1" -- "*" VerificationDocument : verificationDocs
+User "1" -- "*" AuditLog : auditLogs
+User "1" -- "*" BookmarkedScholarship : bookmarks
+User "1" -- "*" BookmarkedAnnouncement : bookmarks
+User "1" -- "*" AnnouncementRecipient : announcementRecipients
+User "1" -- "*" ScholarshipApplication : applications
+User "1" -- "*" ScholarshipGrant : grants
+
+Role "1" -- "*" User : users
+
+Institution "1" -- "*" InstitutionAdminProfile : admins
+Institution "1" -- "*" InstitutionBenefactorPartnership : partnerships
+Institution "1" -- "*" ComplianceDocument : complianceDocs
+
+Benefactor "1" -- "*" BenefactorAdminProfile : admins
+Benefactor "1" -- "*" InstitutionBenefactorPartnership : partnerships
+
+ScholarshipType "1" -- "*" Scholarship : scholarships
+Scholarship "1" -- "*" ScholarshipEligibility : eligibility
+Scholarship "1" -- "*" ScholarshipApplication : applications
+Scholarship "1" -- "*" ScholarshipGrant : grants
+Scholarship "1" -- "*" RecentlyViewedScholarship : views
+Scholarship "1" -- "*" BookmarkedScholarship : bookmarks
+
+Announcement "1" -- "*" BookmarkedAnnouncement : bookmarks
+Announcement "1" -- "*" AnnouncementRecipient : recipients
+
+' Extension Relationships
+User "1" -- "*" GeneralDocument : documents
+User "1" -- "*" Notification : notifications
+
+@enduml

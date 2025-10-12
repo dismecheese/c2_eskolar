@@ -1,0 +1,5 @@
+@startuml
+class EnhancedBookmarkSystemV2 <<partial>> {
+}
+Migration <|-- EnhancedBookmarkSystemV2
+@enduml

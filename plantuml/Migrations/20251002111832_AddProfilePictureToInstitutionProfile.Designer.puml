@@ -1,0 +1,4 @@
+@startuml
+class AddProfilePictureToInstitutionProfile <<partial>> {
+}
+@enduml

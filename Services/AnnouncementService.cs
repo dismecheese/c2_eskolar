@@ -7,13 +7,13 @@ namespace c2_eskolar.Services
 {
     public class AnnouncementService
     {
-        // Database context for accessing announcements table
-        private readonly ApplicationDbContext _context;
+        // DbContext factory for creating new contexts (Blazor Server concurrency safety)
+        private readonly IDbContextFactory<ApplicationDbContext> _contextFactory;
 
-        // Constructor injects the database context (Dependency Injection)
-        public AnnouncementService(ApplicationDbContext context)
+        // Constructor injects the database context factory (Dependency Injection)
+        public AnnouncementService(IDbContextFactory<ApplicationDbContext> contextFactory)
         {
-            _context = context;
+            _contextFactory = contextFactory;
         }
         
         // GET ANNOUNCEMENTS
@@ -21,7 +21,8 @@ namespace c2_eskolar.Services
         // Get announcements visible to students (public + active + within publish/expiry date)
         public async Task<List<Announcement>> GetPublicAnnouncementsAsync()
         {
-            return await _context.Announcements
+            using var context = _contextFactory.CreateDbContext();
+            return await context.Announcements
                 .Where(a => a.IsPublic && a.IsActive &&
                            (a.PublishDate == null || a.PublishDate <= DateTime.Now) &&
                            (a.ExpiryDate == null || a.ExpiryDate > DateTime.Now))
@@ -34,7 +35,8 @@ namespace c2_eskolar.Services
         // Get announcements that are still active (ignores public/private restriction)
         public async Task<List<Announcement>> GetActiveAnnouncementsAsync()
         {
-            return await _context.Announcements
+            using var context = _contextFactory.CreateDbContext();
+            return await context.Announcements
                 .Where(a => a.IsActive && 
                            (a.PublishDate == null || a.PublishDate <= DateTime.Now) &&
                            (a.ExpiryDate == null || a.ExpiryDate > DateTime.Now))
@@ -47,7 +49,8 @@ namespace c2_eskolar.Services
         // Get all announcements (ignores active/public checks — admin view)
         public async Task<List<Announcement>> GetAllAnnouncementsAsync()
         {
-            return await _context.Announcements
+            using var context = _contextFactory.CreateDbContext();
+            return await context.Announcements
                 .OrderByDescending(a => a.IsPinned)
                 .ThenByDescending(a => a.Priority)
                 .ThenByDescending(a => a.CreatedAt)
@@ -60,7 +63,8 @@ namespace c2_eskolar.Services
             if (string.IsNullOrWhiteSpace(searchTerm))
                 return await GetActiveAnnouncementsAsync();
 
-            return await _context.Announcements
+            using var context = _contextFactory.CreateDbContext();
+            return await context.Announcements
                 .Where(a => a.IsActive && 
                            (a.PublishDate == null || a.PublishDate <= DateTime.Now) &&
                            (a.ExpiryDate == null || a.ExpiryDate > DateTime.Now) &&
@@ -77,7 +81,8 @@ namespace c2_eskolar.Services
         // Get announcements filtered by category (ex: "Funding", "Applications")
         public async Task<List<Announcement>> GetAnnouncementsByCategoryAsync(string category)
         {
-            return await _context.Announcements
+            using var context = _contextFactory.CreateDbContext();
+            return await context.Announcements
                 .Where(a => a.IsActive && 
                            (a.PublishDate == null || a.PublishDate <= DateTime.Now) &&
                            (a.ExpiryDate == null || a.ExpiryDate > DateTime.Now) &&
@@ -91,7 +96,8 @@ namespace c2_eskolar.Services
         // Get announcements by author ID (used for admin management)
         public async Task<List<Announcement>> GetAnnouncementsByAuthorAsync(string authorId)
         {
-            return await _context.Announcements
+            using var context = _contextFactory.CreateDbContext();
+            return await context.Announcements
                 .Where(a => a.AuthorId == authorId)
                 .OrderByDescending(a => a.CreatedAt)
                 .ToListAsync();
@@ -102,7 +108,8 @@ namespace c2_eskolar.Services
         {
             if (Enum.TryParse<UserRole>(authorType, out var userRole))
             {
-                return await _context.Announcements
+                using var context = _contextFactory.CreateDbContext();
+                return await context.Announcements
                     .Where(a => a.AuthorType == userRole)
                     .OrderByDescending(a => a.CreatedAt)
                     .ToListAsync();
@@ -113,7 +120,8 @@ namespace c2_eskolar.Services
         // Get single announcement
         public async Task<Announcement?> GetAnnouncementByIdAsync(Guid id)
         {
-            return await _context.Announcements.FindAsync(id);
+            using var context = _contextFactory.CreateDbContext();
+            return await context.Announcements.FindAsync(id);
         }
 
         // CREATE / UPDATE
@@ -121,15 +129,17 @@ namespace c2_eskolar.Services
         // Create new announcement
         public async Task<Announcement> CreateAnnouncementAsync(Announcement announcement)
         {
-            _context.Announcements.Add(announcement);
-            await _context.SaveChangesAsync();
+            using var context = _contextFactory.CreateDbContext();
+            context.Announcements.Add(announcement);
+            await context.SaveChangesAsync();
             return announcement;
         }
 
         // Update announcement
         public async Task<Announcement?> UpdateAnnouncementAsync(Guid id, Announcement updatedAnnouncement)
         {
-            var announcement = await _context.Announcements.FindAsync(id);
+            using var context = _contextFactory.CreateDbContext();
+            var announcement = await context.Announcements.FindAsync(id);
             if (announcement == null) return null;
 
             // Copy fields from updated object
@@ -146,14 +156,15 @@ namespace c2_eskolar.Services
             announcement.Tags = updatedAnnouncement.Tags;
             announcement.UpdatedAt = DateTime.UtcNow;
 
-            await _context.SaveChangesAsync();
+            await context.SaveChangesAsync();
             return announcement;
         }
 
         // Update announcement (overload with object parameter)
         public async Task<Announcement?> UpdateAnnouncementAsync(Announcement updatedAnnouncement)
         {
-            var announcement = await _context.Announcements.FindAsync(updatedAnnouncement.AnnouncementId);
+            using var context = _contextFactory.CreateDbContext();
+            var announcement = await context.Announcements.FindAsync(updatedAnnouncement.AnnouncementId);
             if (announcement == null) return null;
 
             announcement.Title = updatedAnnouncement.Title;
@@ -169,7 +180,7 @@ namespace c2_eskolar.Services
             announcement.Tags = updatedAnnouncement.Tags;
             announcement.UpdatedAt = updatedAnnouncement.UpdatedAt;
 
-            await _context.SaveChangesAsync();
+            await context.SaveChangesAsync();
             return announcement;
         }
 
@@ -178,24 +189,26 @@ namespace c2_eskolar.Services
         // Delete announcement if it belongs to given author
         public async Task<bool> DeleteAnnouncementAsync(Guid id, string authorId)
         {
-            var announcement = await _context.Announcements
+            using var context = _contextFactory.CreateDbContext();
+            var announcement = await context.Announcements
                 .FirstOrDefaultAsync(a => a.AnnouncementId == id && a.AuthorId == authorId);
 
             if (announcement == null) return false;
 
-            _context.Announcements.Remove(announcement);
-            await _context.SaveChangesAsync();
+            context.Announcements.Remove(announcement);
+            await context.SaveChangesAsync();
             return true;
         }
 
         // Delete announcement by ID only (admin override) (overload with just ID)
         public async Task<bool> DeleteAnnouncementAsync(Guid id)
         {
-            var announcement = await _context.Announcements.FindAsync(id);
+            using var context = _contextFactory.CreateDbContext();
+            var announcement = await context.Announcements.FindAsync(id);
             if (announcement == null) return false;
 
-            _context.Announcements.Remove(announcement);
-            await _context.SaveChangesAsync();
+            context.Announcements.Remove(announcement);
+            await context.SaveChangesAsync();
             return true;
         }
 
@@ -204,83 +217,93 @@ namespace c2_eskolar.Services
         // Toggle pin status (pinned items always appear at top)
         public async Task<bool> TogglePinAsync(Guid id, string authorId)
         {
-            var announcement = await _context.Announcements
+            using var context = _contextFactory.CreateDbContext();
+            var announcement = await context.Announcements
                 .FirstOrDefaultAsync(a => a.AnnouncementId == id && a.AuthorId == authorId);
 
             if (announcement == null) return false;
 
             announcement.IsPinned = !announcement.IsPinned;
             announcement.UpdatedAt = DateTime.UtcNow;
-            await _context.SaveChangesAsync();
+            await context.SaveChangesAsync();
             return true;
         }
 
         // Increment view count (tracks how many times announcement viewed)
         public async Task IncrementViewCountAsync(Guid id)
         {
-            var announcement = await _context.Announcements.FindAsync(id);
+            using var context = _contextFactory.CreateDbContext();
+            var announcement = await context.Announcements.FindAsync(id);
             if (announcement != null)
             {
                 announcement.ViewCount++;
-                await _context.SaveChangesAsync();
+                await context.SaveChangesAsync();
             }
         }
 
         // Check if a user is the author (authorization helper)
         public async Task<bool> CanUserManageAnnouncementAsync(Guid announcementId, string userId)
         {
-            return await _context.Announcements
+            using var context = _contextFactory.CreateDbContext();
+            return await context.Announcements
                 .AnyAsync(a => a.AnnouncementId == announcementId && a.AuthorId == userId);
         }
 
         // Toggle active/inactive status (used for archiving instead of hard delete)
         public async Task<bool> ToggleActiveAsync(Guid id, string authorId)
         {
-            var announcement = await _context.Announcements
+            using var context = _contextFactory.CreateDbContext();
+            var announcement = await context.Announcements
                 .FirstOrDefaultAsync(a => a.AnnouncementId == id && a.AuthorId == authorId);
             
             if (announcement == null) return false;
 
             announcement.IsActive = !announcement.IsActive;
             announcement.UpdatedAt = DateTime.UtcNow;
-            await _context.SaveChangesAsync();
+            await context.SaveChangesAsync();
             return true;
         }
 
         // PHOTO MANAGEMENT
 
-        // Add photos to an announcement
+        // Add photos to an announcement and persist their display order
         public async Task AddPhotosToAnnouncementAsync(Guid announcementId, List<string> photoUrls)
         {
-            var photos = photoUrls.Select(url => new Photo
+            // Assign SortOrder based on the list order (0-based)
+            var photos = photoUrls.Select((url, index) => new Photo
             {
                 PhotoId = Guid.NewGuid(),
                 AnnouncementId = announcementId,
                 Url = url,
+                SortOrder = index,
                 UploadedAt = DateTime.UtcNow
             }).ToList();
 
-            _context.Photos.AddRange(photos);
-            await _context.SaveChangesAsync();
+            using var context = _contextFactory.CreateDbContext();
+            context.Photos.AddRange(photos);
+            await context.SaveChangesAsync();
         }
 
         // Remove a photo from an announcement
         public async Task<bool> RemovePhotoFromAnnouncementAsync(Guid photoId)
         {
-            var photo = await _context.Photos.FindAsync(photoId);
+            using var context = _contextFactory.CreateDbContext();
+            var photo = await context.Photos.FindAsync(photoId);
             if (photo == null) return false;
 
-            _context.Photos.Remove(photo);
-            await _context.SaveChangesAsync();
+            context.Photos.Remove(photo);
+            await context.SaveChangesAsync();
             return true;
         }
 
-        // Get photos for an announcement
+        // Get photos for an announcement, ordered by SortOrder with UploadedAt as a fallback
         public async Task<List<Photo>> GetAnnouncementPhotosAsync(Guid announcementId)
         {
-            var photos = await _context.Photos
+            using var context = _contextFactory.CreateDbContext();
+            var photos = await context.Photos
                 .Where(p => p.AnnouncementId == announcementId)
-                .OrderBy(p => p.UploadedAt)
+                .OrderBy(p => p.SortOrder)
+                .ThenBy(p => p.UploadedAt)
                 .ToListAsync();
 
             // Convert blob URLs to streaming URLs
@@ -304,26 +327,45 @@ namespace c2_eskolar.Services
         // Get announcement with photos included
         public async Task<Announcement?> GetAnnouncementWithPhotosAsync(Guid id)
         {
-            return await _context.Announcements
+            using var context = _contextFactory.CreateDbContext();
+            var announcement = await context.Announcements
                 .Include(a => a.Photos)
                 .FirstOrDefaultAsync(a => a.AnnouncementId == id);
+
+            // Ensure photos collection is ordered by SortOrder for consumers
+            if (announcement?.Photos != null)
+            {
+                announcement.Photos = announcement.Photos
+                    .OrderBy(p => p.SortOrder)
+                    .ThenBy(p => p.UploadedAt)
+                    .ToList();
+            }
+
+            return announcement;
         }
 
         // Get all announcements with photos included
         public async Task<List<Announcement>> GetAllAnnouncementsWithPhotosAsync()
         {
-            var announcements = await _context.Announcements
+            using var context = _contextFactory.CreateDbContext();
+            var announcements = await context.Announcements
                 .Include(a => a.Photos)
                 .OrderByDescending(a => a.IsPinned)
                 .ThenByDescending(a => a.Priority)
                 .ThenByDescending(a => a.CreatedAt)
                 .ToListAsync();
 
-            // Convert blob URLs to streaming URLs
+            // Convert blob URLs to streaming URLs and ensure photo ordering by SortOrder
             foreach (var announcement in announcements)
             {
                 if (announcement.Photos != null)
                 {
+                    // Order the in-memory collection by SortOrder so consumers receive consistent order
+                    announcement.Photos = announcement.Photos
+                        .OrderBy(p => p.SortOrder)
+                        .ThenBy(p => p.UploadedAt)
+                        .ToList();
+
                     foreach (var photo in announcement.Photos)
                     {
                         // Extract filename from the blob URL and convert to streaming URL
@@ -392,7 +434,8 @@ namespace c2_eskolar.Services
         {
             try
             {
-                var photos = await _context.Photos
+                using var context = _contextFactory.CreateDbContext();
+                var photos = await context.Photos
                     .Where(p => p.Url.Contains("%2520") || p.Url.Contains("%2525"))
                     .ToListAsync();
 
@@ -427,7 +470,7 @@ namespace c2_eskolar.Services
                     }
                 }
 
-                await _context.SaveChangesAsync();
+                await context.SaveChangesAsync();
                 Console.WriteLine($"Fixed {photos.Count} double-encoded URLs");
             }
             catch (Exception ex)

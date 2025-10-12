@@ -68,9 +68,12 @@ namespace c2_eskolar.Models
         public string? Logo { get; set; } // Organization logo file path/URL
 
         // Verification & Status
-        public bool IsVerified { get; set; } = false;
-        public string? VerificationStatus { get; set; } = "Pending"; // Pending, Verified, Rejected
-        public DateTime? VerificationDate { get; set; }
+    public bool IsVerified { get; set; } = false;
+    public string? VerificationStatus { get; set; } = "Pending"; // Pending, Verified, Rejected
+    public DateTime? VerificationDate { get; set; }
+
+    // Account lifecycle status
+    public string AccountStatus { get; set; } = "Active"; // Active, Deleted, Locked
 
         // Timestamps
         public DateTime CreatedAt { get; set; } = DateTime.Now;

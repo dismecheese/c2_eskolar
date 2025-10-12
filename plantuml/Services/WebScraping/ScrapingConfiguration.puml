@@ -1,0 +1,23 @@
+@startuml
+class ScrapingConfiguration {
+    + MaxConcurrentRequests : int <<get>> <<set>> = 3
+    + DelayBetweenRequests : int <<get>> <<set>> = 1000
+    + UserAgent : string <<get>> <<set>> = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+    + EnableScheduledScraping : bool <<get>> <<set>> = true
+    + ScrapingIntervalHours : int <<get>> <<set>> = 24
+}
+class ScrapingSource {
+    + Name : string <<get>> <<set>> = ""
+    + Url : string <<get>> <<set>> = ""
+    + TitleSelector : string <<get>> <<set>> = ""
+    + DescriptionSelector : string <<get>> <<set>> = ""
+    + AmountSelector : string <<get>> <<set>> = ""
+    + DeadlineSelector : string <<get>> <<set>> = ""
+    + ContainerSelector : string <<get>> <<set>> = ""
+    + IsEnabled : bool <<get>> <<set>> = true
+}
+class "List`1"<T> {
+}
+ScrapingConfiguration o-> "ScholarshipSources<ScrapingSource>" "List`1"
+ScrapingConfiguration o-> "NewsSources<ScrapingSource>" "List`1"
+@enduml

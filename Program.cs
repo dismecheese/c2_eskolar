@@ -27,7 +27,14 @@ try
 // Register IDbContextFactory for ApplicationDbContext in DI container for Blazor Server concurrency safety
 builder.Services.AddDbContextFactory<ApplicationDbContext>(options =>
 {
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"));
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection"), sqlOptions =>
+    {
+        sqlOptions.EnableRetryOnFailure(
+            maxRetryCount: 5,
+            maxRetryDelay: TimeSpan.FromSeconds(30),
+            errorNumbersToAdd: null
+        );
+    });
 });
 
     // Add ASP.NET Core Identity

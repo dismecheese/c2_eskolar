@@ -1,0 +1,22 @@
+@startuml
+class "AddDbContextFactory`1"<T> {
+}
+class "AddDefaultIdentity`1"<T> {
+}
+class "AddRoles`1"<T> {
+}
+class "AddEntityFrameworkStores`1"<T> {
+}
+class "AddScoped`1"<T> {
+}
+class "GetRequiredService`1"<T> {
+}
+class "AddScoped`2"<T1,T2> {
+}
+class "AddHostedService`1"<T> {
+}
+class "Configure`1"<T> {
+}
+class "MapRazorComponents`1"<T> {
+}
+@enduml

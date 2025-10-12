@@ -1,0 +1,9 @@
+@startuml
+class ScholarshipInputModel {
+    + Name : string <<get>> <<set>>
+    + Provider : string <<get>> <<set>>
+    + Description : string <<get>> <<set>>
+    + Eligibility : string <<get>> <<set>>
+}
+ScholarshipInputModel o-> "Deadline" DateTime
+@enduml

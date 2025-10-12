@@ -1,0 +1,13 @@
+@startuml
+class Photo {
+    + ScholarshipId : int? <<get>> <<set>>
+    + Url : string <<get>> <<set>>
+    + SortOrder : int <<get>> <<set>> = 0
+    + Caption : string? <<get>> <<set>>
+}
+Photo --> "PhotoId" Guid
+Photo --> "AnnouncementId" Guid
+Photo o-> "UploadedAt" DateTime
+Photo --> "Scholarship" Scholarship
+Photo --> "Announcement" Announcement
+@enduml

@@ -1,0 +1,11 @@
+@startuml
+class InstitutionBenefactorPartnership {
+    + PartnershipId : int <<get>> <<set>>
+    + InstitutionId : int <<get>> <<set>>
+    + BenefactorId : int <<get>> <<set>>
+    + Status : string? <<get>> <<set>>
+}
+InstitutionBenefactorPartnership o-> "Institution" Institution
+InstitutionBenefactorPartnership o-> "Benefactor" Benefactor
+InstitutionBenefactorPartnership --> "CreatedAt" DateTime
+@enduml

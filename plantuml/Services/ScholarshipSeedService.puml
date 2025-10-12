@@ -1,0 +1,6 @@
+@startuml
+class ScholarshipSeedService {
+    + ScholarshipSeedService(context:ApplicationDbContext)
+    + <<async>> SeedSampleScholarshipsAsync() : Task
+}
+@enduml

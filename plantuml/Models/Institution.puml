@@ -1,0 +1,15 @@
+@startuml
+class Institution {
+    + InstitutionId : int <<get>> <<set>>
+    + Name : string <<get>> <<set>> = ""
+    + Address : string? <<get>> <<set>>
+    + Email : string? <<get>> <<set>>
+    + ContactNumber : string? <<get>> <<set>>
+    + Description : string? <<get>> <<set>>
+    + Logo : string? <<get>> <<set>>
+}
+class "ICollection`1"<T> {
+}
+Institution o-> "AdminProfiles<InstitutionAdminProfile>" "ICollection`1"
+Institution o-> "Partnerships<InstitutionBenefactorPartnership>" "ICollection`1"
+@enduml

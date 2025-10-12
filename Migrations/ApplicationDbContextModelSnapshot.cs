@@ -446,6 +446,10 @@ namespace c2_eskolar.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<string>("AccountStatus")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("Address")
                         .HasMaxLength(255)
                         .HasColumnType("nvarchar(255)");
@@ -805,6 +809,10 @@ namespace c2_eskolar.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<string>("AccountStatus")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("Accreditation")
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
@@ -964,6 +972,9 @@ namespace c2_eskolar.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<int?>("ScholarshipId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("SortOrder")
                         .HasColumnType("int");
 
                     b.Property<DateTime>("UploadedAt")
@@ -1430,6 +1441,10 @@ namespace c2_eskolar.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<string>("AccountStatus")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<DateTime?>("BirthDate")
                         .HasColumnType("datetime2");
 
@@ -1448,6 +1463,10 @@ namespace c2_eskolar.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
+                    b.Property<string>("EnrollmentStatus")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
                     b.Property<string>("FirstName")
                         .IsRequired()
                         .HasMaxLength(50)
@@ -1456,6 +1475,10 @@ namespace c2_eskolar.Migrations
                     b.Property<decimal?>("GPA")
                         .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("InstitutionalEmail")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
 
                     b.Property<bool?>("IsPartnerInstitution")
                         .HasColumnType("bit");

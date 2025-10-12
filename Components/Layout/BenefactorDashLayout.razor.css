@@ -7,6 +7,108 @@
     background: #f5f6fa; 
     min-height: 100vh; 
     padding: 0 24px; 
+    border-radius: 20px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+    padding: 2.5rem 2rem 2rem 2rem;
+}
+
+.sv-modal-justify {
+    text-align: justify;
+}
+.sv-btn {
+    font-size: 1rem;
+    padding: 0.75rem 2rem;
+    border-radius: 8px;
+    border: 2px solid transparent;
+    font-weight: 600;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    text-transform: none;
+    letter-spacing: 0.01em;
+    text-decoration: none;
+    display: inline-block;
+    text-align: center;
+    font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+}
+.sv-btn-primary {
+    background: #1976d2;
+    color: #ffffff;
+    border-color: #1976d2;
+}
+.sv-btn-primary:hover:not(:disabled) {
+    background: #1565c0;
+    border-color: #1565c0;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(25, 118, 210, 0.3);
+    color: #ffffff;
+}
+.sv-btn-primary:disabled {
+    background: #9ca3af;
+    border-color: #9ca3af;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+.sv-btn-secondary {
+    background: #ffffff;
+    color: #374151;
+    border-color: #d1d5db;
+}
+.sv-btn-secondary:hover {
+    background: #f9fafb;
+    border-color: #9ca3af;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    color: #374151;
+}
+.sv-modal-header h2 {
+    color: #1f2937;
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin: 0 0 0.5rem 0;
+    line-height: 1.4;
+    font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+}
+.sv-modal-header p {
+    color: #6b7280;
+    font-size: 1rem;
+    margin: 0 0 1.5rem 0;
+    line-height: 1.5;
+    font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+}
+.sv-modal-body p {
+    color: #374151;
+    font-size: 0.95rem;
+    line-height: 1.6;
+    margin: 0 0 1rem 0;
+    font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+}
+.sv-modal-body p:last-child {
+    margin-bottom: 0;
+}
+.sv-modal-footer {
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid #e5e7eb;
+}
+.sv-modal-fixed {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.sv-modal-content {
+    max-width: 600px;
+    width: 90vw;
+    background: #fff;
+    border-radius: 20px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+    padding: 2.5rem 2rem 2rem 2rem;
 }
 
 /* Sidebar links (menu items) */

@@ -30,6 +30,31 @@ namespace c2_eskolar.Services
         public string? InstitutionalEmailDomain { get; set; }
     }
 
+    public class ExtractedBenefactorIdData
+    {
+        public string? AdminFirstName { get; set; }
+        public string? AdminMiddleName { get; set; }
+        public string? AdminLastName { get; set; }
+        public string? AdminEmail { get; set; }
+        public string? AdminContactNumber { get; set; }
+        public string? AdminPosition { get; set; }
+        public string? Sex { get; set; }
+        public DateTime? DateOfBirth { get; set; }
+        public string? Nationality { get; set; }
+    }
+
+    public class ExtractedBenefactorAuthLetterData
+    {
+        public string? OrganizationName { get; set; }
+        public string? OrganizationType { get; set; }
+        public string? Address { get; set; }
+        public string? ContactNumber { get; set; }
+        public string? Website { get; set; }
+        public string? AuthorizedRepresentativeName { get; set; }
+        public string? AuthorizedRepresentativeEmail { get; set; }
+        public string? OfficialEmailDomain { get; set; }
+    }
+
     public class ExtractedIdData
     {
         public string? FirstName { get; set; }
@@ -142,6 +167,146 @@ namespace c2_eskolar.Services
                 DateOfBirth = idData.DateOfBirth
             };
             return extracted;
+        }
+
+        public async Task<ExtractedBenefactorIdData?> AnalyzeBenefactorIdDocumentAsync(IBrowserFile file)
+        {
+            var idData = await AnalyzeIdDocumentAsync(file);
+            if (idData == null) return null;
+
+            // Step 1: Get raw text from OCR fields
+            string rawText = $"{idData.FirstName} {idData.MiddleName} {idData.LastName} {idData.Sex} {idData.DateOfBirth} {idData.Address} {idData.DocumentNumber} {idData.Nationality}";
+
+            // Step 2: Use OpenAI to extract semantic fields for benefactor-specific data
+            var aiExtracted = await _openAIService.ExtractBenefactorIdFieldsAsync(rawText);
+
+            // Step 3: Merge extracted fields (AI + OCR), prioritizing AI extraction for names
+            var extracted = new ExtractedBenefactorIdData
+            {
+                AdminFirstName = aiExtracted?.AdminFirstName ?? idData.FirstName,
+                AdminMiddleName = aiExtracted?.AdminMiddleName ?? idData.MiddleName,
+                AdminLastName = aiExtracted?.AdminLastName ?? idData.LastName,
+                AdminEmail = aiExtracted?.AdminEmail,
+                AdminContactNumber = aiExtracted?.AdminContactNumber,
+                AdminPosition = aiExtracted?.AdminPosition,
+                Sex = aiExtracted?.Sex ?? idData.Sex,
+                DateOfBirth = aiExtracted?.DateOfBirth ?? idData.DateOfBirth,
+                Nationality = aiExtracted?.Nationality ?? idData.Nationality
+            };
+            return extracted;
+        }
+
+        public async Task<ExtractedBenefactorAuthLetterData?> AnalyzeBenefactorAuthLetterAsync(IBrowserFile file)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(_endpoint) || string.IsNullOrEmpty(_apiKey))
+                {
+                    _logger.LogError("Document Intelligence endpoint or API key is not configured");
+                    return null;
+                }
+
+                // Validate file type and size
+                var validExtensions = new[] { ".jpg", ".jpeg", ".png", ".pdf" };
+                var fileExt = Path.GetExtension(file.Name).ToLowerInvariant();
+                if (!validExtensions.Contains(fileExt))
+                {
+                    _logger.LogWarning($"Invalid file type: {file.Name}. Supported types: {string.Join(", ", validExtensions)}");
+                    return null;
+                }
+
+                if (file.Size > 5 * 1024 * 1024) // 5MB limit
+                {
+                    _logger.LogWarning($"File too large: {file.Name} ({file.Size} bytes). Maximum size: 5MB");
+                    return null;
+                }
+
+                _logger.LogInformation($"Analyzing benefactor authorization letter: {file.Name} ({file.Size} bytes) with endpoint: {_endpoint}");
+
+                // Read file content into a byte array and convert to base64
+                using var stream = file.OpenReadStream(5 * 1024 * 1024);
+                using var memoryStream = new MemoryStream();
+                await stream.CopyToAsync(memoryStream);
+                var fileBytes = memoryStream.ToArray();
+                var base64Content = Convert.ToBase64String(fileBytes);
+
+                // Use layout analysis model for general document analysis
+                var url = $"{_endpoint}/documentintelligence/documentModels/prebuilt-layout:analyze?_overload=analyzeDocument&api-version=2024-11-30";
+
+                // Create JSON request body with base64Source as required by the API
+                var requestBody = new
+                {
+                    base64Source = base64Content
+                };
+                var jsonContent = new StringContent(JsonSerializer.Serialize(requestBody), System.Text.Encoding.UTF8, "application/json");
+
+                // Make the request
+                _httpClient.DefaultRequestHeaders.Clear();
+                _httpClient.DefaultRequestHeaders.Add("Ocp-Apim-Subscription-Key", _apiKey);
+
+                var response = await _httpClient.PostAsync(url, jsonContent);
+                if (response.IsSuccessStatusCode)
+                {
+                    _logger.LogInformation("Document Intelligence analysis started. Polling for results...");
+                    var operationLocation = response.Headers.GetValues("Operation-Location").FirstOrDefault();
+                    if (string.IsNullOrEmpty(operationLocation))
+                    {
+                        _logger.LogError("Operation-Location header not found in response");
+                        return null;
+                    }
+
+                    // Poll for results
+                    var maxAttempts = 30;
+                    var attempt = 0;
+                    while (attempt < maxAttempts)
+                    {
+                        await Task.Delay(1000); // Wait 1 second before checking
+                        attempt++;
+
+                        var pollResponse = await _httpClient.GetAsync(operationLocation);
+                        if (pollResponse.IsSuccessStatusCode)
+                        {
+                            var pollContent = await pollResponse.Content.ReadAsStringAsync();
+                            var pollResult = JsonSerializer.Deserialize<DocumentIntelligenceResponse>(pollContent);
+
+                            if (pollResult?.AnalyzeResult?.Content != null)
+                            {
+                                _logger.LogInformation("Document analysis completed successfully");
+                                _logger.LogInformation($"OCR text length: {pollResult.AnalyzeResult.Content.Length} characters");
+                                _logger.LogInformation($"OCR preview: {pollResult.AnalyzeResult.Content.Substring(0, Math.Min(200, pollResult.AnalyzeResult.Content.Length))}...");
+                                
+                                // Use OpenAI to extract benefactor-specific fields from the raw text
+                                var extractedData = await _openAIService.ExtractBenefactorAuthLetterFieldsAsync(pollResult.AnalyzeResult.Content);
+                                
+                                if (extractedData != null)
+                                {
+                                    _logger.LogInformation($"Successfully extracted data: OrganizationName={extractedData.OrganizationName}, OrganizationType={extractedData.OrganizationType}");
+                                }
+                                else
+                                {
+                                    _logger.LogWarning("OpenAI extraction returned null - check extraction logic");
+                                }
+                                
+                                return extractedData;
+                            }
+                        }
+                    }
+
+                    _logger.LogWarning("Polling timeout reached");
+                    return null;
+                }
+                else
+                {
+                    var errorContent = await response.Content.ReadAsStringAsync();
+                    _logger.LogError($"Document Intelligence API error: {response.StatusCode} - {errorContent}");
+                    return null;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error analyzing benefactor authorization letter");
+                return null;
+            }
         }
 
         public async Task<ExtractedInstitutionAuthLetterData?> AnalyzeInstitutionAuthLetterAsync(IBrowserFile file)

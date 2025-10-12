@@ -16,6 +16,7 @@
 @inject UserManager<IdentityUser> UserManager
 @inject Microsoft.Extensions.Logging.ILogger<InstitutionScholar> Logger
 @inject c2_eskolar.Services.BlobStorageService BlobStorageService
+@inject NavigationManager NavigationManager
 
 @code {
     public class StudentDocument
@@ -248,6 +249,11 @@
             ? "Students who are enrolled in your institution" 
             : "Students from other institutions who applied for your scholarships";
     }
+
+    private void NavigateToStudentProfile(Guid studentId)
+    {
+        NavigationManager.NavigateTo($"/dashboard/institution/profile/{studentId}");
+    }
 }
 
 <div class="container-fluid py-4" style="background: linear-gradient(135deg, #f8fbff 0%, #e3f2fd 100%); min-height: 100vh;">
@@ -402,7 +408,7 @@
                                         aria-expanded="@(isFirst ? "true" : "false")" aria-controls="collapse@(student.Id)"
                                         style="background: linear-gradient(135deg, #f8fbff 0%, #e8f4fd 100%); border-left: 4px solid #1976d2;">
                                     <div class="d-flex justify-content-between align-items-center w-100 me-3">
-                                        <div class="d-flex align-items-center">
+                                        <div class="d-flex align-items-center" @onclick="() => NavigateToStudentProfile(student.Id)" @onclick:stopPropagation="true" style="cursor: pointer;">
                                             <div class="me-3">
                                                 <div class="bg-primary rounded-circle d-flex align-items-center justify-content-center text-white fw-bold" style="width: 45px; height: 45px;">
                                                     @(string.IsNullOrWhiteSpace(student.Name) ? "?" : student.Name.Substring(0, 1))

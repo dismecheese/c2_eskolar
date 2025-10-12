@@ -49,6 +49,28 @@
 
         <!-- Categorized Form Fields in Card Boxes -->
         <div class="row g-4">
+                <!-- Scholarship Icon Upload -->
+                <div class="col-12">
+                    <div class="card shadow-sm border-0 mb-3">
+                        <div class="card-header-custom bg-secondary text-white fw-bold">Scholarship Icon</div>
+                        <div class="card-body">
+                            <div class="row g-3 align-items-center">
+                                <div class="col-12">
+                                    <label for="iconUpload" class="form-label fw-semibold">Upload Icon <span class="text-muted">(PNG, JPG, SVG, max 2MB)</span></label>
+                                    <InputFile id="iconUpload" OnChange="HandleIconUpload" accept="image/png,image/jpeg,image/svg+xml" class="form-control" aria-label="Upload Scholarship Icon" />
+                                    @if (!string.IsNullOrEmpty(iconPreviewUrl))
+                                    {
+                                        <div class="mt-2">
+                                            <img src="@iconPreviewUrl" alt="Icon Preview" style="max-width:80px;max-height:80px;border-radius:8px;border:1px solid #ccc;" />
+                                            <small class="d-block text-muted">Preview</small>
+                                        </div>
+                                    }
+                                    <ValidationMessage For="@(() => scholarship.IconUrl)" class="text-danger small ms-1" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             <!-- Basic Info -->
             <div class="col-12">
                 <div class="card shadow-sm border-0 mb-3">
@@ -241,6 +263,10 @@
     };
     private bool isSubmitted = false;
     private string? errorMessage;
+
+        // Icon upload variables
+        private IBrowserFile? uploadedIconFile;
+        private string? iconPreviewUrl;
     
     // Partnership-related variables
     private bool enablePartnership = false;
@@ -367,6 +393,27 @@
                 }
             }
 
+            // ✅ Handle icon upload - Save file to wwwroot and set IconUrl
+            if (uploadedIconFile != null)
+            {
+                var uploadsFolder = Path.Combine("wwwroot", "scholarship-icons");
+                if (!Directory.Exists(uploadsFolder))
+                {
+                    Directory.CreateDirectory(uploadsFolder);
+                }
+                var fileExt = Path.GetExtension(uploadedIconFile.Name);
+                var fileName = $"scholarship_{Guid.NewGuid()}{fileExt}";
+                var filePath = Path.Combine(uploadsFolder, fileName);
+                
+                using (var stream = new FileStream(filePath, FileMode.Create))
+                {
+                    await uploadedIconFile.OpenReadStream(2 * 1024 * 1024).CopyToAsync(stream); // 2MB max
+                }
+                
+                // Set the relative URL for display
+                scholarship.IconUrl = $"/scholarship-icons/{fileName}";
+            }
+
             // ✅ Assign foreign keys and timestamps
             scholarship.BenefactorProfileId = benefactor.BenefactorProfileId;
             scholarship.InstitutionProfileId = partnerInstitutionId; // Set partner institution if selected
@@ -388,6 +435,23 @@
         {
             Console.WriteLine($"Error: {ex.Message}");
             errorMessage = "An error occurred while posting the scholarship.";
+        }
+    }
+
+    private async Task HandleIconUpload(InputFileChangeEventArgs e)
+    {
+        uploadedIconFile = e.File;
+        // Preview the icon (only for image types)
+        if (uploadedIconFile != null && uploadedIconFile.ContentType.StartsWith("image/"))
+        {
+            using var stream = uploadedIconFile.OpenReadStream(2 * 1024 * 1024); // 2MB max
+            var buffer = new byte[uploadedIconFile.Size];
+            await stream.ReadAsync(buffer, 0, (int)uploadedIconFile.Size);
+            iconPreviewUrl = $"data:{uploadedIconFile.ContentType};base64,{Convert.ToBase64String(buffer)}";
+        }
+        else
+        {
+            iconPreviewUrl = null;
         }
     }
 }

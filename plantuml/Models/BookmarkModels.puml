@@ -1,0 +1,65 @@
+@startuml
+class BookmarkOrganization {
+}
+class BookmarkAnalytics {
+    + TotalBookmarks : int <<get>> <<set>>
+    + AverageMatchScore : decimal <<get>> <<set>>
+    + ApplicationSuccessRate : decimal <<get>> <<set>>
+    + AverageTimeToApplication : int <<get>> <<set>>
+    + BookmarksThisMonth : int <<get>> <<set>>
+    + ApplicationsFromBookmarks : int <<get>> <<set>>
+}
+class BookmarkTrend {
+    + Month : string <<get>> <<set>> = ""
+    + BookmarksAdded : int <<get>> <<set>>
+    + ApplicationsSubmitted : int <<get>> <<set>>
+    + AverageMatchScore : decimal <<get>> <<set>>
+}
+class CategoryInsight {
+    + Category : string <<get>> <<set>> = ""
+    + Count : int <<get>> <<set>>
+    + AverageMatchScore : decimal <<get>> <<set>>
+    + ApplicationsFromCategory : int <<get>> <<set>>
+    + SuccessRate : decimal <<get>> <<set>>
+}
+class SmartBookmarkRecommendation {
+    + MatchScore : decimal <<get>> <<set>>
+    + RecommendationReason : string <<get>> <<set>> = ""
+    + IsAutoBookmarkCandidate : bool <<get>> <<set>>
+    + DaysUntilDeadline : int <<get>> <<set>>
+    + UrgencyLevel : string <<get>> <<set>> = "Normal"
+}
+class BookmarkNotificationSettings {
+    + UserId : string <<get>> <<set>> = ""
+    + EmailReminders : bool <<get>> <<set>> = true
+    + InAppNotifications : bool <<get>> <<set>> = true
+    + WeeklyDigest : bool <<get>> <<set>> = true
+    + AutoBookmarkHighMatches : bool <<get>> <<set>> = false
+    + AutoBookmarkThreshold : decimal <<get>> <<set>> = 90
+}
+class BookmarkCalendarEvent {
+    + BookmarkId : int <<get>> <<set>>
+    + Title : string <<get>> <<set>> = ""
+    + Description : string <<get>> <<set>> = ""
+    + EventType : string <<get>> <<set>> = "Deadline"
+    + IsAllDay : bool <<get>> <<set>> = true
+    + CalendarId : string <<get>> <<set>> = ""
+}
+class "List`1"<T> {
+}
+class "Dictionary`2"<T1,T2> {
+}
+BookmarkOrganization o-> "UrgentDeadlines<BookmarkedScholarship>" "List`1"
+BookmarkOrganization o-> "HighMatch<BookmarkedScholarship>" "List`1"
+BookmarkOrganization o-> "RecentlyAdded<BookmarkedScholarship>" "List`1"
+BookmarkOrganization o-> "InProgress<BookmarkedScholarship>" "List`1"
+BookmarkOrganization o-> "Recommended<BookmarkedScholarship>" "List`1"
+BookmarkOrganization o-> "AllBookmarks<BookmarkedScholarship>" "List`1"
+BookmarkAnalytics o-> "TopCategories<string,int>" "Dictionary`2"
+BookmarkAnalytics o-> "MonthlyTrends<BookmarkTrend>" "List`1"
+BookmarkAnalytics o-> "CategoryInsights<CategoryInsight>" "List`1"
+SmartBookmarkRecommendation o-> "Scholarship" Scholarship
+SmartBookmarkRecommendation o-> "MatchingCriteria<string>" "List`1"
+BookmarkNotificationSettings o-> "ReminderDays<int>" "List`1"
+BookmarkCalendarEvent --> "EventDate" DateTime
+@enduml

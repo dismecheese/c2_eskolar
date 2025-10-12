@@ -16,7 +16,15 @@
 
 <div class="minimal-bg" style="margin-top: 2.5rem;">
 	<div class="container px-2 px-md-4" style="margin-right: 2.5rem;">
-		<h2 class="minimal-title">My Scholarship Applications</h2>
+		<div class="minimal-banner mb-4">
+			<div class="banner-icon">
+				<i class="fas fa-award" aria-hidden="true"></i>
+			</div>
+			<div class="banner-text">
+				<span class="banner-title">My Scholarship Applications</span>
+				<span class="banner-subtitle">All your submitted applications in one place</span>
+			</div>
+		</div>
 		@if (isLoading)
 		{
 			<div class="d-flex flex-column align-items-center justify-content-center my-5 py-5">
@@ -32,40 +40,45 @@
 		}
 		else
 		{
-			<div class="minimal-card">
-				<table class="table minimal-table mb-0">
-					<thead>
-						<tr>
-							<th>Scholarship</th>
-							<th>Provider</th>
-							<th>Date Applied</th>
-							<th>Status</th>
-							<th></th>
-						</tr>
-					</thead>
-					<tbody>
-						@if (applications != null)
-						{
-							@foreach (var app in applications)
-							{
-								<tr>
-									<td style="font-weight: 500;">@app.ScholarshipTitle</td>
-									<td>@app.Provider</td>
-									<td>@app.DateApplied.ToString("MMM dd, yyyy")</td>
-									<td>
-										<span class="badge @GetStatusClass(app.Status)" style="font-size: 1rem; min-width: 90px; display: inline-block;">@app.Status</span>
-									</td>
-									<td>
-										<button class="btn btn-sm btn-outline-info btn-animate" @onclick="() => ViewSummary(app.ApplicationId)">
-											<i class="bi bi-eye"></i> View Summary
-										</button>
-									</td>
-								</tr>
-							}
-						}
-					</tbody>
-				</table>
-				@if (applications == null || !applications.Any())
+			<div class="application-list">
+				@if (applications != null && applications.Any())
+				{
+					@foreach (var app in applications)
+					{
+						<div class="application-card">
+							<div class="application-card-header">
+								<div class="application-icon">
+									<i class="fas fa-graduation-cap"></i>
+								</div>
+								<div class="application-title-group">
+									<div class="application-title">@app.ScholarshipTitle</div>
+									<div class="application-provider">
+										<i class="fas fa-university me-1"></i>
+										@app.Provider
+									</div>
+								</div>
+								<div class="application-status">
+									<span class="status-badge @GetStatusClass(app.Status)">
+										<i class="fas @(app.Status == "Approved" ? "fa-check-circle" : app.Status == "Rejected" ? "fa-times-circle" : "fa-hourglass-half") me-1"></i>
+										@app.Status
+									</span>
+								</div>
+							</div>
+							<div class="application-card-body">
+								<div class="application-date">
+									<i class="fas fa-calendar-alt me-1"></i>
+									<span>Applied: @app.DateApplied.ToString("MMM dd, yyyy")</span>
+								</div>
+								<div class="application-actions">
+									<button class="btn btn-sm btn-outline-primary btn-animate" @onclick="() => ViewSummary(app.ApplicationId)">
+										<i class="fas fa-eye me-1"></i> View Summary
+									</button>
+								</div>
+							</div>
+						</div>
+					}
+				}
+				else
 				{
 					<div class="minimal-empty">You have not applied to any scholarships yet.</div>
 				}
