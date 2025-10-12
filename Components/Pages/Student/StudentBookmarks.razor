@@ -1,346 +1,1149 @@
 @page "/dashboard/student/bookmarks"
 @attribute [Authorize(Roles = "Student,SuperAdmin")]
 @layout Layout.StudentDashLayout
-@using Microsoft.AspNetCore.WebUtilities
-@using c2_eskolar.Components.Pages
+@implements IDisposable
 
-<PageTitle>Bookmarks</PageTitle>
+@inject BookmarkService BookmarkService
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject NavigationManager Navigation
+@inject IJSRuntime JS
+@using c2_eskolar.Models
+@using c2_eskolar.Services
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Identity
+@using System.Security.Claims
+@using System.Linq
+@rendermode InteractiveServer
 
-<div class="bookmarks-page">
-    <div class="container mt-4">
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <h1><i class="fa fa-bookmark me-2"></i>My Bookmarks</h1>
-            <div class="d-flex gap-2">
-                <select class="form-select" style="width: auto;">
-                    <option>All Categories</option>
-                    <option>Scholarships</option>
-                    <option>Applications</option>
-                    <option>Resources</option>
-                    <option>Deadlines</option>
-                </select>
-                <input type="text" class="form-control" placeholder="Search bookmarks..." style="width: 200px;">
+<PageTitle>My Bookmarks - eSkolar</PageTitle>
+
+<div class="dashboard-center-container">
+    <!-- Top Bar -->
+    <div class="dashboard-topbar">
+        <div style="position: relative; flex: 1; max-width: 500px;">
+            <i class="bi bi-search" style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: #64748b; z-index: 1;"></i>
+            <input class="university-input" type="text" placeholder="Search bookmarks..." 
+                   style="padding-left: 45px; padding-right: 18px;" @bind="searchQuery" @oninput="FilterBookmarks" />
+        </div>
+        <span class="dashboard-date">@DateTime.Now.ToString("dd MMM yyyy, ddd")</span>
+    </div>
+
+    <!-- Page Header -->
+    <div class="page-header-section">
+        <div class="page-header-content">
+            <div class="page-title-area">
+                <h1 class="page-title">
+                    <i class="bi bi-bookmark-heart me-3"></i>
+                    My Bookmarks
+                </h1>
+                <p class="page-subtitle">Manage your saved scholarships and track application progress</p>
+            </div>
+            <div class="page-actions">
+                <button class="btn btn-primary" @onclick="NavigateToScholarships">
+                    <i class="bi bi-plus-circle me-2"></i>
+                    Find More Scholarships
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="stats-grid-bookmarks">
+        <div class="stat-card">
+            <div class="stat-card-header">
+                <div class="stat-icon total-bookmarks">
+                    <i class="bi bi-bookmark-heart"></i>
+                </div>
+            </div>
+            <div class="stat-value">@totalBookmarks</div>
+            <div class="stat-label">Total Bookmarks</div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-card-header">
+                <div class="stat-icon urgent-deadlines">
+                    <i class="bi bi-exclamation-triangle"></i>
+                </div>
+            </div>
+            <div class="stat-value">@urgentCount</div>
+            <div class="stat-label">Urgent Deadlines</div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-card-header">
+                <div class="stat-icon high-match">
+                    <i class="bi bi-star"></i>
+                </div>
+            </div>
+            <div class="stat-value">@highMatchCount</div>
+            <div class="stat-label">High Match (90%+)</div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-card-header">
+                <div class="stat-icon in-progress">
+                    <i class="bi bi-clock-history"></i>
+                </div>
+            </div>
+            <div class="stat-value">@inProgressCount</div>
+            <div class="stat-label">In Progress</div>
+        </div>
+    </div>
+
+    <!-- Filter Tabs -->
+    <div class="filter-tabs">
+        <button class="filter-tab @(activeFilter == "All" ? "active" : "")" @onclick="@(() => SetFilter("All"))">
+            <i class="bi bi-list me-2"></i>All Bookmarks
+        </button>
+        <button class="filter-tab @(activeFilter == "Urgent" ? "active" : "")" @onclick="@(() => SetFilter("Urgent"))">
+            <i class="bi bi-exclamation-triangle me-2"></i>Urgent
+        </button>
+        <button class="filter-tab @(activeFilter == "HighMatch" ? "active" : "")" @onclick="@(() => SetFilter("HighMatch"))">
+            <i class="bi bi-star me-2"></i>High Match
+        </button>
+        <button class="filter-tab @(activeFilter == "InProgress" ? "active" : "")" @onclick="@(() => SetFilter("InProgress"))">
+            <i class="bi bi-clock-history me-2"></i>In Progress
+        </button>
+        <button class="filter-tab @(activeFilter == "Applied" ? "active" : "")" @onclick="@(() => SetFilter("Applied"))">
+            <i class="bi bi-check-circle me-2"></i>Applied
+        </button>
+    </div>
+
+    <!-- Bookmarks Content -->
+    <div class="bookmarks-content-grid">
+        <!-- Main Bookmarks List -->
+        <div class="bookmarks-main">
+            <div class="bookmarks-container">
+                <div class="table-header">
+                    <h3>@GetFilterTitle() (@(filteredBookmarks?.Count() ?? 0))</h3>
+                    <div class="table-actions">
+                        <button class="btn btn-outline-primary btn-sm" @onclick="RefreshBookmarks">
+                            <i class="bi bi-arrow-clockwise me-2"></i>Refresh
+                        </button>
+                        <button class="btn btn-outline-secondary btn-sm" @onclick="ExportBookmarks">
+                            <i class="bi bi-download me-2"></i>Export
+                        </button>
+                    </div>
+                </div>
+
+                @if (isLoading)
+                {
+                    <div class="loading-container">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="mt-3">Loading your bookmarks...</p>
+                    </div>
+                }
+                else if (filteredBookmarks?.Any() == true)
+                {
+                    <div class="bookmarks-list">
+                        @foreach (var bookmark in filteredBookmarks?.Take(pageSize) ?? Enumerable.Empty<BookmarkedScholarship>())
+                        {
+                            <div class="bookmark-card @GetBookmarkCardClass(bookmark)">
+                                <div class="bookmark-card-header">
+                                    <div class="bookmark-priority @GetPriorityClass(bookmark.Priority)">
+                                        @GetPriorityIcon(bookmark.Priority)
+                                    </div>
+                                    <div class="bookmark-actions">
+                                        <button class="btn btn-sm btn-outline-primary" @onclick="() => ViewScholarship(bookmark.ScholarshipId)">
+                                            <i class="bi bi-eye"></i>
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-danger" @onclick="() => RemoveBookmark(bookmark.BookmarkId)">
+                                            <i class="bi bi-bookmark-x"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <div class="bookmark-content">
+                                    <h5 class="bookmark-title">@bookmark.Scholarship.Title</h5>
+                                    <p class="bookmark-description">@bookmark.Scholarship.Description</p>
+                                    
+                                    <div class="bookmark-badges">
+                                        @if (bookmark.IsUrgent)
+                                        {
+                                            <span class="badge urgent-badge">
+                                                <i class="bi bi-exclamation-triangle me-1"></i>Urgent
+                                            </span>
+                                        }
+                                        <span class="badge status-badge status-@bookmark.Status.ToString().ToLower()">
+                                            @bookmark.Status
+                                        </span>
+                                        <span class="badge match-badge match-@GetMatchLevel(bookmark.MatchScore)">
+                                            @($"{bookmark.MatchScore:F0}% Match")
+                                        </span>
+                                        <span class="badge category-badge">
+                                            @(GetScholarshipCategory(bookmark.Scholarship))
+                                        </span>
+                                    </div>
+                                    
+                                    <div class="bookmark-details">
+                                        <div class="bookmark-detail-item">
+                                            <i class="bi bi-calendar-event"></i>
+                                            <span>Deadline: @bookmark.Scholarship.ApplicationDeadline.ToString("MMM dd, yyyy")</span>
+                                        </div>
+                                        <div class="bookmark-detail-item">
+                                            <i class="bi bi-currency-dollar"></i>
+                                            <span>Value: @bookmark.Scholarship.MonetaryValue?.ToString("C")</span>
+                                        </div>
+                                        <div class="bookmark-detail-item">
+                                            <i class="bi bi-bookmark-plus"></i>
+                                            <span>Bookmarked: @bookmark.CreatedAt.ToString("MMM dd, yyyy")</span>
+                                        </div>
+                                    </div>
+                                    
+                                    @if (!string.IsNullOrEmpty(bookmark.Notes))
+                                    {
+                                        <div class="bookmark-notes">
+                                            <i class="bi bi-sticky"></i>
+                                            <span>@bookmark.Notes</span>
+                                        </div>
+                                    }
+                                </div>
+                                
+                                <div class="bookmark-footer">
+                                    <div class="bookmark-reason">
+                                        <small class="text-muted">Reason: @bookmark.BookmarkReason</small>
+                                    </div>
+                                    <div class="bookmark-footer-actions">
+                                        <button class="btn btn-sm btn-success" @onclick="() => StartApplication(bookmark.ScholarshipId)">
+                                            <i class="bi bi-send me-1"></i>Apply Now
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-secondary" @onclick="() => EditBookmark(bookmark.BookmarkId)">
+                                            <i class="bi bi-pencil me-1"></i>Edit
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                    
+                    @if ((filteredBookmarks?.Count() ?? 0) > pageSize)
+                    {
+                        <div class="pagination-container">
+                            <button class="btn btn-outline-primary" @onclick="LoadMoreBookmarks">
+                                Load More Bookmarks (@((filteredBookmarks?.Count() ?? 0) - pageSize) remaining)
+                            </button>
+                        </div>
+                    }
+                }
+                else
+                {
+                    <div class="empty-state">
+                        <i class="bi bi-bookmark" style="font-size: 4rem; color: #ccc;"></i>
+                        <h4>No Bookmarks Found</h4>
+                        <p>@(string.IsNullOrEmpty(searchQuery) ? "You haven't bookmarked any scholarships yet." : $"No bookmarks found matching \"{searchQuery}\".")</p>
+                        <button class="btn btn-primary mt-3" @onclick="NavigateToScholarships">
+                            <i class="bi bi-search me-2"></i>Find Scholarships
+                        </button>
+                    </div>
+                }
             </div>
         </div>
         
-        <!-- Quick Stats -->
-        <div class="row mb-4">
-            <div class="col-md-3 mb-3">
-                <div class="card bg-primary text-white">
-                    <div class="card-body text-center">
-                        <i class="fa fa-bookmark fa-2x mb-2"></i>
-                        <h4 class="mb-0">24</h4>
-                        <small>Total Bookmarks</small>
+        <!-- Sidebar -->
+        <div class="bookmarks-sidebar">
+            <!-- Quick Actions -->
+            <div class="sidebar-card">
+                <div class="sidebar-card-header">
+                    <h5><i class="bi bi-lightning me-2"></i>Quick Actions</h5>
+                </div>
+                <div class="sidebar-card-body">
+                    <div class="quick-actions">
+                        <button class="quick-action-btn" @onclick="ShowUrgentOnly">
+                            <i class="bi bi-exclamation-triangle"></i>
+                            <span>View Urgent</span>
+                        </button>
+                        <button class="quick-action-btn" @onclick="ShowHighMatchOnly">
+                            <i class="bi bi-star"></i>
+                            <span>High Matches</span>
+                        </button>
+                        <button class="quick-action-btn" @onclick="ShowInProgressOnly">
+                            <i class="bi bi-clock-history"></i>
+                            <span>In Progress</span>
+                        </button>
+                        <button class="quick-action-btn" @onclick="NavigateToScholarships">
+                            <i class="bi bi-search"></i>
+                            <span>Find More</span>
+                        </button>
                     </div>
                 </div>
-            </div>
-            <div class="col-md-3 mb-3">
-                <div class="card bg-success text-white">
-                    <div class="card-body text-center">
-                        <i class="fa fa-graduation-cap fa-2x mb-2"></i>
-                        <h4 class="mb-0">18</h4>
-                        <small>Scholarships</small>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3 mb-3">
-                <div class="card bg-warning text-white">
-                    <div class="card-body text-center">
-                        <i class="fa fa-clock-o fa-2x mb-2"></i>
-                        <h4 class="mb-0">6</h4>
-                        <small>Urgent Deadlines</small>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3 mb-3">
-                <div class="card bg-info text-white">
-                    <div class="card-body text-center">
-                        <i class="fa fa-star fa-2x mb-2"></i>
-                        <h4 class="mb-0">12</h4>
-                        <small>High Match</small>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Bookmarks List -->
-        <div class="row">
-            <div class="col-lg-8">
-                
-                <!-- Urgent Deadlines Section -->
-                <div class="mb-4">
-                    <h3 class="text-danger mb-3"><i class="fa fa-exclamation-triangle me-2"></i>Urgent Deadlines</h3>
-                    
-                    <div class="card mb-3 border-danger">
-                        <div class="card-body">
-                            <div class="d-flex justify-content-between align-items-start">
-                                <div class="flex-grow-1">
-                                    <h5 class="card-title text-danger">TechCorp Foundation Scholarship</h5>
-                                    <p class="card-text">Full tuition scholarship for computer science students with 3.5+ GPA. Includes internship opportunities.</p>
-                                    <div class="mb-2">
-                                        <span class="badge bg-danger me-2">Due in 3 days</span>
-                                        <span class="badge bg-primary me-2">Technology</span>
-                                        <span class="badge bg-success">95% Match</span>
-                                    </div>
-                                    <small class="text-muted">Bookmarked 2 weeks ago</small>
-                                </div>
-                                <div class="ms-3">
-                                    <button class="btn btn-danger btn-sm">Apply Now</button>
-                                    <button class="btn btn-outline-secondary btn-sm ms-1">
-                                        <i class="fa fa-bookmark"></i>
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="card mb-3 border-warning">
-                        <div class="card-body">
-                            <div class="d-flex justify-content-between align-items-start">
-                                <div class="flex-grow-1">
-                                    <h5 class="card-title text-warning">Arts Foundation Creative Grant</h5>
-                                    <p class="card-text">Supporting emerging artists in digital media and creative technologies. Portfolio submission required.</p>
-                                    <div class="mb-2">
-                                        <span class="badge bg-warning text-dark me-2">Due in 1 week</span>
-                                        <span class="badge bg-info me-2">Arts</span>
-                                        <span class="badge bg-success">88% Match</span>
-                                    </div>
-                                    <small class="text-muted">Bookmarked 1 week ago</small>
-                                </div>
-                                <div class="ms-3">
-                                    <button class="btn btn-warning btn-sm">Apply Now</button>
-                                    <button class="btn btn-outline-secondary btn-sm ms-1">
-                                        <i class="fa fa-bookmark"></i>
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Regular Bookmarks -->
-                <div class="mb-4">
-                    <h3 class="mb-3"><i class="fa fa-bookmark-o me-2"></i>All Bookmarks</h3>
-                    
-                    <div class="card mb-3">
-                        <div class="card-body">
-                            <div class="d-flex justify-content-between align-items-start">
-                                <div class="flex-grow-1">
-                                    <h5 class="card-title">Global Education Trust International Scholarship</h5>
-                                    <p class="card-text">Study abroad scholarship for undergraduate students. Covers tuition and living expenses for one academic year.</p>
-                                    <div class="mb-2">
-                                        <span class="badge bg-primary me-2">Due in 2 months</span>
-                                        <span class="badge bg-success me-2">International</span>
-                                        <span class="badge bg-info">92% Match</span>
-                                    </div>
-                                    <small class="text-muted">Bookmarked 3 days ago</small>
-                                </div>
-                                <div class="ms-3">
-                                    <button class="btn btn-primary btn-sm">View Details</button>
-                                    <button class="btn btn-outline-secondary btn-sm ms-1">
-                                        <i class="fa fa-bookmark"></i>
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="card mb-3">
-                        <div class="card-body">
-                            <div class="d-flex justify-content-between align-items-start">
-                                <div class="flex-grow-1">
-                                    <h5 class="card-title">HealthPlus Medical Student Support</h5>
-                                    <p class="card-text">Financial assistance for medical and nursing students. Priority given to underrepresented minorities.</p>
-                                    <div class="mb-2">
-                                        <span class="badge bg-primary me-2">Due in 6 weeks</span>
-                                        <span class="badge bg-warning text-dark me-2">Healthcare</span>
-                                        <span class="badge bg-info">85% Match</span>
-                                    </div>
-                                    <small class="text-muted">Bookmarked 1 week ago</small>
-                                </div>
-                                <div class="ms-3">
-                                    <button class="btn btn-primary btn-sm">View Details</button>
-                                    <button class="btn btn-outline-secondary btn-sm ms-1">
-                                        <i class="fa fa-bookmark"></i>
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="card mb-3">
-                        <div class="card-body">
-                            <div class="d-flex justify-content-between align-items-start">
-                                <div class="flex-grow-1">
-                                    <h5 class="card-title">Community Bank Local Student Award</h5>
-                                    <p class="card-text">Supporting local students pursuing business and finance degrees. Community service requirements apply.</p>
-                                    <div class="mb-2">
-                                        <span class="badge bg-secondary me-2">Due in 3 months</span>
-                                        <span class="badge bg-primary me-2">Business</span>
-                                        <span class="badge bg-info">78% Match</span>
-                                    </div>
-                                    <small class="text-muted">Bookmarked 2 weeks ago</small>
-                                </div>
-                                <div class="ms-3">
-                                    <button class="btn btn-primary btn-sm">View Details</button>
-                                    <button class="btn btn-outline-secondary btn-sm ms-1">
-                                        <i class="fa fa-bookmark"></i>
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="card mb-3">
-                        <div class="card-body">
-                            <div class="d-flex justify-content-between align-items-start">
-                                <div class="flex-grow-1">
-                                    <h5 class="card-title">Green Future Environmental Research Grant</h5>
-                                    <p class="card-text">Research funding for environmental science and sustainability projects. Graduate students preferred.</p>
-                                    <div class="mb-2">
-                                        <span class="badge bg-success me-2">Due in 4 months</span>
-                                        <span class="badge bg-success me-2">Environmental</span>
-                                        <span class="badge bg-warning text-dark">72% Match</span>
-                                    </div>
-                                    <small class="text-muted">Bookmarked 3 weeks ago</small>
-                                </div>
-                                <div class="ms-3">
-                                    <button class="btn btn-primary btn-sm">View Details</button>
-                                    <button class="btn btn-outline-secondary btn-sm ms-1">
-                                        <i class="fa fa-bookmark"></i>
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Pagination -->
-                <nav aria-label="Bookmarks pagination">
-                    <ul class="pagination justify-content-center">
-                        <li class="page-item disabled">
-                            <a class="page-link" href="#" tabindex="-1">Previous</a>
-                        </li>
-                        <li class="page-item active"><a class="page-link" href="#">1</a></li>
-                        <li class="page-item"><a class="page-link" href="#">2</a></li>
-                        <li class="page-item"><a class="page-link" href="#">3</a></li>
-                        <li class="page-item">
-                            <a class="page-link" href="#">Next</a>
-                        </li>
-                    </ul>
-                </nav>
-
             </div>
             
-            <!-- Sidebar -->
-            <div class="col-lg-4">
-                
-                <!-- Quick Actions -->
-                <div class="card mb-4">
-                    <div class="card-header">
-                        <h5 class="mb-0"><i class="fa fa-bolt me-2"></i>Quick Actions</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="d-grid gap-2">
-                            <button class="btn btn-primary btn-sm">
-                                <i class="fa fa-search me-2"></i>Find More Scholarships
-                            </button>
-                            <button class="btn btn-outline-danger btn-sm">
-                                <i class="fa fa-clock-o me-2"></i>View Urgent Deadlines
-                            </button>
-                            <button class="btn btn-outline-secondary btn-sm">
-                                <i class="fa fa-download me-2"></i>Export Bookmarks
-                            </button>
-                        </div>
+            <!-- Categories -->
+            <div class="sidebar-card">
+                <div class="sidebar-card-header">
+                    <h5><i class="bi bi-tags me-2"></i>Categories</h5>
+                </div>
+                <div class="sidebar-card-body">
+                    <div class="category-tags">
+                        @foreach (var category in categories)
+                        {
+                            <span class="category-tag" @onclick="() => FilterByCategory(category.Key)">
+                                @category.Key <span class="category-count">(@category.Value)</span>
+                            </span>
+                        }
                     </div>
                 </div>
-
-                <!-- Categories -->
-                <div class="card mb-4">
-                    <div class="card-header">
-                        <h5 class="mb-0"><i class="fa fa-tags me-2"></i>Categories</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="d-flex flex-wrap gap-2">
-                            <span class="badge bg-primary">Technology (8)</span>
-                            <span class="badge bg-success">International (4)</span>
-                            <span class="badge bg-info">Arts (3)</span>
-                            <span class="badge bg-warning text-dark">Healthcare (3)</span>
-                            <span class="badge bg-secondary">Business (2)</span>
-                            <span class="badge bg-success">Environmental (2)</span>
-                            <span class="badge bg-primary">STEM (2)</span>
-                        </div>
-                    </div>
+            </div>
+            
+            <!-- Match Score Distribution -->
+            <div class="sidebar-card">
+                <div class="sidebar-card-header">
+                    <h5><i class="bi bi-bar-chart me-2"></i>Match Quality</h5>
                 </div>
-
-                <!-- Match Quality -->
-                <div class="card">
-                    <div class="card-header">
-                        <h5 class="mb-0"><i class="fa fa-star me-2"></i>Match Quality</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="mb-3">
-                            <div class="d-flex justify-content-between">
+                <div class="sidebar-card-body">
+                    <div class="match-distribution">
+                        <div class="match-item">
+                            <div class="match-label">
                                 <span>Excellent (90%+)</span>
-                                <span class="text-success">12 bookmarks</span>
+                                <span class="match-count text-success">@excellentMatches</span>
                             </div>
-                            <div class="progress">
-                                <div class="progress-bar bg-success" style="width: 50%"></div>
+                            <div class="match-progress">
+                                <div class="match-progress-bar excellent" style="width: @(GetPercentage(excellentMatches))%"></div>
                             </div>
                         </div>
-                        <div class="mb-3">
-                            <div class="d-flex justify-content-between">
+                        <div class="match-item">
+                            <div class="match-label">
                                 <span>Good (75-89%)</span>
-                                <span class="text-info">8 bookmarks</span>
+                                <span class="match-count text-info">@goodMatches</span>
                             </div>
-                            <div class="progress">
-                                <div class="progress-bar bg-info" style="width: 33%"></div>
+                            <div class="match-progress">
+                                <div class="match-progress-bar good" style="width: @(GetPercentage(goodMatches))%"></div>
                             </div>
                         </div>
-                        <div>
-                            <div class="d-flex justify-content-between">
+                        <div class="match-item">
+                            <div class="match-label">
                                 <span>Fair (60-74%)</span>
-                                <span class="text-warning">4 bookmarks</span>
+                                <span class="match-count text-warning">@fairMatches</span>
                             </div>
-                            <div class="progress">
-                                <div class="progress-bar bg-warning" style="width: 17%"></div>
+                            <div class="match-progress">
+                                <div class="match-progress-bar fair" style="width: @(GetPercentage(fairMatches))%"></div>
                             </div>
                         </div>
                     </div>
                 </div>
-
             </div>
         </div>
     </div>
 </div>
 
 <style>
-    .bookmarks-page {
-        min-height: 80vh;
-        background-color: #f8f9fa;
-        padding: 2rem 0;
+    .dashboard-center-container {
+        padding: 2rem;
+        max-width: 1400px;
+        margin: 0 auto;
     }
-    
-    .card {
-        border: none;
-        box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
-        transition: box-shadow 0.15s ease-in-out;
+
+    .page-header-section {
+        background: linear-gradient(135deg, #fff 0%, #f8fafc 100%);
+        border-radius: 16px;
+        padding: 2rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+        border: 1px solid rgba(0,0,0,0.05);
     }
-    
-    .card:hover {
-        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+
+    .page-header-content {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 1rem;
     }
-    
-    .card-header {
-        background-color: #fff;
-        border-bottom: 1px solid #dee2e6;
+
+    .page-title {
+        font-size: 2.5rem;
+        font-weight: 700;
+        color: #2d3748;
+        margin: 0;
+        display: flex;
+        align-items: center;
+    }
+
+    .page-subtitle {
+        color: #4a5568;
+        font-size: 1.1rem;
+        margin: 0.5rem 0 0 0;
+    }
+
+    .stats-grid-bookmarks {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .stat-card {
+        background: linear-gradient(135deg, #fff 0%, #f8fafc 100%);
+        border-radius: 16px;
+        padding: 1.5rem;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+        border: 1px solid rgba(0,0,0,0.05);
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .stat-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, #1560d4, #0d387e);
+    }
+
+    .stat-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+    }
+
+    .stat-card-header {
+        display: flex;
+        align-items: center;
+        margin-bottom: 1rem;
+    }
+
+    .stat-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
+        color: white;
+        margin-right: 1rem;
+    }
+
+    .stat-icon.total-bookmarks { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+    .stat-icon.urgent-deadlines { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
+    .stat-icon.high-match { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
+    .stat-icon.in-progress { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); }
+
+    .stat-value {
+        font-size: 2.5rem;
+        font-weight: 700;
+        color: #2d3748;
+        line-height: 1;
+        margin-bottom: 0.5rem;
+    }
+
+    .stat-label {
+        font-size: 1rem;
+        font-weight: 600;
+        color: #4a5568;
+    }
+
+    .filter-tabs {
+        display: flex;
+        gap: 0.5rem;
+        margin-bottom: 2rem;
+        flex-wrap: wrap;
+    }
+
+    .filter-tab {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        color: #4a5568;
+        padding: 0.75rem 1rem;
+        border-radius: 8px;
         font-weight: 500;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        display: flex;
+        align-items: center;
     }
-    
-    .progress {
-        height: 6px;
+
+    .filter-tab:hover {
+        background: #e2e8f0;
+        transform: translateY(-1px);
     }
-    
-    .badge {
+
+    .filter-tab.active {
+        background: linear-gradient(135deg, #1560d4, #0d387e);
+        color: white;
+        border-color: #1560d4;
+    }
+
+    .bookmarks-content-grid {
+        display: grid;
+        grid-template-columns: 1fr 350px;
+        gap: 2rem;
+    }
+
+    .bookmarks-container {
+        background: linear-gradient(135deg, #fff 0%, #f8fafc 100%);
+        border-radius: 16px;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+        border: 1px solid rgba(0,0,0,0.05);
+        overflow: hidden;
+    }
+
+    .table-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1.5rem 2rem;
+        border-bottom: 1px solid #e2e8f0;
+        background: #f8fafc;
+    }
+
+    .table-header h3 {
+        margin: 0;
+        color: #2d3748;
+        font-weight: 600;
+    }
+
+    .table-actions {
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .bookmarks-list {
+        padding: 1rem 2rem 2rem;
+    }
+
+    .bookmark-card {
+        background: #fff;
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-bottom: 1rem;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        border: 1px solid #e2e8f0;
+        transition: all 0.3s ease;
+        position: relative;
+    }
+
+    .bookmark-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+    }
+
+    .bookmark-card.urgent {
+        border-left: 4px solid #f093fb;
+    }
+
+    .bookmark-card.high-match {
+        border-left: 4px solid #4facfe;
+    }
+
+    .bookmark-card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+    }
+
+    .bookmark-priority {
+        padding: 0.25rem 0.5rem;
+        border-radius: 8px;
         font-size: 0.75rem;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+    }
+
+    .bookmark-priority.high { background: #fce7f3; color: #be185d; }
+    .bookmark-priority.medium { background: #fef3c7; color: #d97706; }
+    .bookmark-priority.low { background: #f3f4f6; color: #6b7280; }
+
+    .bookmark-actions {
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .bookmark-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: #2d3748;
+        margin-bottom: 0.5rem;
+    }
+
+    .bookmark-description {
+        color: #4a5568;
+        margin-bottom: 1rem;
+        line-height: 1.5;
+    }
+
+    .bookmark-badges {
+        display: flex;
+        gap: 0.5rem;
+        margin-bottom: 1rem;
+        flex-wrap: wrap;
+    }
+
+    .badge {
+        padding: 0.25rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+
+    .urgent-badge { background: #fce7f3; color: #be185d; }
+    .status-badge.status-bookmarked { background: #f3f4f6; color: #6b7280; }
+    .status-badge.status-readytoapply { background: #dbeafe; color: #2563eb; }
+    .status-badge.status-inprogress { background: #fef3c7; color: #d97706; }
+    .status-badge.status-applied { background: #dcfce7; color: #16a34a; }
+    .match-badge.match-excellent { background: #dcfce7; color: #16a34a; }
+    .match-badge.match-good { background: #dbeafe; color: #2563eb; }
+    .match-badge.match-fair { background: #fef3c7; color: #d97706; }
+    .category-badge { background: #f1f5f9; color: #475569; }
+
+    .bookmark-details {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .bookmark-detail-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        color: #6b7280;
+        font-size: 0.875rem;
+    }
+
+    .bookmark-notes {
+        background: #f8fafc;
+        padding: 0.75rem;
+        border-radius: 8px;
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: flex-start;
+        gap: 0.5rem;
+        font-size: 0.875rem;
+        color: #4a5568;
+    }
+
+    .bookmark-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding-top: 1rem;
+        border-top: 1px solid #f1f5f9;
+    }
+
+    .bookmark-footer-actions {
+        display: flex;
+        gap: 0.5rem;
+    }
+
+    .sidebar-card {
+        background: linear-gradient(135deg, #fff 0%, #f8fafc 100%);
+        border-radius: 16px;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+        border: 1px solid rgba(0,0,0,0.05);
+        margin-bottom: 1.5rem;
+        overflow: hidden;
+    }
+
+    .sidebar-card-header {
+        padding: 1.5rem 1.5rem 0.5rem;
+        border-bottom: 1px solid #e2e8f0;
+        background: #f8fafc;
+    }
+
+    .sidebar-card-header h5 {
+        margin: 0;
+        color: #2d3748;
+        font-weight: 600;
+        font-size: 1rem;
+    }
+
+    .sidebar-card-body {
+        padding: 1.5rem;
+    }
+
+    .quick-actions {
+        display: grid;
+        gap: 0.75rem;
+    }
+
+    .quick-action-btn {
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        padding: 0.75rem;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        color: #4a5568;
+        text-decoration: none;
+    }
+
+    .quick-action-btn:hover {
+        background: #f8fafc;
+        transform: translateY(-1px);
+        color: #2d3748;
+    }
+
+    .category-tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+
+    .category-tag {
+        background: #f1f5f9;
+        color: #475569;
+        padding: 0.5rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .category-tag:hover {
+        background: #e2e8f0;
+        color: #2d3748;
+    }
+
+    .category-count {
+        color: #6b7280;
+    }
+
+    .match-distribution {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .match-item {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .match-label {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 0.875rem;
+        color: #4a5568;
+    }
+
+    .match-count {
+        font-weight: 600;
+    }
+
+    .match-progress {
+        background: #f1f5f9;
+        height: 6px;
+        border-radius: 3px;
+        overflow: hidden;
+    }
+
+    .match-progress-bar {
+        height: 100%;
+        border-radius: 3px;
+        transition: width 0.3s ease;
+    }
+
+    .match-progress-bar.excellent { background: linear-gradient(90deg, #16a34a, #22c55e); }
+    .match-progress-bar.good { background: linear-gradient(90deg, #2563eb, #3b82f6); }
+    .match-progress-bar.fair { background: linear-gradient(90deg, #d97706, #f59e0b); }
+
+    .loading-container, .empty-state {
+        text-align: center;
+        padding: 3rem 2rem;
+        color: #6b7280;
+    }
+
+    .pagination-container {
+        padding: 1.5rem 2rem;
+        text-align: center;
+        border-top: 1px solid #e2e8f0;
+    }
+
+    @@media (max-width: 1024px) {
+        .bookmarks-content-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .stats-grid-bookmarks {
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        }
+        
+        .filter-tabs {
+            flex-direction: column;
+        }
+        
+        .bookmark-details {
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        
+        .bookmark-footer {
+            flex-direction: column;
+            gap: 1rem;
+            align-items: flex-start;
+        }
     }
 </style>
+
+@code {
+    private string? currentUserId;
+    private List<BookmarkedScholarship> allBookmarks = new();
+    private IEnumerable<BookmarkedScholarship> filteredBookmarks = new List<BookmarkedScholarship>();
+    
+    private int totalBookmarks = 0;
+    private int urgentCount = 0;
+    private int highMatchCount = 0;
+    private int inProgressCount = 0;
+    
+    private int excellentMatches = 0;
+    private int goodMatches = 0;
+    private int fairMatches = 0;
+    
+    private string activeFilter = "All";
+    private string searchQuery = "";
+    private int pageSize = 10;
+    private bool isLoading = true;
+    
+    private Dictionary<string, int> categories = new();
+    
+    // Thread-safety for loading data
+    private readonly SemaphoreSlim loadingSemaphore = new SemaphoreSlim(1, 1);
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (loadingSemaphore.CurrentCount == 0) return;
+        
+        await loadingSemaphore.WaitAsync();
+        try
+        {
+            var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+            var user = authState.User;
+
+            if (user.Identity?.IsAuthenticated == true)
+            {
+                currentUserId = user.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            }
+
+            if (!string.IsNullOrEmpty(currentUserId))
+            {
+                await LoadBookmarksData();
+            }
+            else
+            {
+                Console.WriteLine("[ERROR] User ID is null or empty, cannot load bookmarks");
+                isLoading = false;
+                StateHasChanged();
+            }
+        }
+        catch (ObjectDisposedException)
+        {
+            return;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[ERROR] Exception in OnInitializedAsync: {ex.Message}");
+            isLoading = false;
+            StateHasChanged();
+        }
+        finally
+        {
+            try
+            {
+                loadingSemaphore.Release();
+            }
+            catch (ObjectDisposedException)
+            {
+            }
+        }
+    }
+
+    private async Task LoadBookmarksData()
+    {
+        try
+        {
+            isLoading = true;
+            StateHasChanged();
+            
+            if (string.IsNullOrEmpty(currentUserId))
+            {
+                return;
+            }
+            
+            // Load user's bookmarks using the BookmarkService
+            var bookmarkOrganization = await BookmarkService.GetOrganizedBookmarksAsync(currentUserId!);
+            allBookmarks = bookmarkOrganization.AllBookmarks;
+            
+            // Calculate statistics
+            totalBookmarks = allBookmarks.Count;
+            urgentCount = allBookmarks.Count(b => b.IsUrgent);
+            highMatchCount = allBookmarks.Count(b => b.MatchScore >= 90);
+            inProgressCount = allBookmarks.Count(b => b.Status == BookmarkStatus.InProgress || b.Status == BookmarkStatus.ReadyToApply);
+            
+            // Calculate match distribution
+            excellentMatches = allBookmarks.Count(b => b.MatchScore >= 90);
+            goodMatches = allBookmarks.Count(b => b.MatchScore >= 75 && b.MatchScore < 90);
+            fairMatches = allBookmarks.Count(b => b.MatchScore >= 60 && b.MatchScore < 75);
+            
+            // Calculate categories
+            categories = allBookmarks
+                .GroupBy(b => GetScholarshipCategory(b.Scholarship))
+                .ToDictionary(g => g.Key, g => g.Count());
+            
+            // Apply current filter
+            ApplyFilter();
+        }
+        catch (Exception)
+        {
+            // Reset to empty state on error
+            allBookmarks = new List<BookmarkedScholarship>();
+            filteredBookmarks = new List<BookmarkedScholarship>();
+            totalBookmarks = 0;
+            urgentCount = 0;
+            highMatchCount = 0;
+            inProgressCount = 0;
+            excellentMatches = 0;
+            goodMatches = 0;
+            fairMatches = 0;
+            categories = new Dictionary<string, int>();
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+    
+    private void SetFilter(string filter)
+    {
+        activeFilter = filter;
+        ApplyFilter();
+    }
+    
+    private void ApplyFilter()
+    {
+        var filtered = allBookmarks.AsEnumerable();
+        
+        // Apply filter
+        switch (activeFilter)
+        {
+            case "Urgent":
+                filtered = filtered.Where(b => b.IsUrgent);
+                break;
+            case "HighMatch":
+                filtered = filtered.Where(b => b.MatchScore >= 90);
+                break;
+            case "InProgress":
+                filtered = filtered.Where(b => b.Status == BookmarkStatus.InProgress || b.Status == BookmarkStatus.ReadyToApply);
+                break;
+            case "Applied":
+                filtered = filtered.Where(b => b.Status == BookmarkStatus.Applied);
+                break;
+            default:
+                // All bookmarks
+                break;
+        }
+        
+        // Apply search filter
+        if (!string.IsNullOrEmpty(searchQuery))
+        {
+            var query = searchQuery.ToLower();
+            filtered = filtered.Where(b => 
+                (b.Scholarship.Title?.ToLower().Contains(query) ?? false) ||
+                (b.Scholarship.Description?.ToLower().Contains(query) ?? false) ||
+                (b.Notes?.ToLower().Contains(query) ?? false));
+        }
+        
+        // Order by priority and urgency
+        filteredBookmarks = filtered
+            .OrderBy(b => b.Priority)
+            .ThenByDescending(b => b.IsUrgent)
+            .ThenByDescending(b => b.MatchScore)
+            .ThenByDescending(b => b.CreatedAt);
+        
+        StateHasChanged();
+    }
+    
+    private async Task FilterBookmarks(ChangeEventArgs e)
+    {
+        searchQuery = e.Value?.ToString() ?? "";
+        ApplyFilter();
+        await Task.CompletedTask;
+    }
+    
+    private string GetFilterTitle()
+    {
+        return activeFilter switch
+        {
+            "Urgent" => "Urgent Deadlines",
+            "HighMatch" => "High Match Scholarships",
+            "InProgress" => "In Progress Applications",
+            "Applied" => "Applied Scholarships",
+            _ => "All Bookmarks"
+        };
+    }
+    
+    private string GetBookmarkCardClass(BookmarkedScholarship bookmark)
+    {
+        var classes = new List<string>();
+        
+        if (bookmark.IsUrgent)
+            classes.Add("urgent");
+        if (bookmark.MatchScore >= 90)
+            classes.Add("high-match");
+            
+        return string.Join(" ", classes);
+    }
+    
+    private string GetPriorityClass(int priority)
+    {
+        return priority switch
+        {
+            1 => "high",
+            2 => "medium",
+            3 => "low",
+            _ => "medium"
+        };
+    }
+    
+    private string GetPriorityIcon(int priority)
+    {
+        return priority switch
+        {
+            1 => "🔴",
+            2 => "🟡",
+            3 => "🟢",
+            _ => "🟡"
+        };
+    }
+    
+    private string GetMatchLevel(decimal matchScore)
+    {
+        if (matchScore >= 90) return "excellent";
+        if (matchScore >= 75) return "good";
+        return "fair";
+    }
+    
+    private double GetPercentage(int count)
+    {
+        if (totalBookmarks == 0) return 0;
+        return (double)count / totalBookmarks * 100;
+    }
+    
+    private string GetScholarshipCategory(Scholarship scholarship)
+    {
+        // Determine category based on scholarship properties
+        if (!string.IsNullOrEmpty(scholarship.RequiredCourse))
+        {
+            var course = scholarship.RequiredCourse.ToLower();
+            if (course.Contains("computer") || course.Contains("it") || course.Contains("technology"))
+                return "Technology";
+            if (course.Contains("medicine") || course.Contains("nursing") || course.Contains("health"))
+                return "Healthcare";
+            if (course.Contains("business") || course.Contains("finance") || course.Contains("management"))
+                return "Business";
+            if (course.Contains("art") || course.Contains("design") || course.Contains("creative"))
+                return "Arts";
+            if (course.Contains("environment") || course.Contains("ecology"))
+                return "Environmental";
+            if (course.Contains("engineering") || course.Contains("science") || course.Contains("math"))
+                return "STEM";
+        }
+        
+        // Check if it's international based on benefactor or title
+        if (scholarship.ExternalApplicationUrl != null || 
+            scholarship.Title.ToLower().Contains("international") ||
+            scholarship.Title.ToLower().Contains("global"))
+            return "International";
+            
+        return "General";
+    }
+    
+    private async Task RefreshBookmarks()
+    {
+        await LoadBookmarksData();
+    }
+    
+    private void LoadMoreBookmarks()
+    {
+        pageSize += 10;
+        StateHasChanged();
+    }
+    
+    private void NavigateToScholarships()
+    {
+        Navigation.NavigateTo("/dashboard/student/scholarships");
+    }
+    
+    private void ShowUrgentOnly()
+    {
+        SetFilter("Urgent");
+    }
+    
+    private void ShowHighMatchOnly()
+    {
+        SetFilter("HighMatch");
+    }
+    
+    private void ShowInProgressOnly()
+    {
+        SetFilter("InProgress");
+    }
+    
+    private void FilterByCategory(string category)
+    {
+        searchQuery = "";
+        var filtered = allBookmarks.Where(b => GetScholarshipCategory(b.Scholarship) == category);
+        filteredBookmarks = filtered
+            .OrderBy(b => b.Priority)
+            .ThenByDescending(b => b.IsUrgent)
+            .ThenByDescending(b => b.MatchScore);
+        StateHasChanged();
+    }
+    
+    private async Task ViewScholarship(int scholarshipId)
+    {
+        Navigation.NavigateTo($"/dashboard/student/scholarships/{scholarshipId}");
+        await Task.CompletedTask;
+    }
+    
+    private async Task RemoveBookmark(int bookmarkId)
+    {
+        try
+        {
+            await BookmarkService.RemoveBookmarkByIdAsync(currentUserId!, bookmarkId);
+            await LoadBookmarksData(); // Refresh the list
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error removing bookmark: {ex.Message}");
+        }
+    }
+    
+    private async Task StartApplication(int scholarshipId)
+    {
+        Navigation.NavigateTo($"/dashboard/student/scholarships/{scholarshipId}/apply");
+        await Task.CompletedTask;
+    }
+    
+    private async Task EditBookmark(int bookmarkId)
+    {
+        // TODO: Implement edit bookmark modal
+        await Task.CompletedTask;
+    }
+    
+    private async Task ExportBookmarks()
+    {
+        // TODO: Implement export functionality
+        await Task.CompletedTask;
+    }
+    
+    public void Dispose()
+    {
+        loadingSemaphore?.Dispose();
+    }
+}

@@ -5,8 +5,13 @@
 @using Microsoft.EntityFrameworkCore
 @using c2_eskolar.Data
 @using c2_eskolar.Models
-@inject ApplicationDbContext DbContext
+@using c2_eskolar.Services
+@using System.Security.Claims
+@inject IDbContextFactory<ApplicationDbContext> DbContextFactory
+@inject BookmarkService BookmarkService
+@inject AuthenticationStateProvider AuthenticationStateProvider
 @inject NavigationManager Navigation
+@inject ILogger<StudentScholarships> Logger
 
 <PageTitle>Scholarships</PageTitle>
 
@@ -109,6 +114,12 @@
                                         <span class="badge @(scholarship.IsActive ? "bg-primary text-white" : "bg-secondary text-white")">
                                             @(scholarship.IsActive ? "Active" : "Inactive")
                                         </span>
+                                        <button class="btn @(GetBookmarkButtonClass(scholarship.ScholarshipId)) btn-sm bookmark-btn" 
+                                                @onclick="(e) => ToggleBookmark(e, scholarship.ScholarshipId)" 
+                                                @onclick:stopPropagation="true"
+                                                title="@(GetBookmarkTooltip(scholarship.ScholarshipId))">
+                                            <i class="bi @(GetBookmarkIcon(scholarship.ScholarshipId))"></i>
+                                        </button>
                                     </div>
                                 </div>
                             </div>
@@ -123,14 +134,46 @@
 @code {
     private List<Scholarship>? scholarships;
     private int selectedTab = 0; // 0 = Institutional, 1 = Open Scholarships
+    private string? currentUserId;
+    private HashSet<int> bookmarkedScholarshipIds = new HashSet<int>();
 
     protected override async Task OnInitializedAsync()
     {
-        scholarships = await DbContext.Scholarships
+        // Get current user
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+        
+        if (user.Identity?.IsAuthenticated == true)
+        {
+            currentUserId = user.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        }
+
+        // Load scholarships
+        using var context = await DbContextFactory.CreateDbContextAsync();
+        scholarships = await context.Scholarships
             .Include(s => s.Institution)
             .Include(s => s.Benefactor)
             .OrderByDescending(s => s.CreatedAt)
             .ToListAsync();
+
+        // Load user's bookmarks
+        if (!string.IsNullOrEmpty(currentUserId))
+        {
+            await LoadUserBookmarks();
+        }
+    }
+
+    private async Task LoadUserBookmarks()
+    {
+        try
+        {
+            var bookmarkOrganization = await BookmarkService.GetOrganizedBookmarksAsync(currentUserId!);
+            bookmarkedScholarshipIds = bookmarkOrganization.AllBookmarks.Select(b => b.ScholarshipId).ToHashSet();
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error loading bookmarks: {Message}", ex.Message);
+        }
     }
 
     private void SelectTab(int tab)
@@ -147,4 +190,125 @@
     {
         Navigation.NavigateTo("/dashboard/student/applications");
     }
+
+    private async Task ToggleBookmark(MouseEventArgs e, int scholarshipId)
+    {
+        if (string.IsNullOrEmpty(currentUserId)) 
+        {
+            Logger.LogWarning("CurrentUserId is null or empty - cannot proceed with bookmark");
+            return;
+        }
+
+        try
+        {
+            if (bookmarkedScholarshipIds.Contains(scholarshipId))
+            {
+                await BookmarkService.RemoveBookmarkAsync(currentUserId, scholarshipId);
+                bookmarkedScholarshipIds.Remove(scholarshipId);
+            }
+            else
+            {
+                await BookmarkService.AddBookmarkAsync(currentUserId, scholarshipId, "Interested", 2);
+                bookmarkedScholarshipIds.Add(scholarshipId);
+            }
+            
+            StateHasChanged(); // Force UI update after bookmark change
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "Error toggling bookmark: {Message}", ex.Message);
+        }
+    }
+
+    private string GetBookmarkButtonClass(int scholarshipId)
+    {
+        return bookmarkedScholarshipIds.Contains(scholarshipId) 
+            ? "btn-success border-0 shadow-sm" // Strong green for bookmarked
+            : "btn-outline-secondary border-2"; // Clear outline for unbookmarked
+    }
+
+    private string GetBookmarkIcon(int scholarshipId)
+    {
+        return bookmarkedScholarshipIds.Contains(scholarshipId) 
+            ? "bi-bookmark-heart-fill" // Filled heart bookmark for bookmarked
+            : "bi-bookmark"; // Empty bookmark for unbookmarked
+    }
+
+    private string GetBookmarkTooltip(int scholarshipId)
+    {
+        return bookmarkedScholarshipIds.Contains(scholarshipId) 
+            ? "Remove from bookmarks ✓" 
+            : "Add to bookmarks";
+    }
 }
+
+<style>
+    /* Enhanced Bookmark Button Styling */
+    .bookmark-btn {
+        position: relative;
+        transition: all 0.3s ease-in-out;
+        min-width: 40px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 8px !important;
+    }
+
+    .bookmark-btn:hover {
+        transform: scale(1.1);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
+    }
+
+    /* Bookmarked state - Green success button */
+    .bookmark-btn.btn-success {
+        background: linear-gradient(135deg, #10b981, #059669) !important;
+        border: none !important;
+        color: white !important;
+    }
+
+    .bookmark-btn.btn-success:hover {
+        background: linear-gradient(135deg, #059669, #047857) !important;
+        transform: scale(1.15);
+    }
+
+    .bookmark-btn.btn-success i {
+        color: white !important;
+        font-size: 1.1rem;
+        text-shadow: 0 1px 2px rgba(0,0,0,0.1);
+    }
+
+    /* Unbookmarked state - Outline button */
+    .bookmark-btn.btn-outline-secondary {
+        background: transparent !important;
+        border: 2px solid #6b7280 !important;
+        color: #6b7280 !important;
+    }
+
+    .bookmark-btn.btn-outline-secondary:hover {
+        background: #f3f4f6 !important;
+        border-color: #374151 !important;
+        color: #374151 !important;
+        transform: scale(1.15);
+    }
+
+    .bookmark-btn.btn-outline-secondary i {
+        font-size: 1rem;
+    }
+
+    /* Animation when bookmark state changes */
+    @@keyframes bookmarkAdded {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.3); }
+        100% { transform: scale(1); }
+    }
+
+    .bookmark-btn.btn-success {
+        animation: bookmarkAdded 0.6s ease-in-out;
+    }
+
+    /* Card hover effect enhancement */
+    .clickable-card:hover .bookmark-btn {
+        transform: scale(1.05);
+    }
+</style>
