@@ -10,7 +10,6 @@
 
 <PageTitle>Analytics - Scholarship Impact Dashboard</PageTitle>
 
-
 @code {
     public class PieSliceData
     {
@@ -55,8 +54,6 @@
 	private List<(DateTime Date, int Count)> PredictedApplicantsPerDay = new();
 	private string PredictionSummary = string.Empty;
 	private string TrendAnalysis = string.Empty;
-
-
 
 	// Helper method to get demographic pie data for a specific category (used for the 4-chart display)
 	private List<PieSliceData> GetDemographicPieDataForCategory(string category)
@@ -145,8 +142,6 @@
 		}
 		return address.Trim();
 	}
-
-
 
 	// Calculate scholarship utilization and impact metrics
 	private async Task CalculateScholarshipUtilization()
@@ -378,6 +373,7 @@
         SuccessRate = TotalScholarsEver > 0 ? (double)GraduatedScholars / TotalScholarsEver * 100 : 0;
     }
 }
+
 @if (IsLoading)
 {
     <div class="w-100 py-5 d-flex flex-column align-items-center justify-content-center">
@@ -470,8 +466,6 @@ else
             </div>
         </div>
     </div>
-
-
 
 	<div class="card shadow-sm">
 		<div class="card-body">
