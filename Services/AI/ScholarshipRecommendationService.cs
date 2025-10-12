@@ -11,12 +11,12 @@ namespace c2_eskolar.Services.AI
 {
     public class ScholarshipRecommendationService
     {
-        private readonly ApplicationDbContext _context;
+        private readonly IDbContextFactory<ApplicationDbContext> _contextFactory;
         private readonly UserManager<IdentityUser> _userManager;
 
-        public ScholarshipRecommendationService(ApplicationDbContext context, UserManager<IdentityUser> userManager)
+        public ScholarshipRecommendationService(IDbContextFactory<ApplicationDbContext> contextFactory, UserManager<IdentityUser> userManager)
         {
-            _context = context;
+            _contextFactory = contextFactory;
             _userManager = userManager;
         }
 
@@ -27,11 +27,12 @@ namespace c2_eskolar.Services.AI
             var roles = await _userManager.GetRolesAsync(user);
             if (!roles.Contains("Student")) return new List<ScholarshipRecommendation>();
 
-            var studentProfile = await _context.StudentProfiles.FirstOrDefaultAsync(p => p.UserId == user.Id);
+            using var context = _contextFactory.CreateDbContext();
+            var studentProfile = await context.StudentProfiles.FirstOrDefaultAsync(p => p.UserId == user.Id);
             if (studentProfile == null) return new List<ScholarshipRecommendation>();
 
             // Get active scholarships
-            var activeScholarships = await _context.Scholarships
+            var activeScholarships = await context.Scholarships
                 .Where(s => s.IsActive && s.ApplicationDeadline > DateTime.Now)
                 .ToListAsync();
 

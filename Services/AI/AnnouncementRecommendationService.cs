@@ -12,12 +12,12 @@ namespace c2_eskolar.Services.AI
 {
     public class AnnouncementRecommendationService
     {
-        private readonly ApplicationDbContext _context;
+        private readonly IDbContextFactory<ApplicationDbContext> _contextFactory;
         private readonly UserManager<IdentityUser> _userManager;
 
-        public AnnouncementRecommendationService(ApplicationDbContext context, UserManager<IdentityUser> userManager)
+        public AnnouncementRecommendationService(IDbContextFactory<ApplicationDbContext> contextFactory, UserManager<IdentityUser> userManager)
         {
-            _context = context;
+            _contextFactory = contextFactory;
             _userManager = userManager;
         }
 
@@ -28,11 +28,12 @@ namespace c2_eskolar.Services.AI
             var roles = await _userManager.GetRolesAsync(user);
             if (!roles.Contains("Student")) return new List<AnnouncementRecommendation>();
 
-            var studentProfile = await _context.StudentProfiles.FirstOrDefaultAsync(p => p.UserId == user.Id);
+            using var context = _contextFactory.CreateDbContext();
+            var studentProfile = await context.StudentProfiles.FirstOrDefaultAsync(p => p.UserId == user.Id);
             if (studentProfile == null) return new List<AnnouncementRecommendation>();
 
             // Get active announcements
-            var activeAnnouncements = await _context.Announcements
+            var activeAnnouncements = await context.Announcements
                 .Where(a => a.IsActive && 
                            (a.PublishDate == null || a.PublishDate <= DateTime.UtcNow) &&
                            (a.ExpiryDate == null || a.ExpiryDate > DateTime.UtcNow))

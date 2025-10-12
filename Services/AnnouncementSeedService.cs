@@ -8,18 +8,19 @@ namespace c2_eskolar.Services
     // SERVICE TO SEED SAMPLE ANNOUNCEMENTS INTO DATABASE
     public class AnnouncementSeedService
     {
-        private readonly ApplicationDbContext _context;
+        private readonly IDbContextFactory<ApplicationDbContext> _contextFactory;
 
-        public AnnouncementSeedService(ApplicationDbContext context)
+        public AnnouncementSeedService(IDbContextFactory<ApplicationDbContext> contextFactory)
         {
-            _context = context;
+            _contextFactory = contextFactory;
         }
 
         // SEEDS DEMO ANNOUNCEMENTS IF NONE EXIST
         public async Task SeedSampleAnnouncementsAsync()
         {
+            using var context = _contextFactory.CreateDbContext();
             // Check if we already have announcements
-            if (await _context.Announcements.AnyAsync())
+            if (await context.Announcements.AnyAsync())
             {
                 return; // Skip seeding if data already present
             }
@@ -149,8 +150,8 @@ namespace c2_eskolar.Services
             };
 
             // SAVE TO DATABASE
-            _context.Announcements.AddRange(sampleAnnouncements);
-            await _context.SaveChangesAsync();
+            context.Announcements.AddRange(sampleAnnouncements);
+            await context.SaveChangesAsync();
         }
     }
 }
