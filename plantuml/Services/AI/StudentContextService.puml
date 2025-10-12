@@ -1,0 +1,6 @@
+@startuml
+class StudentContextService {
+    + StudentContextService(contextFactory:IDbContextFactory<ApplicationDbContext>)
+    + <<async>> GenerateStudentContextAsync(userId:string, userMessage:string, isProgressQuery:bool, isDocumentQuery:bool, isDeadlineQuery:bool, isFinancialQuery:bool) : Task<string>
+}
+@enduml

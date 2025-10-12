@@ -1,0 +1,8 @@
+@startuml
+class StudentProfileService {
+    + StudentProfileService(contextFactory:IDbContextFactory<ApplicationDbContext>)
+    + <<async>> GetAllProfilesAsync() : Task<List<StudentProfile>>
+    + <<async>> GetProfileByUserIdAsync(userId:string) : Task<StudentProfile?>
+    + <<async>> SaveProfileAsync(profile:StudentProfile, identityEmail:string?) : Task
+}
+@enduml

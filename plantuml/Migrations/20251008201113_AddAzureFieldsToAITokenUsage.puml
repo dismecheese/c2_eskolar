@@ -1,0 +1,5 @@
+@startuml
+class AddAzureFieldsToAITokenUsage <<partial>> {
+}
+Migration <|-- AddAzureFieldsToAITokenUsage
+@enduml

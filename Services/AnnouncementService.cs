@@ -266,14 +266,16 @@ namespace c2_eskolar.Services
 
         // PHOTO MANAGEMENT
 
-        // Add photos to an announcement
+        // Add photos to an announcement and persist their display order
         public async Task AddPhotosToAnnouncementAsync(Guid announcementId, List<string> photoUrls)
         {
-            var photos = photoUrls.Select(url => new Photo
+            // Assign SortOrder based on the list order (0-based)
+            var photos = photoUrls.Select((url, index) => new Photo
             {
                 PhotoId = Guid.NewGuid(),
                 AnnouncementId = announcementId,
                 Url = url,
+                SortOrder = index,
                 UploadedAt = DateTime.UtcNow
             }).ToList();
 
@@ -294,13 +296,14 @@ namespace c2_eskolar.Services
             return true;
         }
 
-        // Get photos for an announcement
+        // Get photos for an announcement, ordered by SortOrder with UploadedAt as a fallback
         public async Task<List<Photo>> GetAnnouncementPhotosAsync(Guid announcementId)
         {
             using var context = _contextFactory.CreateDbContext();
             var photos = await context.Photos
                 .Where(p => p.AnnouncementId == announcementId)
-                .OrderBy(p => p.UploadedAt)
+                .OrderBy(p => p.SortOrder)
+                .ThenBy(p => p.UploadedAt)
                 .ToListAsync();
 
             // Convert blob URLs to streaming URLs
@@ -325,9 +328,20 @@ namespace c2_eskolar.Services
         public async Task<Announcement?> GetAnnouncementWithPhotosAsync(Guid id)
         {
             using var context = _contextFactory.CreateDbContext();
-            return await context.Announcements
+            var announcement = await context.Announcements
                 .Include(a => a.Photos)
                 .FirstOrDefaultAsync(a => a.AnnouncementId == id);
+
+            // Ensure photos collection is ordered by SortOrder for consumers
+            if (announcement?.Photos != null)
+            {
+                announcement.Photos = announcement.Photos
+                    .OrderBy(p => p.SortOrder)
+                    .ThenBy(p => p.UploadedAt)
+                    .ToList();
+            }
+
+            return announcement;
         }
 
         // Get all announcements with photos included
@@ -341,11 +355,17 @@ namespace c2_eskolar.Services
                 .ThenByDescending(a => a.CreatedAt)
                 .ToListAsync();
 
-            // Convert blob URLs to streaming URLs
+            // Convert blob URLs to streaming URLs and ensure photo ordering by SortOrder
             foreach (var announcement in announcements)
             {
                 if (announcement.Photos != null)
                 {
+                    // Order the in-memory collection by SortOrder so consumers receive consistent order
+                    announcement.Photos = announcement.Photos
+                        .OrderBy(p => p.SortOrder)
+                        .ThenBy(p => p.UploadedAt)
+                        .ToList();
+
                     foreach (var photo in announcement.Photos)
                     {
                         // Extract filename from the blob URL and convert to streaming URL

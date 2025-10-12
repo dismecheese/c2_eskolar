@@ -1,0 +1,27 @@
+@startuml
+interface IEnhancedWebScrapingService {
+}
+class EnhancedScrapedScholarship {
+    + Title : string <<get>> <<set>> = ""
+    + Description : string? <<get>> <<set>>
+    + Benefits : string <<get>> <<set>> = ""
+    + MonetaryValue : decimal? <<get>> <<set>>
+    + Requirements : string? <<get>> <<set>>
+    + SlotsAvailable : int? <<get>> <<set>>
+    + MinimumGPA : decimal? <<get>> <<set>>
+    + RequiredCourse : string? <<get>> <<set>>
+    + RequiredYearLevel : int? <<get>> <<set>>
+    + RequiredUniversity : string? <<get>> <<set>>
+    + ExternalApplicationUrl : string? <<get>> <<set>>
+    + SourceUrl : string <<get>> <<set>> = ""
+    + RawText : string <<get>> <<set>> = ""
+    + IsActive : bool <<get>> <<set>> = true
+    + IsInternal : bool <<get>> <<set>> = false
+    + ParsingConfidence : double <<get>> <<set>> = 0.0
+}
+class "List`1"<T> {
+}
+EnhancedScrapedScholarship --> "ApplicationDeadline" DateTime
+EnhancedScrapedScholarship o-> "ScrapedAt" DateTime
+EnhancedScrapedScholarship o-> "ParsingNotes<string>" "List`1"
+@enduml

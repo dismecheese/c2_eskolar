@@ -1,0 +1,8 @@
+@startuml
+class AnnouncementRecipient {
+    + AnnouncementRecipientId : int <<get>> <<set>>
+    + AnnouncementId : int <<get>> <<set>>
+    + UserId : string <<get>> <<set>>
+}
+AnnouncementRecipient o-> "Announcement" Announcement
+@enduml
