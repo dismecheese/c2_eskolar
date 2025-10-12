@@ -681,6 +681,12 @@
         
         return 1; // Default to 1st year if parsing fails
     }
+
+    private void OnVerifyEmail(string type)
+    {
+        // Placeholder for email verification logic
+        SetSuccessMessageWithTimer(type == "personal" ? "Verification link sent to personal email." : "Verification link sent to institutional email.");
+    }
 }
 
 
@@ -770,25 +776,54 @@
                 </div>
             </div>
             <div class="card profile-card">
-                <div class="card-header bg-white">
-                    <h6 class="mb-0 profile-verification-title"><i class="fas fa-check-circle profile-header-icon"></i>Verification</h6>
+                <!-- Verification Requirements Card -->
+                <div class="card-header d-flex align-items-center" style="background: #3b6dcc; color: #fff; border-top-left-radius: 24px; border-top-right-radius: 24px;">
+                    <span class="me-2" style="font-size: 1.5rem;">
+                        <i class="fas fa-check-circle" style="color: #ffd600;"></i>
+                    </span>
+                    <span style="font-weight: 600; font-size: 1.25rem;">Verification</span>
                 </div>
-                <div class="card-body">
-                    <div class="verification-item d-flex justify-content-between align-items-center">
-                        <span class="profile-label-bold">Email</span>
-                        <i class="fas fa-@(EmailVerified ? "check-circle" : "clock") @(EmailVerified ? "profile-icon-verified" : "profile-icon-pending")"></i>
-                    </div>
-                    <div class="verification-item d-flex justify-content-between align-items-center">
-                        <span class="profile-label-bold">Phone</span>
-                        <i class="fas fa-@(PhoneVerified ? "check-circle" : "clock") @(PhoneVerified ? "profile-icon-verified" : "profile-icon-pending")"></i>
-                    </div>
-                    <div class="verification-item d-flex justify-content-between align-items-center">
-                        <span class="profile-label-bold">Student ID</span>
-                        <i class="fas fa-@(StudentIdVerified ? "check-circle" : "clock") @(StudentIdVerified ? "profile-icon-verified" : "profile-icon-pending")"></i>
-                    </div>
-                    <div class="verification-item d-flex justify-content-between align-items-center">
-                        <span class="profile-label-bold">Academic Records</span>
-                        <i class="fas fa-@(AcademicRecordsVerified ? "check-circle" : "clock") @(AcademicRecordsVerified ? "profile-icon-verified" : "profile-icon-pending")"></i>
+                <div class="card-body" style="background: #f8fbff; border-bottom-left-radius: 24px; border-bottom-right-radius: 24px;">
+                    <div class="d-flex flex-column gap-3">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span style="font-weight: 600; font-size: 1.1rem;">Email</span>
+                            <span>
+                                @if (EmailVerified)
+                                {
+                                    <i class="fas fa-check-circle" style="color: #3b6dcc; font-size: 1.2rem;"></i>
+                                }
+                                else
+                                {
+                                    <i class="fas fa-clock" style="color: #ffd600; font-size: 1.2rem;"></i>
+                                }
+                            </span>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span style="font-weight: 600; font-size: 1.1rem;">Student ID</span>
+                            <span>
+                                @if (StudentIdVerified)
+                                {
+                                    <i class="fas fa-check-circle" style="color: #3b6dcc; font-size: 1.2rem;"></i>
+                                }
+                                else
+                                {
+                                    <i class="fas fa-clock" style="color: #ffd600; font-size: 1.2rem;"></i>
+                                }
+                            </span>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span style="font-weight: 600; font-size: 1.1rem;">COR</span>
+                            <span>
+                                @if (AcademicRecordsVerified)
+                                {
+                                    <i class="fas fa-check-circle" style="color: #3b6dcc; font-size: 1.2rem;"></i>
+                                }
+                                else
+                                {
+                                    <i class="fas fa-clock" style="color: #ffd600; font-size: 1.2rem;"></i>
+                                }
+                            </span>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -867,11 +902,21 @@
                             </div>
                             <div class="col-12 mb-3">
                                 <label class="form-label profile-label-bold">Personal Email</label>
-                                <input type="email" class="form-control" value="@Email" readonly style="min-width:350px;max-width:100%;" />
+                                <div class="input-group" style="min-width:350px;max-width:100%;">
+                                    <input type="email" class="form-control" value="@Email" readonly />
+                                    <button type="button" class="btn btn-outline-primary btn-sm" title="Verify Email" @onclick="@(() => OnVerifyEmail("personal"))">
+                                        <i class="fas fa-check"></i> Verify
+                                    </button>
+                                </div>
                             </div>
                             <div class="col-12 mb-3">
                                 <label class="form-label profile-label-bold">Institutional Email</label>
-                                <input type="email" class="form-control" @bind="InstitutionalEmail" maxlength="100" style="min-width:350px;max-width:100%;" />
+                                <div class="input-group" style="min-width:350px;max-width:100%;">
+                                    <input type="email" class="form-control" @bind="InstitutionalEmail" maxlength="100" />
+                                    <button type="button" class="btn btn-outline-primary btn-sm" title="Verify Institutional Email" @onclick="@(() => OnVerifyEmail("institutional"))">
+                                        <i class="fas fa-check"></i> Verify
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     }
@@ -912,14 +957,23 @@
                             </div>
                             <div class="col-12 mb-3">
                                 <label class="form-label profile-label-bold">Personal Email</label>
-                                <div class="form-control-plaintext" style="min-width:350px;max-width:100%;white-space:nowrap;overflow-x:auto;">@Email</div>
+                                <div class="d-flex align-items-center" style="min-width:350px;max-width:100%;white-space:nowrap;overflow-x:auto;">
+                                    <span class="form-control-plaintext flex-grow-1">@Email</span>
+                                    <button type="button" class="btn btn-outline-primary btn-sm ms-2" title="Verify Email" @onclick="@(() => OnVerifyEmail("personal"))">
+                                        <i class="fas fa-check"></i> Verify
+                                    </button>
+                                </div>
                             </div>
                             <div class="col-12 mb-3">
                                 <label class="form-label profile-label-bold">Institutional Email</label>
-                                <div class="form-control-plaintext" style="min-width:350px;max-width:100%;white-space:nowrap;overflow-x:auto;">@InstitutionalEmail</div>
+                                <div class="d-flex align-items-center" style="min-width:350px;max-width:100%;white-space:nowrap;overflow-x:auto;">
+                                    <span class="form-control-plaintext flex-grow-1">@InstitutionalEmail</span>
+                                    <button type="button" class="btn btn-outline-primary btn-sm ms-2" title="Verify Institutional Email" @onclick="@(() => OnVerifyEmail("institutional"))">
+                                        <i class="fas fa-check"></i> Verify
+                                    </button>
+                                </div>
                             </div>
                         </div>
-
                     }
                 </div>
             </div>
