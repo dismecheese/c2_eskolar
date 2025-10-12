@@ -663,39 +663,103 @@
                     </div>
                     <div class="modal-body">
                         <div class="scholarship-details">
-                            <!-- Basic Information -->
-                            <div class="detail-section">
-                                <h6 class="detail-section-title">
-                                    <i class="bi bi-info-circle me-2"></i>Basic Information
-                                </h6>
-                                <div class="detail-grid">
-                                    <div class="detail-item">
-                                        <label>Title:</label>
-                                        <span class="detail-value">@selectedScholarship.Title</span>
+                            @if (isEditingScholarship && editableScholarship != null)
+                            {
+                                <!-- Editable Fields -->
+                                <div class="detail-section">
+                                    <div class="mb-3">
+                                        <label class="form-label">Title</label>
+                                        <input class="form-control" @bind="editableScholarship.Title" />
                                     </div>
-                                    <div class="detail-item">
-                                        <label>Source URL:</label>
-                                        <span class="detail-value">
-                                            <a href="@selectedScholarship.SourceUrl" target="_blank" class="text-decoration-none">
-                                                @GetSourceHost(selectedScholarship.SourceUrl)
-                                                <i class="bi bi-box-arrow-up-right ms-1"></i>
-                                            </a>
-                                        </span>
+                                    <div class="mb-3">
+                                        <label class="form-label">Description</label>
+                                        <textarea class="form-control" rows="3" @bind="editableScholarship.Description"></textarea>
                                     </div>
-                                    <div class="detail-item">
-                                        <label>Scraped At:</label>
-                                        <span class="detail-value">@selectedScholarship.ScrapedAt.ToString("MMM dd, yyyy HH:mm")</span>
+                                    <div class="mb-3">
+                                        <label class="form-label">Requirements</label>
+                                        <textarea class="form-control" rows="3" @bind="editableScholarship.Requirements"></textarea>
                                     </div>
-                                    <div class="detail-item">
-                                        <label>AI Confidence:</label>
-                                        <span class="detail-value">
-                                            <span class="badge @(selectedScholarship.ParsingConfidence >= 0.7 ? "bg-success" : selectedScholarship.ParsingConfidence >= 0.4 ? "bg-warning" : "bg-danger")">
-                                                @((selectedScholarship.ParsingConfidence * 100).ToString("F1"))%
-                                            </span>
-                                        </span>
+                                    <div class="mb-3">
+                                        <label class="form-label">Benefits</label>
+                                        <input class="form-control" @bind="editableScholarship.Benefits" />
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Monetary Value</label>
+                                        <input class="form-control" @bind="editableScholarship.MonetaryValue" />
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Application Deadline</label>
+                                        <input class="form-control" type="date" @bind-value="@editableScholarship.ApplicationDeadline" @bind-value:event="oninput" />
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Source URL</label>
+                                        <input class="form-control" @bind="editableScholarship.SourceUrl" />
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">External Application URL</label>
+                                        <input class="form-control" @bind="editableScholarship.ExternalApplicationUrl" />
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Minimum GPA</label>
+                                        <input class="form-control" type="number" step="0.01" @bind="editableScholarship.MinimumGPA" />
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Required Course</label>
+                                        <input class="form-control" @bind="editableScholarship.RequiredCourse" />
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Required Year Level</label>
+                                        <input class="form-control" @bind="editableScholarship.RequiredYearLevel" />
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Required University</label>
+                                        <input class="form-control" @bind="editableScholarship.RequiredUniversity" />
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Slots Available</label>
+                                        <input class="form-control" type="number" @bind="editableScholarship.SlotsAvailable" />
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Parsing Notes</label>
+                                        <textarea class="form-control" rows="2" @bind="parsingNotesText"></textarea>
                                     </div>
                                 </div>
-                            </div>
+                            }
+                            else
+                            {
+                                <!-- Basic Information -->
+                                <div class="detail-section">
+                                    <h6 class="detail-section-title">
+                                        <i class="bi bi-info-circle me-2"></i>Basic Information
+                                    </h6>
+                                    <div class="detail-grid">
+                                        <div class="detail-item">
+                                            <label>Title:</label>
+                                            <span class="detail-value">@selectedScholarship.Title</span>
+                                        </div>
+                                        <div class="detail-item">
+                                            <label>Source URL:</label>
+                                            <span class="detail-value">
+                                                <a href="@selectedScholarship.SourceUrl" target="_blank" class="text-decoration-none">
+                                                    @GetSourceHost(selectedScholarship.SourceUrl)
+                                                    <i class="bi bi-box-arrow-up-right ms-1"></i>
+                                                </a>
+                                            </span>
+                                        </div>
+                                        <div class="detail-item">
+                                            <label>Scraped At:</label>
+                                            <span class="detail-value">@selectedScholarship.ScrapedAt.ToString("MMM dd, yyyy HH:mm")</span>
+                                        </div>
+                                        <div class="detail-item">
+                                            <label>AI Confidence:</label>
+                                            <span class="detail-value">
+                                                <span class="badge @(selectedScholarship.ParsingConfidence >= 0.7 ? "bg-success" : selectedScholarship.ParsingConfidence >= 0.4 ? "bg-warning" : "bg-danger")">
+                                                    @((selectedScholarship.ParsingConfidence * 100).ToString("F1"))%
+                                                </span>
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
 
                             <!-- Financial Information -->
                             <div class="detail-section">
@@ -862,10 +926,24 @@
                                     </div>
                                 }
                             </div>
+                            }
                         </div>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" @onclick="CloseModal">Close</button>
+                        @if (isEditingScholarship && editableScholarship != null)
+                        {
+                            <button type="button" class="btn btn-success" @onclick="SaveEditedScholarship">
+                                <i class="fas fa-save me-2"></i>Save
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary" @onclick="CancelEditScholarship">Cancel</button>
+                        }
+                        else if (approvalAllScholarships.Any(s => s.Title == selectedScholarship.Title && s.ScrapedAt == selectedScholarship.ScrapedAt))
+                        {
+                            <button type="button" class="btn btn-warning" @onclick="() => EditApprovalScholarship(approvalAllScholarships.First(s => s.Title == selectedScholarship.Title && s.ScrapedAt == selectedScholarship.ScrapedAt))">
+                                <i class="fas fa-edit me-2"></i>Edit
+                            </button>
+                        }
                         <button type="button" class="btn btn-primary" @onclick="ExportSingleScholarship">
                             <i class="bi bi-download me-2"></i>Export as CSV
                         </button>
@@ -898,6 +976,9 @@
     
     // Selected scholarship for details view
     private EnhancedScrapedScholarship? selectedScholarship = null;
+    private bool isEditingScholarship = false;
+    private EnhancedScrapedScholarship? editableScholarship = null;
+    private string parsingNotesText = "";
     
     // Approval Tab Variables
     private int scrapedTotalCount = 0;
@@ -1298,7 +1379,7 @@
                 lastEnhancedScrapeTime = "No recent data available";
             }
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             // Handle any errors gracefully
             enhancedScholarships = new List<EnhancedScrapedScholarship>();
@@ -1526,14 +1607,108 @@
     }
 
     // Approval Tab Action Methods
-    private async Task EditApprovalScholarship(c2_eskolar.Models.ScrapedScholarship scholarship)
+    private void EditApprovalScholarship(c2_eskolar.Models.ScrapedScholarship scholarship)
     {
-        await JSRuntime.InvokeVoidAsync("alert", $"Edit scholarship: {scholarship.Title}");
+        // Map to editable model
+        editableScholarship = new EnhancedScrapedScholarship
+        {
+            Title = scholarship.Title ?? "",
+            Description = scholarship.Description ?? "",
+            Requirements = scholarship.Requirements ?? "",
+            Benefits = scholarship.Benefits ?? "",
+            MonetaryValue = scholarship.MonetaryValue,
+            ApplicationDeadline = scholarship.ApplicationDeadline,
+            SourceUrl = scholarship.SourceUrl ?? "",
+            ExternalApplicationUrl = scholarship.ExternalApplicationUrl ?? "",
+            ParsingConfidence = scholarship.ParsingConfidence,
+            ScrapedAt = scholarship.ScrapedAt,  
+            RawText = scholarship.RawText ?? "",
+            MinimumGPA = scholarship.MinimumGPA,
+            RequiredCourse = scholarship.RequiredCourse,
+            RequiredYearLevel = scholarship.RequiredYearLevel,
+            RequiredUniversity = scholarship.RequiredUniversity,
+            SlotsAvailable = scholarship.SlotsAvailable,
+            ParsingNotes = scholarship.ParsingNotes?.Split(';').ToList() ?? new List<string>()
+        };
+        parsingNotesText = string.Join("; ", editableScholarship.ParsingNotes);
+        isEditingScholarship = true;
+        StateHasChanged();
+    }
+
+    private void CancelEditScholarship()
+    {
+        isEditingScholarship = false;
+        editableScholarship = null;
+        parsingNotesText = "";
+        StateHasChanged();
+    }
+
+    private async Task SaveEditedScholarship()
+    {
+        if (editableScholarship == null) return;
+        // Find the original scholarship
+        var original = approvalAllScholarships.FirstOrDefault(s => s.Title == editableScholarship.Title && s.ScrapedAt == editableScholarship.ScrapedAt);
+        if (original != null)
+        {
+            // Update fields
+            original.Title = editableScholarship.Title;
+            original.Description = editableScholarship.Description;
+            original.Requirements = editableScholarship.Requirements;
+            original.Benefits = editableScholarship.Benefits;
+            original.MonetaryValue = editableScholarship.MonetaryValue;
+            original.ApplicationDeadline = editableScholarship.ApplicationDeadline;
+            original.SourceUrl = editableScholarship.SourceUrl;
+            original.ExternalApplicationUrl = editableScholarship.ExternalApplicationUrl;
+            original.MinimumGPA = editableScholarship.MinimumGPA;
+            original.RequiredCourse = editableScholarship.RequiredCourse;
+            original.RequiredYearLevel = editableScholarship.RequiredYearLevel;
+            original.RequiredUniversity = editableScholarship.RequiredUniversity;
+            original.SlotsAvailable = editableScholarship.SlotsAvailable;
+            original.ParsingNotes = parsingNotesText;
+            // Update editable scholarship parsing notes from text
+            editableScholarship.ParsingNotes = parsingNotesText.Split(';').Select(s => s.Trim()).Where(s => !string.IsNullOrEmpty(s)).ToList();
+            // Persist changes (if needed, call update service)
+            try
+            {
+                await ScrapedScholarshipService.UpdateAsync(original);
+                successMessage = $"Scholarship '{original.Title}' updated successfully.";
+            }
+            catch (Exception ex)
+            {
+                errorMessage = $"Failed to update scholarship: {ex.Message}";
+            }
+            // Update modal view
+            selectedScholarship = editableScholarship;
+            isEditingScholarship = false;
+            editableScholarship = null;
+            StateHasChanged();
+        }
     }
 
     private async Task PreviewApprovalScholarship(c2_eskolar.Models.ScrapedScholarship scholarship)
     {
-        await JSRuntime.InvokeVoidAsync("alert", $"Preview scholarship: {scholarship.Title}");
+        // Map ScrapedScholarship to EnhancedScrapedScholarship for modal display
+        selectedScholarship = new EnhancedScrapedScholarship
+        {
+            Title = scholarship.Title ?? "",
+            Description = scholarship.Description ?? "",
+            Requirements = scholarship.Requirements ?? "",
+            Benefits = scholarship.Benefits ?? "",
+            MonetaryValue = scholarship.MonetaryValue,
+            ApplicationDeadline = scholarship.ApplicationDeadline,
+            SourceUrl = scholarship.SourceUrl ?? "",
+            ExternalApplicationUrl = scholarship.ExternalApplicationUrl ?? "",
+            ParsingConfidence = scholarship.ParsingConfidence,
+            ScrapedAt = scholarship.ScrapedAt,
+            RawText = scholarship.RawText ?? "",
+            MinimumGPA = scholarship.MinimumGPA,
+            RequiredCourse = scholarship.RequiredCourse,
+            RequiredYearLevel = scholarship.RequiredYearLevel,
+            RequiredUniversity = scholarship.RequiredUniversity,
+            SlotsAvailable = scholarship.SlotsAvailable,
+            ParsingNotes = scholarship.ParsingNotes?.Split(';').ToList() ?? new List<string>()
+        };
+        StateHasChanged();
     }
 
     private async Task ApproveApprovalScholarship(c2_eskolar.Models.ScrapedScholarship scholarship)
@@ -1559,7 +1734,7 @@
         }
         catch (Exception ex)
         {
-            await JSRuntime.InvokeVoidAsync("alert", $"Error approving scholarship: {ex.Message}");
+            errorMessage = $"Error approving scholarship: {ex.Message}";
         }
     }
 
@@ -1585,7 +1760,7 @@
             }
             catch (Exception ex)
             {
-                await JSRuntime.InvokeVoidAsync("alert", $"Error deleting scholarship: {ex.Message}");
+                errorMessage = $"Error deleting scholarship: {ex.Message}";
             }
         }
     }

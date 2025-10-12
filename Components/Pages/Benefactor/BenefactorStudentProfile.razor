@@ -1,0 +1,345 @@
+@page "/dashboard/benefactor/profile/{StudentId:guid}"
+@attribute [Authorize(Roles = "Benefactor,SuperAdmin")]
+@layout Layout.BenefactorDashLayout
+
+<PageTitle>Student Profile - Benefactor Dashboard</PageTitle>
+
+@using Microsoft.AspNetCore.Components
+@inject NavigationManager Navigation
+@inject c2_eskolar.Data.ApplicationDbContext DbContext
+@inject c2_eskolar.Services.BlobStorageService BlobStorageService
+@inject Microsoft.AspNetCore.Components.Authorization.AuthenticationStateProvider AuthenticationStateProvider
+
+@code {
+	[Parameter]
+	public Guid StudentId { get; set; }
+
+	private c2_eskolar.Models.StudentProfile? studentProfile;
+	private List<c2_eskolar.Models.ScholarshipApplication> applications = new();
+
+	public class StudentDocument
+	{
+		public string Name { get; set; } = "";
+		public string DateUploaded { get; set; } = "";
+		public string Status { get; set; } = "";
+		public string StatusClass { get; set; } = "";
+		public string FileType { get; set; } = "";
+		public string FilePath { get; set; } = "";
+		public string DocumentSource { get; set; } = "";
+		public string ApplicationTitle { get; set; } = "";
+	}
+
+	private List<StudentDocument> submittedDocuments = new();
+	private Guid? benefactorProfileId = null;
+
+	// Modal state
+	private bool showDocumentModal = false;
+	private string? modalDocumentUrl = null;
+	private string? modalDocumentType = null;
+
+	protected override async Task OnInitializedAsync()
+	{
+		studentProfile = await DbContext.StudentProfiles.FindAsync(StudentId);
+
+		// Get current benefactor's profile ID from the logged-in user
+		var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+		var userId = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+		var benefactorProfile = DbContext.BenefactorProfiles.FirstOrDefault(bp => bp.UserId == userId);
+		benefactorProfileId = benefactorProfile?.BenefactorProfileId;
+
+		if (studentProfile != null && benefactorProfileId != null)
+		{
+			// Only include applications to this benefactor's scholarships
+			applications = DbContext.ScholarshipApplications
+				.Where(a => a.StudentProfileId == studentProfile.StudentProfileId && a.Scholarship.BenefactorProfileId == benefactorProfileId)
+				.ToList();
+			foreach (var application in applications)
+			{
+				// Documents collection
+				if (application.Documents != null)
+				{
+					submittedDocuments.AddRange(application.Documents.Select(d => new StudentDocument
+					{
+						Name = d.FileName,
+						DateUploaded = d.UploadedAt.ToString("MM/dd/yyyy"),
+						Status = "Submitted",
+						StatusClass = "text-info",
+						FileType = GetFileTypeFromPath(d.FilePath),
+						FilePath = d.FilePath,
+						DocumentSource = "Application",
+						ApplicationTitle = application.Scholarship?.Title ?? "Unknown Scholarship"
+					}));
+				}
+				// UploadedDocuments property (comma-separated)
+				if (!string.IsNullOrEmpty(application.UploadedDocuments))
+				{
+					var uploadedDocPaths = application.UploadedDocuments.Split(',', StringSplitOptions.RemoveEmptyEntries);
+					submittedDocuments.AddRange(uploadedDocPaths.Select(path => new StudentDocument
+					{
+						Name = GetFileName(path.Trim()),
+						DateUploaded = application.ApplicationDate.ToString("MM/dd/yyyy"),
+						Status = application.Status ?? "Pending",
+						StatusClass = application.Status == "Approved" ? "text-success" : application.Status == "Pending" ? "text-warning" : application.Status == "Rejected" ? "text-danger" : "text-info",
+						FileType = GetFileTypeFromPath(path.Trim()),
+						FilePath = path.Trim(),
+						DocumentSource = "Application",
+						ApplicationTitle = application.Scholarship?.Title ?? "Unknown Scholarship"
+					}));
+				}
+			}
+		}
+	}
+
+	private void OpenDocumentModal(string url, string type)
+	{
+		modalDocumentUrl = url;
+		modalDocumentType = type;
+		showDocumentModal = true;
+	}
+
+	private void CloseDocumentModal()
+	{
+		showDocumentModal = false;
+		modalDocumentUrl = null;
+		modalDocumentType = null;
+	}
+
+	private string GetFileName(string path)
+	{
+		if (string.IsNullOrWhiteSpace(path)) return "";
+		try
+		{
+			var parts = path.Split(new[] {'/', '\\'}, StringSplitOptions.RemoveEmptyEntries);
+			var fileName = parts.Length > 0 ? parts[^1] : path;
+			if (fileName.Length > 32)
+				return fileName.Substring(0, 14) + "..." + fileName.Substring(fileName.Length - 12);
+			return fileName;
+		}
+		catch { return path; }
+	}
+
+	private string GetFileTypeFromPath(string path)
+	{
+		if (string.IsNullOrWhiteSpace(path)) return "Other";
+		if (path.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase)) return "PDF";
+		if (path.EndsWith(".docx", StringComparison.OrdinalIgnoreCase) || path.EndsWith(".doc", StringComparison.OrdinalIgnoreCase)) return "DOCX";
+		if (path.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase) || path.EndsWith(".jpeg", StringComparison.OrdinalIgnoreCase) || path.EndsWith(".png", StringComparison.OrdinalIgnoreCase)) return "Image";
+		return "Other";
+	}
+}
+
+<link href="./BenefactorStudentProfile.css" rel="stylesheet" />
+
+
+<div class="student-profile-container">
+    <!-- Banner -->
+    <div class="student-profile-banner">Student Profile</div>
+
+    <!-- Profile Details Section -->
+    <section class="profile-section">
+        <h3 class="section-title">Personal Information</h3>
+        @if (studentProfile != null)
+        {
+            <div class="profile-info-grid">
+                <div class="profile-info-item">
+                    <span class="profile-label">Student GUID:</span>
+                    <span class="profile-value">@StudentId</span>
+                </div>
+                <div class="profile-info-item">
+                    <span class="profile-label">Full Name:</span>
+                    <span class="profile-value">@studentProfile.FullName</span>
+                </div>
+                <div class="profile-info-item">
+                    <span class="profile-label">Gender:</span>
+                    <span class="profile-value">@studentProfile.Sex</span>
+                </div>
+                <div class="profile-info-item">
+                    <span class="profile-label">Birthdate:</span>
+                    <span class="profile-value">@(studentProfile.BirthDate?.ToString("MMMM dd, yyyy") ?? "-")</span>
+                </div>
+                <div class="profile-info-item">
+                    <span class="profile-label">Nationality:</span>
+                    <span class="profile-value">@studentProfile.Nationality</span>
+                </div>
+                <div class="profile-info-item">
+                    <span class="profile-label">Location:</span>
+                    <span class="profile-value">@studentProfile.PermanentAddress</span>
+                </div>
+                <div class="profile-info-item">
+                    <span class="profile-label">Email:</span>
+                    <span class="profile-value">@studentProfile.Email</span>
+                </div>
+                <div class="profile-info-item">
+                    <span class="profile-label">Mobile:</span>
+                    <span class="profile-value">@studentProfile.MobileNumber</span>
+                </div>
+                <div class="profile-info-item">
+                    <span class="profile-label">Institution:</span>
+                    <span class="profile-value">@studentProfile.UniversityName</span>
+                </div>
+                <div class="profile-info-item">
+                    <span class="profile-label">Year Level:</span>
+                    <span class="profile-value">@(studentProfile.YearLevel?.ToString() ?? "-")</span>
+                </div>
+                <div class="profile-info-item">
+                    <span class="profile-label">Course:</span>
+                    <span class="profile-value">@studentProfile.Course</span>
+                </div>
+                <div class="profile-info-item">
+                    <span class="profile-label">Student Number:</span>
+                    <span class="profile-value">@studentProfile.StudentNumber</span>
+                </div>
+                <div class="profile-info-item">
+                    <span class="profile-label">GPA:</span>
+                    <span class="profile-value">@(studentProfile.GPA?.ToString("0.00") ?? "-")</span>
+                </div>
+                <div class="profile-info-item">
+                    <span class="profile-label">Account Status:</span>
+                    <span class="profile-value">@studentProfile.AccountStatus</span>
+                </div>
+            </div>
+        }
+        else
+        {
+            <p>Loading student details...</p>
+        }
+    </section>
+
+    <!-- Academic Grades Section -->
+    <section class="grades-section">
+        <h3 class="section-title">Academic Grades (Scholarship Applications)</h3>
+        @if (studentProfile != null && benefactorProfileId != null)
+        {
+            var applications = DbContext.ScholarshipApplications
+                .Where(a => a.StudentProfileId == studentProfile.StudentProfileId && a.Scholarship.BenefactorProfileId == benefactorProfileId)
+                .ToList();
+            if (applications.Any())
+            {
+                <table class="grades-table">
+                    <thead>
+                        <tr>
+                            <th>Scholarship</th>
+                            <th>GWA</th>
+                            <th>First Sem Grades</th>
+                            <th>Second Sem Grades</th>
+                            <th>Personal Statement</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var app in applications)
+                        {
+                            <tr>
+                                <td>@app.Scholarship?.Title</td>
+                                <td>@(app.GWA?.ToString("0.00") ?? "-")</td>
+                                <td>@app.FirstSemesterGrades</td>
+                                <td>@app.SecondSemesterGrades</td>
+                                <td>@app.PersonalStatement</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+            else
+            {
+                <div class="text-muted">No academic grades found for this student’s scholarship applications.</div>
+            }
+        }
+        else
+        {
+            <div class="text-muted">Student profile or benefactor profile not loaded.</div>
+        }
+    </section>
+
+    <!-- Submitted Documents Section -->
+    <section class="documents-section">
+        <h3 class="section-title">Submitted Documents</h3>
+        @if (submittedDocuments.Any())
+        {
+            <table class="docs-table">
+                <thead>
+                    <tr>
+                        <th>Document</th>
+                        <th>Source</th>
+                        <th>Type</th>
+                        <th>Date Submitted</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var doc in submittedDocuments.OrderByDescending(d => d.DateUploaded))
+                    {
+                        string? sasUrl = null;
+                        if (!string.IsNullOrWhiteSpace(doc.FilePath))
+                        {
+                            var trimmed = doc.FilePath.Trim();
+                            var blobName = trimmed.Contains("/") ? trimmed.Substring(trimmed.LastIndexOf('/') + 1) : trimmed;
+                            blobName = Uri.UnescapeDataString(blobName);
+                            try { sasUrl = BlobStorageService.GetDocumentSasUrl(blobName, 60); }
+                            catch { sasUrl = null; }
+                        }
+                        <tr>
+                            <td>@doc.Name <br /><small class="text-muted">@doc.ApplicationTitle</small></td>
+                            <td><span class="badge bg-info">@doc.DocumentSource</span></td>
+                            <td><span class="badge bg-light text-dark border">@doc.FileType</span></td>
+                            <td><small class="text-muted">@doc.DateUploaded</small></td>
+                            <td><span class="@doc.StatusClass fw-semibold">@doc.Status</span></td>
+                            <td>
+                                @if (!string.IsNullOrEmpty(sasUrl))
+                                {
+                                    <button type="button" class="btn-view" @onclick="() => OpenDocumentModal(sasUrl, doc.FileType)">
+                                        <i class="fa fa-eye"></i>
+                                    </button>
+                                    <a href="@sasUrl" class="btn-download">
+                                        <i class="fa fa-download"></i>
+                                    </a>
+                                }
+                                else
+                                {
+                                    <button type="button" class="btn-view" disabled><i class="fa fa-eye"></i></button>
+                                    <button type="button" class="btn-download" disabled><i class="fa fa-download"></i></button>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+        else
+        {
+            <div class="text-center py-4 text-muted">
+                <i class="fa fa-file-o fa-3x mb-2"></i>
+                <p class="mb-0">No documents submitted yet.</p>
+            </div>
+        }
+    </section>
+
+    <!-- Modal Section -->
+    @if (showDocumentModal && !string.IsNullOrEmpty(modalDocumentUrl))
+    {
+        <div class="modal-overlay" @onclick="CloseDocumentModal">
+            <div class="modal-content" @onclick:stopPropagation="true">
+                <button class="modal-close" @onclick="CloseDocumentModal">✕</button>
+                <div class="modal-body">
+                    @if (modalDocumentType == "PDF")
+                    {
+                        <iframe src="@modalDocumentUrl" width="100%" height="600px" frameborder="0"></iframe>
+                    }
+                    else if (modalDocumentType == "Image")
+                    {
+                        <img src="@modalDocumentUrl" alt="Document Preview" style="max-width:100%;max-height:600px;" />
+                    }
+                    else
+                    {
+                        <div class="text-muted">Preview not available for this file type.</div>
+                    }
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+
+
+
+

@@ -1,11 +1,11 @@
-@page "/dashboard/benefactor/analytics"
-@attribute [Authorize(Roles = "Benefactor,SuperAdmin")]
+@page "/dashboard/institution/analytics"
+@attribute [Authorize(Roles = "Institution,SuperAdmin")]
 @using Microsoft.EntityFrameworkCore
 @using c2_eskolar.Models
-@layout Layout.BenefactorDashLayout
+@layout Layout.InstitutionDashLayout
 @inject c2_eskolar.Data.ApplicationDbContext DbContext
 @inject AuthenticationStateProvider AuthStateProvider
-@inject c2_eskolar.Services.BenefactorProfileService BenefactorProfileService
+@inject c2_eskolar.Services.InstitutionProfileService InstitutionProfileService
 @inject c2_eskolar.Services.OpenAIService OpenAIService
 
 <PageTitle>Analytics - Scholarship Impact Dashboard</PageTitle>
@@ -23,7 +23,7 @@
     private int RejectedApplicants;
     private int PendingApplicants;
     private int TotalApplicants => AcceptedApplicants + RejectedApplicants + PendingApplicants;
-    private c2_eskolar.Models.BenefactorProfile? profile;
+    private c2_eskolar.Models.InstitutionProfile? profile;
     private List<ScholarshipApplication> myApplications = new();
     private bool IsLoading = false;
     private int LoadingProgress = 0;
@@ -153,10 +153,10 @@
 	{
 		if (profile == null) return;
 
-		// Get all scholarships for this benefactor
-		var myScholarships = await DbContext.Scholarships
-			.Where(s => s.BenefactorProfileId == profile.BenefactorProfileId)
-			.ToListAsync();
+        // Get all scholarships for this institution
+        var myScholarships = await DbContext.Scholarships
+            .Where(s => s.InstitutionProfileId == profile.InstitutionProfileId)
+            .ToListAsync();
 
 		// Calculate total slots available
 		TotalScholarshipSlots = myScholarships.Sum(s => s.SlotsAvailable ?? 0);
@@ -244,7 +244,7 @@
         try
         {
             // 1/7 steps
-            await LoadBenefactorProfile();
+            await LoadInstitutionProfile();
             LoadingProgress = 14;
             StateHasChanged();
 
@@ -276,7 +276,7 @@
         {
             caughtException = ex;
             ErrorMessage = $"An error occurred while loading analytics: {ex.Message}";
-            Console.WriteLine($"[ERROR] Exception in BenefactorAnalytics.OnInitializedAsync: {ex.Message}\n{ex.StackTrace}");
+            Console.WriteLine($"[ERROR] Exception in InstitutionAnalytics.OnInitializedAsync: {ex.Message}\n{ex.StackTrace}");
             LoadingProgress = 100;
             StateHasChanged();
         }
@@ -288,7 +288,7 @@
         }
     }
 
-    private async Task LoadBenefactorProfile()
+    private async Task LoadInstitutionProfile()
     {
         try
         {
@@ -297,7 +297,7 @@
             Console.WriteLine($"User ID: {userId}");
             if (!string.IsNullOrEmpty(userId))
             {
-                profile = await BenefactorProfileService.GetProfileByUserIdAsync(userId);
+                profile = await InstitutionProfileService.GetProfileByUserIdAsync(userId);
                 Console.WriteLine($"Profile loaded: {profile != null}");
             }
         }
@@ -318,13 +318,13 @@
                 return;
             }
 
-            Console.WriteLine($"Loading analytics data for benefactor profile ID: {profile.BenefactorProfileId}");
+            Console.WriteLine($"Loading analytics data for institution profile ID: {profile.InstitutionProfileId}");
 
-            // Load applications for this benefactor's scholarships
+            // Load applications for this institution's scholarships
             myApplications = await DbContext.ScholarshipApplications
                 .Include(sa => sa.Student)
                 .Include(sa => sa.Scholarship)
-                .Where(sa => sa.Scholarship.BenefactorProfileId == profile.BenefactorProfileId)
+                .Where(sa => sa.Scholarship.InstitutionProfileId == profile.InstitutionProfileId)
                 .ToListAsync();
 
             Console.WriteLine($"Loaded {myApplications.Count} applications.");
@@ -406,7 +406,7 @@ else
 		 style="background: linear-gradient(135deg, #1976d2, #64b5f6);">
 	  <div class="position-absolute top-0 start-0 w-100 h-100"
 		   style="background: radial-gradient(circle at top left, rgba(255,255,255,0.15), transparent 60%);"></div>
-	  <h2 class="m-0 fw-bold position-relative">Benefactor Analytics</h2>
+    <h2 class="m-0 fw-bold position-relative">Institution Analytics</h2>
 	  <p class="m-0 mt-2 small text-light opacity-75 position-relative">Applicants • Performance • Trends</p>
 	</div>
 	<div class="container mt-4">
@@ -414,7 +414,7 @@ else
         <div class="card-body">
             <div class="p-3 mb-3 text-white rounded-3 shadow-sm" 
                  style="background: linear-gradient(135deg, #1976d2 0%, #64b5f6 100%);">
-                <h5 class="mb-0 fw-semibold">Benefactor Analytics - Applicants Pie Chart</h5>
+                <h5 class="mb-0 fw-semibold">Institution Analytics - Applicants Pie Chart</h5>
             </div>
 
             <div class="mb-2 text-muted">
@@ -475,13 +475,13 @@ else
 
 	<div class="card shadow-sm">
 		<div class="card-body">
-			<div class="p-3 mb-3 text-white rounded-3" style="background: linear-gradient(135deg, #1976d2, #64b5f6);">
-				<h5 class="card-title">Student Grades for Your Applicants</h5>
+            <div class="p-3 mb-3 text-white rounded-3" style="background: linear-gradient(135deg, #1976d2, #64b5f6);">
+                <h5 class="card-title">Student Grades for Your Institution's Applicants</h5>
 			</div>
 			
 			@if (profile == null)
 			{
-				<div class="text-muted">No benefactor profile found.</div>
+                 <div class="text-muted">No institution profile found.</div>
 			}
 			else if (myApplications.Count == 0)
 			{
@@ -514,8 +514,8 @@ else
 
 	<div class="card shadow-sm mt-4">
 		<div class="card-body">
-			<div class="p-3 mb-4 text-white rounded-3" style="background: linear-gradient(135deg, #1976d2, #64b5f6);">
-				<h5 class="card-title mb-0">Demographic Profile of Applicants</h5>
+            <div class="p-3 mb-4 text-white rounded-3" style="background: linear-gradient(135deg, #1976d2, #64b5f6);">
+                <h5 class="card-title mb-0">Demographic Profile of Institution Applicants</h5>
 			</div>
 
 			<div class="row">
