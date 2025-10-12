@@ -825,3 +825,96 @@
         justify-content: space-between;
     }
 }
+/* Modern modal visual polish */
+.scholarship-modal .modal-content {
+    border-radius: 1rem;
+    overflow: hidden;
+}
+
+/* Section container styles */
+.detail-section .card-header {
+    font-size: 1rem;
+    padding: 0.75rem 1rem;
+}
+
+/* Gradient category headers */
+.bg-gradient-primary {
+    background: linear-gradient(135deg, #1976d2, #64b5f6);
+}
+.bg-gradient-success {
+    background: linear-gradient(135deg, #2e7d32, #81c784);
+}
+.bg-gradient-warning {
+    background: linear-gradient(135deg, #f9a825, #ffeb3b);
+}
+.bg-gradient-info {
+    background: linear-gradient(135deg, #0288d1, #4fc3f7);
+}
+.bg-gradient-secondary {
+    background: linear-gradient(135deg, #6c757d, #adb5bd);
+}
+.bg-gradient-dark {
+    background: linear-gradient(135deg, #424242, #757575);
+}
+
+/* Grid layout */
+.detail-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem 2rem;
+}
+.detail-item label {
+    font-weight: 600;
+    color: #333;
+    display: block;
+    margin-bottom: 0.25rem;
+}
+.detail-item span {
+    color: #555;
+}
+
+/* Description formatting */
+.detail-description {
+    white-space: pre-wrap;
+    line-height: 1.5;
+    color: #444;
+}
+
+/* Add subtle hover for cards */
+.detail-section .card {
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.detail-section .card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(30, 41, 59, 0.55);
+        z-index: 2147483647;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.scholarship-modal {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+        z-index: 2147483647;
+    box-shadow: 0 8px 32px rgba(30, 41, 59, 0.25);
+    border-radius: 1.5rem;
+    background: #fff;
+    max-width: 800px;
+    width: 100%;
+    min-height: 400px;
+    overflow: auto;
+}
+.scholarship-modal .modal-content {
+    z-index: 2147483647;
+}
