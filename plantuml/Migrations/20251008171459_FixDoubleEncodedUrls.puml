@@ -1,0 +1,5 @@
+@startuml
+class FixDoubleEncodedUrls <<partial>> {
+}
+Migration <|-- FixDoubleEncodedUrls
+@enduml

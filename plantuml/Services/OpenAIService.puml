@@ -1,0 +1,13 @@
+@startuml
+class OpenAIService {
+    + OpenAIService(config:IConfiguration, profileSummaryService:ProfileSummaryService, scholarshipRecommendationService:ScholarshipRecommendationService, announcementRecommendationService:AnnouncementRecommendationService, contextGenerationService:ContextGenerationService, displayContextAwarenessService:DisplayContextAwarenessService, tokenTrackingService:AITokenTrackingService)
+    + <<async>> GetApplicantVolumeForecastAsync(applicantsPerDay:List<(DateTime Date, int Count)>) : Task<string>
+    + <<async>> GetChatCompletionAsync(userMessage:string) : Task<string>
+    + <<async>> GetChatCompletionWithProfileAndContextAsync(userMessage:string, user:IdentityUser, context:ChatContext?, isFirstMessage:bool) : Task<string>
+    + <<async>> ExtractInstitutionFieldsAsync(rawText:string) : Task<ExtractedInstitutionAuthLetterData?>
+    + <<async>> ExtractInstitutionIdFieldsAsync(rawText:string) : Task<ExtractedInstitutionIdData?>
+    + <<async>> ExtractBenefactorIdFieldsAsync(rawText:string) : Task<ExtractedBenefactorIdData?>
+    + <<async>> ExtractBenefactorAuthLetterFieldsAsync(rawText:string) : Task<ExtractedBenefactorAuthLetterData?>
+    + <<async>> ImprovePhilippineIdExtractionAsync(rawText:string, initialExtraction:ExtractedIdData?) : Task<ExtractedIdData?>
+}
+@enduml

@@ -1,0 +1,29 @@
+@startuml
+class ScholarshipApplication {
+    + ScholarshipId : int <<get>> <<set>>
+    + IsExternalApplication : bool <<get>> <<set>>
+    + ExternalApplicationUrl : string? <<get>> <<set>>
+    + HasAppliedExternally : bool <<get>> <<set>> = false
+    + StudentId : string? <<get>> <<set>>
+    + GWA : double? <<get>> <<set>>
+    + FirstSemesterGrades : string? <<get>> <<set>>
+    + SecondSemesterGrades : string? <<get>> <<set>>
+    + PersonalStatement : string? <<get>> <<set>>
+    + UploadedDocuments : string? <<get>> <<set>>
+    + Status : string <<get>> <<set>> = "Submitted"
+    + ApplicationReference : string? <<get>> <<set>>
+    + ReviewNotes : string? <<get>> <<set>>
+    + ReviewedBy : string? <<get>> <<set>>
+}
+class "ICollection`1"<T> {
+}
+ScholarshipApplication --> "ScholarshipApplicationId" Guid
+ScholarshipApplication --> "StudentProfileId" Guid
+ScholarshipApplication --> "ExternalApplicationDate" DateTime
+ScholarshipApplication --> "ReviewDate" DateTime
+ScholarshipApplication o-> "ApplicationDate" DateTime
+ScholarshipApplication --> "UpdatedAt" DateTime
+ScholarshipApplication o-> "Student" StudentProfile
+ScholarshipApplication o-> "Scholarship" Scholarship
+ScholarshipApplication o-> "Documents<Document>" "ICollection`1"
+@enduml

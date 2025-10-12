@@ -1,0 +1,14 @@
+@startuml
+class ChatbotController {
+    + ChatbotController(userManager:UserManager<IdentityUser>, profileSummaryService:ProfileSummaryService, openAIService:c2_eskolar.Services.OpenAIService)
+    + <<async>> Chat(request:ChatRequestDto) : Task<IActionResult>
+    + <<async>> GetStartMessage() : Task<IActionResult>
+    + <<async>> GetProfileSummary() : Task<IActionResult>
+}
+class ChatRequestDto {
+    + Message : string? <<get>> <<set>>
+    + IsFirstMessage : bool <<get>> <<set>> = false
+}
+ControllerBase <|-- ChatbotController
+ChatbotController +-- ChatRequestDto
+@enduml

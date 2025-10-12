@@ -1,0 +1,93 @@
+@startuml
+class ScrapedScholarship {
+    + Id : string <<get>> <<set>>
+    + Title : string <<get>> <<set>> = ""
+    + Description : string? <<get>> <<set>>
+    + Benefits : string? <<get>> <<set>>
+    + MonetaryValue : decimal? <<get>> <<set>>
+    + Requirements : string? <<get>> <<set>>
+    + SlotsAvailable : int? <<get>> <<set>>
+    + MinimumGPA : decimal? <<get>> <<set>>
+    + RequiredCourse : string? <<get>> <<set>>
+    + RequiredYearLevel : int? <<get>> <<set>>
+    + RequiredUniversity : string? <<get>> <<set>>
+    + ExternalApplicationUrl : string? <<get>> <<set>>
+    + ExternalImageUrl : string? <<get>> <<set>>
+    + ExternalContactInfo : string? <<get>> <<set>>
+    + ExternalEligibilityDetails : string? <<get>> <<set>>
+    + SourceUrl : string <<get>> <<set>> = ""
+    + ParsingConfidence : double <<get>> <<set>>
+    + IsEnhanced : bool <<get>> <<set>>
+    + RawText : string <<get>> <<set>> = ""
+    + ParsingNotes : string <<get>> <<set>> = ""
+    + ReviewedBy : string? <<get>> <<set>>
+    + ReviewNotes : string? <<get>> <<set>>
+    + ApprovedBy : string? <<get>> <<set>>
+    + PublishedScholarshipId : int? <<get>> <<set>>
+    + AuthorAttribution : string <<get>> <<set>> = "EskoBot Intelligence"
+    + AiModel : string? <<get>> <<set>> = "GPT-4.1 Mini"
+    + AiPromptVersion : string? <<get>> <<set>>
+    + CreatedBy : string <<get>> <<set>> = "System"
+    + UpdatedBy : string? <<get>> <<set>>
+}
+enum ScrapingStatus {
+    Scraped= 1,
+    UnderReview= 2,
+    Approved= 3,
+    Rejected= 4,
+    Published= 5,
+    Archived= 6,
+}
+class ScrapingProcessLog {
+    + Id : string <<get>> <<set>>
+    + ScrapedScholarshipId : string <<get>> <<set>> = ""
+    + ProcessType : string <<get>> <<set>> = ""
+    + ProcessDetails : string? <<get>> <<set>>
+    + ProcessedBy : string? <<get>> <<set>>
+    + ConfidenceScore : double? <<get>> <<set>>
+    + Notes : string? <<get>> <<set>>
+}
+class ScrapingConfiguration {
+    + Id : string <<get>> <<set>>
+    + SourceName : string <<get>> <<set>> = ""
+    + BaseUrl : string <<get>> <<set>> = ""
+    + SelectorRules : string? <<get>> <<set>>
+    + ExcludePatterns : string? <<get>> <<set>>
+    + IsActive : bool <<get>> <<set>> = true
+    + EnableExternalUrlScraping : bool <<get>> <<set>> = true
+    + RateLimitDelayMs : int <<get>> <<set>> = 1000
+    + MaxRetryAttempts : int <<get>> <<set>> = 3
+    + CustomPromptTemplate : string? <<get>> <<set>>
+    + MinConfidenceThreshold : double <<get>> <<set>> = 0.6
+    + CreatedBy : string <<get>> <<set>> = "System"
+}
+class BulkOperationRecord {
+    + Id : string <<get>> <<set>>
+    + OperationType : string <<get>> <<set>> = ""
+    + ExecutedBy : string <<get>> <<set>> = ""
+    + TotalItemsProcessed : int <<get>> <<set>>
+    + SuccessfulItems : int <<get>> <<set>>
+    + FailedItems : int <<get>> <<set>>
+    + FilterCriteria : string? <<get>> <<set>>
+    + ExecutionNotes : string? <<get>> <<set>>
+    + ErrorLog : string? <<get>> <<set>>
+    + ProcessedScholarshipIds : string <<get>> <<set>> = "[]"
+}
+class "List`1"<T> {
+}
+ScrapedScholarship --> "ApplicationDeadline" DateTime
+ScrapedScholarship o-> "ScrapedAt" DateTime
+ScrapedScholarship o-> "Status" ScrapingStatus
+ScrapedScholarship --> "ReviewedAt" DateTime
+ScrapedScholarship --> "ApprovedAt" DateTime
+ScrapedScholarship --> "EnhancedAt" DateTime
+ScrapedScholarship o-> "CreatedAt" DateTime
+ScrapedScholarship o-> "UpdatedAt" DateTime
+ScrapedScholarship o-> "ProcessingLogs<ScrapingProcessLog>" "List`1"
+ScrapedScholarship --> "PublishedScholarship" Scholarship
+ScrapingProcessLog o-> "ProcessedAt" DateTime
+ScrapingProcessLog --> "ScrapedScholarship" ScrapedScholarship
+ScrapingConfiguration o-> "CreatedAt" DateTime
+ScrapingConfiguration o-> "UpdatedAt" DateTime
+BulkOperationRecord o-> "ExecutedAt" DateTime
+@enduml

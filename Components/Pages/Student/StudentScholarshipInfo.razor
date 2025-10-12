@@ -5,8 +5,11 @@
 @using Microsoft.EntityFrameworkCore
 @using c2_eskolar.Data
 @using c2_eskolar.Models
+@using c2_eskolar.Services
+@using System.Security.Claims
 
 @inject ApplicationDbContext DbContext
+@inject BookmarkService BookmarkService
 @inject IJSRuntime JS
 @inject AuthenticationStateProvider AuthStateProvider
 @inject NavigationManager Navigation
@@ -17,13 +20,21 @@
 
     private Scholarship? scholarship;
     private bool hasPendingApplication = false;
-
-
+    private string? currentUserId;
+    private bool isBookmarked = false;
 
     protected override async Task OnInitializedAsync()
     {
         try
         {
+            // Get current user
+            var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+            var user = authState.User;
+            if (user.Identity?.IsAuthenticated == true)
+            {
+                currentUserId = user.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            }
+
             Console.WriteLine($"[DEBUG] ScholarshipId parameter: {ScholarshipId}");
             scholarship = await DbContext.Scholarships
                 .Include(s => s.Institution)
@@ -41,15 +52,16 @@
                 await AddToRecentlyViewedAsync(ScholarshipId);
 
                 // Check if the current student has a pending application for this scholarship
-                var authState = await AuthStateProvider.GetAuthenticationStateAsync();
-                var userId = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-                if (!string.IsNullOrEmpty(userId))
+                if (!string.IsNullOrEmpty(currentUserId))
                 {
-                    var studentProfile = await DbContext.StudentProfiles.FirstOrDefaultAsync(sp => sp.UserId == userId);
+                    var studentProfile = await DbContext.StudentProfiles.FirstOrDefaultAsync(sp => sp.UserId == currentUserId);
                     if (studentProfile != null)
                     {
                         var studentId = studentProfile.StudentProfileId;
                         hasPendingApplication = scholarship.Applications.Any(a => a.StudentProfileId == studentId && (a.Status == "Submitted" || a.Status == "Under Review" || a.Status == "Pending"));
+                        
+                        // Check if scholarship is bookmarked
+                        await CheckBookmarkStatus();
                     }
                 }
             }
@@ -109,17 +121,25 @@ else
                 </p>
             </div>
         </div>
-        @if (scholarship.IsActive)
-        {
-            @if (hasPendingApplication)
+        <div class="d-flex gap-2">
+            <button class="btn @(GetBookmarkButtonClass()) btn-lg fw-bold shadow-sm bookmark-detail-btn" 
+                    @onclick="ToggleBookmark" 
+                    title="@(GetBookmarkTooltip())"
+                    style="min-width: 160px; transition: all 0.3s ease;">
+                <i class="bi @(GetBookmarkIcon()) me-2"></i>@(GetBookmarkText())
+            </button>
+            @if (scholarship.IsActive)
             {
-                <button class="btn btn-lg btn-secondary fw-bold shadow-sm" style="min-width: 120px;" disabled>Already Applied</button>
+                @if (hasPendingApplication)
+                {
+                    <button class="btn btn-lg btn-secondary fw-bold shadow-sm" style="min-width: 120px;" disabled>Already Applied</button>
+                }
+                else
+                {
+                    <a class="btn btn-lg btn-success fw-bold shadow-sm" href="/dashboard/student/apply/@scholarship.ScholarshipId" style="min-width: 120px;">Apply</a>
+                }
             }
-            else
-            {
-                <a class="btn btn-lg btn-success fw-bold shadow-sm" href="/dashboard/student/apply/@scholarship.ScholarshipId" style="min-width: 120px;">Apply</a>
-            }
-        }
+        </div>
     </div>
 
     <!-- 🔄 Main content with categories -->
@@ -217,5 +237,66 @@ else
             // fallback: navigate to scholarships list if JS interop fails
             Navigation.NavigateTo("/dashboard/student/scholarships");
         }
+    }
+
+    private async Task CheckBookmarkStatus()
+    {
+        if (string.IsNullOrEmpty(currentUserId)) return;
+
+        try
+        {
+            var bookmarkOrganization = await BookmarkService.GetOrganizedBookmarksAsync(currentUserId);
+            isBookmarked = bookmarkOrganization.AllBookmarks.Any(b => b.ScholarshipId == ScholarshipId);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error checking bookmark status: {ex.Message}");
+        }
+    }
+
+    private async Task ToggleBookmark()
+    {
+        if (string.IsNullOrEmpty(currentUserId)) return;
+
+        try
+        {
+            if (isBookmarked)
+            {
+                // Remove bookmark
+                await BookmarkService.RemoveBookmarkAsync(currentUserId, ScholarshipId);
+                isBookmarked = false;
+            }
+            else
+            {
+                // Add bookmark
+                await BookmarkService.AddBookmarkAsync(currentUserId, ScholarshipId, "Interested", 2);
+                isBookmarked = true;
+            }
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error toggling bookmark: {ex.Message}");
+        }
+    }
+
+    private string GetBookmarkButtonClass()
+    {
+        return isBookmarked ? "btn-success border-0 shadow-sm" : "btn-outline-secondary";
+    }
+
+    private string GetBookmarkIcon()
+    {
+        return isBookmarked ? "bi-bookmark-heart-fill" : "bi-bookmark-plus";
+    }
+
+    private string GetBookmarkText()
+    {
+        return isBookmarked ? "Bookmarked ✓" : "Add Bookmark";
+    }
+
+    private string GetBookmarkTooltip()
+    {
+        return isBookmarked ? "Remove from bookmarks" : "Add to bookmarks";
     }
 }

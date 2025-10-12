@@ -31,6 +31,10 @@ namespace c2_eskolar.Data
     public DbSet<Document> Documents { get; set; }
     public DbSet<Photo> Photos { get; set; }
     
+    // Bookmark system
+    public DbSet<BookmarkedScholarship> BookmarkedScholarships { get; set; }
+    public DbSet<BookmarkedAnnouncement> BookmarkedAnnouncements { get; set; }
+    
     // Scraped scholarship management with EskoBot Intelligence
     public DbSet<ScrapedScholarship> ScrapedScholarships { get; set; }
     public DbSet<ScrapingProcessLog> ScrapingProcessLogs { get; set; }

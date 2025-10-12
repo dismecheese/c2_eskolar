@@ -1,0 +1,34 @@
+@startuml
+class Announcement {
+    + <<required>> Title : string <<get>> <<set>>
+    + <<required>> Content : string <<get>> <<set>>
+    + Summary : string? <<get>> <<set>>
+    + <<required>> AuthorId : string <<get>> <<set>>
+    + <<required>> AuthorName : string <<get>> <<set>>
+    + OrganizationName : string? <<get>> <<set>>
+    + Category : string? <<get>> <<set>>
+    + IsPublic : bool <<get>> <<set>> = true
+    + TargetAudience : string? <<get>> <<set>>
+    + AttachmentUrl : string? <<get>> <<set>>
+    + IsActive : bool <<get>> <<set>> = true
+    + IsPinned : bool <<get>> <<set>> = false
+    + ViewCount : int <<get>> <<set>> = 0
+    + Tags : string? <<get>> <<set>>
+}
+enum AnnouncementPriority {
+    Low= 1,
+    Normal= 2,
+    High= 3,
+    Urgent= 4,
+}
+class "ICollection`1"<T> {
+}
+Announcement --> "AnnouncementId" Guid
+Announcement --> "AuthorType" UserRole
+Announcement o-> "Priority" AnnouncementPriority
+Announcement o-> "Photos<Photo>" "ICollection`1"
+Announcement o-> "CreatedAt" DateTime
+Announcement --> "UpdatedAt" DateTime
+Announcement --> "PublishDate" DateTime
+Announcement --> "ExpiryDate" DateTime
+@enduml

@@ -1,0 +1,6 @@
+@startuml
+class AnnouncementSeedService {
+    + AnnouncementSeedService(context:ApplicationDbContext)
+    + <<async>> SeedSampleAnnouncementsAsync() : Task
+}
+@enduml

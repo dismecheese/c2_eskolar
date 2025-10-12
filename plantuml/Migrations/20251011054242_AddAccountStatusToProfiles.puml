@@ -1,0 +1,5 @@
+@startuml
+class AddAccountStatusToProfiles <<partial>> {
+}
+Migration <|-- AddAccountStatusToProfiles
+@enduml

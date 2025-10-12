@@ -1,0 +1,11 @@
+@startuml
+class ScholarshipEligibility {
+    + EligibilityId : int <<get>> <<set>>
+    + ScholarshipId : int <<get>> <<set>>
+    + MinGPA : decimal? <<get>> <<set>>
+    + RequiredCourse : string? <<get>> <<set>>
+    + YearLevel : int? <<get>> <<set>>
+    + OtherCriteria : string? <<get>> <<set>>
+}
+ScholarshipEligibility o-> "Scholarship" Scholarship
+@enduml

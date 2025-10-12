@@ -1,0 +1,9 @@
+@startuml
+class RecentlyViewedScholarship {
+    + ViewId : int <<get>> <<set>>
+    + StudentId : string <<get>> <<set>>
+    + ScholarshipId : int <<get>> <<set>>
+}
+RecentlyViewedScholarship o-> "Scholarship" Scholarship
+RecentlyViewedScholarship --> "ViewedAt" DateTime
+@enduml

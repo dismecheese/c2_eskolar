@@ -1,0 +1,6 @@
+@startuml
+class BenefactorContextService {
+    + BenefactorContextService(contextFactory:IDbContextFactory<ApplicationDbContext>)
+    + <<async>> GenerateBenefactorContextAsync(userId:string, userMessage:string) : Task<string>
+}
+@enduml

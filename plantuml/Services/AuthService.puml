@@ -1,0 +1,11 @@
+@startuml
+class AuthService {
+    + AuthService(userManager:UserManager<IdentityUser>, signInManager:SignInManager<IdentityUser>, context:ApplicationDbContext)
+    + <<async>> RegisterAsync(model:RegisterViewModel) : Task<IdentityResult>
+    + <<async>> LoginAsync(model:LoginViewModel) : Task<SignInResult>
+    + <<async>> ValidateCredentialsAsync(model:LoginViewModel) : Task<(bool IsValid, string Role)>
+    + <<async>> UserExistsAsync(email:string) : Task<bool>
+    + <<async>> GetUserRoleAsync(email:string) : Task<string>
+    + <<async>> LogoutAsync() : Task
+}
+@enduml

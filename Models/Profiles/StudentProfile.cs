@@ -5,6 +5,8 @@ namespace c2_eskolar.Models
     // STUDENT PROFILE MODEL
     public class StudentProfile
     {
+        [StringLength(20)]
+        public string? EnrollmentStatus { get; set; } = "Regular";
     [Key]
     public Guid StudentProfileId { get; set; }
     public required string UserId { get; set; } // Links to IdentityUser
@@ -32,9 +34,14 @@ namespace c2_eskolar.Models
     [StringLength(255)]
     public string? PermanentAddress { get; set; }
 
+
     [EmailAddress]
     [StringLength(100)]
     public string? Email { get; set; }
+
+    [EmailAddress]
+    [StringLength(100)]
+    public string? InstitutionalEmail { get; set; }
 
     [Phone]
     [StringLength(15)]
