@@ -1,0 +1,11 @@
+@startuml
+class Document {
+    + FileName : string <<get>> <<set>>
+    + FilePath : string <<get>> <<set>>
+    + DocumentType : string <<get>> <<set>>
+}
+Document --> "DocumentId" Guid
+Document --> "ScholarshipApplicationId" Guid
+Document o-> "UploadedAt" DateTime
+Document o-> "ScholarshipApplication" ScholarshipApplication
+@enduml

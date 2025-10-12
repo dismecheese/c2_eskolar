@@ -1,0 +1,6 @@
+@startuml
+class PartnerService {
+    + PartnerService(environment:IWebHostEnvironment)
+    + <<async>> GetPartnersAsync() : Task<List<Partner>>
+}
+@enduml

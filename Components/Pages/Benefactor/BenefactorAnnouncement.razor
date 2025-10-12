@@ -148,163 +148,17 @@
                                                 @if (announcement.Photos?.Any() == true)
                                                 {
                                                     <div class="mb-3">
-                                                        @{
-                                                            var photoCount = announcement.Photos?.Count ?? 0;
-                                                            var photosList = announcement.Photos?.ToList() ?? new List<Photo>();
-                                                        }
-                                                        
-                                                        <div class="facebook-photo-grid">
-                                                            @if (photoCount >= 5 && photosList.Count >= 5)
+                                                        <div class="row g-2">
+                                                            @foreach (var photo in announcement.Photos)
                                                             {
-                                                                <!-- Five or more images - 2 top, 3 bottom with +more overlay -->
-                                                                <div class="five-photos-container">
-                                                                    <div class="top-row">
-                                                                        <div class="photo-item">
-                                                                            <img src="@GetSafePhotoUrl(photosList[0].Url)" 
-                                                                                     class="grid-photo cursor-pointer" 
-                                                                                     alt="@(photosList[0].Caption ?? "Announcement image")"
-                                                                                     @onclick="() => OpenPhotoViewer(photosList, 0)"
-                                                                                     loading="lazy" />
-                                                                        </div>
-                                                                        <div class="photo-item">
-                                                             <img src="@GetSafePhotoUrl(photosList[1].Url)" 
-                                                                 class="grid-photo cursor-pointer" 
-                                                                 alt="@(photosList[1].Caption ?? "Announcement image")"
-                                                                 @onclick="() => OpenPhotoViewer(photosList, 1)"
-                                                                 loading="lazy" />
-                                                                        </div>
-                                                                    </div>
-                                                                    <div class="bottom-row">
-                                                                        <div class="photo-item">
-                                                             <img src="@GetSafePhotoUrl(photosList[2].Url)" 
-                                                                 class="grid-photo cursor-pointer" 
-                                                                 alt="@(photosList[2].Caption ?? "Announcement image")"
-                                                                 @onclick="() => OpenPhotoViewer(photosList, 2)"
-                                                                 loading="lazy" />
-                                                                        </div>
-                                                                        <div class="photo-item">
-                                                             <img src="@GetSafePhotoUrl(photosList[3].Url)" 
-                                                                 class="grid-photo cursor-pointer" 
-                                                                 alt="@(photosList[3].Caption ?? "Announcement image")"
-                                                                 @onclick="() => OpenPhotoViewer(photosList, 3)"
-                                                                 loading="lazy" />
-                                                                        </div>
-                                                                        <div class="photo-item photo-with-overlay">
-                                                             <img src="@GetSafePhotoUrl(photosList[4].Url)" 
-                                                                 class="grid-photo cursor-pointer" 
-                                                                 alt="@(photosList[4].Caption ?? "Announcement image")"
-                                                                 @onclick="() => OpenPhotoViewer(photosList, 4)"
-                                                                 loading="lazy" />
-                                                                            
-                                                                            @if (photoCount > 5)
-                                                                            {
-                                                                                <!-- Overlay showing remaining photo count -->
-                                                                                <div class="more-photos-overlay cursor-pointer"
-                                                                                     @onclick="() => OpenPhotoViewer(photosList, 5)">
-                                                                                    <span class="more-count">
-                                                                                        <i class="bi bi-plus"></i>@(photoCount - 5)
-                                                                                    </span>
-                                                                                </div>
-                                                                            }
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-                                                            }
-                                                            else if (photoCount == 4)
-                                                            {
-                                                                <!-- Four images - 2x2 grid -->
-                                                                <div class="four-photos-container">
-                                                                    @for (int i = 0; i < Math.Min(4, photosList.Count); i++)
-                                                                    {
-                                                                        <div class="photo-item">
-                                                                            <img src="@GetSafePhotoUrl(photosList[i].Url)" 
-                                                                                 class="grid-photo cursor-pointer" 
-                                                                                 alt="@(photosList[i].Caption ?? "Announcement image")"
-                                                                                 @onclick="() => OpenPhotoViewer(photosList, i)"
-                                                                                 loading="lazy" />
-                                                                        </div>
-                                                                    }
-                                                                </div>
-                                                            }
-                                                            else if (photoCount == 3)
-                                                            {
-                                                                <!-- Three images - 1 large left, 2 stacked right -->
-                                                                <div class="three-photos-container">
-                                                                    <div class="main-photo">
-                                                                        <img src="@GetSafePhotoUrl(photosList[0].Url)" 
-                                                                             class="grid-photo cursor-pointer" 
-                                                                             alt="@(photosList[0].Caption ?? "Announcement image")"
-                                                                             @onclick="() => OpenPhotoViewer(photosList, 0)"
-                                                                             loading="lazy" />
-                                                                    </div>
-                                                                    <div class="side-photos">
-                                                                        @if (photosList.Count > 1)
+                                                                <div class="col-6 col-sm-4 col-md-3">
+                                                                    <div class="position-relative">
+                                                                        <img src="@GetSafePhotoUrl(photo.Url)" alt="@(photo.Caption ?? "Announcement image")" class="img-fluid rounded" style="height: 100px; width: 100%; object-fit: cover;" />
+                                                                        @if (!string.IsNullOrEmpty(photo.Caption))
                                                                         {
-                                                                            <div class="photo-item">
-                                                                                <img src="@GetSafePhotoUrl(photosList[1].Url)" 
-                                                                                     class="grid-photo cursor-pointer" 
-                                                                                     alt="@(photosList[1].Caption ?? "Announcement image")"
-                                                                                     @onclick="() => OpenPhotoViewer(photosList, 1)"
-                                                                                     loading="lazy" />
-                                                                            </div>
-                                                                        }
-                                                                        @if (photosList.Count > 2)
-                                                                        {
-                                                                            <div class="photo-item">
-                                                                                <img src="@GetSafePhotoUrl(photosList[2].Url)" 
-                                                                                     class="grid-photo cursor-pointer" 
-                                                                                     alt="@(photosList[2].Caption ?? "Announcement image")"
-                                                                                     @onclick="() => OpenPhotoViewer(photosList, 2)"
-                                                                                     loading="lazy" />
-                                                                            </div>
+                                                                            <div class="small text-muted text-center mt-1">@photo.Caption</div>
                                                                         }
                                                                     </div>
-                                                                </div>
-                                                            }
-                                                            else if (photoCount == 2)
-                                                            {
-                                                                <!-- Two images - side by side, 1:1 aspect ratio -->
-                                                                <div class="two-photos-container">
-                                                                    @for (int i = 0; i < Math.Min(2, photosList.Count); i++)
-                                                                    {
-                                                                        <div class="photo-item">
-                                                                            <img src="@GetSafePhotoUrl(photosList[i].Url)" 
-                                                                                 class="grid-photo cursor-pointer" 
-                                                                                 alt="@(photosList[i].Caption ?? "Announcement image")"
-                                                                                 @onclick="() => OpenPhotoViewer(photosList, i)"
-                                                                                 loading="lazy" />
-                                                                        </div>
-                                                                    }
-                                                                </div>
-                                                            }
-                                                            else if (photoCount == 1 && photosList.Count > 0)
-                                                            {
-                                                                <!-- Single image - flexible aspect ratio -->
-                                                                <div class="single-photo-container">
-                                                                    <img src="@GetSafePhotoUrl(photosList[0].Url)" 
-                                                                         class="single-photo cursor-pointer" 
-                                                                         alt="@(photosList[0].Caption ?? "Announcement image")"
-                                                                         @onclick="() => OpenPhotoViewer(photosList, 0)"
-                                                                         title="@(string.IsNullOrEmpty(photosList[0].Caption) ? "Click to view full size" : photosList[0].Caption)"
-                                                                         loading="lazy"
-                                                                         onload="this.parentElement.style.setProperty('--aspect-ratio', this.naturalWidth / this.naturalHeight)" />
-                                                                    
-                                                                    <!-- Image overlay with expand hint -->
-                                                                    <div class="photo-overlay">
-                                                                        <span class="expand-badge">
-                                                                            <i class="bi bi-arrows-fullscreen me-1"></i>
-                                                                            <small>Click to expand</small>
-                                                                        </span>
-                                                                    </div>
-                                                                    
-                                                                    @if (photosList.Count > 0 && !string.IsNullOrEmpty(photosList[0].Caption))
-                                                                    {
-                                                                        <!-- Image caption overlay -->
-                                                                        <div class="photo-caption">
-                                                                            <i class="bi bi-chat-left-text me-1"></i>
-                                                                            @photosList[0].Caption
-                                                                        </div>
-                                                                    }
                                                                 </div>
                                                             }
                                                         </div>
@@ -543,122 +397,85 @@
                             <small class="modern-form-text">A short, engaging phrase that captures the essence of your announcement</small>
                         </div>
 
-                        <!-- Image Upload -->
-                        <div class="modern-form-group">
-                            <label class="modern-form-label">
-                                <i class="bi bi-image"></i>
-                                Images (Optional)
-                            </label>
-                            
-                            <!-- Upload Area -->
-                            <div class="modern-upload-area @(isUploadingImages ? "uploading" : "")">
-                                <InputFile OnChange="OnImageSelected" multiple accept="image/*" style="display: none;" id="imageUpload" disabled="@isUploadingImages" />
-                                <label for="imageUpload" class="modern-upload-label">
-                                    <div class="text-center">
-                                        <i class="bi bi-cloud-upload fs-1 text-primary mb-3"></i>
-                                        <h6>Drag & Drop Images or Click to Browse</h6>
-                                        <p class="text-muted small mb-0">
-                                            Support: JPG, JPEG, PNG, GIF, WEBP (Max 10MB each, 5 images total)
-                                        </p>
+                        <!-- Image Upload Section -->
+                        <div class="mb-4">
+                            <label class="form-label">Images (Optional)</label>
+                            <div class="upload-area" style="border: 2px dashed #dee2e6; border-radius: 12px; padding: 2rem; text-align: center; background: #f8f9fa;">
+                                <InputFile OnChange="OnImageSelected"
+                                         multiple
+                                         accept="image/*"
+                                         class="d-none"
+                                         id="imageUpload" />
+                                <label for="imageUpload" class="upload-label" style="cursor: pointer; margin: 0;">
+                                    <i class="bi bi-cloud-upload fs-1 text-primary mb-3 d-block"></i>
+                                    <div>
+                                        <strong>Click to upload images</strong> or drag and drop
+                                        <div class="text-muted mt-1">PNG, JPG, GIF, WebP up to 10MB each (max 5 images)</div>
                                     </div>
                                 </label>
                             </div>
 
-                            <!-- Upload Progress -->
-                            @if (uploadProgress.Any())
+                            @if (isUploadingImages)
                             {
-                                <div class="modern-upload-progress mt-3">
-                                    <h6 class="mb-2">
-                                        <i class="bi bi-upload"></i>
-                                        Uploading Images...
-                                    </h6>
+                                <div class="upload-progress mt-3">
+                                    <div class="d-flex align-items-center">
+                                        <div class="spinner-border spinner-border-sm me-2" role="status"></div>
+                                        <span>Uploading images...</span>
+                                    </div>
                                     @foreach (var progress in uploadProgress)
                                     {
-                                        <div class="mb-2">
-                                            <div class="d-flex justify-content-between small">
-                                                <span>@progress.Key</span>
-                                                <span>@progress.Value%</span>
-                                            </div>
-                                            <div class="progress" style="height: 6px;">
-                                                <div class="progress-bar bg-primary" role="progressbar" 
-                                                     style="width: @(progress.Value)%; transition: width 0.3s ease;"></div>
-                                            </div>
+                                        <div class="progress mt-2" style="height: 4px;">
+                                            <div class="progress-bar" role="progressbar" style="width: @(progress.Value)%"></div>
                                         </div>
+                                        <small class="text-muted">@progress.Key - @progress.Value%</small>
                                     }
-                                    <div class="alert alert-info mt-2">
-                                        <i class="bi bi-info-circle me-2"></i>
-                                        <strong>Please wait:</strong> Do not submit the form until all images finish uploading.
-                                    </div>
                                 </div>
                             }
 
                             <!-- Selected Images Preview -->
-                            @if (processedImages.Any())
+                            @if (selectedImages.Any() || existingPhotos.Any())
                             {
-                                <div class="modern-image-previews mt-3">
-                                    <h6 class="mb-2">
-                                        <i class="bi bi-images"></i>
-                                        Selected Images (@processedImages.Count)
-                                    </h6>
+                                <div class="image-previews mt-3">
                                     <div class="row g-2">
-                                        @for (int i = 0; i < processedImages.Count; i++)
+                                        <!-- Existing Photos -->
+                                        @foreach (var photo in existingPhotos)
                                         {
-                                            var index = i; // Capture for closure
-                                            var image = processedImages[index];
-                                            <div class="col-6 col-md-4 col-lg-3">
-                                                <div class="modern-image-preview-item position-relative" draggable="true"
-                                                     @ondragstart="() => StartDrag(index)"
-                                                     @ondragover:preventDefault
-                                                     @ondrop="() => DropDrag(index)">
-                                                    <div class="ratio ratio-1x1">
-                                                        <img src="data:@(image.contentType);base64,@(Convert.ToBase64String(image.data))" 
-                                                             class="object-fit-cover rounded w-100 h-100" 
-                                                             alt="@image.fileName" />
-                                                    </div>
-                                                    <div class="position-absolute top-0 end-0 m-1">
-                                                        <button type="button" class="btn btn-danger btn-sm rounded-circle p-1" 
-                                                                @onclick="() => RemoveProcessedImage(index)" 
-                                                                title="Remove image">
-                                                            <i class="bi bi-x" style="font-size: 0.8rem;"></i>
-                                                        </button>
-                                                    </div>
-                                                    <div class="position-absolute bottom-0 start-0 end-0 p-1">
-                                                        <small class="text-white bg-dark bg-opacity-75 px-2 py-1 rounded">
-                                                            @image.fileName
-                                                        </small>
-                                                    </div>
+                                            <div class="col-6 col-sm-4 col-md-3">
+                                                <div class="position-relative">
+                                                    <img src="@photo.Url" alt="Preview" class="img-fluid rounded" style="height: 100px; width: 100%; object-fit: cover;" />
+                                                    <button type="button"
+                                                            class="btn btn-sm btn-danger position-absolute top-0 end-0 m-1"
+                                                            style="width: 24px; height: 24px; border-radius: 50%; padding: 0; display: flex; align-items: center; justify-content-center;"
+                                                            @onclick="() => RemoveExistingPhoto(photo.PhotoId)"
+                                                            @onclick:stopPropagation="true">
+                                                        <i class="bi bi-x" style="font-size: 0.8rem;"></i>
+                                                    </button>
+                                                    @if (!string.IsNullOrEmpty(photo.Caption))
+                                                    {
+                                                        <div class="small text-muted text-center mt-1">@photo.Caption</div>
+                                                    }
                                                 </div>
                                             </div>
                                         }
-                                    </div>
-                                </div>
-                            }
 
-                            <!-- Existing Photos (for editing) -->
-                            @if (existingPhotos.Any())
-                            {
-                                <div class="modern-existing-photos mt-3">
-                                    <h6 class="mb-2">
-                                        <i class="bi bi-folder2-open"></i>
-                                        Current Images (@existingPhotos.Count)
-                                    </h6>
-                                    <div class="row g-2">
-                                        @foreach (var photo in existingPhotos)
+                                        <!-- New Selected Images -->
+                                        @foreach (var (image, index) in selectedImages.Select((img, i) => (img, i)))
                                         {
-                                            <div class="col-6 col-md-4 col-lg-3">
-                                                <div class="modern-image-preview-item position-relative">
-                                                    <div class="ratio ratio-1x1">
-                                                        <img src="@GetSafePhotoUrl(photo.Url)" alt="@(photo.Caption ?? "Announcement image")" 
-                                                             class="object-fit-cover rounded" 
-                                                             loading="lazy" />
+                                            <div class="col-6 col-sm-4 col-md-3">
+                                                <div class="position-relative">
+                                                    <div class="border rounded d-flex align-items-center justify-content-center bg-light" style="height: 100px; width: 100%;">
+                                                        <div class="text-center">
+                                                            <i class="bi bi-image fs-4 text-muted"></i>
+                                                            <div class="small text-muted mt-1">@image.Name</div>
+                                                        </div>
                                                     </div>
-                                                    <div class="position-absolute top-0 end-0 m-1">
-                                                        <button type="button" class="btn btn-danger btn-sm rounded-circle p-1" 
-                                                                @onclick="() => RemoveExistingPhoto(photo.PhotoId)" 
-                                                                title="Remove image">
-                                                            <i class="bi bi-x" style="font-size: 0.8rem;"></i>
-                                                        </button>
-                                                    </div>
+                                                    <button type="button"
+                                                            class="btn btn-sm btn-danger position-absolute top-0 end-0 m-1"
+                                                            style="width: 24px; height: 24px; border-radius: 50%; padding: 0; display: flex; align-items: center; justify-content-center;"
+                                                            @onclick="() => RemoveImage(image)"
+                                                            @onclick:stopPropagation="true">
+                                                        <i class="bi bi-x" style="font-size: 0.8rem;"></i>
+                                                    </button>
                                                 </div>
                                             </div>
                                         }

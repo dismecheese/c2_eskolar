@@ -542,6 +542,92 @@ namespace c2_eskolar.Migrations
                     b.ToTable("BenefactorProfiles");
                 });
 
+            modelBuilder.Entity("c2_eskolar.Models.BookmarkedAnnouncement", b =>
+                {
+                    b.Property<int>("BookmarkId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("BookmarkId"));
+
+                    b.Property<Guid>("AnnouncementId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("BookmarkId");
+
+                    b.HasIndex("AnnouncementId");
+
+                    b.ToTable("BookmarkedAnnouncements");
+                });
+
+            modelBuilder.Entity("c2_eskolar.Models.BookmarkedScholarship", b =>
+                {
+                    b.Property<int>("BookmarkId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("BookmarkId"));
+
+                    b.Property<string>("BookmarkReason")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("EnableDeadlineReminders")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("IsUrgent")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime?>("LastViewedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<decimal>("MatchScore")
+                        .HasColumnType("decimal(5,2)");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<int>("Priority")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ReminderDaysBefore")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ScholarshipId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Tags")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("BookmarkId");
+
+                    b.HasIndex("ScholarshipId");
+
+                    b.ToTable("BookmarkedScholarships");
+                });
+
             modelBuilder.Entity("c2_eskolar.Models.BulkOperationRecord", b =>
                 {
                     b.Property<string>("Id")
@@ -1377,6 +1463,10 @@ namespace c2_eskolar.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
+                    b.Property<string>("EnrollmentStatus")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
                     b.Property<string>("FirstName")
                         .IsRequired()
                         .HasMaxLength(50)
@@ -1385,6 +1475,10 @@ namespace c2_eskolar.Migrations
                     b.Property<decimal?>("GPA")
                         .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("InstitutionalEmail")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
 
                     b.Property<bool?>("IsPartnerInstitution")
                         .HasColumnType("bit");
@@ -1565,6 +1659,28 @@ namespace c2_eskolar.Migrations
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("c2_eskolar.Models.BookmarkedAnnouncement", b =>
+                {
+                    b.HasOne("c2_eskolar.Models.Announcement", "Announcement")
+                        .WithMany()
+                        .HasForeignKey("AnnouncementId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Announcement");
+                });
+
+            modelBuilder.Entity("c2_eskolar.Models.BookmarkedScholarship", b =>
+                {
+                    b.HasOne("c2_eskolar.Models.Scholarship", "Scholarship")
+                        .WithMany()
+                        .HasForeignKey("ScholarshipId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Scholarship");
                 });
 
             modelBuilder.Entity("c2_eskolar.Models.Document", b =>

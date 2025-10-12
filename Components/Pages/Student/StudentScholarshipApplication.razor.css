@@ -1,0 +1,73 @@
+.app-header {
+  background: #fff;
+  border-bottom: 2px solid #e3f2fd;
+  z-index: 1030;
+  width: 100vw;
+  margin-left: calc(-50vw + 50%);
+}
+
+.app-badge {
+  background: linear-gradient(135deg, #1976d2, #64b5f6);
+  border-radius: 50px;
+  box-shadow: 0 4px 10px rgba(25, 118, 210, 0.25);
+  color: #fff;
+  transition: all 0.3s ease;
+}
+
+.app-badge:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 14px rgba(25, 118, 210, 0.3);
+}
+
+.app-badge i {
+  color: #ffeb3b;
+  transition: transform 0.3s ease;
+}
+
+.app-badge:hover i:first-child { transform: rotate(-10deg) scale(1.1); }
+.app-badge:hover i:last-child { transform: rotate(10deg) scale(1.1); }
+
+.app-badge h2 {
+  color: #fff;
+  font-size: 1.6rem;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+
+@media (max-width: 768px) {
+  .app-badge h2 { font-size: 1.2rem; }
+}
+
+.form-section {
+        transition: all 0.3s ease;
+    }
+.form-section:hover {
+    background-color: #f9fbfc;
+    border-radius: 8px;
+}
+textarea.form-control {
+    resize: vertical;
+}
+.form-label {
+    font-size: 0.95rem;
+}
+
+.section-header {
+    background: linear-gradient(135deg, #1976d2, #64b5f6);
+    color: white;
+    border-bottom: none;
+    padding: 0.75rem 1.25rem;
+    border-top-left-radius: 0.5rem;
+    border-top-right-radius: 0.5rem;
+}
+.card {
+    border-radius: 0.75rem;
+}
+.form-label {
+    font-size: 0.95rem;
+}
+textarea.form-control {
+    resize: vertical;
+}
+.form-text {
+    font-size: 0.85rem;
+}

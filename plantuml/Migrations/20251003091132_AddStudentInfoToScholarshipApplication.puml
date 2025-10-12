@@ -1,0 +1,5 @@
+@startuml
+class AddStudentInfoToScholarshipApplication <<partial>> {
+}
+Migration <|-- AddStudentInfoToScholarshipApplication
+@enduml

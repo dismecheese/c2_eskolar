@@ -1,0 +1,5 @@
+@startuml
+class AddScrapedScholarshipManagement <<partial>> {
+}
+Migration <|-- AddScrapedScholarshipManagement
+@enduml

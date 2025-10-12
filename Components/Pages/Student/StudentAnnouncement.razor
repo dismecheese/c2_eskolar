@@ -5,6 +5,8 @@
 @using c2_eskolar.Models.Enums
 @using c2_eskolar.Services
 @inject AnnouncementService AnnouncementService
+@inject BookmarkService BookmarkService
+@inject AuthenticationStateProvider AuthenticationStateProvider
 
 <PageTitle>Announcements</PageTitle>
 
@@ -98,6 +100,12 @@
                                             </div>
                                             <div class="d-flex align-items-center gap-2">
                                                 <small class="text-muted">@announcement.CreatedAt.ToString("MMM dd, yyyy")</small>
+                                                <button class="btn @(GetAnnouncementBookmarkButtonClass(announcement.AnnouncementId)) btn-sm" 
+                                                        @onclick="(e) => ToggleAnnouncementBookmark(e, announcement.AnnouncementId)" 
+                                                        @onclick:stopPropagation="true"
+                                                        title="@(GetAnnouncementBookmarkTooltip(announcement.AnnouncementId))">
+                                                    <i class="bi @(GetAnnouncementBookmarkIcon(announcement.AnnouncementId))"></i>
+                                                </button>
                                                 <button class="btn btn-sm btn-outline-secondary" 
                                                         @onclick="() => ToggleAnnouncementExpansion(announcement.AnnouncementId)"
                                                         @onclick:stopPropagation="true">
@@ -232,6 +240,10 @@
     private List<Announcement>? filteredAnnouncements;
     private bool isLoading = true;
 
+    // User and bookmark state
+    private string? currentUserId;
+    private HashSet<Guid> bookmarkedAnnouncementIds = new HashSet<Guid>();
+
     // Filtering and UI state
     private string searchTerm = string.Empty;
     private string _selectedCategory = string.Empty;
@@ -266,7 +278,34 @@
 
     protected override async Task OnInitializedAsync()
     {
+        // Get current user
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+        if (user.Identity?.IsAuthenticated == true)
+        {
+            currentUserId = user.FindFirst("sub")?.Value ?? user.FindFirst("id")?.Value;
+        }
+
         await LoadAnnouncements();
+        
+        // Load user's announcement bookmarks
+        if (!string.IsNullOrEmpty(currentUserId))
+        {
+            await LoadUserAnnouncementBookmarks();
+        }
+    }
+
+    private async Task LoadUserAnnouncementBookmarks()
+    {
+        try
+        {
+            var bookmarks = await BookmarkService.GetUserAnnouncementBookmarksAsync(currentUserId!);
+            bookmarkedAnnouncementIds = bookmarks.Select(b => b.AnnouncementId).ToHashSet();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading announcement bookmarks: {ex.Message}");
+        }
     }
 
     // Loads announcements from the service
@@ -481,6 +520,54 @@
             // Local state updated; if a server update is required, AnnouncementService can be used here
             StateHasChanged();
         }
+    }
+
+    // Announcement Bookmark Methods
+    private async Task ToggleAnnouncementBookmark(MouseEventArgs e, Guid announcementId)
+    {
+        if (string.IsNullOrEmpty(currentUserId)) return;
+
+        try
+        {
+            if (bookmarkedAnnouncementIds.Contains(announcementId))
+            {
+                // Remove bookmark
+                await BookmarkService.RemoveAnnouncementBookmarkAsync(currentUserId, announcementId);
+                bookmarkedAnnouncementIds.Remove(announcementId);
+            }
+            else
+            {
+                // Add bookmark
+                await BookmarkService.AddAnnouncementBookmarkAsync(currentUserId, announcementId);
+                bookmarkedAnnouncementIds.Add(announcementId);
+            }
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error toggling announcement bookmark: {ex.Message}");
+        }
+    }
+
+    private string GetAnnouncementBookmarkButtonClass(Guid announcementId)
+    {
+        return bookmarkedAnnouncementIds.Contains(announcementId) 
+            ? "btn-success border-0 shadow-sm" // Strong green for bookmarked
+            : "btn-outline-secondary border-2"; // Clear outline for unbookmarked
+    }
+
+    private string GetAnnouncementBookmarkIcon(Guid announcementId)
+    {
+        return bookmarkedAnnouncementIds.Contains(announcementId) 
+            ? "bi-bookmark-heart-fill" // Filled heart bookmark for bookmarked
+            : "bi-bookmark-plus"; // Plus bookmark for unbookmarked
+    }
+
+    private string GetAnnouncementBookmarkTooltip(Guid announcementId)
+    {
+        return bookmarkedAnnouncementIds.Contains(announcementId) 
+            ? "Remove from bookmarks ✓" 
+            : "Add to bookmarks";
     }
 }
 

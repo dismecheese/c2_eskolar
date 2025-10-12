@@ -1,0 +1,32 @@
+@startuml
+class BenefactorProfile {
+    + <<required>> UserId : string <<get>> <<set>>
+    + <<required>> AdminFirstName : string <<get>> <<set>>
+    + AdminMiddleName : string? <<get>> <<set>>
+    + <<required>> AdminLastName : string <<get>> <<set>>
+    + AdminFullName : string <<get>>
+    + Sex : string? <<get>> <<set>>
+    + Nationality : string? <<get>> <<set>>
+    + AdminPosition : string? <<get>> <<set>>
+    + <<required>> OrganizationName : string <<get>> <<set>>
+    + OrganizationType : string? <<get>> <<set>>
+    + Address : string? <<get>> <<set>>
+    + ContactNumber : string? <<get>> <<set>>
+    + Website : string? <<get>> <<set>>
+    + ContactEmail : string? <<get>> <<set>>
+    + Mission : string? <<get>> <<set>>
+    + Description : string? <<get>> <<set>>
+    + Logo : string? <<get>> <<set>>
+    + IsVerified : bool <<get>> <<set>> = false
+    + VerificationStatus : string? <<get>> <<set>> = "Pending"
+    + AccountStatus : string <<get>> <<set>> = "Active"
+}
+class "ICollection`1"<T> {
+}
+BenefactorProfile --> "BenefactorProfileId" Guid
+BenefactorProfile --> "BirthDate" DateTime
+BenefactorProfile --> "VerificationDate" DateTime
+BenefactorProfile o-> "CreatedAt" DateTime
+BenefactorProfile --> "UpdatedAt" DateTime
+BenefactorProfile o-> "ProvidedScholarships<Scholarship>" "ICollection`1"
+@enduml

@@ -1,0 +1,37 @@
+@startuml
+class StudentProfile {
+    + EnrollmentStatus : string? <<get>> <<set>> = "Regular"
+    + <<required>> UserId : string <<get>> <<set>>
+    + <<required>> FirstName : string <<get>> <<set>>
+    + MiddleName : string? <<get>> <<set>>
+    + <<required>> LastName : string <<get>> <<set>>
+    + FullName : string <<get>>
+    + Sex : string? <<get>> <<set>>
+    + Nationality : string? <<get>> <<set>>
+    + PermanentAddress : string? <<get>> <<set>>
+    + Email : string? <<get>> <<set>>
+    + InstitutionalEmail : string? <<get>> <<set>>
+    + MobileNumber : string? <<get>> <<set>>
+    + UniversityName : string? <<get>> <<set>>
+    + YearLevel : int? <<get>> <<set>>
+    + Course : string? <<get>> <<set>>
+    + StudentNumber : string? <<get>> <<set>>
+    + ProfilePicture : string? <<get>> <<set>>
+    + IsVerified : bool <<get>> <<set>> = false
+    + VerificationStatus : string? <<get>> <<set>> = "Pending"
+    + AccountStatus : string <<get>> <<set>> = "Active"
+    + StudentIdDocumentPath : string? <<get>> <<set>>
+    + CorDocumentPath : string? <<get>> <<set>>
+    + IsPartnerInstitution : bool? <<get>> <<set>>
+    + PartnerInstitutionName : string? <<get>> <<set>>
+    + GPA : decimal? <<get>> <<set>>
+}
+class "ICollection`1"<T> {
+}
+StudentProfile --> "StudentProfileId" Guid
+StudentProfile --> "BirthDate" DateTime
+StudentProfile --> "VerificationDate" DateTime
+StudentProfile o-> "CreatedAt" DateTime
+StudentProfile --> "UpdatedAt" DateTime
+StudentProfile o-> "Applications<ScholarshipApplication>" "ICollection`1"
+@enduml

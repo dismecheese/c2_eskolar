@@ -145,6 +145,8 @@
     private string StudentNumber = "";
     private string Program = "";
     private string YearLevel = "1st Year";
+    private string InstitutionalEmail = "";
+    private string EnrollmentStatus = "Regular";
 
     private string GetStatusBadgeClass(string status)
     {
@@ -493,11 +495,13 @@
             studentProfile.BirthDate = BirthDate;
             studentProfile.MobileNumber = string.IsNullOrWhiteSpace(Phone) ? null : System.Text.RegularExpressions.Regex.Replace(Phone.Trim(), @"[\s\-\(\)]", "");
             studentProfile.Email = Email?.Trim();
+            studentProfile.InstitutionalEmail = string.IsNullOrWhiteSpace(InstitutionalEmail) ? null : InstitutionalEmail.Trim();
             studentProfile.UniversityName = string.IsNullOrWhiteSpace(University) ? null : University.Trim();
             studentProfile.StudentNumber = string.IsNullOrWhiteSpace(StudentNumber) ? null : StudentNumber.Trim();
             studentProfile.Course = string.IsNullOrWhiteSpace(Program) ? null : Program.Trim();
             var yearLevelInt = ParseYearLevel(YearLevel);
             studentProfile.YearLevel = yearLevelInt;
+            studentProfile.EnrollmentStatus = EnrollmentStatus;
             // Status is managed by the service - students cannot change verification status
             // Step 5: Handle file upload with additional validation
             if (UploadedProfileImage != null)
@@ -620,6 +624,8 @@
                 // Only override email if profile has a valid email, otherwise keep Identity email
                 if (!string.IsNullOrWhiteSpace(studentProfile.Email))
                     Email = studentProfile.Email;
+                if (!string.IsNullOrWhiteSpace(studentProfile.InstitutionalEmail))
+                    InstitutionalEmail = studentProfile.InstitutionalEmail;
                 
                 FullName = $"{FirstName} {LastName}".Trim();
                 if (string.IsNullOrWhiteSpace(FullName))
@@ -632,6 +638,7 @@
                 
                 // Status should always reflect the actual verification status from DB
                 Status = studentProfile.VerificationStatus ?? "Pending";
+                EnrollmentStatus = studentProfile.EnrollmentStatus ?? "Regular";
                 
                 ProfilePicture = !string.IsNullOrWhiteSpace(studentProfile.ProfilePicture) ? studentProfile.ProfilePicture : "https://via.placeholder.com/120";
                 
@@ -674,6 +681,12 @@
         
         return 1; // Default to 1st year if parsing fails
     }
+
+    private void OnVerifyEmail(string type)
+    {
+        // Placeholder for email verification logic
+        SetSuccessMessageWithTimer(type == "personal" ? "Verification link sent to personal email." : "Verification link sent to institutional email.");
+    }
 }
 
 
@@ -706,20 +719,17 @@
                 <div class="d-flex gap-2">
                     @if (IsEditMode)
                     {
-                        <button class="btn btn-cancel profile-btn" @onclick="ToggleEditModeAsync" disabled="@(isLoading)">
-                            <i class="fas fa-edit me-2"></i>Cancel
+                        <button class="btn btn-lg btn-outline-secondary profile-btn shadow-sm px-4 py-2" @onclick="ToggleEditModeAsync" disabled="@(isLoading)" aria-label="Cancel Editing">
+                            <i class="fas fa-times me-2"></i>Cancel
+                        </button>
+                        <button class="btn btn-lg btn-success profile-btn shadow-sm px-4 py-2" @onclick="SaveProfile" disabled="@(isLoading)" aria-label="Save Profile">
+                            <i class="fas fa-save me-2"></i>Save
                         </button>
                     }
                     else
                     {
-                        <button class="btn btn-primary profile-btn" @onclick="ToggleEditModeAsync" disabled="@(isLoading)">
+                        <button class="btn btn-lg btn-primary profile-btn shadow-sm px-4 py-2" @onclick="ToggleEditModeAsync" disabled="@(isLoading)" aria-label="Edit Profile">
                             <i class="fas fa-edit me-2"></i>Edit Profile
-                        </button>
-                    }
-                    @if (IsEditMode)
-                    {
-                        <button class="btn btn-success profile-btn" @onclick="SaveProfile" disabled="@(isLoading)">
-                            <i class="fas fa-save me-2"></i>Save
                         </button>
                     }
                 </div>
@@ -759,33 +769,61 @@
                         }
                     </div>
                     <h4 class="card-title mb-1 profile-name">@FullName</h4>
-                    <div class="text-muted mb-2">@Email</div>
-                    <div class="d-flex flex-column align-items-center gap-2">
-                        <span class="badge profile-badge-status @(GetStatusBadgeClass(Status))">@Status</span>
-                        <span class="badge profile-badge-year">@GetYearLevelText(YearLevel)</span>
+                    <div class="d-flex flex-row justify-content-center align-items-center gap-2 mt-2">
+                        <span class="profile-badge-pill profile-badge-status @(GetStatusBadgeClass(Status))" style="background: #ffe066; color: #444; font-weight: 500; font-size: 0.95rem; border-radius: 1.2rem; padding: 0.25rem 0.75rem; box-shadow: 0 1px 4px rgba(0,0,0,0.06); border: 1px solid #f7c948; letter-spacing: 0.2px;">@Status</span>
+                        <span class="profile-badge-pill profile-badge-year" style="background: #eaf1fb; color: #2563eb; font-weight: 500; font-size: 0.95rem; border-radius: 1.2rem; padding: 0.25rem 0.75rem; box-shadow: 0 1px 4px rgba(0,0,0,0.06); border: 1px solid #b3c6e6; letter-spacing: 0.2px;">@GetYearLevelText(YearLevel)</span>
                     </div>
                 </div>
             </div>
             <div class="card profile-card">
-                <div class="card-header bg-white">
-                    <h6 class="mb-0 profile-verification-title"><i class="fas fa-check-circle profile-header-icon"></i>Verification</h6>
+                <!-- Verification Requirements Card -->
+                <div class="card-header d-flex align-items-center" style="background: #3b6dcc; color: #fff; border-top-left-radius: 24px; border-top-right-radius: 24px;">
+                    <span class="me-2" style="font-size: 1.5rem;">
+                        <i class="fas fa-check-circle" style="color: #ffd600;"></i>
+                    </span>
+                    <span style="font-weight: 600; font-size: 1.25rem;">Verification</span>
                 </div>
-                <div class="card-body">
-                    <div class="verification-item d-flex justify-content-between align-items-center">
-                        <span class="profile-label-bold">Email</span>
-                        <i class="fas fa-@(EmailVerified ? "check-circle" : "clock") @(EmailVerified ? "profile-icon-verified" : "profile-icon-pending")"></i>
-                    </div>
-                    <div class="verification-item d-flex justify-content-between align-items-center">
-                        <span class="profile-label-bold">Phone</span>
-                        <i class="fas fa-@(PhoneVerified ? "check-circle" : "clock") @(PhoneVerified ? "profile-icon-verified" : "profile-icon-pending")"></i>
-                    </div>
-                    <div class="verification-item d-flex justify-content-between align-items-center">
-                        <span class="profile-label-bold">Student ID</span>
-                        <i class="fas fa-@(StudentIdVerified ? "check-circle" : "clock") @(StudentIdVerified ? "profile-icon-verified" : "profile-icon-pending")"></i>
-                    </div>
-                    <div class="verification-item d-flex justify-content-between align-items-center">
-                        <span class="profile-label-bold">Academic Records</span>
-                        <i class="fas fa-@(AcademicRecordsVerified ? "check-circle" : "clock") @(AcademicRecordsVerified ? "profile-icon-verified" : "profile-icon-pending")"></i>
+                <div class="card-body" style="background: #f8fbff; border-bottom-left-radius: 24px; border-bottom-right-radius: 24px;">
+                    <div class="d-flex flex-column gap-3">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span style="font-weight: 600; font-size: 1.1rem;">Email</span>
+                            <span>
+                                @if (EmailVerified)
+                                {
+                                    <i class="fas fa-check-circle" style="color: #3b6dcc; font-size: 1.2rem;"></i>
+                                }
+                                else
+                                {
+                                    <i class="fas fa-clock" style="color: #ffd600; font-size: 1.2rem;"></i>
+                                }
+                            </span>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span style="font-weight: 600; font-size: 1.1rem;">Student ID</span>
+                            <span>
+                                @if (StudentIdVerified)
+                                {
+                                    <i class="fas fa-check-circle" style="color: #3b6dcc; font-size: 1.2rem;"></i>
+                                }
+                                else
+                                {
+                                    <i class="fas fa-clock" style="color: #ffd600; font-size: 1.2rem;"></i>
+                                }
+                            </span>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span style="font-weight: 600; font-size: 1.1rem;">COR</span>
+                            <span>
+                                @if (AcademicRecordsVerified)
+                                {
+                                    <i class="fas fa-check-circle" style="color: #3b6dcc; font-size: 1.2rem;"></i>
+                                }
+                                else
+                                {
+                                    <i class="fas fa-clock" style="color: #ffd600; font-size: 1.2rem;"></i>
+                                }
+                            </span>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -836,7 +874,7 @@
                                 </select>
                             </div>
                             <div class="col-md-4 mb-3">
-                                <label class="form-label profile-label-bold">Birthdate</label>
+                                <label class="form-label profile-label-bold">Birthday</label>
                                 <input type="date" class="form-control" @bind="BirthDate" />
                             </div>
                             <div class="col-md-4 mb-3">
@@ -848,8 +886,8 @@
                                     <div class="invalid-feedback d-block">@GetValidationMessage("Nationality")</div>
                                 }
                             </div>
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label profile-label-bold">Phone</label>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label profile-label-bold">Phone Number</label>
                                 <input type="tel" class="form-control @GetValidationErrorClass("Phone")" @bind="Phone" 
                                        @onblur="@(() => ValidateField("Phone", Phone, "Phone Number"))" 
                                        placeholder="e.g., +63 912 345 6789" maxlength="20" />
@@ -858,13 +896,27 @@
                                     <div class="invalid-feedback d-block">@GetValidationMessage("Phone")</div>
                                 }
                             </div>
-                            <div class="col-md-6 mb-3">
+                            <div class="col-md-8 mb-3">
                                 <label class="form-label profile-label-bold">Permanent Address</label>
                                 <input type="text" class="form-control" @bind="PermanentAddress" maxlength="200" />
                             </div>
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label profile-label-bold">Email</label>
-                                <input type="email" class="form-control" value="@Email" readonly />
+                            <div class="col-12 mb-3">
+                                <label class="form-label profile-label-bold">Personal Email</label>
+                                <div class="input-group" style="min-width:350px;max-width:100%;">
+                                    <input type="email" class="form-control" value="@Email" readonly />
+                                    <button type="button" class="btn btn-outline-primary btn-sm" title="Verify Email" @onclick="@(() => OnVerifyEmail("personal"))">
+                                        <i class="fas fa-check"></i> Verify
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="col-12 mb-3">
+                                <label class="form-label profile-label-bold">Institutional Email</label>
+                                <div class="input-group" style="min-width:350px;max-width:100%;">
+                                    <input type="email" class="form-control" @bind="InstitutionalEmail" maxlength="100" />
+                                    <button type="button" class="btn btn-outline-primary btn-sm" title="Verify Institutional Email" @onclick="@(() => OnVerifyEmail("institutional"))">
+                                        <i class="fas fa-check"></i> Verify
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     }
@@ -888,27 +940,40 @@
                                 <div class="form-control-plaintext">@Sex</div>
                             </div>
                             <div class="col-md-4 mb-3">
-                                <label class="form-label profile-label-bold">Birthdate</label>
+                                <label class="form-label profile-label-bold">Birthday</label>
                                 <div class="form-control-plaintext">@BirthDate.ToShortDateString()</div>
                             </div>
                             <div class="col-md-4 mb-3">
                                 <label class="form-label profile-label-bold">Nationality</label>
                                 <div class="form-control-plaintext">@Nationality</div>
                             </div>
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label profile-label-bold">Phone</label>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label profile-label-bold">Phone Number</label>
                                 <div class="form-control-plaintext">@Phone</div>
                             </div>
-                            <div class="col-md-6 mb-3">
+                            <div class="col-md-8 mb-3">
                                 <label class="form-label profile-label-bold">Permanent Address</label>
                                 <div class="form-control-plaintext">@PermanentAddress</div>
                             </div>
-                            <div class="col-md-6 mb-3">
+                            <div class="col-12 mb-3">
                                 <label class="form-label profile-label-bold">Personal Email</label>
-                                <div class="form-control-plaintext">@Email</div>
+                                <div class="d-flex align-items-center" style="min-width:350px;max-width:100%;white-space:nowrap;overflow-x:auto;">
+                                    <span class="form-control-plaintext flex-grow-1">@Email</span>
+                                    <button type="button" class="btn btn-outline-primary btn-sm ms-2" title="Verify Email" @onclick="@(() => OnVerifyEmail("personal"))">
+                                        <i class="fas fa-check"></i> Verify
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="col-12 mb-3">
+                                <label class="form-label profile-label-bold">Institutional Email</label>
+                                <div class="d-flex align-items-center" style="min-width:350px;max-width:100%;white-space:nowrap;overflow-x:auto;">
+                                    <span class="form-control-plaintext flex-grow-1">@InstitutionalEmail</span>
+                                    <button type="button" class="btn btn-outline-primary btn-sm ms-2" title="Verify Institutional Email" @onclick="@(() => OnVerifyEmail("institutional"))">
+                                        <i class="fas fa-check"></i> Verify
+                                    </button>
+                                </div>
                             </div>
                         </div>
-                        
                     }
                 </div>
             </div>
@@ -921,7 +986,7 @@
                     {
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <label class="form-label">University</label>
+                                <label class="form-label profile-label-bold">University</label>
                                 <input type="text" class="form-control @GetValidationErrorClass("University")" @bind="University" 
                                        @onblur="@(() => ValidateField("University", University, "University"))" maxlength="100" />
                                 @if (!string.IsNullOrEmpty(GetValidationMessage("University")))
@@ -930,7 +995,7 @@
                                 }
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label class="form-label">Student Number</label>
+                                <label class="form-label profile-label-bold">Student Number</label>
                                 <input type="text" class="form-control @GetValidationErrorClass("StudentNumber")" @bind="StudentNumber" 
                                        @onblur="@(() => ValidateField("StudentNumber", StudentNumber, "Student Number"))" 
                                        placeholder="e.g., 2022-1234" maxlength="20" />
@@ -940,7 +1005,7 @@
                                 }
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label class="form-label">Program</label>
+                                <label class="form-label profile-label-bold">Program</label>
                                 <input type="text" class="form-control @GetValidationErrorClass("Program")" @bind="Program" 
                                        @onblur="@(() => ValidateField("Program", Program, "Program"))" maxlength="100" />
                                 @if (!string.IsNullOrEmpty(GetValidationMessage("Program")))
@@ -949,7 +1014,7 @@
                                 }
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label class="form-label">Year Level</label>
+                                <label class="form-label profile-label-bold">Year Level</label>
                                 <select class="form-control" @bind="YearLevel">
                                     <option>1st Year</option>
                                     <option>2nd Year</option>
@@ -958,8 +1023,11 @@
                                 </select>
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label class="form-label">Status</label>
-                                <div class="form-control-plaintext"><span class="profile-status-text @GetStatusBadgeClass(Status)">@Status</span></div>
+                                <label class="form-label profile-label-bold">Enrollment Status</label>
+                                <select class="form-control" @bind="EnrollmentStatus">
+                                    <option value="Regular">Regular</option>
+                                    <option value="Irregular">Irregular</option>
+                                </select>
                             </div>
                         </div>
                     }
@@ -983,8 +1051,8 @@
                                 <div class="form-control-plaintext">@YearLevel</div>
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label class="form-label profile-label-bold">Status</label>
-                                <div class="form-control-plaintext"><span class="profile-status-text @GetStatusBadgeClass(Status)">@Status</span></div>
+                                <label class="form-label profile-label-bold">Enrollment Status</label>
+                                <div class="form-control-plaintext">@EnrollmentStatus</div>
                             </div>
                         </div>
                     }

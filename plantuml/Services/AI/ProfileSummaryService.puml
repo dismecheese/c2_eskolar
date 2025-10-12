@@ -1,0 +1,12 @@
+@startuml
+class ProfileSummaryService {
+    + ProfileSummaryService(context:ApplicationDbContext, userManager:UserManager<IdentityUser>)
+    + <<async>> GetProfileSummaryAsync(user:IdentityUser) : Task<ProfileSummaryResult?>
+    + <<async>> GetUserFirstNameAsync(user:IdentityUser) : Task<string?>
+}
+class ProfileSummaryResult {
+    + Role : string <<get>> <<set>>
+    + Summary : string <<get>> <<set>>
+    + ProfileSummaryResult(role:string, summary:string)
+}
+@enduml

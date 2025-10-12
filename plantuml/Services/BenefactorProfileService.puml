@@ -1,0 +1,7 @@
+@startuml
+class BenefactorProfileService {
+    + BenefactorProfileService(contextFactory:IDbContextFactory<ApplicationDbContext>)
+    + <<async>> GetProfileByUserIdAsync(userId:string) : Task<BenefactorProfile?>
+    + <<async>> SaveProfileAsync(profile:BenefactorProfile) : Task
+}
+@enduml

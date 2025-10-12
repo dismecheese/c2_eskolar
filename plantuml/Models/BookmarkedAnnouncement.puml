@@ -1,0 +1,9 @@
+@startuml
+class BookmarkedAnnouncement {
+    + BookmarkId : int <<get>> <<set>>
+    + <<required>> UserId : string <<get>> <<set>>
+}
+BookmarkedAnnouncement --> "AnnouncementId" Guid
+BookmarkedAnnouncement o-> "Announcement" Announcement
+BookmarkedAnnouncement --> "CreatedAt" DateTime
+@enduml

@@ -1,0 +1,6 @@
+@startuml
+class Partner {
+    + OrganizationName : string <<get>> <<set>>
+    + LogoPath : string <<get>> <<set>>
+}
+@enduml

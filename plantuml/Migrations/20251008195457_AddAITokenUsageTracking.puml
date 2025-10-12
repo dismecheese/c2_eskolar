@@ -1,0 +1,5 @@
+@startuml
+class AddAITokenUsageTracking <<partial>> {
+}
+Migration <|-- AddAITokenUsageTracking
+@enduml

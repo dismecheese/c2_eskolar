@@ -1,0 +1,30 @@
+@startuml
+class DocumentController {
+    + DocumentController(blobStorageService:BlobStorageService, documentIntelligenceService:DocumentIntelligenceService)
+    + <<async>> UploadDocument(file:IFormFile, docType:string) : Task<IActionResult>
+    + <<async>> AnalyzeIdDocument(file:IFormFile) : Task<IActionResult>
+    + <<async>> DeleteDocument(fileName:string) : Task<IActionResult>
+}
+class PhotoController {
+    + PhotoController(blobStorageService:BlobStorageService)
+    + <<async>> StreamPhoto(fileName:string) : Task<IActionResult>
+    + GetPhotoUrl(fileName:string) : IActionResult
+    + <<async>> UploadPhoto(file:IFormFile) : Task<IActionResult>
+    + Test() : IActionResult
+}
+class UploadResultDto {
+    + Url : string <<get>> <<set>>
+}
+class SimpleBrowserFile {
+    + SimpleBrowserFile(name:string, contentType:string, size:long, stream:Stream)
+    + Name : string <<get>>
+    + Size : long <<get>>
+    + ContentType : string <<get>>
+    + OpenReadStream(maxAllowedSize:long, cancellationToken:CancellationToken) : Stream
+}
+ControllerBase <|-- DocumentController
+ControllerBase <|-- PhotoController
+DocumentController +-- UploadResultDto
+DocumentController +-- SimpleBrowserFile
+SimpleBrowserFile --> "LastModified" DateTimeOffset
+@enduml

@@ -1,0 +1,281 @@
+.modal-close-icon {
+  display: inline-block;
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #4f8cff;
+  padding: 2px 12px;
+  border-radius: 4px;
+  background: #f3f7ff;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.modal-close-icon:hover {
+  background: #e0eaff;
+}
+/* BenefactorStudentProfile page styles */
+.student-profile-container {
+  max-width: 700px;
+  margin: 40px auto;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 2px 16px rgba(0,0,0,0.08);
+  padding: 32px;
+}
+
+.student-profile-banner {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 24px;
+  text-align: center;
+  background: linear-gradient(90deg, #4f8cff 0%, #38b2ac 100%);
+  padding: 16px 0;
+  border-radius: 8px;
+  box-shadow: 0 1px 8px rgba(79,140,255,0.12);
+}
+
+.student-profile-details {
+  margin-bottom: 32px;
+}
+
+.profile-info-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.profile-info-item {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  background: #f8f9fa;
+  border-radius: 6px;
+  padding: 10px 16px;
+  font-size: 1rem;
+}
+
+.profile-label {
+  font-weight: 600;
+  color: #4f8cff;
+  min-width: 140px;
+  margin-right: 12px;
+}
+
+.profile-value {
+  color: #222;
+}
+
+.profile-academic-section {
+  margin-bottom: 32px;
+}
+
+.profile-section-title {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #38b2ac;
+  margin-bottom: 12px;
+}
+
+.student-documents-container {
+  margin-top: 32px;
+}
+
+.student-documents-banner {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #4f8cff;
+  margin-bottom: 16px;
+}
+
+/* Modal Styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-content {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  max-width: 90vw;
+  max-height: 90vh;
+  width: 800px;
+  position: relative;
+  overflow: hidden;
+}
+
+.modal-close {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  background: #f44336;
+  border: none;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  font-size: 18px;
+  color: #fff;
+  cursor: pointer;
+  z-index: 10001;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s;
+}
+
+.modal-close:hover {
+  background: #d32f2f;
+}
+
+.modal-body {
+  padding: 20px;
+  text-align: center;
+  max-height: calc(90vh - 40px);
+  overflow-y: auto;
+}
+
+.modal-body iframe {
+  border: none;
+  border-radius: 8px;
+}
+
+.modal-body img {
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.student-profile-container {
+    max-width: 1100px;
+    margin: 2rem auto;
+    padding: 2rem;
+    background: #f4f7fb;
+    border-radius: 16px;
+    font-family: 'Segoe UI', sans-serif;
+}
+
+/* Header */
+.student-header {
+    background: linear-gradient(135deg, #1976d2, #64b5f6);
+    color: #fff;
+    text-align: center;
+    padding: 1.2rem;
+    border-radius: 12px;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+    margin-bottom: 2rem;
+}
+
+.student-header h2 {
+    margin: 0;
+    font-weight: 600;
+}
+
+/* Sections */
+.profile-section, .grades-section, .documents-section {
+    background: #fff;
+    border-left: 5px solid #1976d2;
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 3px 8px rgba(0,0,0,0.05);
+    transition: 0.2s ease;
+}
+
+.profile-section:hover, .grades-section:hover, .documents-section:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+}
+
+/* Section Titles */
+.section-title {
+    background: linear-gradient(135deg, #1976d2, #64b5f6);
+    color: white;
+    padding: 0.7rem 1rem;
+    border-radius: 8px;
+    font-weight: 600;
+    margin-bottom: 1.2rem;
+}
+
+/* Profile Info Grid */
+.info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1rem;
+}
+
+.info-item {
+    background: #f9fbfd;
+    border-radius: 8px;
+    padding: 0.8rem 1rem;
+    border-left: 4px solid #64b5f6;
+}
+
+.label {
+    display: block;
+    font-weight: 600;
+    color: #1e3a8a;
+    font-size: 0.95rem;
+}
+
+.value {
+    color: #0d47a1;
+    font-size: 0.95rem;
+}
+
+/* Tables */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    border-radius: 8px;
+    overflow: hidden;
+    background: #fff;
+}
+
+th, td {
+    padding: 0.8rem;
+    text-align: center;
+    border-bottom: 1px solid #e0e7ff;
+}
+
+th {
+    background: #e3f2fd;
+    color: #0d47a1;
+    font-weight: 600;
+}
+
+tbody tr:hover {
+    background: #f1f5fb;
+}
+
+/* Buttons */
+.btn-view, .btn-download {
+    background: none;
+    border: 1px solid #1976d2;
+    color: #1976d2;
+    padding: 0.4rem 0.8rem;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: 0.2s;
+    text-decoration: none;
+    display: inline-block;
+    margin: 0 2px;
+}
+
+.btn-view:hover, .btn-download:hover {
+    background: #1976d2;
+    color: white;
+    text-decoration: none;
+}
+
+.btn-view:disabled, .btn-download:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}

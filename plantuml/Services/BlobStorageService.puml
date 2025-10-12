@@ -1,0 +1,18 @@
+@startuml
+class BlobStorageService {
+    + BlobStorageService(config:IConfiguration)
+    + <<async>> UploadDocumentAsync(fileStream:Stream, fileName:string, contentType:string) : Task<string>
+    + <<async>> UploadPhotoAsync(fileStream:Stream, fileName:string, contentType:string) : Task<string>
+    + <<async>> UploadProfilePictureAsync(fileStream:Stream, userId:string, userType:string, fileExtension:string, contentType:string) : Task<string>
+    + <<async>> DownloadDocumentAsync(fileName:string) : Task<Stream>
+    + <<async>> DownloadPhotoAsync(fileName:string) : Task<Stream>
+    + GetDocumentUrl(fileName:string) : string
+    + GetDocumentSasUrl(fileName:string, expiryMinutes:int) : string
+    + GetPhotoUrl(fileName:string) : string
+    + GetPhotoSasUrl(fileName:string, expiryMinutes:int) : string
+    + <<async>> DeleteDocumentAsync(fileName:string) : Task<bool>
+    + <<async>> DeletePhotoAsync(fileName:string) : Task<bool>
+    + ExtractBlobFileName(blobUrl:string) : string?
+    + GetPhotoSasUrlFromBlobUrl(blobUrl:string, expiryMinutes:int) : string
+}
+@enduml

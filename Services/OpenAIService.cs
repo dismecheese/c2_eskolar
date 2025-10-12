@@ -36,6 +36,17 @@ namespace c2_eskolar.Services
             _tokenTrackingService = tokenTrackingService;
         }
 
+        // New method: Forecast applicant volume for next 7 days
+        public async Task<string> GetApplicantVolumeForecastAsync(List<(DateTime Date, int Count)> applicantsPerDay)
+        {
+            // Format the data for the prompt
+            var dataRows = applicantsPerDay.Select(x => $"{x.Date:yyyy-MM-dd}: {x.Count}");
+            var dataString = string.Join("\n", dataRows);
+            string prompt = $@"You are an expert data analyst. Here is the number of scholarship applicants per day for the past period:\n\n{dataString}\n\nBased on this data, forecast the expected number of applicants per day for the next 7 days. Return your forecast as a numbered list with dates and expected counts, and provide a brief explanation of the trend.";
+
+            return await GetChatCompletionAsync(prompt);
+        }
+
         public async Task<string> GetChatCompletionAsync(string userMessage)
         {
             var stopwatch = System.Diagnostics.Stopwatch.StartNew();

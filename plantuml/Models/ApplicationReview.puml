@@ -1,0 +1,11 @@
+@startuml
+class ApplicationReview {
+    + ReviewId : int <<get>> <<set>>
+    + ApplicationId : int <<get>> <<set>>
+    + ReviewerUserId : int <<get>> <<set>>
+    + Score : int <<get>> <<set>>
+    + Comments : string? <<get>> <<set>>
+}
+ApplicationReview o-> "Application" ScholarshipApplication
+ApplicationReview --> "ReviewDate" DateTime
+@enduml
