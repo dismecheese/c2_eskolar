@@ -94,6 +94,7 @@ builder.Services.AddScoped<StudentProfileService>();
 builder.Services.AddScoped<BenefactorProfileService>();
 builder.Services.AddScoped<InstitutionProfileService>();
 builder.Services.AddScoped<BlobStorageService>();
+builder.Services.AddScoped<BookmarkService>();
 
 // Register web scraping services
 builder.Services.AddScoped<c2_eskolar.Services.WebScraping.IWebScrapingService, c2_eskolar.Services.WebScraping.WebScrapingService>();

@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using c2_eskolar.Data;
 
@@ -11,9 +12,11 @@ using c2_eskolar.Data;
 namespace c2_eskolar.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251011184631_EnhancedBookmarkSystem")]
+    partial class EnhancedBookmarkSystem
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -546,7 +549,10 @@ namespace c2_eskolar.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("BookmarkId"));
 
-                    b.Property<Guid>("AnnouncementId")
+                    b.Property<int>("AnnouncementId")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("AnnouncementId1")
                         .HasColumnType("uniqueidentifier");
 
                     b.Property<DateTime?>("CreatedAt")
@@ -558,7 +564,7 @@ namespace c2_eskolar.Migrations
 
                     b.HasKey("BookmarkId");
 
-                    b.HasIndex("AnnouncementId");
+                    b.HasIndex("AnnouncementId1");
 
                     b.ToTable("BookmarkedAnnouncements");
                 });
@@ -1642,7 +1648,7 @@ namespace c2_eskolar.Migrations
                 {
                     b.HasOne("c2_eskolar.Models.Announcement", "Announcement")
                         .WithMany()
-                        .HasForeignKey("AnnouncementId")
+                        .HasForeignKey("AnnouncementId1")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 

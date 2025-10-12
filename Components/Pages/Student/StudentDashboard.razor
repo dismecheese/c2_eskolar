@@ -4,6 +4,7 @@
 @layout Layout.StudentDashLayout
 @using Microsoft.AspNetCore.WebUtilities
 @using c2_eskolar.Components.Pages
+@using c2_eskolar.Services
 
 @using c2_eskolar.Data
 @using Microsoft.EntityFrameworkCore
@@ -15,6 +16,8 @@
 @inject UserManager<IdentityUser> UserManager
 @inject NavigationManager Navigation
 @inject IJSRuntime JS
+@inject BookmarkService BookmarkService
+@inject ILogger<StudentDashboard> Logger
 
 @using Microsoft.AspNetCore.Components.Authorization
 @using System.Security.Claims
@@ -116,23 +119,35 @@
                         <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:32px;">
                             @foreach (var scholarship in filteredInstitutionalScholarships)
                             {
-                                <a href="/dashboard/student/scholarships-info/@scholarship.ScholarshipId" class="scholarship-card text-decoration-none" style="height:160px;cursor:pointer;display:block;">
-                                    <div class="scholarship-card-img" style="width:70px;height:70px;margin-bottom:12px;background:#e3f2fd;display:flex;align-items:center;justify-content:center;border-radius:8px;">
-                                        @if (!string.IsNullOrEmpty(scholarship.Institution?.Logo))
-                                        {
-                                            <img src="@scholarship.Institution.Logo" alt="Logo" style="width:50px;height:50px;object-fit:cover;border-radius:4px;" />
-                                        }
-                                        else
-                                        {
-                                            <div style="background:#1976d2;color:white;width:50px;height:50px;border-radius:4px;display:flex;align-items:center;justify-content:center;font-weight:bold;">
-                                                @GetInitials(scholarship.Institution?.InstitutionName ?? "IN")
-                                            </div>
-                                        }
-                                    </div>
-                                    <div class="scholarship-card-title" style="font-size:14px;line-height:1.3;">@scholarship.Title</div>
-                                    <div style="font-size:12px;color:#666;margin-top:4px;">@scholarship.Institution?.InstitutionName</div>
-                                    <div style="font-size:12px;color:#666;">₱@((scholarship.MonetaryValue ?? 0).ToString("N0"))</div>
-                                </a>
+                                <div class="scholarship-card" style="height:160px;position:relative;cursor:pointer;">
+                                    <!-- Bookmark Button -->
+                                    <button class="@GetBookmarkButtonClass(scholarship.ScholarshipId)" 
+                                            style="position:absolute;top:8px;right:8px;z-index:10;border:none;background:rgba(255,255,255,0.9);border-radius:4px;width:32px;height:32px;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 4px rgba(0,0,0,0.1);"
+                                            @onclick="(e) => ToggleBookmark(scholarship.ScholarshipId, e)"
+                                            @onclick:stopPropagation="true"
+                                            title="@GetBookmarkTooltip(scholarship.ScholarshipId)">
+                                        <i class="@GetBookmarkIcon(scholarship.ScholarshipId)" style="font-size:14px;"></i>
+                                    </button>
+                                    
+                                    <!-- Clickable Card Content -->
+                                    <a href="/dashboard/student/scholarships-info/@scholarship.ScholarshipId" class="text-decoration-none" style="display:block;height:100%;padding:16px;">
+                                        <div class="scholarship-card-img" style="width:70px;height:70px;margin-bottom:12px;background:#e3f2fd;display:flex;align-items:center;justify-content:center;border-radius:8px;">
+                                            @if (!string.IsNullOrEmpty(scholarship.Institution?.Logo))
+                                            {
+                                                <img src="@scholarship.Institution.Logo" alt="Logo" style="width:50px;height:50px;object-fit:cover;border-radius:4px;" />
+                                            }
+                                            else
+                                            {
+                                                <div style="background:#1976d2;color:white;width:50px;height:50px;border-radius:4px;display:flex;align-items:center;justify-content:center;font-weight:bold;">
+                                                    @GetInitials(scholarship.Institution?.InstitutionName ?? "IN")
+                                                </div>
+                                            }
+                                        </div>
+                                        <div class="scholarship-card-title" style="font-size:14px;line-height:1.3;">@scholarship.Title</div>
+                                        <div style="font-size:12px;color:#666;margin-top:4px;">@scholarship.Institution?.InstitutionName</div>
+                                        <div style="font-size:12px;color:#666;">₱@((scholarship.MonetaryValue ?? 0).ToString("N0"))</div>
+                                    </a>
+                                </div>
                             }
                         </div>
                     }
@@ -157,33 +172,45 @@
                         <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:32px;">
                             @foreach (var scholarship in GetFilteredScholarships() ?? new List<Scholarship>())
                             {
-                                <a href="/dashboard/student/scholarships-info/@scholarship.ScholarshipId" class="scholarship-card text-decoration-none" style="height:160px;cursor:pointer;display:block;">
-                                    <div class="scholarship-card-img" style="width:70px;height:70px;margin-bottom:12px;background:@(scholarship.IsInternal ? "#e3f2fd" : "#e8f5e8");display:flex;align-items:center;justify-content:center;border-radius:8px;">
-                                        @if (scholarship.IsInternal && !string.IsNullOrEmpty(scholarship.Institution?.Logo))
+                                <div class="scholarship-card" style="height:160px;position:relative;cursor:pointer;">
+                                    <!-- Bookmark Button -->
+                                    <button class="@GetBookmarkButtonClass(scholarship.ScholarshipId)" 
+                                            style="position:absolute;top:8px;right:8px;z-index:10;border:none;background:rgba(255,255,255,0.9);border-radius:4px;width:32px;height:32px;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 4px rgba(0,0,0,0.1);"
+                                            @onclick="(e) => ToggleBookmark(scholarship.ScholarshipId, e)"
+                                            @onclick:stopPropagation="true"
+                                            title="@GetBookmarkTooltip(scholarship.ScholarshipId)">
+                                        <i class="@GetBookmarkIcon(scholarship.ScholarshipId)" style="font-size:14px;"></i>
+                                    </button>
+                                    
+                                    <!-- Clickable Card Content -->
+                                    <a href="/dashboard/student/scholarships-info/@scholarship.ScholarshipId" class="text-decoration-none" style="display:block;height:100%;padding:16px;">
+                                        <div class="scholarship-card-img" style="width:70px;height:70px;margin-bottom:12px;background:@(scholarship.IsInternal ? "#e3f2fd" : "#e8f5e8");display:flex;align-items:center;justify-content:center;border-radius:8px;">
+                                            @if (scholarship.IsInternal && !string.IsNullOrEmpty(scholarship.Institution?.Logo))
+                                            {
+                                                <img src="@scholarship.Institution.Logo" alt="Logo" style="width:50px;height:50px;object-fit:cover;border-radius:4px;" />
+                                            }
+                                            else if (!scholarship.IsInternal && !string.IsNullOrEmpty(scholarship.Benefactor?.Logo))
+                                            {
+                                                <img src="@scholarship.Benefactor.Logo" alt="Logo" style="width:50px;height:50px;object-fit:cover;border-radius:4px;" />
+                                            }
+                                            else
+                                            {
+                                                <div style="background:@(scholarship.IsInternal ? "#1976d2" : "#388e3c");color:white;width:50px;height:50px;border-radius:4px;display:flex;align-items:center;justify-content:center;font-weight:bold;">
+                                                    @GetInitials(scholarship.IsInternal ? (scholarship.Institution?.InstitutionName ?? "IN") : (scholarship.Benefactor?.OrganizationName ?? "BE"))
+                                                </div>
+                                            }
+                                        </div>
+                                        <div class="scholarship-card-title" style="font-size:14px;line-height:1.3;">@scholarship.Title</div>
+                                        <div style="font-size:12px;color:#666;margin-top:4px;">
+                                            @(scholarship.IsInternal ? scholarship.Institution?.InstitutionName : scholarship.Benefactor?.OrganizationName)
+                                        </div>
+                                        <div style="font-size:12px;color:#666;">₱@((scholarship.MonetaryValue ?? 0).ToString("N0"))</div>
+                                        @if (scholarship.ApplicationDeadline > DateTime.Now)
                                         {
-                                            <img src="@scholarship.Institution.Logo" alt="Logo" style="width:50px;height:50px;object-fit:cover;border-radius:4px;" />
+                                            <div style="font-size:11px;color:#d32f2f;margin-top:2px;">Deadline: @scholarship.ApplicationDeadline.ToString("MMM dd, yyyy")</div>
                                         }
-                                        else if (!scholarship.IsInternal && !string.IsNullOrEmpty(scholarship.Benefactor?.Logo))
-                                        {
-                                            <img src="@scholarship.Benefactor.Logo" alt="Logo" style="width:50px;height:50px;object-fit:cover;border-radius:4px;" />
-                                        }
-                                        else
-                                        {
-                                            <div style="background:@(scholarship.IsInternal ? "#1976d2" : "#388e3c");color:white;width:50px;height:50px;border-radius:4px;display:flex;align-items:center;justify-content:center;font-weight:bold;">
-                                                @GetInitials(scholarship.IsInternal ? (scholarship.Institution?.InstitutionName ?? "IN") : (scholarship.Benefactor?.OrganizationName ?? "BE"))
-                                            </div>
-                                        }
-                                    </div>
-                                    <div class="scholarship-card-title" style="font-size:14px;line-height:1.3;">@scholarship.Title</div>
-                                    <div style="font-size:12px;color:#666;margin-top:4px;">
-                                        @(scholarship.IsInternal ? scholarship.Institution?.InstitutionName : scholarship.Benefactor?.OrganizationName)
-                                    </div>
-                                    <div style="font-size:12px;color:#666;">₱@((scholarship.MonetaryValue ?? 0).ToString("N0"))</div>
-                                    @if (scholarship.ApplicationDeadline > DateTime.Now)
-                                    {
-                                        <div style="font-size:11px;color:#d32f2f;margin-top:2px;">Deadline: @scholarship.ApplicationDeadline.ToString("MMM dd, yyyy")</div>
-                                    }
-                                </a>
+                                    </a>
+                                </div>
                             }
                         </div>
                     }
@@ -490,6 +517,9 @@
     private string? verificationStatus = null;
     private string? userId;
 
+    // --- Bookmark State ---
+    private HashSet<int> bookmarkedScholarshipIds = new HashSet<int>();
+
     // --- Scholarship Search Bar State ---
     private string scholarshipSearchBarQuery = string.Empty;
     private bool showScholarshipDropdown = false;
@@ -633,6 +663,7 @@
         // Modal verification logic
         var authState = await AuthStateProvider.GetAuthenticationStateAsync();
         userId = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        
         if (!string.IsNullOrEmpty(userId))
         {
             var profile = await StudentProfileService.GetProfileByUserIdAsync(userId);
@@ -649,6 +680,7 @@
         await LoadScholarships();
         await LoadRecentlyViewedAsync();
         await LoadApprovedScholarshipsAsync();
+        await LoadUserBookmarks(); // Add bookmark loading
         ApplyFilters();
         // Preload applications if Current Applications tab is default
         if (activeTab == 1)
@@ -1063,6 +1095,91 @@
             "Rejected" => "bg-danger",
             _ => "bg-secondary"
         };
+    }
+
+    // --- Bookmark Methods ---
+    private async Task LoadUserBookmarks()
+    {
+        try
+        {
+            // Get userId if not already set
+            if (string.IsNullOrEmpty(userId))
+            {
+                var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+                userId = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            }
+            
+            if (!string.IsNullOrEmpty(userId))
+            {
+                var bookmarkOrganization = await BookmarkService.GetOrganizedBookmarksAsync(userId);
+                bookmarkedScholarshipIds = bookmarkOrganization.AllBookmarks.Select(b => b.ScholarshipId).ToHashSet();
+            }
+        }
+        catch (Exception)
+        {
+            // Log error but don't throw to prevent page crash
+        }
+    }
+
+    private async Task ToggleBookmark(int scholarshipId, MouseEventArgs e)
+    {
+        if (string.IsNullOrEmpty(userId)) 
+        {
+            var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+            userId = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            
+            if (string.IsNullOrEmpty(userId))
+            {
+                return;
+            }
+        }
+
+        try
+        {
+            bool wasBookmarked = bookmarkedScholarshipIds.Contains(scholarshipId);
+            
+            if (wasBookmarked)
+            {
+                await BookmarkService.RemoveBookmarkAsync(userId, scholarshipId);
+                bookmarkedScholarshipIds.Remove(scholarshipId);
+            }
+            else
+            {
+                await BookmarkService.AddBookmarkAsync(userId, scholarshipId, "Interested", 2);
+                bookmarkedScholarshipIds.Add(scholarshipId);
+            }
+            
+            StateHasChanged(); // Force UI update
+        }
+        catch (Exception)
+        {
+            // Handle error silently or log appropriately
+        }
+    }
+
+    private string GetBookmarkButtonClass(int scholarshipId)
+    {
+        bool isBookmarked = bookmarkedScholarshipIds.Contains(scholarshipId);
+        
+        return isBookmarked 
+            ? "btn btn-sm btn-warning" // Bookmarked state - yellow/orange
+            : "btn btn-sm btn-outline-secondary"; // Not bookmarked state - gray outline
+    }
+
+    private string GetBookmarkIcon(int scholarshipId)
+    {
+        bool isBookmarked = bookmarkedScholarshipIds.Contains(scholarshipId);
+        return isBookmarked 
+            ? "bi-bookmark-fill" // Filled bookmark
+            : "bi-bookmark"; // Empty bookmark
+    }
+
+    private string GetBookmarkTooltip(int scholarshipId)
+    {
+        bool isBookmarked = bookmarkedScholarshipIds.Contains(scholarshipId);
+        return isBookmarked
+            ? "Remove from bookmarks" 
+            : "Add to bookmarks";
     }
 
     private class ApplicationViewModel
