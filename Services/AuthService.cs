@@ -3,6 +3,7 @@ using c2_eskolar.Models;
 using c2_eskolar.Models.Enums;
 using c2_eskolar.Models.ViewModels;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 
 namespace c2_eskolar.Services
 {
@@ -13,17 +14,17 @@ namespace c2_eskolar.Services
     private readonly UserManager<IdentityUser> _userManager;
     private readonly SignInManager<IdentityUser> _signInManager;
 
-        // Database context for saving related user profile info
-        private readonly ApplicationDbContext _context;
+        // Database context factory for creating short-lived DbContext instances
+            private readonly IDbContextFactory<ApplicationDbContext> _contextFactory;
 
-        // Constructor injects dependencies (DI for Identity + DbContext)
-    public AuthService(UserManager<IdentityUser> userManager,
-               SignInManager<IdentityUser> signInManager,
-                           ApplicationDbContext context)
+            // Constructor injects dependencies (DI for Identity + DbContextFactory)
+        public AuthService(UserManager<IdentityUser> userManager,
+                   SignInManager<IdentityUser> signInManager,
+                               IDbContextFactory<ApplicationDbContext> contextFactory)
         {
             _userManager = userManager;
             _signInManager = signInManager;
-            _context = context;
+                _contextFactory = contextFactory;
         }
 
         // Register a new user and create profile based on selected role
@@ -109,10 +110,12 @@ namespace c2_eskolar.Services
         private async Task CreateUserProfileAsync(string identityUserId, RegisterViewModel model)
         {
 
+            // Use a short-lived DbContext for the profile creation to avoid concurrent use of a shared context
+            using var context = _contextFactory.CreateDbContext();
             switch (model.UserRole)
             {
                 case UserRole.Student:
-                    _context.StudentProfiles.Add(new StudentProfile
+                    context.StudentProfiles.Add(new StudentProfile
                     {
                         StudentProfileId = Guid.NewGuid(),
                         UserId = identityUserId,
@@ -129,7 +132,7 @@ namespace c2_eskolar.Services
                     break;
 
                 case UserRole.Benefactor:
-                    _context.BenefactorProfiles.Add(new BenefactorProfile
+                    context.BenefactorProfiles.Add(new BenefactorProfile
                     {
                         BenefactorProfileId = Guid.NewGuid(),
                         UserId = identityUserId,
@@ -140,7 +143,7 @@ namespace c2_eskolar.Services
                     break;
 
                 case UserRole.Institution:
-                    _context.InstitutionProfiles.Add(new InstitutionProfile
+                    context.InstitutionProfiles.Add(new InstitutionProfile
                     {
                         InstitutionProfileId = Guid.NewGuid(),
                         UserId = identityUserId,
@@ -152,7 +155,7 @@ namespace c2_eskolar.Services
             }
 
             // Commit profile changes to database
-            await _context.SaveChangesAsync();
+            await context.SaveChangesAsync();
         }
         
         // Helper method to get role ID based on UserRole enum

@@ -17,18 +17,18 @@ namespace c2_eskolar.Services
 
     public class PasswordResetService : IPasswordResetService
     {
-        private readonly ApplicationDbContext _context;
-    private readonly UserManager<IdentityUser> _userManager;
+        private readonly IDbContextFactory<ApplicationDbContext> _contextFactory;
+        private readonly UserManager<IdentityUser> _userManager;
         private readonly IEmailService _emailService;
         private readonly ILogger<PasswordResetService> _logger;
 
         public PasswordResetService(
-            ApplicationDbContext context,
+            IDbContextFactory<ApplicationDbContext> contextFactory,
             UserManager<IdentityUser> userManager,
             IEmailService emailService,
             ILogger<PasswordResetService> logger)
         {
-            _context = context;
+            _contextFactory = contextFactory;
             _userManager = userManager;
             _emailService = emailService;
             _logger = logger;
@@ -62,8 +62,9 @@ namespace c2_eskolar.Services
                     UserAgent = userAgent
                 };
 
-                _context.PasswordResets.Add(passwordReset);
-                await _context.SaveChangesAsync();
+                using var context = _contextFactory.CreateDbContext();
+                context.PasswordResets.Add(passwordReset);
+                await context.SaveChangesAsync();
 
                 // Build reset URL
                 var resetUrl = $"{baseUrl}/reset-password?token={token}";
@@ -97,7 +98,8 @@ namespace c2_eskolar.Services
         {
             try
             {
-                var resetRecord = await _context.PasswordResets
+                using var context = _contextFactory.CreateDbContext();
+                var resetRecord = await context.PasswordResets
                     .FirstOrDefaultAsync(pr => pr.Token == token && !pr.IsUsed && pr.ExpiresAt > DateTime.UtcNow);
 
                 return resetRecord != null;
@@ -113,7 +115,8 @@ namespace c2_eskolar.Services
         {
             try
             {
-                var resetRecord = await _context.PasswordResets
+                using var context = _contextFactory.CreateDbContext();
+                var resetRecord = await context.PasswordResets
                     .FirstOrDefaultAsync(pr => pr.Token == token && !pr.IsUsed && pr.ExpiresAt > DateTime.UtcNow);
 
                 if (resetRecord == null)
@@ -138,7 +141,7 @@ namespace c2_eskolar.Services
                     // Mark token as used
                     resetRecord.IsUsed = true;
                     resetRecord.UsedAt = DateTime.UtcNow;
-                    await _context.SaveChangesAsync();
+                    await context.SaveChangesAsync();
 
                     _logger.LogInformation("Password reset successful for user {Email}", resetRecord.Email);
                     return true;
@@ -161,14 +164,15 @@ namespace c2_eskolar.Services
         {
             try
             {
-                var expiredTokens = await _context.PasswordResets
+                using var context = _contextFactory.CreateDbContext();
+                var expiredTokens = await context.PasswordResets
                     .Where(pr => pr.ExpiresAt <= DateTime.UtcNow || pr.IsUsed)
                     .ToListAsync();
 
                 if (expiredTokens.Any())
                 {
-                    _context.PasswordResets.RemoveRange(expiredTokens);
-                    await _context.SaveChangesAsync();
+                    context.PasswordResets.RemoveRange(expiredTokens);
+                    await context.SaveChangesAsync();
                     _logger.LogInformation("Cleaned up {Count} expired password reset tokens", expiredTokens.Count);
                 }
             }

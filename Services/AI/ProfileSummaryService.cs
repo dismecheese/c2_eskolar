@@ -11,12 +11,12 @@ namespace c2_eskolar.Services.AI
 {
     public class ProfileSummaryService
     {
-        private readonly ApplicationDbContext _context;
+        private readonly IDbContextFactory<ApplicationDbContext> _contextFactory;
         private readonly UserManager<IdentityUser> _userManager;
 
-        public ProfileSummaryService(ApplicationDbContext context, UserManager<IdentityUser> userManager)
+        public ProfileSummaryService(IDbContextFactory<ApplicationDbContext> contextFactory, UserManager<IdentityUser> userManager)
         {
-            _context = context;
+            _contextFactory = contextFactory;
             _userManager = userManager;
         }
 
@@ -29,7 +29,8 @@ namespace c2_eskolar.Services.AI
 
             if (role == "Student")
             {
-                var profile = await _context.StudentProfiles.FirstOrDefaultAsync(p => p.UserId == user.Id);
+                using var context = _contextFactory.CreateDbContext();
+                var profile = await context.StudentProfiles.FirstOrDefaultAsync(p => p.UserId == user.Id);
                 if (profile == null) return null;
                 return new ProfileSummaryResult("Student", 
                     $"First Name: {profile.FirstName}\n" +
@@ -52,13 +53,15 @@ namespace c2_eskolar.Services.AI
             }
             else if (role == "Benefactor")
             {
-                var profile = await _context.BenefactorProfiles.FirstOrDefaultAsync(p => p.UserId == user.Id);
+                using var context = _contextFactory.CreateDbContext();
+                var profile = await context.BenefactorProfiles.FirstOrDefaultAsync(p => p.UserId == user.Id);
                 if (profile == null) return null;
                 return new ProfileSummaryResult("Benefactor", $"Admin: {profile.AdminFullName}\nOrganization: {profile.OrganizationName}\nType: {profile.OrganizationType}\nEmail: {profile.ContactEmail}\nVerified: {profile.IsVerified}");
             }
             else if (role == "Institution")
             {
-                var profile = await _context.InstitutionProfiles.FirstOrDefaultAsync(p => p.UserId == user.Id);
+                using var context = _contextFactory.CreateDbContext();
+                var profile = await context.InstitutionProfiles.FirstOrDefaultAsync(p => p.UserId == user.Id);
                 if (profile == null) return null;
                 return new ProfileSummaryResult("Institution", $"Admin: {profile.AdminFullName}\nInstitution: {profile.InstitutionName}\nType: {profile.InstitutionType}\nEmail: {profile.ContactEmail}\nVerified: {profile.IsVerified}");
             }
@@ -74,19 +77,22 @@ namespace c2_eskolar.Services.AI
 
             if (role == "Student")
             {
-                var profile = await _context.StudentProfiles.FirstOrDefaultAsync(p => p.UserId == user.Id);
+                using var context = _contextFactory.CreateDbContext();
+                var profile = await context.StudentProfiles.FirstOrDefaultAsync(p => p.UserId == user.Id);
                 return profile?.FirstName;
             }
             else if (role == "Benefactor")
             {
-                var profile = await _context.BenefactorProfiles.FirstOrDefaultAsync(p => p.UserId == user.Id);
+                using var context = _contextFactory.CreateDbContext();
+                var profile = await context.BenefactorProfiles.FirstOrDefaultAsync(p => p.UserId == user.Id);
                 // Extract first name from AdminFullName if available
                 var fullName = profile?.AdminFullName;
                 return fullName?.Split(' ').FirstOrDefault();
             }
             else if (role == "Institution")
             {
-                var profile = await _context.InstitutionProfiles.FirstOrDefaultAsync(p => p.UserId == user.Id);
+                using var context = _contextFactory.CreateDbContext();
+                var profile = await context.InstitutionProfiles.FirstOrDefaultAsync(p => p.UserId == user.Id);
                 // Extract first name from AdminFullName if available
                 var fullName = profile?.AdminFullName;
                 return fullName?.Split(' ').FirstOrDefault();

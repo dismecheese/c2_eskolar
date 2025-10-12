@@ -10,17 +10,18 @@ namespace c2_eskolar.Services
 	// SERVICE TO SEED SAMPLE SCHOLARSHIPS INTO DATABASE
 	public class ScholarshipSeedService
 	{
-		private readonly ApplicationDbContext _context;
+		private readonly IDbContextFactory<ApplicationDbContext> _contextFactory;
 
-		public ScholarshipSeedService(ApplicationDbContext context)
+		public ScholarshipSeedService(IDbContextFactory<ApplicationDbContext> contextFactory)
 		{
-			_context = context;
+			_contextFactory = contextFactory;
 		}
 
 		// SEEDS DEMO SCHOLARSHIPS IF NONE EXIST
 		public async Task SeedSampleScholarshipsAsync()
 		{
-			if (await _context.Scholarships.AnyAsync())
+			using var context = _contextFactory.CreateDbContext();
+			if (await context.Scholarships.AnyAsync())
 			{
 				return; // Skip seeding if data already present
 			}
@@ -98,8 +99,8 @@ namespace c2_eskolar.Services
 				}
 			};
 
-			_context.Scholarships.AddRange(sampleScholarships);
-			await _context.SaveChangesAsync();
+			context.Scholarships.AddRange(sampleScholarships);
+			await context.SaveChangesAsync();
 		}
 	}
 }
