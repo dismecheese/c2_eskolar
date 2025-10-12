@@ -6,11 +6,12 @@
 @using c2_eskolar.Data
 @using c2_eskolar.Models
 @using Microsoft.AspNetCore.Components.Forms
-@inject ApplicationDbContext DbContext
+@inject IDbContextFactory<ApplicationDbContext> DbContextFactory
 @inject c2_eskolar.Services.BenefactorProfileService BenefactorProfileService
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @inject Microsoft.AspNetCore.Identity.UserManager<Microsoft.AspNetCore.Identity.IdentityUser> UserManager
 @inject IJSRuntime JS
+@inject c2_eskolar.Services.BlobStorageService BlobStorageService
 
 @code {
     [Parameter] public int ScholarshipId { get; set; }
@@ -30,6 +31,7 @@
     private bool showStudentList = false;
     private bool isSaving = false;
     private Guid? currentBenefactorProfileId = null;
+    private string? scholarshipIconSasUrl = null;
 
     protected override async Task OnInitializedAsync()
     {
@@ -47,7 +49,9 @@
                 var user = await UserManager.GetUserAsync(authState.User);
                 if (user != null)
                 {
-                    var benefactorProfile = await BenefactorProfileService.GetProfileByUserIdAsync(user.Id);
+                    using var context = await DbContextFactory.CreateDbContextAsync();
+                    var benefactorProfile = await context.BenefactorProfiles
+                        .FirstOrDefaultAsync(bp => bp.UserId == user.Id);
                     currentBenefactorProfileId = benefactorProfile?.BenefactorProfileId;
                 }
             }
@@ -60,7 +64,8 @@
 
     private async Task LoadScholarship()
     {
-        scholarship = await DbContext.Scholarships
+        using var context = await DbContextFactory.CreateDbContextAsync();
+        scholarship = await context.Scholarships
             .Include(s => s.Institution)
             .Include(s => s.Benefactor)
             .Include(s => s.Applications)
@@ -69,6 +74,12 @@
 
         if (scholarship != null)
         {
+            // Debug: Log the IconUrl value
+            Console.WriteLine($"🔍 DEBUG: Scholarship ID {scholarship.ScholarshipId} - IconUrl: '{scholarship.IconUrl}'");
+            
+            // Generate secure SAS URL for the scholarship icon
+            scholarshipIconSasUrl = GetSecureIconUrl(scholarship.IconUrl);
+            
             studentApplicants = scholarship.Applications
                 .Where(a => a.Student != null)
                 .ToList();
@@ -91,6 +102,7 @@
                 RequiredYearLevel = scholarship.RequiredYearLevel,
                 RequiredUniversity = scholarship.RequiredUniversity,
                 ExternalApplicationUrl = scholarship.ExternalApplicationUrl,
+                IconUrl = scholarship.IconUrl,
                 // Copy foreign keys to maintain relationships
                 BenefactorProfileId = scholarship.BenefactorProfileId,
                 InstitutionProfileId = scholarship.InstitutionProfileId
@@ -128,6 +140,7 @@
                 RequiredYearLevel = scholarship.RequiredYearLevel,
                 RequiredUniversity = scholarship.RequiredUniversity,
                 ExternalApplicationUrl = scholarship.ExternalApplicationUrl,
+                IconUrl = scholarship.IconUrl,
                 // Copy foreign keys to maintain relationships
                 BenefactorProfileId = scholarship.BenefactorProfileId,
                 InstitutionProfileId = scholarship.InstitutionProfileId
@@ -158,7 +171,8 @@
 
         try
         {
-            var existing = await DbContext.Scholarships.FindAsync(editableScholarship.ScholarshipId);
+            using var context = await DbContextFactory.CreateDbContextAsync();
+            var existing = await context.Scholarships.FindAsync(editableScholarship.ScholarshipId);
             if (existing == null)
             {
                 errorMessage = "Scholarship not found.";
@@ -181,7 +195,7 @@
             existing.UpdatedAt = DateTime.Now;
 
             // Save changes
-            var changes = await DbContext.SaveChangesAsync();
+            var changes = await context.SaveChangesAsync();
             
             if (changes > 0)
             {
@@ -210,6 +224,42 @@
     {
         await JS.InvokeVoidAsync("history.back");
     }
+
+    /// <summary>
+    /// Converts a blob URL to a secure SAS URL for display
+    /// </summary>
+    private string GetSecureIconUrl(string? iconUrl)
+    {
+        if (string.IsNullOrEmpty(iconUrl))
+        {
+            return string.Empty;
+        }
+
+        try
+        {
+            // If it's already a data URL (base64), return as-is
+            if (iconUrl.StartsWith("data:"))
+            {
+                return iconUrl;
+            }
+
+            // If it's a blob storage URL, convert to SAS URL
+            if (iconUrl.Contains("blob.core.windows.net"))
+            {
+                var sasUrl = BlobStorageService.GetPhotoSasUrlFromBlobUrl(iconUrl, 480); // 8 hours validity
+                Console.WriteLine($"🔐 Generated SAS URL for icon: {sasUrl.Substring(0, Math.Min(50, sasUrl.Length))}...");
+                return sasUrl;
+            }
+
+            // Return original URL for other cases
+            return iconUrl;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"⚠️ Error generating secure icon URL: {ex.Message}");
+            return iconUrl; // Return original URL on error
+        }
+    }
 }
 
 @if (scholarship == null)
@@ -230,7 +280,23 @@ else
     <div class="scholarship-banner mb-4 animate__animated animate__fadeIn" style="background: linear-gradient(90deg, #2563eb 60%, #60a5fa 100%); box-shadow: 0 4px 24px #2563eb22; border-radius: 1.5rem; padding: 2.5rem 2rem 2rem 2rem; display: flex; align-items: center; gap: 2rem; margin-right: 0;">
         <div class="d-flex align-items-center justify-content-center" style="min-width: 100px;">
             <div style="width: 90px; height: 90px; border-radius: 50%; background: #fff; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 12px #2563eb33; border: 4px solid #60a5fa;">
-                <img src="https://via.placeholder.com/70x70.png?text=🎓" alt="Scholarship Logo" style="width: 70px; height: 70px; border-radius: 50%; object-fit: cover;" />
+                @if (!string.IsNullOrEmpty(scholarshipIconSasUrl))
+                {
+                    <img src="@scholarshipIconSasUrl" alt="Scholarship Icon" 
+                         style="width: 70px; height: 70px; border-radius: 50%; object-fit: cover;" 
+                         onerror="console.error('❌ Failed to load scholarship icon:', '@scholarshipIconSasUrl'); console.warn('🔧 This may be due to Azure Blob Storage access permissions or SAS token expiry'); this.style.display='none'; this.nextElementSibling.style.display='flex';" 
+                         onload="console.log('✅ Scholarship icon loaded successfully with SAS URL:', '@scholarshipIconSasUrl');" />
+                    <div id="fallback-icon" style="width: 70px; height: 70px; border-radius: 50%; background: linear-gradient(135deg, #2563eb, #60a5fa); display: none; align-items: center; justify-content: center; color: white; font-size: 2rem; position: relative;">
+                        🎓
+                        <div style="position: absolute; bottom: -2px; right: -2px; width: 20px; height: 20px; background: #f59e0b; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.8rem;">🔐</div>
+                    </div>
+                }
+                else
+                {
+                    <div style="width: 70px; height: 70px; border-radius: 50%; background: linear-gradient(135deg, #2563eb, #60a5fa); display: flex; align-items: center; justify-content: center; color: white; font-size: 2rem;">
+                        🎓
+                    </div>
+                }
             </div>
         </div>
         <div class="flex-grow-1">
