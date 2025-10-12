@@ -10,6 +10,8 @@ namespace c2_eskolar.Models
     public int? ScholarshipId { get; set; }
     public Guid? AnnouncementId { get; set; }
         public string Url { get; set; } = string.Empty;
+        // SortOrder controls display order for photos within an announcement
+        public int SortOrder { get; set; } = 0;
         public string? Caption { get; set; }
         public DateTime UploadedAt { get; set; } = DateTime.Now;
 
