@@ -49,24 +49,6 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: .net-app
-
-      - name: Ensure App Settings from Secrets (PowerShell)
-        if: steps.az-login.outcome == 'success'
-        shell: pwsh
-        env:
-          AZURE_RG: ${{ secrets.AZURE_RESOURCE_GROUP }}
-          AZ_BLOB_CONN: ${{ secrets.AzureBlobStorage__ConnectionString }}
-          AZ_OPENAI_KEY: ${{ secrets.AzureOpenAI__ApiKey }}
-          AZ_DOC_AI_KEY: ${{ secrets.AzureDocumentIntelligence__ApiKey }}
-        run: |
-          $payload = @()
-          if ($env:AZ_BLOB_CONN) { $payload += @{ name = "AzureBlobStorage__ConnectionString"; value = $env:AZ_BLOB_CONN } }
-          if ($env:AZ_OPENAI_KEY) { $payload += @{ name = "AzureOpenAI__ApiKey"; value = $env:AZ_OPENAI_KEY } }
-          if ($env:AZ_DOC_AI_KEY) { $payload += @{ name = "AzureDocumentIntelligence__ApiKey"; value = $env:AZ_DOC_AI_KEY } }
-          $payload | ConvertTo-Json -Depth 5 > appsettings_payload.json
-          az webapp config appsettings set --name eSkolar --resource-group $env:AZURE_RG --settings $appsettings_payload.json --debug
-          Remove-Item appsettings_payload.json -
-            
             
       - name: Login to Azure (try OIDC)
         id: az-login
@@ -76,23 +58,6 @@ jobs:
           client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_8F79BCF2685B4854ADB6CEE82559B9C6 }}
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_6ACA7DC4DDE749139EA03E071999A9C0 }}
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_049CCB95A6B14D5FB44D8AC8AB588FBF }}
-
-      - name: Ensure App Settings from Secrets (PowerShell)
-        if: steps.az-login.outcome == 'success'
-        shell: pwsh
-        env:
-          AZURE_RG: ${{ secrets.AZURE_RESOURCE_GROUP }}
-          AZ_BLOB_CONN: ${{ secrets.AzureBlobStorage__ConnectionString }}
-          AZ_OPENAI_KEY: ${{ secrets.AzureOpenAI__ApiKey }}
-          AZ_DOC_AI_KEY: ${{ secrets.AzureDocumentIntelligence__ApiKey }}
-        run: |
-          $payload = @()
-          if ($env:AZ_BLOB_CONN) { $payload += @{ name = "AzureBlobStorage__ConnectionString"; value = $env:AZ_BLOB_CONN } }
-          if ($env:AZ_OPENAI_KEY) { $payload += @{ name = "AzureOpenAI__ApiKey"; value = $env:AZ_OPENAI_KEY } }
-          if ($env:AZ_DOC_AI_KEY) { $payload += @{ name = "AzureDocumentIntelligence__ApiKey"; value = $env:AZ_DOC_AI_KEY } }
-          $payload | ConvertTo-Json -Depth 5 > appsettings_payload.json
-          az webapp config appsettings set --name eSkolar --resource-group $env:AZURE_RG --settings @appsettings_payload.json --debug
-          Remove-Item appsettings_payload.json -
 
       - name: Deploy to Azure Web App (publish profile)
         if: ${{ env.PUBLISH_PROFILE != '' && steps.az-login.outcome != 'success' }}
@@ -109,4 +74,5 @@ jobs:
           app-name: 'eSkolar'
           slot-name: 'Production'
           package: .
+
           
