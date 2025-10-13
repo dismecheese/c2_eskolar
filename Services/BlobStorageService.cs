@@ -23,9 +23,25 @@ namespace c2_eskolar.Services
 
         public BlobStorageService(IConfiguration config)
         {
-            _connectionString = config["AzureBlobStorage:ConnectionString"] ?? throw new ArgumentNullException("AzureBlobStorage:ConnectionString is missing in configuration.");
+            // Read connection string with fallbacks so the app works when App Service stores
+            // the value as ConnectionStrings__AzureBlobStorage (maps to ConnectionStrings:AzureBlobStorage)
+            // or as a single key AzureBlobStorageConnectionString.
+            var connKey1 = config["AzureBlobStorage:ConnectionString"];
+            var connKey2 = config["ConnectionStrings:AzureBlobStorage"];
+            var connKey3 = config["AzureBlobStorageConnectionString"];
+            var conn = connKey1 ?? connKey2 ?? connKey3;
+            if (string.IsNullOrWhiteSpace(conn))
+            {
+                throw new ArgumentNullException("AzureBlobStorage connection string is missing. Set AzureBlobStorage:ConnectionString or ConnectionStrings:AzureBlobStorage or AzureBlobStorageConnectionString in configuration.");
+            }
+            _connectionString = conn;
             _documentsContainer = config["AzureBlobStorage:DocumentsContainer"] ?? throw new ArgumentNullException("AzureBlobStorage:DocumentsContainer is missing in configuration.");
             _photosContainer = config["AzureBlobStorage:PhotosContainer"] ?? throw new ArgumentNullException("AzureBlobStorage:PhotosContainer is missing in configuration.");
+
+            // Log which config key supplied the connection (mask most of the secret)
+            var source = connKey1 != null ? "AzureBlobStorage:ConnectionString" : (connKey2 != null ? "ConnectionStrings:AzureBlobStorage" : "AzureBlobStorageConnectionString");
+            var masked = _connectionString.Length > 12 ? _connectionString.Substring(0, 8) + "..." : "(masked)";
+            Console.WriteLine($"[BlobStorageService] Using blob connection from {source} (masked: {masked})");
         }
 
         private BlobContainerClient GetContainerClient(string containerName)
