@@ -8,8 +8,6 @@
 @inject c2_eskolar.Services.InstitutionProfileService InstitutionProfileService
 @inject c2_eskolar.Services.OpenAIService OpenAIService
 
-<PageTitle>Analytics - Scholarship Impact Dashboard</PageTitle>
-
 
 @code {
     public class PieSliceData
@@ -43,6 +41,25 @@
 	private double RetentionRate;
 	private double DropoutRate;
 	private double SuccessRate;
+
+	// Enhanced analytics properties
+	private int NewApplicantsThisMonth;
+	private decimal TotalScholarshipValue;
+	private decimal DistributedValue;
+	private decimal AverageScholarshipAmount;
+	private double ApplicationSuccessRate;
+	private int PendingApprovals;
+	private double AverageGWA;
+	private double AcceptanceRate;
+	private string? selectedStatusFilter = "";
+	private string studentSearchText = "";
+	private string selectedDateRange = "all";
+	private List<ScholarshipApplication> FilteredApplications => GetFilteredApplications();
+	
+	// Application context variables
+	private List<ScholarshipApplication> allApplications = new();
+	private c2_eskolar.Data.ApplicationDbContext context => DbContext;
+	private Guid InstitutionId => profile?.InstitutionProfileId ?? Guid.Empty;
 
 	// Demographic analytics
 	private Dictionary<string, string> demographicCategories = new();
@@ -146,7 +163,33 @@
 		return address.Trim();
 	}
 
+	// Enhanced filtering methods - moved to end of code section
 
+	private void FilterByStatus(ChangeEventArgs e)
+	{
+		selectedStatusFilter = e.Value?.ToString() ?? "";
+		StateHasChanged();
+	}
+
+	private void FilterStudents(ChangeEventArgs e)
+	{
+		studentSearchText = e.Value?.ToString() ?? "";
+		StateHasChanged();
+	}
+
+	private string GetGWAClass(double? gwa)
+	{
+		if (!gwa.HasValue) return "gwa-unknown";
+		return gwa.Value switch
+		{
+			>= 3.5 => "gwa-excellent",
+			>= 3.0 => "gwa-good",
+			>= 2.5 => "gwa-average",
+			_ => "gwa-below"
+		};
+	}
+
+	// Enhanced analytics calculations - now integrated in loading process
 
 	// Calculate scholarship utilization and impact metrics
 	private async Task CalculateScholarshipUtilization()
@@ -265,10 +308,20 @@
 
             // 5/7 steps
             await CalculateUtilizationMetrics();
-            LoadingProgress = 71;
+            LoadingProgress = 60;
             StateHasChanged();
 
-            // 6/7 steps
+            // 6/8 steps
+            await CalculateEnhancedMetrics();
+            LoadingProgress = 75;
+            StateHasChanged();
+
+            // 7/8 steps
+            await CalculateFinancialMetrics();
+            LoadingProgress = 90;
+            StateHasChanged();
+
+            // 8/8 steps
             LoadingProgress = 100;
             StateHasChanged();
         }
@@ -327,6 +380,9 @@
                 .Where(sa => sa.Scholarship.InstitutionProfileId == profile.InstitutionProfileId)
                 .ToListAsync();
 
+            // Also populate allApplications for enhanced analytics
+            allApplications = myApplications;
+
             Console.WriteLine($"Loaded {myApplications.Count} applications.");
 
             // Calculate application counts
@@ -377,6 +433,149 @@
         DropoutRate = TotalScholarsEver > 0 ? (double)DroppedOutScholars / TotalScholarsEver * 100 : 0;
         SuccessRate = TotalScholarsEver > 0 ? (double)GraduatedScholars / TotalScholarsEver * 100 : 0;
     }
+
+    private async Task CalculateEnhancedMetrics()
+    {
+        // Calculate new applicants this month
+        var thisMonth = DateTime.Now;
+        var firstDayOfMonth = new DateTime(thisMonth.Year, thisMonth.Month, 1);
+        NewApplicantsThisMonth = allApplications
+            .Where(a => a.ApplicationDate >= firstDayOfMonth && a.ApplicationDate < firstDayOfMonth.AddMonths(1))
+            .Count();
+
+        // Calculate pending approvals
+        PendingApprovals = allApplications
+            .Where(a => a.Status == "Pending")
+            .Count();
+
+        // Calculate average GWA
+        var studentsWithGWA = allApplications
+            .Where(a => a.GWA.HasValue && a.GWA.Value > 0)
+            .ToList();
+        
+        AverageGWA = studentsWithGWA.Any() ? studentsWithGWA.Average(a => a.GWA.Value) : 0;
+
+        // Calculate acceptance rate
+        var processedApplications = allApplications
+            .Where(a => a.Status == "Approved" || a.Status == "Rejected")
+            .ToList();
+        
+        var approvedApplications = allApplications
+            .Where(a => a.Status == "Approved")
+            .ToList();
+
+        AcceptanceRate = processedApplications.Any() ? 
+            (double)approvedApplications.Count / processedApplications.Count * 100 : 0;
+
+        await Task.CompletedTask;
+    }
+
+    private async Task CalculateFinancialMetrics()
+    {
+        // Calculate total scholarship value (from all scholarships offered by this institution)
+        var institutionScholarships = await context.Scholarships
+            .Where(s => s.InstitutionProfileId == InstitutionId)
+            .ToListAsync();
+
+        TotalScholarshipValue = institutionScholarships.Sum(s => s.MonetaryValue ?? 0);
+
+        // Calculate distributed value (from approved applications)
+        var approvedApplicationsWithAmount = allApplications
+            .Where(a => a.Status == "Approved")
+            .Join(institutionScholarships, 
+                app => app.ScholarshipId, 
+                sch => sch.ScholarshipId,
+                (app, sch) => sch.MonetaryValue ?? 0)
+            .ToList();
+
+        DistributedValue = approvedApplicationsWithAmount.Sum();
+
+        await Task.CompletedTask;
+    }
+
+    // Helper methods for enhanced analytics
+    private string GetGWAClassification(double gwa)
+    {
+        if (gwa >= 1.0 && gwa <= 1.2) return "Summa Cum Laude";
+        if (gwa >= 1.21 && gwa <= 1.45) return "Magna Cum Laude";
+        if (gwa >= 1.46 && gwa <= 1.75) return "Cum Laude";
+        if (gwa >= 1.76 && gwa <= 2.0) return "Very Good";
+        if (gwa >= 2.01 && gwa <= 2.5) return "Good";
+        if (gwa >= 2.51 && gwa <= 3.0) return "Satisfactory";
+        return "Needs Improvement";
+    }
+
+    private string GetStatusBadgeClass(string status)
+    {
+        return status?.ToLower() switch
+        {
+            "approved" => "badge bg-success",
+            "pending" => "badge bg-warning",
+            "rejected" => "badge bg-danger",
+            _ => "badge bg-secondary"
+        };
+    }
+
+    private List<ScholarshipApplication> GetFilteredApplications()
+    {
+        if (allApplications == null) return new List<ScholarshipApplication>();
+        
+        var filtered = allApplications.AsEnumerable();
+
+        // Filter by status
+        if (!string.IsNullOrEmpty(selectedStatusFilter))
+        {
+            filtered = filtered.Where(a => a.Status?.Equals(selectedStatusFilter, StringComparison.OrdinalIgnoreCase) == true);
+        }
+
+        // Filter by student name
+        if (!string.IsNullOrEmpty(studentSearchText))
+        {
+            filtered = filtered.Where(a => 
+                (a.Student?.FullName?.Contains(studentSearchText, StringComparison.OrdinalIgnoreCase) == true) ||
+                (a.Student?.FirstName?.Contains(studentSearchText, StringComparison.OrdinalIgnoreCase) == true) ||
+                (a.Student?.LastName?.Contains(studentSearchText, StringComparison.OrdinalIgnoreCase) == true));
+        }
+
+        // Filter by date range
+        if (selectedDateRange != "all")
+        {
+            var now = DateTime.Now;
+            var filterDate = selectedDateRange switch
+            {
+                "month" => now.AddMonths(-1),
+                "quarter" => now.AddMonths(-3),
+                "year" => now.AddYears(-1),
+                _ => DateTime.MinValue
+            };
+
+            if (filterDate != DateTime.MinValue)
+            {
+                filtered = filtered.Where(a => a.ApplicationDate >= filterDate);
+            }
+        }
+
+        return filtered.ToList();
+    }
+
+    private int GetFilteredApplicationsCount()
+    {
+        return GetFilteredApplications().Count;
+    }
+
+    private async Task ApplyFilters()
+    {
+        // Trigger UI refresh
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task ClearFilters()
+    {
+        selectedStatusFilter = "";
+        studentSearchText = "";
+        selectedDateRange = "all";
+        await InvokeAsync(StateHasChanged);
+    }
 }
 @if (IsLoading)
 {
@@ -403,13 +602,255 @@ else if (!string.IsNullOrEmpty(ErrorMessage))
 else
 {
 	<div class="text-white py-4 mb-4 rounded-4 shadow-sm text-center position-relative overflow-hidden"
-		 style="background: linear-gradient(135deg, #1976d2, #64b5f6);">
+		 style="background: linear-gradient(135deg, #1976d2, #64b5f6); margin-right: 100px;">
 	  <div class="position-absolute top-0 start-0 w-100 h-100"
 		   style="background: radial-gradient(circle at top left, rgba(255,255,255,0.15), transparent 60%);"></div>
     <h2 class="m-0 fw-bold position-relative">Institution Analytics</h2>
 	  <p class="m-0 mt-2 small text-light opacity-75 position-relative">Applicants • Performance • Trends</p>
 	</div>
-	<div class="container mt-4">
+
+    <!-- Enhanced KPI Cards Section -->
+    <div class="container mt-4">
+        <div class="row g-4 mb-4">
+            <!-- Total Applications -->
+            <div class="col-md-6 col-lg-3">
+                <div class="card border-0 shadow-sm h-100 position-relative overflow-hidden">
+                    <div class="position-absolute top-0 end-0 p-2">
+                        <i class="fas fa-users text-primary opacity-25" style="font-size: 2rem;"></i>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-flex align-items-center mb-2">
+                            <div class="p-2 rounded-circle me-3" style="background: linear-gradient(135deg, #1976d2, #64b5f6);">
+                                <i class="fas fa-file-alt text-white"></i>
+                            </div>
+                            <div>
+                                <h6 class="card-title mb-0 text-muted small">Total Applications</h6>
+                                <h3 class="mb-0 fw-bold text-primary">@TotalApplicants</h3>
+                            </div>
+                        </div>
+                        <div class="small text-muted">
+                            <i class="fas fa-clock me-1"></i>All time applications
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- New Applications This Month -->
+            <div class="col-md-6 col-lg-3">
+                <div class="card border-0 shadow-sm h-100 position-relative overflow-hidden">
+                    <div class="position-absolute top-0 end-0 p-2">
+                        <i class="fas fa-plus-circle text-success opacity-25" style="font-size: 2rem;"></i>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-flex align-items-center mb-2">
+                            <div class="p-2 rounded-circle me-3" style="background: linear-gradient(135deg, #28a745, #20c997);">
+                                <i class="fas fa-calendar-plus text-white"></i>
+                            </div>
+                            <div>
+                                <h6 class="card-title mb-0 text-muted small">New This Month</h6>
+                                <h3 class="mb-0 fw-bold text-success">@NewApplicantsThisMonth</h3>
+                            </div>
+                        </div>
+                        <div class="small text-muted">
+                            <i class="fas fa-calendar me-1"></i>@DateTime.Now.ToString("MMMM yyyy")
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pending Approvals -->
+            <div class="col-md-6 col-lg-3">
+                <div class="card border-0 shadow-sm h-100 position-relative overflow-hidden">
+                    <div class="position-absolute top-0 end-0 p-2">
+                        <i class="fas fa-hourglass-half text-warning opacity-25" style="font-size: 2rem;"></i>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-flex align-items-center mb-2">
+                            <div class="p-2 rounded-circle me-3" style="background: linear-gradient(135deg, #ffc107, #ffeb3b);">
+                                <i class="fas fa-clock text-white"></i>
+                            </div>
+                            <div>
+                                <h6 class="card-title mb-0 text-muted small">Pending Approval</h6>
+                                <h3 class="mb-0 fw-bold text-warning">@PendingApprovals</h3>
+                            </div>
+                        </div>
+                        <div class="small text-muted">
+                            <i class="fas fa-exclamation-triangle me-1"></i>Require review
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Acceptance Rate -->
+            <div class="col-md-6 col-lg-3">
+                <div class="card border-0 shadow-sm h-100 position-relative overflow-hidden">
+                    <div class="position-absolute top-0 end-0 p-2">
+                        <i class="fas fa-chart-line text-info opacity-25" style="font-size: 2rem;"></i>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-flex align-items-center mb-2">
+                            <div class="p-2 rounded-circle me-3" style="background: linear-gradient(135deg, #17a2b8, #6fc3d0);">
+                                <i class="fas fa-percentage text-white"></i>
+                            </div>
+                            <div>
+                                <h6 class="card-title mb-0 text-muted small">Acceptance Rate</h6>
+                                <h3 class="mb-0 fw-bold text-info">@AcceptanceRate.ToString("F1")%</h3>
+                            </div>
+                        </div>
+                        <div class="small text-muted">
+                            <i class="fas fa-chart-bar me-1"></i>Approval efficiency
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Financial Metrics Row -->
+        <div class="row g-4 mb-4">
+            <!-- Average GWA -->
+            <div class="col-md-6 col-lg-3">
+                <div class="card border-0 shadow-sm h-100 position-relative overflow-hidden">
+                    <div class="position-absolute top-0 end-0 p-2">
+                        <i class="fas fa-graduation-cap text-purple opacity-25" style="font-size: 2rem;"></i>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-flex align-items-center mb-2">
+                            <div class="p-2 rounded-circle me-3" style="background: linear-gradient(135deg, #6f42c1, #9c6bdb);">
+                                <i class="fas fa-star text-white"></i>
+                            </div>
+                            <div>
+                                <h6 class="card-title mb-0 text-muted small">Average GWA</h6>
+                                <h3 class="mb-0 fw-bold" style="color: #6f42c1;">@AverageGWA.ToString("F2")</h3>
+                            </div>
+                        </div>
+                        <div class="small text-muted">
+                            <i class="fas fa-trophy me-1"></i>@GetGWAClassification(AverageGWA)
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Total Scholarship Value -->
+            <div class="col-md-6 col-lg-3">
+                <div class="card border-0 shadow-sm h-100 position-relative overflow-hidden">
+                    <div class="position-absolute top-0 end-0 p-2">
+                        <i class="fas fa-money-bill-wave text-success opacity-25" style="font-size: 2rem;"></i>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-flex align-items-center mb-2">
+                            <div class="p-2 rounded-circle me-3" style="background: linear-gradient(135deg, #28a745, #34ce57);">
+                                <i class="fas fa-dollar-sign text-white"></i>
+                            </div>
+                            <div>
+                                <h6 class="card-title mb-0 text-muted small">Total Value</h6>
+                                <h3 class="mb-0 fw-bold text-success">₱@TotalScholarshipValue.ToString("N0")</h3>
+                            </div>
+                        </div>
+                        <div class="small text-muted">
+                            <i class="fas fa-piggy-bank me-1"></i>Available funding
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Distributed Value -->
+            <div class="col-md-6 col-lg-3">
+                <div class="card border-0 shadow-sm h-100 position-relative overflow-hidden">
+                    <div class="position-absolute top-0 end-0 p-2">
+                        <i class="fas fa-hand-holding-usd text-primary opacity-25" style="font-size: 2rem;"></i>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-flex align-items-center mb-2">
+                            <div class="p-2 rounded-circle me-3" style="background: linear-gradient(135deg, #007bff, #4dabf7);">
+                                <i class="fas fa-coins text-white"></i>
+                            </div>
+                            <div>
+                                <h6 class="card-title mb-0 text-muted small">Distributed</h6>
+                                <h3 class="mb-0 fw-bold text-primary">₱@DistributedValue.ToString("N0")</h3>
+                            </div>
+                        </div>
+                        <div class="small text-muted">
+                            <i class="fas fa-chart-pie me-1"></i>@((TotalScholarshipValue > 0 ? (double)DistributedValue / (double)TotalScholarshipValue * 100 : 0).ToString("F1"))% utilized
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Active Scholars -->
+            <div class="col-md-6 col-lg-3">
+                <div class="card border-0 shadow-sm h-100 position-relative overflow-hidden">
+                    <div class="position-absolute top-0 end-0 p-2">
+                        <i class="fas fa-user-graduate text-indigo opacity-25" style="font-size: 2rem;"></i>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-flex align-items-center mb-2">
+                            <div class="p-2 rounded-circle me-3" style="background: linear-gradient(135deg, #6610f2, #8449d6);">
+                                <i class="fas fa-users text-white"></i>
+                            </div>
+                            <div>
+                                <h6 class="card-title mb-0 text-muted small">Active Scholars</h6>
+                                <h3 class="mb-0 fw-bold" style="color: #6610f2;">@ActiveScholars</h3>
+                            </div>
+                        </div>
+                        <div class="small text-muted">
+                            <i class="fas fa-user-check me-1"></i>Currently enrolled
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Enhanced Filters Section -->
+        <div class="card shadow-sm mb-4 border-0">
+            <div class="card-body">
+                <div class="p-3 mb-3 text-white rounded-3 shadow-sm position-relative overflow-hidden" 
+                     style="background: linear-gradient(135deg, #6f42c1, #9c6bdb);">
+                    <div class="position-absolute top-0 start-0 w-100 h-100"
+                         style="background: radial-gradient(circle at top left, rgba(255,255,255,0.15), transparent 60%);"></div>
+                    <h5 class="mb-0 fw-semibold position-relative">📊 Enhanced Analytics Filters</h5>
+                </div>
+                
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label class="form-label small fw-semibold text-muted">Filter by Status</label>
+                        <select class="form-select" @bind="selectedStatusFilter" @bind:after="ApplyFilters">
+                            <option value="">All Statuses</option>
+                            <option value="Pending">Pending</option>
+                            <option value="Approved">Approved</option>
+                            <option value="Rejected">Rejected</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label small fw-semibold text-muted">Search Students</label>
+                        <input type="text" class="form-control" placeholder="Search by name..." 
+                               @bind="studentSearchText" @bind:after="ApplyFilters" />
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label small fw-semibold text-muted">Date Range</label>
+                        <select class="form-select" @bind="selectedDateRange" @bind:after="ApplyFilters">
+                            <option value="all">All Time</option>
+                            <option value="month">This Month</option>
+                            <option value="quarter">Last 3 Months</option>
+                            <option value="year">This Year</option>
+                        </select>
+                    </div>
+                </div>
+
+                @if (!string.IsNullOrEmpty(selectedStatusFilter) || !string.IsNullOrEmpty(studentSearchText) || selectedDateRange != "all")
+                {
+                    <div class="mt-3">
+                        <div class="d-flex align-items-center">
+                            <span class="badge bg-primary me-2">@GetFilteredApplicationsCount() results</span>
+                            <button class="btn btn-outline-secondary btn-sm" @onclick="ClearFilters">
+                                <i class="fas fa-times me-1"></i>Clear Filters
+                            </button>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- Original pie chart section -->
     <div class="card shadow-sm mb-4 border-0">
         <div class="card-body">
             <div class="p-3 mb-3 text-white rounded-3 shadow-sm" 

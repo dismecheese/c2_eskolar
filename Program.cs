@@ -103,6 +103,7 @@ builder.Services.AddScoped<InstitutionProfileService>();
 builder.Services.AddScoped<BlobStorageService>();
 builder.Services.AddScoped<BookmarkService>();
 
+
 // Register web scraping services
 builder.Services.AddScoped<c2_eskolar.Services.WebScraping.IWebScrapingService, c2_eskolar.Services.WebScraping.WebScrapingService>();
 builder.Services.AddScoped<c2_eskolar.Services.WebScraping.IEnhancedWebScrapingService, c2_eskolar.Services.WebScraping.EnhancedWebScrapingService>();
@@ -139,6 +140,7 @@ builder.Services.AddScoped<DisplayContextAwarenessService>();
 builder.Services.AddScoped<ChatbotMessageFormattingService>();
 builder.Services.AddScoped<OpenAIService>();
 builder.Services.AddScoped<AITokenTrackingService>();
+builder.Services.AddScoped<SuperAdminAnalyticsService>();
 
     var app = builder.Build();
 
