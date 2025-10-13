@@ -49,6 +49,7 @@ jobs:
           name: .net-app
       
       - name: Login to Azure
+        if: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE == '' }}
         uses: azure/login@v2
         with:
           client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_8F79BCF2685B4854ADB6CEE82559B9C6 }}
@@ -56,7 +57,7 @@ jobs:
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_049CCB95A6B14D5FB44D8AC8AB588FBF }}
 
       - name: Configure App Service application settings
-        if: always()
+        if: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE == '' }}
         env:
           AZURE_RG: ${{ secrets.AZURE_RESOURCE_GROUP }}
           DB_CONN: ${{ secrets.ConnectionStrings__DefaultConnection }}
@@ -77,7 +78,15 @@ jobs:
             "AzureBlobStorage__ConnectionString=$AZ_BLOB_CONN" \
             "AzureDocumentIntelligence__ApiKey=$AZ_DOC_AI_KEY"
 
+      - name: Deploy to Azure Web App (publish profile)
+        if: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE != '' }}
+        uses: azure/webapps-deploy@v3
+        with:
+          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+          package: .
+
       - name: Deploy to Azure Web App
+        if: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE == '' }}
         id: deploy-to-webapp
         uses: azure/webapps-deploy@v3
         with:
