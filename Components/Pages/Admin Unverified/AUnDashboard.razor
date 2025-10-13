@@ -1,0 +1,130 @@
+@page "/dashboard/institution/unverified"
+@page "/dashboard/benefactor/unverified"
+@layout Layout.AUnDashLayout
+@inject NavigationManager Navigation
+
+<PageTitle>Dashboard - Account Verification Required</PageTitle>
+
+@code {
+    private string GetVerificationLink()
+    {
+        var currentPath = Navigation.ToBaseRelativePath(Navigation.Uri);
+        return currentPath.Contains("/institution/") ? "/institution/verification" : "/benefactor/verification";
+    }
+    
+    private string GetVerificationText()
+    {
+        var currentPath = Navigation.ToBaseRelativePath(Navigation.Uri);
+        return currentPath.Contains("/institution/") ? "Verify Institution" : "Verify Benefactor";
+    }
+}
+
+<div class="dashboard-center-container" style="padding: 1rem 2rem 2rem 2rem;">
+    <!-- Top Bar -->
+    <div class="dashboard-topbar">
+        <div style="position: relative; flex: 1; max-width: 500px; display: flex; flex-direction: column; align-items: center; gap: 8px;">
+            <div class="university-input" style="padding-left: 15px; padding-right: 15px; color: #d84453; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; height: 32px; display: flex; align-items: center; font-size: 0.9rem; font-weight: 500; user-select: none; cursor: default;">Account not verified.</div>
+        </div>
+        <span class="dashboard-date">@DateTime.Now.ToString("dd MMM yyyy, ddd")</span>
+    </div>
+
+    <!-- Welcome Banner -->
+    <div class="dashboard-banner-centered">
+        <div class="banner-text">
+            <h2>Admin Dashboard</h2>
+            <p class="text-muted">Welcome to your eSkolar admin portal</p>
+        </div>
+        <img src="images/eskolar_books.svg" alt="Dashboard" class="banner-img" />
+    </div>
+
+    <!-- Verification Message -->
+    <div class="verification-message-container">
+        <div class="verification-card">
+            <div class="verification-icon">
+                <i class="fas fa-building fa-3x text-primary"></i>
+            </div>
+            <h3>Dashboard Access Restricted</h3>
+            <p class="lead">You need to verify your account to access your full dashboard and all platform features.</p>
+            <p>Once verified, you'll be able to:</p>
+            <ul class="feature-list">
+                <li><i class="fas fa-check text-success me-2"></i>Post and manage scholarship opportunities</li>
+                <li><i class="fas fa-check text-success me-2"></i>Review and process applications</li>
+                <li><i class="fas fa-check text-success me-2"></i>Access detailed analytics and reports</li>
+                <li><i class="fas fa-check text-success me-2"></i>Communicate with students through announcements</li>
+                <li><i class="fas fa-check text-success me-2"></i>Partner with other institutions</li>
+            </ul>
+            <a href="@GetVerificationLink()" class="verify-account-btn">@GetVerificationText()</a>
+        </div>
+    </div>
+</div>
+
+<style>
+    .verification-message-container {
+        width: 100%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin-top: 10px;
+        padding: 20px;
+    }
+
+    .verification-card {
+        background: white;
+        border-radius: 12px;
+        padding: 40px;
+        text-align: center;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        max-width: 500px;
+        width: 100%;
+    }
+
+    .verification-icon {
+        margin-bottom: 20px;
+    }
+
+    .verification-card h3 {
+        color: #333;
+        margin-bottom: 15px;
+        font-weight: 600;
+    }
+
+    .verification-card .lead {
+        color: #666;
+        margin-bottom: 20px;
+    }
+
+    .feature-list {
+        text-align: left;
+        margin: 20px 0;
+        padding-left: 0;
+        list-style: none;
+    }
+
+    .feature-list li {
+        margin-bottom: 10px;
+        display: flex;
+        align-items: center;
+    }
+
+    .verify-account-btn {
+        font-size: 1.15rem;
+        padding: 12px 32px;
+        border-radius: 8px;
+        background: transparent;
+        color: #3c7ee2;
+        border: 2px solid #3c7ee2;
+        text-decoration: none;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        display: inline-block;
+        margin-top: 10px;
+    }
+
+    .verify-account-btn:hover {
+        background: #3c7ee2;
+        color: white;
+        text-decoration: none;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(60, 126, 226, 0.3);
+    }
+</style>

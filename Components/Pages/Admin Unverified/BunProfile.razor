@@ -1,0 +1,151 @@
+@page "/dashboard/benefactor/unverified/profile"
+@layout Layout.AUnDashLayout
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject UserManager<IdentityUser> UserManager
+@inject Services.BenefactorProfileService BenefactorProfileService
+@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.AspNetCore.Identity
+
+<PageTitle>Benefactor Profile</PageTitle>
+
+<div class="dashboard-center-container" style="padding: 1rem 2rem 2rem 2rem;">
+    <!-- Top Bar -->
+    <div class="dashboard-topbar">
+        <div style="position: relative; flex: 1; max-width: 500px; display: flex; flex-direction: column; align-items: center; gap: 8px;">
+            <div class="university-input" style="padding-left: 15px; padding-right: 15px; color: #d84453; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; height: 32px; display: flex; align-items: center; font-size: 0.9rem; font-weight: 500; user-select: none; cursor: default;">Benefactor not verified.</div>
+        </div>
+        <span class="dashboard-date">@DateTime.Now.ToString("dd MMM yyyy, ddd")</span>
+    </div>
+
+    <!-- Welcome Banner -->
+    <div class="dashboard-banner-centered">
+        <div class="banner-text">
+            <h2>Benefactor Profile</h2>
+            <p class="text-muted">Your benefactor information</p>
+        </div>
+        <img src="images/eskolar_books.svg" alt="Profile" class="banner-img" />
+    </div>
+
+    <!-- Verification Message -->
+    <div class="verification-message-container">
+        <div class="verification-card">
+            <div class="verification-icon">
+                <i class="fas fa-user-circle fa-3x text-primary"></i>
+            </div>
+            <h3>Profile Access Restricted</h3>
+            <p class="lead">You need to verify your benefactor account to access and manage your complete profile.</p>
+            <p>Once verified, you'll be able to:</p>
+            <ul class="feature-list">
+                <li><i class="fas fa-check text-success me-2"></i>Edit benefactor information</li>
+                <li><i class="fas fa-check text-success me-2"></i>Update personal details</li>
+                <li><i class="fas fa-check text-success me-2"></i>Upload verification documents</li>
+                <li><i class="fas fa-check text-success me-2"></i>Manage scholarship preferences</li>
+                <li><i class="fas fa-check text-success me-2"></i>Update contact information</li>
+            </ul>
+            <a href="/benefactor/verification" class="verify-account-btn">Verify Benefactor</a>
+        </div>
+    </div>
+</div>
+
+<style>
+    .verification-message-container {
+        width: 100%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin-top: 10px;
+        padding: 20px;
+    }
+
+    .verification-card {
+        background: white;
+        border-radius: 12px;
+        padding: 40px;
+        text-align: center;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        max-width: 500px;
+        width: 100%;
+    }
+
+    .verification-icon {
+        margin-bottom: 20px;
+    }
+
+    .verification-card h3 {
+        color: #333;
+        margin-bottom: 15px;
+        font-weight: 600;
+    }
+
+    .verification-card .lead {
+        color: #666;
+        margin-bottom: 20px;
+    }
+
+    .feature-list {
+        text-align: left;
+        margin: 20px 0;
+        padding-left: 0;
+        list-style: none;
+    }
+
+    .feature-list li {
+        margin-bottom: 10px;
+        display: flex;
+        align-items: center;
+    }
+
+    .verify-account-btn {
+        font-size: 1.15rem;
+        padding: 12px 32px;
+        border-radius: 8px;
+        background: transparent;
+        color: #3c7ee2;
+        border: 2px solid #3c7ee2;
+        text-decoration: none;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        display: inline-block;
+        margin-top: 10px;
+    }
+
+    .verify-account-btn:hover {
+        background: #3c7ee2;
+        color: white;
+        text-decoration: none;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(60, 126, 226, 0.3);
+    }
+</style>
+
+@code {
+    private string? currentUserEmail;
+    private Models.BenefactorProfile? benefactorProfile;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadUserProfile();
+    }
+
+    private async Task LoadUserProfile()
+    {
+        try
+        {
+            var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+            var user = await UserManager.GetUserAsync(authState.User);
+            
+            if (user != null)
+            {
+                currentUserEmail = user.Email;
+                var userId = user.Id;
+                benefactorProfile = await BenefactorProfileService.GetProfileByUserIdAsync(userId);
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading user profile: {ex.Message}");
+        }
+        
+        StateHasChanged();
+    }
+}

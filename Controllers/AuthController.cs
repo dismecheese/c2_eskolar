@@ -12,12 +12,21 @@ namespace c2_eskolar.Controllers
     {
         private readonly AuthService _authService;
         private readonly StudentProfileService _studentProfileService;
+        private readonly BenefactorProfileService _benefactorProfileService;
+        private readonly InstitutionProfileService _institutionProfileService;
         private readonly UserManager<IdentityUser> _userManager;
 
-        public AuthController(AuthService authService, StudentProfileService studentProfileService, UserManager<IdentityUser> userManager)
+        public AuthController(
+            AuthService authService, 
+            StudentProfileService studentProfileService,
+            BenefactorProfileService benefactorProfileService,
+            InstitutionProfileService institutionProfileService,
+            UserManager<IdentityUser> userManager)
         {
             _authService = authService;
             _studentProfileService = studentProfileService;
+            _benefactorProfileService = benefactorProfileService;
+            _institutionProfileService = institutionProfileService;
             _userManager = userManager;
         }
 
@@ -52,8 +61,8 @@ namespace c2_eskolar.Controllers
                     string redirectUrl = userRole switch
                     {
                         "Student" => await GetStudentRedirectUrl(email),
-                        "Benefactor" => "/dashboard/benefactor",
-                        "Institution" => "/dashboard/institution",
+                        "Benefactor" => await GetBenefactorRedirectUrl(email),
+                        "Institution" => await GetInstitutionRedirectUrl(email),
                         "SuperAdmin" => "/dashboard/superadmin",
                         _ => "/dashboard/student"
                     };
@@ -148,6 +157,72 @@ namespace c2_eskolar.Controllers
                 Console.WriteLine($"[AuthController] Error checking student verification: {ex.Message}");
                 // Default to unverified on error for safety
                 return "/dashboard/unverified";
+            }
+        }
+
+        private async Task<string> GetBenefactorRedirectUrl(string email)
+        {
+            try
+            {
+                // Get the user by email
+                var user = await _userManager.FindByEmailAsync(email);
+                if (user == null)
+                {
+                    return "/dashboard/benefactor/unverified";
+                }
+
+                // Get the benefactor profile to check verification status
+                var benefactorProfile = await _benefactorProfileService.GetProfileByUserIdAsync(user.Id);
+                if (benefactorProfile == null)
+                {
+                    return "/dashboard/benefactor/unverified";
+                }
+
+                // Check if benefactor is verified
+                bool isVerified = benefactorProfile.IsVerified == true && 
+                                 !string.IsNullOrEmpty(benefactorProfile.VerificationStatus) && 
+                                 benefactorProfile.VerificationStatus == "Verified";
+
+                return isVerified ? "/dashboard/benefactor" : "/dashboard/benefactor/unverified";
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[AuthController] Error checking benefactor verification: {ex.Message}");
+                // Default to unverified on error for safety
+                return "/dashboard/benefactor/unverified";
+            }
+        }
+
+        private async Task<string> GetInstitutionRedirectUrl(string email)
+        {
+            try
+            {
+                // Get the user by email
+                var user = await _userManager.FindByEmailAsync(email);
+                if (user == null)
+                {
+                    return "/dashboard/institution/unverified";
+                }
+
+                // Get the institution profile to check verification status
+                var institutionProfile = await _institutionProfileService.GetProfileByUserIdAsync(user.Id);
+                if (institutionProfile == null)
+                {
+                    return "/dashboard/institution/unverified";
+                }
+
+                // Check if institution is verified
+                bool isVerified = institutionProfile.IsVerified == true && 
+                                 !string.IsNullOrEmpty(institutionProfile.VerificationStatus) && 
+                                 institutionProfile.VerificationStatus == "Verified";
+
+                return isVerified ? "/dashboard/institution" : "/dashboard/institution/unverified";
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[AuthController] Error checking institution verification: {ex.Message}");
+                // Default to unverified on error for safety
+                return "/dashboard/institution/unverified";
             }
         }
     }
