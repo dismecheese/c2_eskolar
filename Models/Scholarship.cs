@@ -56,6 +56,10 @@ namespace c2_eskolar.Models
         [StringLength(500)]
         public string? ExternalApplicationUrl { get; set; } // For external scholarships (benefactor's website)
 
+        // ICON: Path or URL to the uploaded scholarship icon
+        [StringLength(500)]
+        public string? IconUrl { get; set; }
+
         public bool RequiresExternalApplication => !string.IsNullOrEmpty(ExternalApplicationUrl);
 
         // TIMESTAMPS

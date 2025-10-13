@@ -17,15 +17,18 @@
 
 <PageTitle>Application Summary</PageTitle>
 
-<!-- Styles moved to wwwroot/app.css -->
-
 <div class="container-fluid py-5" style="background: linear-gradient(135deg, #e0e7ff 60%, #f8fafc 100%); min-height: 100vh; margin-top: 40px;">
     <div class="container px-2 px-md-4">
         <div class="row justify-content-center">
             <div class="col-12 col-md-10 col-lg-8">
                 <div class="app-summary-banner mb-4">
-                    <i class="bi bi-journal-text"></i>
-                    <span>Application Summary</span>
+                    <div class="banner-icon">
+                        <i class="fas fa-file-alt" aria-hidden="true"></i>
+                    </div>
+                    <div class="banner-text">
+                        <span class="banner-title">Application Summary</span>
+                        <span class="banner-subtitle">Your submitted scholarship application details</span>
+                    </div>
                 </div>
                 @if (isLoading)
                 {
@@ -164,14 +167,26 @@
     private List<DocumentLinkInfo> GetDocumentLinks(string? uploadedDocuments)
     {
         var links = new List<DocumentLinkInfo>();
-        if (string.IsNullOrEmpty(uploadedDocuments)) return links;
+        if (string.IsNullOrEmpty(uploadedDocuments)) 
+        {
+            Console.WriteLine("[StudentApplicationSummary] No uploaded documents found");
+            return links;
+        }
+        
+        Console.WriteLine($"[StudentApplicationSummary] Processing uploaded documents: {uploadedDocuments}");
         var files = uploadedDocuments.Split(',', System.StringSplitOptions.RemoveEmptyEntries);
+        Console.WriteLine($"[StudentApplicationSummary] Split into {files.Length} files: {string.Join(", ", files)}");
+        
         foreach (var file in files)
         {
             var doc = new DocumentLinkInfo();
-            doc.BlobName = file.Contains("/") ? file.Substring(file.LastIndexOf('/') + 1) : file;
-            doc.BlobName = Uri.UnescapeDataString(doc.BlobName);
+            // The file should already be the blob name (without temp/ prefix)
+            doc.BlobName = file.Trim();
+            Console.WriteLine($"[StudentApplicationSummary] Processing blob: {doc.BlobName}");
+            
+            // Extract display name by removing GUID prefix
             doc.DisplayName = doc.BlobName.Contains('_') ? doc.BlobName.Substring(doc.BlobName.IndexOf('_') + 1) : doc.BlobName;
+            
             var ext = System.IO.Path.GetExtension(doc.BlobName).ToLowerInvariant();
             doc.IconClass = ext switch
             {
@@ -180,18 +195,25 @@
                 ".jpg" or ".jpeg" or ".png" => "bi bi-file-earmark-image text-success",
                 _ => "bi bi-paperclip text-secondary"
             };
+            
             doc.RawUrl = BlobStorageService.GetDocumentUrl(doc.BlobName);
+            Console.WriteLine($"[StudentApplicationSummary] Raw URL for {doc.BlobName}: {doc.RawUrl}");
+            
             try
             {
                 doc.SasUrl = BlobStorageService.GetDocumentSasUrl(doc.BlobName);
+                Console.WriteLine($"[StudentApplicationSummary] SAS URL generated successfully for {doc.BlobName}");
             }
             catch (Exception ex)
             {
                 doc.SasUrl = null;
-                doc.ErrorText = $"(link error: {ex.Message})";
+                doc.ErrorText = $"(File not found or access error)";
+                Console.WriteLine($"[StudentApplicationSummary] Failed to generate SAS URL for {doc.BlobName}: {ex.Message}");
             }
             links.Add(doc);
         }
+        
+        Console.WriteLine($"[StudentApplicationSummary] Generated {links.Count} document links");
         return links;
     }
 
@@ -233,6 +255,11 @@
                 .FirstOrDefaultAsync(_cts.Token);
 
             // Precompute document links
+            if (application != null)
+            {
+                Console.WriteLine($"[StudentApplicationSummary] Found application with UploadedDocuments: '{application.UploadedDocuments}'");
+            }
+            
             documentLinks = GetDocumentLinks(application?.UploadedDocuments);
         }
         catch (Exception ex)

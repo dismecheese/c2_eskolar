@@ -20,6 +20,41 @@ namespace c2_eskolar.Controllers
         }
 
         /// <summary>
+        /// Tests the blob storage connection by uploading a simple test file.
+        /// </summary>
+        [HttpPost("test-blob")]
+        public async Task<IActionResult> TestBlobStorage()
+        {
+            try
+            {
+                // Create a simple test file
+                var testContent = "This is a test file for blob storage connection - " + DateTime.Now.ToString();
+                var testBytes = System.Text.Encoding.UTF8.GetBytes(testContent);
+                using var testStream = new MemoryStream(testBytes);
+                
+                var testFileName = $"test-blob-{Guid.NewGuid()}.txt";
+                var uploadUrl = await _blobStorageService.UploadDocumentAsync(testStream, testFileName, "text/plain");
+                
+                return Ok(new { 
+                    success = true, 
+                    message = "Blob storage test successful", 
+                    fileName = testFileName,
+                    url = uploadUrl,
+                    timestamp = DateTime.Now
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { 
+                    success = false, 
+                    message = ex.Message,
+                    innerMessage = ex.InnerException?.Message,
+                    timestamp = DateTime.Now
+                });
+            }
+        }
+
+        /// <summary>
         /// Uploads a document to Azure Blob Storage and returns the file URL.
         /// </summary>
         /// <param name="file">The file to upload.</param>

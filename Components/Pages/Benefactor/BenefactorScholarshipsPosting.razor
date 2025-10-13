@@ -8,10 +8,11 @@
 @using c2_eskolar.Data
 @using c2_eskolar.Models
 @using c2_eskolar.Services
-@inject ApplicationDbContext DbContext
+@inject IDbContextFactory<ApplicationDbContext> DbContextFactory
 @inject NavigationManager Navigation
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @inject InstitutionProfileService InstitutionProfileService
+@inject BlobStorageService BlobStorageService
 
 <PageTitle>Post Scholarship</PageTitle>
 
@@ -44,11 +45,43 @@
         </div>
     }
 
-    <EditForm Model="@scholarship" OnValidSubmit="HandleSubmit">
-    <DataAnnotationsValidator />
+    <EditForm Model="@scholarship" OnValidSubmit="HandleSubmit" OnInvalidSubmit="HandleInvalidSubmit">
+        <DataAnnotationsValidator />
+        <ValidationSummary class="text-danger" />
 
         <!-- Categorized Form Fields in Card Boxes -->
         <div class="row g-4">
+                <!-- Scholarship Icon Upload -->
+                <div class="col-12">
+                    <div class="card shadow-sm border-0 mb-3">
+                        <div class="card-header-custom bg-secondary text-white fw-bold">Scholarship Icon</div>
+                        <div class="card-body">
+                            <div class="row g-3 align-items-center">
+                                <div class="col-12">
+                                    <label for="iconUpload" class="form-label fw-semibold">Upload Icon <span class="text-muted">(PNG, JPG, SVG, max 5MB)</span></label>
+                                    <InputFile id="iconUpload" OnChange="HandleIconUpload" accept="image/png,image/jpeg,image/svg+xml" class="form-control" aria-label="Upload Scholarship Icon" disabled="@(isUploadingIcon || isSubmitted)" />
+                                    
+                                    @if (isUploadingIcon)
+                                    {
+                                        <div class="mt-2 d-flex align-items-center">
+                                            <div class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></div>
+                                            <small class="text-muted">Processing image...</small>
+                                        </div>
+                                    }
+                                    else if (!string.IsNullOrEmpty(iconPreviewUrl))
+                                    {
+                                        <div class="mt-2">
+                                            <img src="@iconPreviewUrl" alt="Icon Preview" style="max-width:80px;max-height:80px;border-radius:8px;border:1px solid #ccc;" />
+                                            <small class="d-block text-muted">Preview - Icon will be uploaded to secure cloud storage when you submit</small>
+                                        </div>
+                                    }
+                                    
+                                    <ValidationMessage For="@(() => scholarship.IconUrl)" class="text-danger small ms-1" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             <!-- Basic Info -->
             <div class="col-12">
                 <div class="card shadow-sm border-0 mb-3">
@@ -71,8 +104,8 @@
                                 <ValidationMessage For="@(() => scholarship.ApplicationDeadline)" class="text-danger small ms-1" />
                             </div>
                             <div class="col-12">
-                                <label for="description" class="form-label fw-semibold">Description</label>
-                                <InputTextArea id="description" class="form-control" rows="3" @bind-Value="scholarship.Description" aria-required="true" required aria-label="Description" placeholder="Describe the scholarship, its purpose, and any special notes..." />
+                                <label for="description" class="form-label fw-semibold">Description <span class="text-muted">(optional)</span></label>
+                                <InputTextArea id="description" class="form-control" rows="3" @bind-Value="scholarship.Description" aria-label="Description" placeholder="Describe the scholarship, its purpose, and any special notes..." />
                                 <ValidationMessage For="@(() => scholarship.Description)" class="text-danger small ms-1" />
                             </div>
                         </div>
@@ -88,22 +121,22 @@
                         <div class="row g-3">
                             <div class="col-12">
                                 <label for="requirements" class="form-label fw-semibold">Requirements</label>
-                                <InputTextArea id="requirements" class="form-control" rows="2" @bind-Value="scholarship.Requirements" aria-required="true" required aria-label="Requirements" placeholder="e.g. Must be a full-time student, leadership experience, etc." />
+                                <InputTextArea id="requirements" class="form-control" rows="2" @bind-Value="scholarship.Requirements" aria-label="Requirements" placeholder="e.g. Must be a full-time student, leadership experience, etc." />
                                 <ValidationMessage For="@(() => scholarship.Requirements)" class="text-danger small ms-1" />
                             </div>
                             <div class="col-12 col-md-4">
                                 <label for="slots" class="form-label fw-semibold">Slots Available</label>
-                                <InputNumber id="slots" class="form-control" @bind-Value="scholarship.SlotsAvailable" aria-required="true" required aria-label="Slots Available" placeholder="e.g. 10" />
+                                <InputNumber id="slots" class="form-control" @bind-Value="scholarship.SlotsAvailable" aria-label="Slots Available" placeholder="e.g. 10" />
                                 <ValidationMessage For="@(() => scholarship.SlotsAvailable)" class="text-danger small ms-1" />
                             </div>
                             <div class="col-12 col-md-4">
                                 <label for="gpa" class="form-label fw-semibold">Minimum GPA</label>
-                                <InputNumber id="gpa" class="form-control" @bind-Value="scholarship.MinimumGPA" step="0.01" aria-required="true" required aria-label="Minimum GPA" placeholder="e.g. 3.50" />
+                                <InputNumber id="gpa" class="form-control" @bind-Value="scholarship.MinimumGPA" step="0.01" aria-label="Minimum GPA" placeholder="e.g. 3.50" />
                                 <ValidationMessage For="@(() => scholarship.MinimumGPA)" class="text-danger small ms-1" />
                             </div>
                             <div class="col-12 col-md-4">
                                 <label for="yearlevel" class="form-label fw-semibold">Required Year Level</label>
-                                <InputNumber id="yearlevel" class="form-control" @bind-Value="scholarship.RequiredYearLevel" aria-required="true" required aria-label="Required Year Level" placeholder="e.g. 2 (for 2nd year)" />
+                                <InputNumber id="yearlevel" class="form-control" @bind-Value="scholarship.RequiredYearLevel" aria-label="Required Year Level" placeholder="e.g. 2 (for 2nd year)" />
                                 <ValidationMessage For="@(() => scholarship.RequiredYearLevel)" class="text-danger small ms-1" />
                             </div>
                         </div>
@@ -119,12 +152,12 @@
                         <div class="row g-3">
                             <div class="col-12 col-md-6">
                                 <label for="course" class="form-label fw-semibold">Required Course</label>
-                                <InputText id="course" class="form-control" @bind-Value="scholarship.RequiredCourse" aria-required="true" required aria-label="Required Course" placeholder="e.g. BS Computer Science" />
+                                <InputText id="course" class="form-control" @bind-Value="scholarship.RequiredCourse" aria-label="Required Course" placeholder="e.g. BS Computer Science" />
                                 <ValidationMessage For="@(() => scholarship.RequiredCourse)" class="text-danger small ms-1" />
                             </div>
                             <div class="col-12 col-md-6">
                                 <label for="university" class="form-label fw-semibold">Required University</label>
-                                <InputText id="university" class="form-control" @bind-Value="scholarship.RequiredUniversity" aria-required="true" required aria-label="Required University" placeholder="e.g. University of the Philippines" />
+                                <InputText id="university" class="form-control" @bind-Value="scholarship.RequiredUniversity" aria-label="Required University" placeholder="e.g. University of the Philippines" />
                                 <ValidationMessage For="@(() => scholarship.RequiredUniversity)" class="text-danger small ms-1" />
                             </div>
                         </div>
@@ -223,9 +256,17 @@
             </div>
         </div>
 
-        <button type="submit" class="btn btn-primary btn-lg mt-4" style="min-width:180px;outline:2px solid transparent;outline-offset:2px;">
-            <span class="visually-hidden">Submit scholarship form</span>
-            Post Scholarship
+        <button type="submit" class="btn btn-primary btn-lg mt-4" style="min-width:180px;outline:2px solid transparent;outline-offset:2px;" disabled="@isSubmitted">
+            @if (isSubmitted)
+            {
+                <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                <span>Posting...</span>
+            }
+            else
+            {
+                <span class="visually-hidden">Submit scholarship form</span>
+                <span>Post Scholarship</span>
+            }
         </button>
     </EditForm>
 </div>
@@ -241,6 +282,11 @@
     };
     private bool isSubmitted = false;
     private string? errorMessage;
+
+        // Icon upload variables
+        private IBrowserFile? uploadedIconFile;
+        private string? iconPreviewUrl;
+        private bool isUploadingIcon = false;
     
     // Partnership-related variables
     private bool enablePartnership = false;
@@ -251,54 +297,9 @@
     {
         try
         {
-            // Check if there are any institutions, if not, create some sample ones
-            var institutionCount = await DbContext.InstitutionProfiles.CountAsync();
-            if (institutionCount == 0)
-            {
-                // Create sample institutions for demonstration
-                var sampleInstitutions = new List<InstitutionProfile>
-                {
-                    new InstitutionProfile
-                    {
-                        UserId = "sample-user-1", // This would normally be a real user ID
-                        AdminFirstName = "John",
-                        AdminLastName = "Doe",
-                        InstitutionName = "University of the Philippines",
-                        InstitutionType = "University",
-                        IsVerified = true,
-                        VerificationStatus = "Verified",
-                        CreatedAt = DateTime.Now
-                    },
-                    new InstitutionProfile
-                    {
-                        UserId = "sample-user-2",
-                        AdminFirstName = "Jane",
-                        AdminLastName = "Smith", 
-                        InstitutionName = "Ateneo de Manila University",
-                        InstitutionType = "University",
-                        IsVerified = true,
-                        VerificationStatus = "Verified",
-                        CreatedAt = DateTime.Now
-                    },
-                    new InstitutionProfile
-                    {
-                        UserId = "sample-user-3",
-                        AdminFirstName = "Bob",
-                        AdminLastName = "Johnson",
-                        InstitutionName = "Polytechnic University of the Philippines",
-                        InstitutionType = "University",
-                        IsVerified = false,
-                        VerificationStatus = "Pending",
-                        CreatedAt = DateTime.Now
-                    }
-                };
-
-                DbContext.InstitutionProfiles.AddRange(sampleInstitutions);
-                await DbContext.SaveChangesAsync();
-            }
-
+            using var context = await DbContextFactory.CreateDbContextAsync();
             // Load all institutional users for partnership (regardless of verification status)
-            availableInstitutions = await DbContext.InstitutionProfiles
+            availableInstitutions = await context.InstitutionProfiles
                 .OrderBy(ip => ip.InstitutionName)
                 .ToListAsync();
                 
@@ -317,6 +318,10 @@
     {
         try
         {
+            // Clear any previous error messages
+            errorMessage = null;
+            Console.WriteLine("🚀 HandleSubmit called - starting scholarship submission process");
+            Console.WriteLine($"🔍 Form data - Title: '{scholarship.Title}', Benefits: '{scholarship.Benefits}', Deadline: {scholarship.ApplicationDeadline}");
             // ✅ Get the user's ID from Claims (NameIdentifier)
             var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
             var user = authState.User;
@@ -328,8 +333,10 @@
                 return;
             }
 
+            using var context = await DbContextFactory.CreateDbContextAsync();
+            
             // ✅ Look up the BenefactorProfile of the current user
-            var benefactor = await DbContext.BenefactorProfiles
+            var benefactor = await context.BenefactorProfiles
                 .FirstOrDefaultAsync(p => p.UserId == userId);
 
             if (benefactor is null)
@@ -357,12 +364,54 @@
                 partnerInstitutionId = parsedId;
                 
                 // Verify the institution exists
-                var partnerInstitution = await DbContext.InstitutionProfiles
+                var partnerInstitution = await context.InstitutionProfiles
                     .FirstOrDefaultAsync(ip => ip.InstitutionProfileId == partnerInstitutionId);
                     
                 if (partnerInstitution == null)
                 {
                     errorMessage = "Selected institution is not available for partnership.";
+                    return;
+                }
+            }
+
+            // ✅ Handle icon upload - Upload to Azure Blob Storage
+            if (uploadedIconFile != null)
+            {
+                try
+                {
+                    Console.WriteLine($"Uploading scholarship icon: {uploadedIconFile.Name}, Size: {uploadedIconFile.Size} bytes");
+                    
+                    var fileExt = Path.GetExtension(uploadedIconFile.Name);
+                    var fileName = $"scholarship_icon_{Guid.NewGuid()}{fileExt}";
+                    
+                    using var fileStream = uploadedIconFile.OpenReadStream(5 * 1024 * 1024); // 5MB max
+                    
+                    // Upload to Azure Blob Storage using the photos container
+                    var blobUrl = await BlobStorageService.UploadPhotoAsync(fileStream, fileName, uploadedIconFile.ContentType);
+                    
+                    // Store the blob URL in the scholarship (we'll convert to SAS when displaying)
+                    scholarship.IconUrl = blobUrl;
+                    
+                    Console.WriteLine($"Successfully uploaded scholarship icon to blob storage: {blobUrl}");
+                }
+                catch (Exception uploadEx)
+                {
+                    Console.WriteLine($"Error uploading scholarship icon to blob storage: {uploadEx.Message}");
+                    Console.WriteLine($"Upload exception stack trace: {uploadEx.StackTrace}");
+                    
+                    // Provide user-friendly error messages based on the exception type
+                    if (uploadEx.Message.Contains("authentication") || uploadEx.Message.Contains("unauthorized"))
+                    {
+                        errorMessage = "Failed to upload icon: Authentication error with cloud storage. Please try again later.";
+                    }
+                    else if (uploadEx.Message.Contains("network") || uploadEx.Message.Contains("timeout"))
+                    {
+                        errorMessage = "Failed to upload icon: Network connectivity issue. Please check your connection and try again.";
+                    }
+                    else
+                    {
+                        errorMessage = $"Failed to upload scholarship icon: {uploadEx.Message}";
+                    }
                     return;
                 }
             }
@@ -376,8 +425,8 @@
             scholarship.IsInternal = false;
 
             // ✅ Save to database
-            DbContext.Scholarships.Add(scholarship);
-            await DbContext.SaveChangesAsync();
+            context.Scholarships.Add(scholarship);
+            await context.SaveChangesAsync();
 
             isSubmitted = true;
 
@@ -386,8 +435,102 @@
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error: {ex.Message}");
-            errorMessage = "An error occurred while posting the scholarship.";
+            Console.WriteLine($"Error posting scholarship: {ex.Message}");
+            Console.WriteLine($"Stack trace: {ex.StackTrace}");
+            errorMessage = $"An error occurred while posting the scholarship: {ex.Message}";
+            isSubmitted = false; // Reset submission state on error
+        }
+    }
+
+    private async Task HandleIconUpload(InputFileChangeEventArgs e)
+    {
+        try
+        {
+            isUploadingIcon = true;
+            errorMessage = null; // Clear any previous errors
+            
+            uploadedIconFile = e.File;
+            
+            if (uploadedIconFile == null)
+            {
+                iconPreviewUrl = null;
+                return;
+            }
+
+            // Validate file size (5MB max)
+            if (uploadedIconFile.Size > 5 * 1024 * 1024)
+            {
+                errorMessage = "Icon file size must be less than 5MB.";
+                uploadedIconFile = null;
+                iconPreviewUrl = null;
+                return;
+            }
+
+            // Validate file type
+            if (!uploadedIconFile.ContentType.StartsWith("image/"))
+            {
+                errorMessage = "Please select a valid image file (PNG, JPG, or SVG).";
+                uploadedIconFile = null;
+                iconPreviewUrl = null;
+                return;
+            }
+
+            // Create preview for image types
+            using var stream = uploadedIconFile.OpenReadStream(5 * 1024 * 1024); // 5MB max
+            var buffer = new byte[uploadedIconFile.Size];
+            await stream.ReadAsync(buffer, 0, (int)uploadedIconFile.Size);
+            iconPreviewUrl = $"data:{uploadedIconFile.ContentType};base64,{Convert.ToBase64String(buffer)}";
+            
+            Console.WriteLine($"Icon selected for upload: {uploadedIconFile.Name}, Size: {uploadedIconFile.Size} bytes, Type: {uploadedIconFile.ContentType}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error handling icon upload: {ex.Message}");
+            errorMessage = $"Error processing icon file: {ex.Message}";
+            uploadedIconFile = null;
+            iconPreviewUrl = null;
+        }
+        finally
+        {
+            isUploadingIcon = false;
+        }
+    }
+
+    private void HandleInvalidSubmit()
+    {
+        errorMessage = "❌ Form validation failed. Please check all required fields.";
+        Console.WriteLine("🚨 Form validation failed - invalid submit detected");
+        Console.WriteLine($"📝 Title: '{scholarship.Title}' (Length: {scholarship.Title?.Length})");  
+        Console.WriteLine($"💰 Benefits: '{scholarship.Benefits}' (Length: {scholarship.Benefits?.Length})");
+        Console.WriteLine($"📅 ApplicationDeadline: {scholarship.ApplicationDeadline}");
+        Console.WriteLine($"📄 Description: '{scholarship.Description}' (Length: {scholarship.Description?.Length})");
+    }
+
+    /// <summary>
+    /// Converts a blob URL to a SAS URL for secure display
+    /// </summary>
+    private string GetDisplayableIconUrl(string? iconUrl)
+    {
+        if (string.IsNullOrEmpty(iconUrl))
+            return string.Empty;
+            
+        try
+        {
+            // If it's already a data URL (for preview), return as-is
+            if (iconUrl.StartsWith("data:"))
+                return iconUrl;
+                
+            // If it's a blob URL, convert to SAS URL for secure access
+            if (iconUrl.Contains("blob.core.windows.net"))
+                return BlobStorageService.GetPhotoSasUrlFromBlobUrl(iconUrl, 480); // 8 hours validity
+                
+            // Otherwise return as-is (fallback)
+            return iconUrl;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error converting icon URL to SAS URL: {ex.Message}");
+            return iconUrl; // Return original URL on error
         }
     }
 }
