@@ -64,7 +64,7 @@ jobs:
           if ($env:AZ_OPENAI_KEY) { $payload += @{ name = "AzureOpenAI__ApiKey"; value = $env:AZ_OPENAI_KEY } }
           if ($env:AZ_DOC_AI_KEY) { $payload += @{ name = "AzureDocumentIntelligence__ApiKey"; value = $env:AZ_DOC_AI_KEY } }
           $payload | ConvertTo-Json -Depth 5 > appsettings_payload.json
-          az webapp config appsettings set --name eSkolar --resource-group $env:AZURE_RG --settings @appsettings_payload.json --debug
+          az webapp config appsettings set --name eSkolar --resource-group $env:AZURE_RG --settings $appsettings_payload.json --debug
           Remove-Item appsettings_payload.json -
             
             
