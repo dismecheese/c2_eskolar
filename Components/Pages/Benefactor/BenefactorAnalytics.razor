@@ -3,7 +3,7 @@
 @using Microsoft.EntityFrameworkCore
 @using c2_eskolar.Models
 @layout Layout.BenefactorDashLayout
-@inject c2_eskolar.Data.ApplicationDbContext DbContext
+@inject IDbContextFactory<c2_eskolar.Data.ApplicationDbContext> DbContextFactory
 @inject AuthenticationStateProvider AuthStateProvider
 @inject c2_eskolar.Services.BenefactorProfileService BenefactorProfileService
 @inject c2_eskolar.Services.OpenAIService OpenAIService
@@ -18,6 +18,7 @@
         public string? Color { get; set; }
     }
 
+    // ORIGINAL PROPERTIES - ALL PRESERVED
     private int AcceptedApplicants;
     private int RejectedApplicants;
     private int PendingApplicants;
@@ -30,7 +31,7 @@
     private Exception? caughtException = null;
     private List<PieSliceData> PieData = new();
 
-	// Analytics state variables
+	// ORIGINAL Analytics state variables - ALL PRESERVED
 	private int TotalScholarshipSlots;
 	private int ActiveScholars;
 	private int AvailableSlots;
@@ -43,17 +44,184 @@
 	private double DropoutRate;
 	private double SuccessRate;
 
-	// Demographic analytics
+	// ORIGINAL Demographic analytics - ALL PRESERVED
 	private Dictionary<string, string> demographicCategories = new();
 	private List<PieSliceData> DemographicPieData = new();
 
-	// Predictive Analytics state
+	// ORIGINAL Predictive Analytics state - ALL PRESERVED
 	private Dictionary<DateTime, int> ApplicantsPerDay = new();
 	private List<(DateTime Date, int Count)> ApplicantsPerDayList = new();
 	private string PredictiveForecast = string.Empty;
 	private List<(DateTime Date, int Count)> PredictedApplicantsPerDay = new();
 	private string PredictionSummary = string.Empty;
 	private string TrendAnalysis = string.Empty;
+
+    // ENHANCED ANALYTICS PROPERTIES (NEW - ADDITIVE ONLY)
+    private int NewApplicantsThisMonth;
+    private decimal TotalScholarshipValue;
+    private decimal AverageScholarshipAmount;
+    private double ApplicationSuccessRate;
+    private int ScholarshipsAwarded;
+    private int TotalScholarshipsOffered;
+    private string selectedTimeFilter = "all";
+    private string selectedStatusFilter = "all"; 
+    private string selectedCourseFilter = "all";
+    private string selectedYearLevelFilter = "all";
+    private List<string> availableCourses = new();
+    private List<int> availableYearLevels = new();
+    private List<ScholarshipApplication> filteredApplications = new();
+    private List<Scholarship> myScholarships = new();
+
+    // ENHANCED FILTERING METHODS (NEW)
+    private void ApplyFilters()
+    {
+        filteredApplications = myApplications.AsEnumerable().ToList();
+
+        // Time filter
+        if (selectedTimeFilter != "all")
+        {
+            var cutoffDate = selectedTimeFilter switch
+            {
+                "week" => DateTime.Now.AddDays(-7),
+                "month" => DateTime.Now.AddMonths(-1),
+                "quarter" => DateTime.Now.AddMonths(-3),
+                "year" => DateTime.Now.AddYears(-1),
+                _ => DateTime.MinValue
+            };
+            
+            if (cutoffDate != DateTime.MinValue)
+            {
+                filteredApplications = filteredApplications.Where(a => a.ApplicationDate >= cutoffDate).ToList();
+            }
+        }
+
+        // Status filter
+        if (selectedStatusFilter != "all")
+        {
+            filteredApplications = filteredApplications.Where(a => 
+                a.Status.Equals(selectedStatusFilter, StringComparison.OrdinalIgnoreCase)).ToList();
+        }
+
+        // Course filter
+        if (selectedCourseFilter != "all")
+        {
+            filteredApplications = filteredApplications.Where(a => 
+                a.Student?.Course?.Equals(selectedCourseFilter, StringComparison.OrdinalIgnoreCase) == true).ToList();
+        }
+
+        // Year level filter
+        if (selectedYearLevelFilter != "all")
+        {
+            var yearLevel = int.Parse(selectedYearLevelFilter);
+            filteredApplications = filteredApplications.Where(a => a.Student?.YearLevel == yearLevel).ToList();
+        }
+
+        UpdateMetricsForFiltered();
+        StateHasChanged();
+    }
+
+    private void UpdateMetricsForFiltered()
+    {
+        var apps = filteredApplications.ToList();
+        AcceptedApplicants = apps.Count(a => a.Status == "Approved");
+        RejectedApplicants = apps.Count(a => a.Status == "Rejected");
+        PendingApplicants = apps.Count(a => a.Status == "Pending");
+        
+        // Update pie data
+        PieData = new List<PieSliceData>
+        {
+            new PieSliceData { Label = "Accepted", Value = AcceptedApplicants, Color = "#28a745" },
+            new PieSliceData { Label = "Rejected", Value = RejectedApplicants, Color = "#dc3545" },
+            new PieSliceData { Label = "Pending", Value = PendingApplicants, Color = "#ffc107" }
+        };
+    }
+
+    private void ResetFilters()
+    {
+        selectedTimeFilter = "all";
+        selectedStatusFilter = "all";
+        selectedCourseFilter = "all";
+        selectedYearLevelFilter = "all";
+        ApplyFilters();
+    }
+
+    private void ClearFilters()
+    {
+        ResetFilters();
+    }
+
+    // ENHANCED CALCULATION METHODS (NEW)
+    private void CalculateEnhancedMetrics()
+    {
+        if (myApplications?.Any() != true) return;
+
+        // Calculate new applicants this month
+        var startOfMonth = new DateTime(DateTime.Now.Year, DateTime.Now.Month, 1);
+        NewApplicantsThisMonth = myApplications.Count(a => a.ApplicationDate >= startOfMonth);
+
+        // Calculate scholarship value metrics
+        var scholarshipsWithValue = myApplications
+            .Where(a => a.Scholarship?.MonetaryValue.HasValue == true)
+            .ToList();
+
+        if (scholarshipsWithValue.Any())
+        {
+            TotalScholarshipValue = scholarshipsWithValue.Sum(a => a.Scholarship!.MonetaryValue!.Value);
+            AverageScholarshipAmount = scholarshipsWithValue.Average(a => a.Scholarship!.MonetaryValue!.Value);
+        }
+
+        // Calculate success metrics
+        ScholarshipsAwarded = myApplications.Count(a => a.Status == "Approved");
+        ApplicationSuccessRate = TotalApplicants > 0 ? (double)ScholarshipsAwarded / TotalApplicants * 100 : 0;
+
+        // Get total scholarships offered by this benefactor
+        TotalScholarshipsOffered = myApplications.Select(a => a.ScholarshipId).Distinct().Count();
+
+        // Populate filter options
+        availableCourses = myApplications
+            .Where(a => !string.IsNullOrWhiteSpace(a.Student?.Course))
+            .Select(a => a.Student!.Course!)
+            .Distinct()
+            .OrderBy(c => c)
+            .ToList();
+
+        availableYearLevels = myApplications
+            .Where(a => a.Student?.YearLevel.HasValue == true)
+            .Select(a => a.Student!.YearLevel!.Value)
+            .Distinct()
+            .OrderBy(y => y)
+            .ToList();
+    }
+
+    private (string classification, string badgeClass) GetGWAClassification(double gwa)
+    {
+        return gwa switch
+        {
+            >= 1.0 and <= 1.2 => ("Summa Cum Laude", "bg-success"),
+            >= 1.21 and <= 1.45 => ("Magna Cum Laude", "bg-success"), 
+            >= 1.46 and <= 1.75 => ("Cum Laude", "bg-info"),
+            >= 1.76 and <= 2.0 => ("Very Good", "bg-primary"),
+            >= 2.01 and <= 2.5 => ("Good", "bg-warning text-dark"),
+            >= 2.51 and <= 3.0 => ("Satisfactory", "bg-secondary"),
+            _ => ("Needs Improvement", "bg-danger")
+        };
+    }
+
+    private string GetGWAClassColor(double? gwa)
+    {
+        if (!gwa.HasValue) return "secondary";
+        
+        return gwa.Value switch
+        {
+            >= 1.0 and <= 1.2 => "success",
+            >= 1.21 and <= 1.45 => "primary",
+            >= 1.46 and <= 1.75 => "info", 
+            >= 1.76 and <= 2.0 => "warning",
+            >= 2.01 and <= 2.5 => "secondary",
+            >= 2.51 and <= 3.0 => "light",
+            _ => "danger"
+        };
+    }
 
 	// Helper method to get demographic pie data for a specific category (used for the 4-chart display)
 	private List<PieSliceData> GetDemographicPieDataForCategory(string category)
@@ -148,8 +316,11 @@
 	{
 		if (profile == null) return;
 
+		// Use a separate DbContext instance for this operation
+		using var dbContext = DbContextFactory.CreateDbContext();
+
 		// Get all scholarships for this benefactor
-		var myScholarships = await DbContext.Scholarships
+		var myScholarships = await dbContext.Scholarships
 			.Where(s => s.BenefactorProfileId == profile.BenefactorProfileId)
 			.ToListAsync();
 
@@ -238,32 +409,42 @@
         StateHasChanged();
         try
         {
-            // 1/7 steps
+            // 1/8 steps - Load Benefactor Profile
             await LoadBenefactorProfile();
-            LoadingProgress = 14;
+            LoadingProgress = 12;
             StateHasChanged();
 
-            // 2/7 steps
+            // 2/8 steps - Load Analytics Data
             await LoadAnalyticsData();
-            LoadingProgress = 28;
+            LoadingProgress = 25;
             StateHasChanged();
 
-            // 3/7 steps
+            // 3/8 steps - Initialize Pie Data
             await InitializePieData();
-            LoadingProgress = 42;
+            LoadingProgress = 37;
             StateHasChanged();
 
-            // 4/7 steps
+            // 4/8 steps - Initialize Demographic Categories
             await InitializeDemographicCategories();
-            LoadingProgress = 57;
+            LoadingProgress = 50;
             StateHasChanged();
 
-            // 5/7 steps
+            // 5/8 steps - Calculate Original Utilization Metrics
             await CalculateUtilizationMetrics();
-            LoadingProgress = 71;
+            LoadingProgress = 62;
             StateHasChanged();
 
-            // 6/7 steps
+            // 6/8 steps - Calculate Enhanced Metrics (NEW)
+            CalculateEnhancedMetrics();
+            LoadingProgress = 75;
+            StateHasChanged();
+
+            // 7/8 steps - Apply Initial Filters (NEW)
+            ApplyFilters();
+            LoadingProgress = 87;
+            StateHasChanged();
+
+            // 8/8 steps - Complete
             LoadingProgress = 100;
             StateHasChanged();
         }
@@ -315,8 +496,11 @@
 
             Console.WriteLine($"Loading analytics data for benefactor profile ID: {profile.BenefactorProfileId}");
 
+            // Use a separate DbContext instance for this operation
+            using var dbContext = DbContextFactory.CreateDbContext();
+            
             // Load applications for this benefactor's scholarships
-            myApplications = await DbContext.ScholarshipApplications
+            myApplications = await dbContext.ScholarshipApplications
                 .Include(sa => sa.Student)
                 .Include(sa => sa.Scholarship)
                 .Where(sa => sa.Scholarship.BenefactorProfileId == profile.BenefactorProfileId)
@@ -399,556 +583,523 @@ else if (!string.IsNullOrEmpty(ErrorMessage))
 else
 {
 	<div class="text-white py-4 mb-4 rounded-4 shadow-sm text-center position-relative overflow-hidden"
-		 style="background: linear-gradient(135deg, #1976d2, #64b5f6);">
+		 style="background: linear-gradient(135deg, #1976d2, #64b5f6); margin-right: 100px;">
 	  <div class="position-absolute top-0 start-0 w-100 h-100"
 		   style="background: radial-gradient(circle at top left, rgba(255,255,255,0.15), transparent 60%);"></div>
 	  <h2 class="m-0 fw-bold position-relative">Benefactor Analytics</h2>
 	  <p class="m-0 mt-2 small text-light opacity-75 position-relative">Applicants • Performance • Trends</p>
 	</div>
-	<div class="container mt-4">
-    <div class="card shadow-sm mb-4 border-0">
-        <div class="card-body">
-            <div class="p-3 mb-3 text-white rounded-3 shadow-sm" 
-                 style="background: linear-gradient(135deg, #1976d2 0%, #64b5f6 100%);">
-                <h5 class="mb-0 fw-semibold">Benefactor Analytics - Applicants Pie Chart</h5>
-            </div>
 
-            <div class="mb-2 text-muted">
-                Total Applicants: <strong>@TotalApplicants</strong>
-            </div>
-
-            <div class="d-flex flex-row flex-wrap align-items-start">
-                <div>
-                    @{
-                        var nonZeroSlices = PieData.Where(x => x.Value > 0).ToList();
-                        var piePaths = GetPiePaths(nonZeroSlices);
-                    }
-                    <svg width="200" height="200" viewBox="0 0 32 32">
-                        @if (PieData.Count == 0 || TotalApplicants == 0 || nonZeroSlices.Count == 0)
-                        {
-                            <circle r="16" cx="16" cy="16" fill="#f8f9fa" />
-                        }
-                        else if (nonZeroSlices.Count == 1)
-                        {
-                            <circle r="16" cx="16" cy="16" fill="@nonZeroSlices[0].Color" />
-                        }
-                        else
-                        {
-                            <circle r="16" cx="16" cy="16" fill="#f8f9fa" />
-                            for (int i = 0; i < nonZeroSlices.Count; i++)
-                            {
-                                <path d="@piePaths[i]" fill="@nonZeroSlices[i].Color" stroke="white" stroke-width="0.5" />
-                            }
-                        }
-                    </svg>
+    <!-- Enhanced KPI Cards Section -->
+    <div class="container mt-4">
+        <div class="row g-4 mb-4">
+            <!-- Total Applications -->
+            <div class="col-md-6 col-lg-3">
+                <div class="card border-0 shadow-sm h-100 position-relative overflow-hidden">
+                    <div class="position-absolute top-0 end-0 p-2">
+                        <i class="fas fa-users text-primary opacity-25" style="font-size: 2rem;"></i>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-flex align-items-center mb-2">
+                            <div class="p-2 rounded-circle me-3" style="background: linear-gradient(135deg, #1976d2, #64b5f6);">
+                                <i class="fas fa-file-alt text-white"></i>
+                            </div>
+                            <div>
+                                <h6 class="card-title mb-0 text-muted small">Total Applications</h6>
+                                <h3 class="mb-0 fw-bold text-primary">@TotalApplicants</h3>
+                            </div>
+                        </div>
+                        <div class="small text-muted">
+                            <i class="fas fa-clock me-1"></i>All time applications
+                        </div>
+                    </div>
                 </div>
+            </div>
 
-                <div class="ms-4">
-                    <ul class="list-unstyled">
-                        @foreach (var slice in PieData)
-                        {
-                            var percent = TotalApplicants > 0 ? Math.Round(slice.Value / (double)TotalApplicants * 100, 1) : 0;
-                            var legendColor = slice.Value > 0 ? slice.Color : "#adb5bd"; // muted gray for zero-value
-                            var legendStyle = $"width: 16px; height: 16px; background: linear-gradient(135deg, {legendColor}, color-mix(in srgb, {legendColor} 70%, white 30%)); box-shadow: 0 0 2px rgba(0,0,0,0.2);";
-                            <li class="mb-2 d-flex align-items-center">
-                                <span class="me-2 d-inline-block rounded-circle" style="@legendStyle"></span>
-                                <span>@slice.Label 
-                                    <small class="text-muted">(@slice.Value applicants, @percent%)</small>
-                                    @if (slice.Value == 0)
-                                    {
-                                        <span class="text-muted ms-1">(no data)</span>
-                                    }
-                                </span>
-                            </li>
-                        }
-                    </ul>
+            <!-- New Applications This Month -->
+            <div class="col-md-6 col-lg-3">
+                <div class="card border-0 shadow-sm h-100 position-relative overflow-hidden">
+                    <div class="position-absolute top-0 end-0 p-2">
+                        <i class="fas fa-plus-circle text-success opacity-25" style="font-size: 2rem;"></i>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-flex align-items-center mb-2">
+                            <div class="p-2 rounded-circle me-3" style="background: linear-gradient(135deg, #28a745, #20c997);">
+                                <i class="fas fa-calendar-plus text-white"></i>
+                            </div>
+                            <div>
+                                <h6 class="card-title mb-0 text-muted small">New This Month</h6>
+                                <h3 class="mb-0 fw-bold text-success">@NewApplicantsThisMonth</h3>
+                            </div>
+                        </div>
+                        <div class="small text-muted">
+                            <i class="fas fa-calendar me-1"></i>@DateTime.Now.ToString("MMMM yyyy")
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Total Scholarship Value -->
+            <div class="col-md-6 col-lg-3">
+                <div class="card border-0 shadow-sm h-100 position-relative overflow-hidden">
+                    <div class="position-absolute top-0 end-0 p-2">
+                        <i class="fas fa-money-bill-wave text-success opacity-25" style="font-size: 2rem;"></i>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-flex align-items-center mb-2">
+                            <div class="p-2 rounded-circle me-3" style="background: linear-gradient(135deg, #28a745, #34ce57);">
+                                <i class="fas fa-dollar-sign text-white"></i>
+                            </div>
+                            <div>
+                                <h6 class="card-title mb-0 text-muted small">Total Value</h6>
+                                <h3 class="mb-0 fw-bold text-success">₱@TotalScholarshipValue.ToString("N0")</h3>
+                            </div>
+                        </div>
+                        <div class="small text-muted">
+                            <i class="fas fa-piggy-bank me-1"></i>Available funding
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Success Rate -->
+            <div class="col-md-6 col-lg-3">
+                <div class="card border-0 shadow-sm h-100 position-relative overflow-hidden">
+                    <div class="position-absolute top-0 end-0 p-2">
+                        <i class="fas fa-chart-line text-info opacity-25" style="font-size: 2rem;"></i>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-flex align-items-center mb-2">
+                            <div class="p-2 rounded-circle me-3" style="background: linear-gradient(135deg, #17a2b8, #6fc3d0);">
+                                <i class="fas fa-percentage text-white"></i>
+                            </div>
+                            <div>
+                                <h6 class="card-title mb-0 text-muted small">Success Rate</h6>
+                                <h3 class="mb-0 fw-bold text-info">@ApplicationSuccessRate.ToString("F1")%</h3>
+                            </div>
+                        </div>
+                        <div class="small text-muted">
+                            <i class="fas fa-chart-bar me-1"></i>Approval efficiency
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-3 col-md-6">
+            <div class="card bg-warning text-white border-0 shadow-sm h-100 position-relative overflow-hidden">
+                <div class="position-absolute top-0 end-0 opacity-25">
+                    <i class="fas fa-clock" style="font-size: 4rem; transform: translate(20%, -20%);"></i>
+                </div>
+                <div class="card-body position-relative">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <h3 class="fw-bold mb-1">@PendingApplicants</h3>
+                            <p class="mb-2 opacity-75">Pending Review</p>
+                            <small class="text-light">
+                                @{
+                                    var pendingRate = TotalApplicants > 0 ? Math.Round((PendingApplicants / (double)TotalApplicants) * 100, 1) : 0;
+                                }
+                                @pendingRate% pending
+                            </small>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
-	<div class="card shadow-sm">
-		<div class="card-body">
-			<div class="p-3 mb-3 text-white rounded-3" style="background: linear-gradient(135deg, #1976d2, #64b5f6);">
-				<h5 class="card-title">Student Grades for Your Applicants</h5>
-			</div>
-			
-			@if (profile == null)
-			{
-				<div class="text-muted">No benefactor profile found.</div>
-			}
-			else if (myApplications.Count == 0)
-			{
-				<div class="text-muted">No applicants found.</div>
-			}
-			else
-			{
-				<table class="table table-bordered table-striped">
-					<thead>
-						<tr>
-							<th>Student Name</th>
-							<th>GWA</th>
-							<th>Status</th>
-						</tr>
-					</thead>
-					<tbody>
-						@foreach (var app in myApplications)
-						{
-							<tr>
-								<td>@(app.Student?.FullName ?? "N/A")</td>
-														<td>@(app.Student?.GPA?.ToString("F2") ?? "N/A")</td>
-								<td>@app.Status</td>
-							</tr>
-						}
-					</tbody>
-				</table>
-			}
-		</div>
-	</div>
+        <!-- Enhanced Filters Section -->
+        <div class="card shadow-sm mb-4 border-0">
+            <div class="card-body">
+                <div class="p-3 mb-3 text-white rounded-3 shadow-sm position-relative overflow-hidden" 
+                     style="background: linear-gradient(135deg, #6f42c1, #9c6bdb);">
+                    <div class="position-absolute top-0 start-0 w-100 h-100"
+                         style="background: radial-gradient(circle at top left, rgba(255,255,255,0.15), transparent 60%);"></div>
+                    <h5 class="mb-0 fw-semibold position-relative">📊 Enhanced Analytics Filters</h5>
+                </div>
+                
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <label class="form-label small fw-semibold text-muted">Filter by Status</label>
+                        <select class="form-select" @bind="selectedStatusFilter" @bind:after="ApplyFilters">
+                            <option value="">All Statuses</option>
+                            <option value="Pending">Pending</option>
+                            <option value="Approved">Approved</option>
+                            <option value="Rejected">Rejected</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label small fw-semibold text-muted">Filter by Course</label>
+                        <select class="form-select" @bind="selectedCourseFilter" @bind:after="ApplyFilters">
+                            <option value="all">All Courses</option>
+                            @foreach (var course in availableCourses)
+                            {
+                                <option value="@course">@course</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label small fw-semibold text-muted">Year Level</label>
+                        <select class="form-select" @bind="selectedYearLevelFilter" @bind:after="ApplyFilters">
+                            <option value="all">All Years</option>
+                            @foreach (var year in availableYearLevels)
+                            {
+                                <option value="@year">Year @year</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label small fw-semibold text-muted">Date Range</label>
+                        <select class="form-select" @bind="selectedTimeFilter" @bind:after="ApplyFilters">
+                            <option value="all">All Time</option>
+                            <option value="month">This Month</option>
+                            <option value="quarter">Last 3 Months</option>
+                            <option value="year">This Year</option>
+                        </select>
+                    </div>
+                </div>
 
-	<div class="card shadow-sm mt-4">
-		<div class="card-body">
-			<div class="p-3 mb-4 text-white rounded-3" style="background: linear-gradient(135deg, #1976d2, #64b5f6);">
-				<h5 class="card-title mb-0">Demographic Profile of Applicants</h5>
-			</div>
-
-			<div class="row">
-				@foreach (var category in demographicCategories)
-				{
-					var categoryPieData = GetDemographicPieDataForCategory(category.Key);
-					var categoryNonZeroSlices = categoryPieData.Where(x => x.Value > 0).ToList();
-					var categoryPiePaths = GetPiePaths(categoryNonZeroSlices);
-					var categoryTotal = categoryPieData.Sum(x => x.Value);
-					
-					<div class="col-md-6 col-lg-3 mb-4">
-						<div class="card h-100 border-light">
-							<div class="card-body text-center">
-								<h6 class="card-title text-primary mb-3">@category.Value</h6>
-								
-								@if (categoryPieData.Count == 0 || categoryTotal == 0)
-								{
-									<div class="mb-3">
-										<svg width="120" height="120" viewBox="0 0 32 32">
-											<circle r="16" cx="16" cy="16" fill="#e9ecef" />
-										</svg>
-									</div>
-									<div class="text-muted small">No data available</div>
-								}
-								else
-								{
-									<div class="mb-3">
-										<svg width="120" height="120" viewBox="0 0 32 32">
-											@if (categoryNonZeroSlices.Count == 0)
-											{
-												<circle r="16" cx="16" cy="16" fill="#e9ecef" />
-											}
-											else if (categoryNonZeroSlices.Count == 1)
-											{
-												<circle r="16" cx="16" cy="16" fill="@categoryNonZeroSlices[0].Color" />
-											}
-											else
-											{
-												<circle r="16" cx="16" cy="16" fill="#e9ecef" />
-												@for (int i = 0; i < categoryNonZeroSlices.Count; i++)
-												{
-													<path d="@categoryPiePaths[i]" fill="@categoryNonZeroSlices[i].Color" stroke="white" stroke-width="0.3" />
-												}
-											}
-										</svg>
-									</div>
-									
-									<div class="text-start">
-										@foreach (var slice in categoryPieData.Take(5)) // Show top 5 to avoid overcrowding
-										{
-											var percent = categoryTotal > 0 ? Math.Round(slice.Value / categoryTotal * 100, 1) : 0;
-											var legendColor = slice.Value > 0 ? slice.Color : "#adb5bd";
-											<div class="d-flex align-items-center mb-1">
-												<span class="badge me-2" style="background:@legendColor; min-width: 12px;">&nbsp;</span>
-												<small class="text-truncate" style="max-width: 140px;" title="@slice.Label">
-													@slice.Label
-													<span class="text-muted">(@percent%)</span>
-												</small>
-											</div>
-										}
-										@if (categoryPieData.Count > 5)
-										{
-											<small class="text-muted">+@(categoryPieData.Count - 5) more...</small>
-										}
-									</div>
-								}
-							</div>
-						</div>
-					</div>
-				}
-			</div>
-		</div>
-	</div>
-
-    <!-- Predictive Analytics Card -->
-    <div class="card shadow-sm mt-4">
-        <div class="card-body">
-            <h5 class="card-title">📈 Predictive Analytics & Future Forecasting</h5>
-            
-            <!-- Comprehensive Explanation -->
-            <div class="mb-4">
-                <h6 class="text-primary">📊 Analysis Summary</h6>
-                @if (!string.IsNullOrEmpty(PredictionSummary))
+                @if (!string.IsNullOrEmpty(selectedStatusFilter) || selectedCourseFilter != "all" || selectedYearLevelFilter != "all" || selectedTimeFilter != "all")
                 {
-                    <p class="mb-2">@PredictionSummary</p>
-                }
-                @if (!string.IsNullOrEmpty(TrendAnalysis))
-                {
-                    <p class="mb-2"><strong>Trend Analysis:</strong> @TrendAnalysis</p>
-                }
-                @if (ApplicantsPerDayList.Count > 0)
-                {
-                    var avgDaily = ApplicantsPerDayList.Average(x => x.Count);
-                    var totalDays = ApplicantsPerDayList.Count;
-                    var maxDaily = ApplicantsPerDayList.Max(x => x.Count);
-                    var minDaily = ApplicantsPerDayList.Min(x => x.Count);
-                    
-                    <div class="row">
-                        <div class="col-md-6">
-                            <small class="text-muted">
-                                <strong>Historical Performance:</strong><br/>
-                                • Average daily applications: <span class="badge bg-info">@avgDaily.ToString("F1")</span><br/>
-                                • Peak day applications: <span class="badge bg-success">@maxDaily</span><br/>
-                                • Minimum day applications: <span class="badge bg-warning">@minDaily</span><br/>
-                                • Total tracking period: <span class="badge bg-secondary">@totalDays days</span>
-                            </small>
+                    <div class="mt-3">
+                        <div class="d-flex align-items-center">
+                            <span class="badge bg-primary me-2">@filteredApplications.Count results</span>
+                            <button class="btn btn-outline-secondary btn-sm" @onclick="ClearFilters">
+                                <i class="fas fa-times me-1"></i>Clear Filters
+                            </button>
                         </div>
                     </div>
                 }
             </div>
+        </div>
 
-            <!-- Historical Data Table -->
-            <div class="mb-4">
-                <h6 class="text-primary">📅 Historical Applicant Data</h6>
-                @if (ApplicantsPerDayList.Count == 0)
-                {
-                    <div class="text-muted">No historical applicant data available.</div>
-                }
-                else
-                {
-                    <div style="max-height: 200px; overflow-y: auto;">
-                        <table class="table table-bordered table-sm">
-                            <thead class="table-light">
-                                <tr>
-                                    <th>Date</th>
-                                    <th>Applications Received</th>
-                                    <th>Day of Week</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach (var entry in ApplicantsPerDayList.OrderByDescending(x => x.Date))
-                                {
-                                    <tr>
-                                        <td>@entry.Date.ToString("yyyy-MM-dd")</td>
-                                        <td><span class="badge bg-primary">@entry.Count</span></td>
-                                        <td><small class="text-muted">@entry.Date.DayOfWeek</small></td>
-                                    </tr>
-                                }
-                            </tbody>
-                        </table>
-                    </div>
-                }
-            </div>
-
-            <!-- Future Predictions with Line Graph -->
-            @if (PredictedApplicantsPerDay.Count > 0)
+        <!-- Enhanced Applications Table -->
+        <div class="card shadow-sm mb-4 border-0">
+            <div class="card-body">
+                <div class="p-3 mb-3 text-white rounded-3 shadow-sm position-relative overflow-hidden" 
+                     style="background: linear-gradient(135deg, #1976d2, #64b5f6);">
+                    <div class="position-absolute top-0 start-0 w-100 h-100"
+                         style="background: radial-gradient(circle at top left, rgba(255,255,255,0.15), transparent 60%);"></div>
+                    <h5 class="mb-0 fw-semibold position-relative">📊 Scholar Applications (@filteredApplications.Count)</h5>
+                </div>
+        <div class="card-body p-0">
+            @if (filteredApplications.Any())
             {
-                <div class="mb-4">
-                    <h6 class="text-primary">🔮 7-Day Forecast Visualization</h6>
-                    <div class="d-flex flex-row align-items-start">
-                        <div class="me-4">
-                            <svg width="320" height="170" viewBox="0 0 320 170" class="border rounded">
-                                <!-- Grid lines -->
-                                <defs>
-                                    <pattern id="grid" width="40" height="30" patternUnits="userSpaceOnUse">
-                                        <path d="M 40 0 L 0 0 0 30" fill="none" stroke="#e9ecef" stroke-width="1"/>
-                                    </pattern>
-                                </defs>
-                                <rect width="320" height="170" fill="url(#grid)" />
-                                
-                                <!-- Historical line (if available) -->
-                                @if (ApplicantsPerDayList.Count > 0)
-                                {
-                                    var historicalPath = GetLineGraphPath(ApplicantsPerDayList.TakeLast(7).ToList());
-                                    <path d="@historicalPath" stroke="#6c757d" stroke-width="2" fill="none" stroke-dasharray="5,5" />
-                                }
-                                
-                                <!-- Predicted line -->
-                                @{
-                                    var predictedPath = GetLineGraphPath(PredictedApplicantsPerDay);
-                                }
-                                <path d="@predictedPath" stroke="#007bff" stroke-width="3" fill="none" />
-                                
-                                <!-- Data points for predictions -->
-                                @{
-                                    var width = 300.0;
-                                    var height = 150.0;
-                                    var padding = 20.0;
-                                    var maxCount = Math.Max(PredictedApplicantsPerDay.Max(x => x.Count), 1);
-                                    var minDate = PredictedApplicantsPerDay.Min(x => x.Date);
-                                    var maxDate = PredictedApplicantsPerDay.Max(x => x.Date);
-                                    var dateRange = (maxDate - minDate).TotalDays;
-                                    if (dateRange == 0) dateRange = 1;
-                                    
-                                    var pointData = PredictedApplicantsPerDay.Select(point => new {
-                                        Point = point,
-                                        X = padding + ((point.Date - minDate).TotalDays / dateRange) * (width - 2 * padding),
-                                        Y = height - padding - (point.Count / (double)maxCount) * (height - 2 * padding)
-                                    }).ToList();
-                                }
-                                @foreach (var data in pointData)
-                                {
-                                    <circle cx="@data.X.ToString("F1")" cy="@data.Y.ToString("F1")" r="4" fill="#007bff" />
-                                }
-                                
-                                <!-- Axis labels -->
-                                <text x="160" y="165" text-anchor="middle" font-size="12" fill="#6c757d">Next 7 Days</text>
-                                <text x="10" y="15" font-size="12" fill="#6c757d">Applications</text>
-                            </svg>
-                        </div>
-                        <div>
-                            <h6 class="text-success">📋 Predicted Applications</h6>
-                            <table class="table table-sm table-bordered">
-                                <thead class="table-light">
-                                    <tr>
-                                        <th>Date</th>
-                                        <th>Predicted Count</th>
-                                        <th>Day</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach (var prediction in PredictedApplicantsPerDay)
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="bg-light">
+                            <tr>
+                                <th class="px-4 py-3 fw-semibold">Student</th>
+                                <th class="px-4 py-3 fw-semibold">Course</th>
+                                <th class="px-4 py-3 fw-semibold">Year</th>
+                                <th class="px-4 py-3 fw-semibold">GWA</th>
+                                <th class="px-4 py-3 fw-semibold">Status</th>
+                                <th class="px-4 py-3 fw-semibold">Applied</th>
+                                <th class="px-4 py-3 fw-semibold">Scholarship Value</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var application in filteredApplications.Take(50))
+                            {
+                                <tr>
+                                    <td class="px-4 py-3">
+                                        <div class="d-flex align-items-center">
+                                            @if (!string.IsNullOrEmpty(application.Student?.ProfilePicture))
+                                            {
+                                                <img src="@application.Student.ProfilePicture" alt="Profile" 
+                                                     class="rounded-circle me-3" style="width: 40px; height: 40px; object-fit: cover;">
+                                            }
+                                            else
+                                            {
+                                                <div class="rounded-circle me-3 bg-primary text-white d-flex align-items-center justify-content-center"
+                                                     style="width: 40px; height: 40px; font-size: 14px; font-weight: bold;">
+                                                    @((application.Student?.FirstName?.FirstOrDefault().ToString() ?? "?").ToUpper())@((application.Student?.LastName?.FirstOrDefault().ToString() ?? "").ToUpper())
+                                                </div>
+                                            }
+                                            <div>
+                                                <div class="fw-semibold text-dark">@application.Student?.FirstName @application.Student?.LastName</div>
+                                                <small class="text-muted">@application.Student?.StudentNumber</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="px-4 py-3">
+                                        <span class="badge bg-light text-dark border">@(application.Student?.Course ?? "N/A")</span>
+                                    </td>
+                                    <td class="px-4 py-3">@(application.Student?.YearLevel?.ToString() ?? "N/A")</td>
+                                    <td class="px-4 py-3">
+                                        @if (application.GWA.HasValue)
+                                        {
+                                            var gwaClass = GetGWAClassification(application.GWA.Value);
+                                            var badgeClass = gwaClass.Item2;
+                                            <span class="badge @badgeClass">@application.GWA.Value.ToString("F2")</span>
+                                            <small class="text-muted d-block">@gwaClass.Item1</small>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">N/A</span>
+                                        }
+                                    </td>
+                                    <td class="px-4 py-3">
+                                        @{
+                                            var statusBadge = application.Status switch
+                                            {
+                                                "Approved" => "bg-success",
+                                                "Rejected" => "bg-danger",
+                                                "Pending" => "bg-warning text-dark",
+                                                _ => "bg-secondary"
+                                            };
+                                        }
+                                        <span class="badge @statusBadge">@application.Status</span>
+                                    </td>
+                                    <td class="px-4 py-3">
+                                        <small class="text-muted">@application.ApplicationDate.ToString("MMM dd, yyyy")</small>
+                                    </td>
+                                    <td class="px-4 py-3">
+                                        @{
+                                            var scholarship = myScholarships.FirstOrDefault(s => s.ScholarshipId == application.ScholarshipId);
+                                            var value = scholarship?.MonetaryValue ?? 0;
+                                        }
+                                        <span class="fw-semibold text-success">₱@value.ToString("N0")</span>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+                @if (filteredApplications.Count > 50)
+                {
+                    <div class="card-footer bg-light text-center">
+                        <small class="text-muted">Showing first 50 of @filteredApplications.Count applications. Use filters to narrow results.</small>
+                    </div>
+                }
+            }
+            else
+            {
+                <div class="text-center py-5">
+                    <i class="fas fa-file-alt text-muted mb-3" style="font-size: 3rem;"></i>
+                    <h5 class="text-muted">No applications found</h5>
+                    <p class="text-muted">No applications match your current filter criteria.</p>
+                </div>
+            }
+        </div>
+    </div>
+
+        <!-- Enhanced Demographic Analysis -->
+        <div class="card shadow-sm mb-4 border-0">
+            <div class="card-body">
+                <div class="p-3 mb-3 text-white rounded-3 shadow-sm position-relative overflow-hidden" 
+                     style="background: linear-gradient(135deg, #1976d2, #64b5f6);">
+                    <div class="position-absolute top-0 start-0 w-100 h-100"
+                         style="background: radial-gradient(circle at top left, rgba(255,255,255,0.15), transparent 60%);"></div>
+                    <h5 class="mb-0 fw-semibold position-relative">Demographic Profile of Benefactor Applicants</h5>
+                </div>
+            @if (myApplications.Count == 0)
+            {
+                <div class="text-center py-5">
+                    <i class="fas fa-chart-pie text-muted mb-3" style="font-size: 3rem;"></i>
+                    <h5 class="text-muted">No demographic data available</h5>
+                    <p class="text-muted">Applications are needed to display demographic insights.</p>
+                </div>
+            }
+            else
+            {
+                <div class="row g-4">
+                    <!-- Course Distribution -->
+                    <div class="col-lg-6">
+                        <div class="h-100 p-3 bg-light rounded-3">
+                            <h6 class="fw-semibold text-dark mb-3">
+                                <i class="fas fa-graduation-cap text-primary me-2"></i>Course Distribution
+                            </h6>
+                            @{
+                                var courseData = GetDemographicPieDataForCategory("Program");
+                                var coursePaths = GetPiePaths(courseData);
+                            }
+                            <div class="d-flex align-items-start">
+                                <svg width="120" height="120" viewBox="0 0 32 32" class="me-3">
+                                    @if (courseData.Count == 0)
                                     {
-                                        <tr>
-                                            <td>@prediction.Date.ToString("MMM dd")</td>
-                                            <td><span class="badge bg-success">@prediction.Count</span></td>
-                                            <td><small class="text-muted">@prediction.Date.DayOfWeek</small></td>
-                                        </tr>
+                                        <circle r="16" cx="16" cy="16" fill="#e9ecef" />
                                     }
-                                </tbody>
-                            </table>
+                                    else if (courseData.Count == 1)
+                                    {
+                                        <circle r="16" cx="16" cy="16" fill="@courseData[0].Color" />
+                                    }
+                                    else
+                                    {
+                                        <circle r="16" cx="16" cy="16" fill="#f8f9fa" />
+                                        @for (int i = 0; i < courseData.Count; i++)
+                                        {
+                                            <path d="@coursePaths[i]" fill="@courseData[i].Color" stroke="white" stroke-width="0.5" />
+                                        }
+                                    }
+                                </svg>
+                                <div class="flex-grow-1">
+                                    @foreach (var item in courseData.Take(5))
+                                    {
+                                        var percentage = myApplications.Count > 0 ? Math.Round((item.Value / (double)myApplications.Count) * 100, 1) : 0;
+                                        <div class="d-flex align-items-center mb-2">
+                                            <span class="me-2 rounded-circle d-inline-block" 
+                                                  style="width: 12px; height: 12px; background-color: @item.Color;"></span>
+                                            <small class="text-muted flex-grow-1">@item.Label</small>
+                                            <small class="fw-semibold">@percentage%</small>
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Year Level Distribution -->
+                    <div class="col-lg-6">
+                        <div class="h-100 p-3 bg-light rounded-3">
+                            <h6 class="fw-semibold text-dark mb-3">
+                                <i class="fas fa-layer-group text-success me-2"></i>Year Level Distribution
+                            </h6>
+                            @{
+                                var yearData = GetDemographicPieDataForCategory("Year");
+                                var yearPaths = GetPiePaths(yearData);
+                            }
+                            <div class="d-flex align-items-start">
+                                <svg width="120" height="120" viewBox="0 0 32 32" class="me-3">
+                                    @if (yearData.Count == 0)
+                                    {
+                                        <circle r="16" cx="16" cy="16" fill="#e9ecef" />
+                                    }
+                                    else if (yearData.Count == 1)
+                                    {
+                                        <circle r="16" cx="16" cy="16" fill="@yearData[0].Color" />
+                                    }
+                                    else
+                                    {
+                                        <circle r="16" cx="16" cy="16" fill="#f8f9fa" />
+                                        @for (int i = 0; i < yearData.Count; i++)
+                                        {
+                                            <path d="@yearPaths[i]" fill="@yearData[i].Color" stroke="white" stroke-width="0.5" />
+                                        }
+                                    }
+                                </svg>
+                                <div class="flex-grow-1">
+                                    @foreach (var item in yearData.Take(5))
+                                    {
+                                        var percentage = myApplications.Count > 0 ? Math.Round((item.Value / (double)myApplications.Count) * 100, 1) : 0;
+                                        <div class="d-flex align-items-center mb-2">
+                                            <span class="me-2 rounded-circle d-inline-block" 
+                                                  style="width: 12px; height: 12px; background-color: @item.Color;"></span>
+                                            <small class="text-muted flex-grow-1">@item.Label</small>
+                                            <small class="fw-semibold">@percentage%</small>
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row g-4 mt-3">
+                    <!-- Gender Distribution -->
+                    <div class="col-lg-6">
+                        <div class="h-100 p-3 bg-light rounded-3">
+                            <h6 class="fw-semibold text-dark mb-3">
+                                <i class="fas fa-venus-mars text-info me-2"></i>Gender Distribution
+                            </h6>
+                            @{
+                                var genderData = GetDemographicPieDataForCategory("Gender");
+                                var genderPaths = GetPiePaths(genderData);
+                            }
+                            <div class="d-flex align-items-start">
+                                <svg width="120" height="120" viewBox="0 0 32 32" class="me-3">
+                                    @if (genderData.Count == 0)
+                                    {
+                                        <circle r="16" cx="16" cy="16" fill="#e9ecef" />
+                                    }
+                                    else if (genderData.Count == 1)
+                                    {
+                                        <circle r="16" cx="16" cy="16" fill="@genderData[0].Color" />
+                                    }
+                                    else
+                                    {
+                                        <circle r="16" cx="16" cy="16" fill="#f8f9fa" />
+                                        @for (int i = 0; i < genderData.Count; i++)
+                                        {
+                                            <path d="@genderPaths[i]" fill="@genderData[i].Color" stroke="white" stroke-width="0.5" />
+                                        }
+                                    }
+                                </svg>
+                                <div class="flex-grow-1">
+                                    @foreach (var item in genderData.Take(5))
+                                    {
+                                        var percentage = myApplications.Count > 0 ? Math.Round((item.Value / (double)myApplications.Count) * 100, 1) : 0;
+                                        <div class="d-flex align-items-center mb-2">
+                                            <span class="me-2 rounded-circle d-inline-block" 
+                                                  style="width: 12px; height: 12px; background-color: @item.Color;"></span>
+                                            <small class="text-muted flex-grow-1">@item.Label</small>
+                                            <small class="fw-semibold">@percentage%</small>
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- University Distribution -->
+                    <div class="col-lg-6">
+                        <div class="h-100 p-3 bg-light rounded-3">
+                            <h6 class="fw-semibold text-dark mb-3">
+                                <i class="fas fa-university text-warning me-2"></i>University Distribution
+                            </h6>
+                            @{
+                                var uniData = GetDemographicPieDataForCategory("University");
+                                var uniPaths = GetPiePaths(uniData);
+                            }
+                            <div class="d-flex align-items-start">
+                                <svg width="120" height="120" viewBox="0 0 32 32" class="me-3">
+                                    @if (uniData.Count == 0)
+                                    {
+                                        <circle r="16" cx="16" cy="16" fill="#e9ecef" />
+                                    }
+                                    else if (uniData.Count == 1)
+                                    {
+                                        <circle r="16" cx="16" cy="16" fill="@uniData[0].Color" />
+                                    }
+                                    else
+                                    {
+                                        <circle r="16" cx="16" cy="16" fill="#f8f9fa" />
+                                        @for (int i = 0; i < uniData.Count; i++)
+                                        {
+                                            <path d="@uniPaths[i]" fill="@uniData[i].Color" stroke="white" stroke-width="0.5" />
+                                        }
+                                    }
+                                </svg>
+                                <div class="flex-grow-1">
+                                    @foreach (var item in uniData.Take(5))
+                                    {
+                                        var percentage = myApplications.Count > 0 ? Math.Round((item.Value / (double)myApplications.Count) * 100, 1) : 0;
+                                        <div class="d-flex align-items-center mb-2">
+                                            <span class="me-2 rounded-circle d-inline-block" 
+                                                  style="width: 12px; height: 12px; background-color: @item.Color;"></span>
+                                            <small class="text-muted flex-grow-1">@item.Label</small>
+                                            <small class="fw-semibold">@percentage%</small>
+                                        </div>
+                                    }
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
             }
-
-            <!-- AI Forecast Details -->
-            <div class="mt-3">
-                <h6 class="text-primary">🤖 AI-Generated Forecast</h6>
-                <div class="p-3 bg-light rounded">
-                    <small class="text-muted">
-                        <strong>Raw AI Analysis:</strong><br/>
-                        @if (string.IsNullOrEmpty(PredictiveForecast))
-                        {
-                            <span>No forecast data available.</span>
-                        }
-                        else
-                        {
-                            @PredictiveForecast
-                        }
-                    </small>
-                </div>
-            </div>
         </div>
     </div>
 
-    <!-- Scholarship Utilization and Impact Card -->
-    <div class="card shadow-sm mt-4">
-        <div class="card-body">
-            <div class="p-3 mb-3 text-white rounded-3" style="background: linear-gradient(135deg, #28a745, #20c997);">
-                <h5 class="mb-0 fw-semibold">🎓 Scholarship Utilization and Impact</h5>
-            </div>
-            
-            <!-- 1. Active Scholarships vs Available Slots -->
-            <div class="mb-4">
-                <h6 class="text-success">📊 Scholarship Capacity Analysis</h6>
-                <div class="row">
-                    <div class="col-md-6">
-                        <div class="card bg-light">
-                            <div class="card-body text-center">
-                                <h3 class="text-primary mb-2">@ActiveScholars / @TotalScholarshipSlots</h3>
-                                <p class="mb-1"><strong>Active Scholars / Total Slots</strong></p>
-                                <div class="progress mb-2" style="height: 20px;">
-                                    <div class="progress-bar bg-success" role="progressbar" 
-                                         style="width: @(UtilizationRate.ToString("F1") + "%")" 
-                                         aria-valuenow="@UtilizationRate" aria-valuemin="0" aria-valuemax="100">
-                                        @UtilizationRate.ToString("F1")%
-                                    </div>
-                                </div>
-                                <small class="text-muted">
-                                    <span class="badge bg-success me-2">@ActiveScholars Active</span>
-                                    <span class="badge bg-secondary">@AvailableSlots Available</span>
-                                </small>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="p-3">
-                            <h6 class="text-muted">Utilization Insights</h6>
-                            <ul class="list-unstyled small">
-                                <li class="mb-2">
-                                    <i class="text-success">✓</i> 
-                                    <strong>Capacity:</strong> @UtilizationRate.ToString("F1")% of scholarship slots are filled
-                                </li>
-                                <li class="mb-2">
-                                    <i class="text-info">ℹ️</i> 
-                                    <strong>Availability:</strong> @AvailableSlots slots remain open for new applicants
-                                </li>
-                                <li class="mb-2">
-                                    <i class="text-warning">⚡</i> 
-                                    <strong>Impact:</strong> Currently supporting @ActiveScholars students
-                                </li>
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 2. Retention and Dropout Rates -->
-            <div class="mb-4">
-                <h6 class="text-success">📈 Retention and Dropout Analysis</h6>
-                <div class="row">
-                    <div class="col-md-4">
-                        <div class="card bg-success text-white text-center">
-                            <div class="card-body">
-                                <h4>@RetentionRate.ToString("F1")%</h4>
-                                <p class="mb-0"><strong>Retention Rate</strong></p>
-                                <small>@(TotalScholarsEver - DroppedOutScholars) of @TotalScholarsEver scholars retained</small>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="card bg-danger text-white text-center">
-                            <div class="card-body">
-                                <h4>@DropoutRate.ToString("F1")%</h4>
-                                <p class="mb-0"><strong>Dropout Rate</strong></p>
-                                <small>@DroppedOutScholars of @TotalScholarsEver scholars discontinued</small>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <div class="card bg-primary text-white text-center">
-                            <div class="card-body">
-                                <h4>@CurrentlyActive</h4>
-                                <p class="mb-0"><strong>Currently Active</strong></p>
-                                <small>Ongoing scholarship recipients</small>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- 3. Success Rates (Graduation) -->
-            <div class="mb-4">
-                <h6 class="text-success">🎯 Success and Graduation Outcomes</h6>
-                <div class="row">
-                    <div class="col-md-6">
-                        <div class="card bg-light">
-                            <div class="card-body">
-                                <div class="d-flex justify-content-between align-items-center mb-3">
-                                    <h5 class="mb-0">Success Rate</h5>
-                                    <span class="badge bg-success fs-6">@SuccessRate.ToString("F1")%</span>
-                                </div>
-                                
-                                <!-- Visual breakdown -->
-                                <div class="mb-3">
-                                    <div class="d-flex mb-2">
-                                        <div class="flex-fill">
-                                            <div class="progress" style="height: 25px;">
-                                                <div class="progress-bar bg-success" style="width: @(((double)GraduatedScholars/TotalScholarsEver*100).ToString("F1") + "%")">
-                                                    Graduated (@GraduatedScholars)
-                                                </div>
-                                                <div class="progress-bar bg-primary" style="width: @(((double)CurrentlyActive/TotalScholarsEver*100).ToString("F1") + "%")">
-                                                    Active (@CurrentlyActive)
-                                                </div>
-                                                <div class="progress-bar bg-danger" style="width: @(((double)DroppedOutScholars/TotalScholarsEver*100).ToString("F1") + "%")">
-                                                    Dropped (@DroppedOutScholars)
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div class="row text-center">
-                                    <div class="col-4">
-                                        <div class="text-success">
-                                            <strong>@GraduatedScholars</strong><br>
-                                            <small>Graduated</small>
-                                        </div>
-                                    </div>
-                                    <div class="col-4">
-                                        <div class="text-primary">
-                                            <strong>@CurrentlyActive</strong><br>
-                                            <small>In Progress</small>
-                                        </div>
-                                    </div>
-                                    <div class="col-4">
-                                        <div class="text-danger">
-                                            <strong>@DroppedOutScholars</strong><br>
-                                            <small>Discontinued</small>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="p-3">
-                            <h6 class="text-muted">Impact Summary</h6>
-                            <ul class="list-unstyled">
-                                <li class="mb-3">
-                                    <div class="d-flex align-items-center">
-                                        <span class="badge bg-success me-2">📚</span>
-                                        <div>
-                                            <strong>Educational Impact:</strong><br>
-                                            <small class="text-muted">@GraduatedScholars students have successfully completed their education through your scholarships</small>
-                                        </div>
-                                    </div>
-                                </li>
-                                <li class="mb-3">
-                                    <div class="d-flex align-items-center">
-                                        <span class="badge bg-primary me-2">⏳</span>
-                                        <div>
-                                            <strong>Ongoing Support:</strong><br>
-                                            <small class="text-muted">@CurrentlyActive students are currently benefiting from your scholarship program</small>
-                                        </div>
-                                    </div>
-                                </li>
-                                <li class="mb-3">
-                                    <div class="d-flex align-items-center">
-                                        <span class="badge bg-info me-2">💡</span>
-                                        <div>
-                                            <strong>Program Effectiveness:</strong><br>
-                                            <small class="text-muted">Your scholarship program maintains a @RetentionRate.ToString("F1")% retention rate, indicating strong student support</small>
-                                        </div>
-                                    </div>
-                                </li>
-                            </ul>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Additional Insights -->
-            <div class="alert alert-info">
-                <h6 class="alert-heading">📋 Program Insights</h6>
-                <p class="mb-1">
-                    <strong>Total Scholars Supported:</strong> @TotalScholarsEver students have received scholarships from your program.
-                </p>
-                <p class="mb-1">
-                    <strong>Capacity Utilization:</strong> You are currently using @UtilizationRate.ToString("F1")% of your scholarship capacity.
-                </p>
-                <p class="mb-0">
-                    <strong>Success Impact:</strong> @GraduatedScholars students have successfully graduated, representing a @SuccessRate.ToString("F1")% success rate.
-                </p>
+    <!-- Original Analytics Preserved -->
+	<div class="card shadow-sm border-0 mb-4">
+        <div class="card-header bg-light border-0 py-3">
+            <h5 class="mb-0 text-primary fw-semibold">
+                <i class="fas fa-chart-bar me-2"></i>Student Grades Analysis
+            </h5>
             </div>
         </div>
     </div>
-</div>
 }
 
 
