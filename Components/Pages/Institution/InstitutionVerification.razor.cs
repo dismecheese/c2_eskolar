@@ -400,6 +400,7 @@ namespace c2_eskolar.Components.Pages.Institution
                 institutionProfile.ProfilePicture = LogoUploadUrl;
                 institutionProfile.AdminValidationDocument = AdminValidationUploadUrl;
                 institutionProfile.VerificationStatus = "Pending";
+                institutionProfile.AccountStatus = "Pending";
 
                 await InstitutionProfileService.SaveProfileAsync(institutionProfile);
                 ProfileErrorMessage = "Verification submitted successfully!";

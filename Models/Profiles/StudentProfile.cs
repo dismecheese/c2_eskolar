@@ -71,11 +71,11 @@ namespace c2_eskolar.Models
     public string? ProfilePicture { get; set; }
 
     public bool IsVerified { get; set; } = false;
-    public string? VerificationStatus { get; set; } = "Pending"; // Pending, Verified, Rejected
+    public string? VerificationStatus { get; set; } = "Pending"; // Deprecated: Use AccountStatus instead
     public DateTime? VerificationDate { get; set; }
 
-    // Account lifecycle status
-    public string AccountStatus { get; set; } = "Active"; // Active, Deleted, Locked
+    // Account lifecycle status: Unverified → Pending → Verified → Archived
+    public string AccountStatus { get; set; } = "Unverified"; // Unverified, Pending, Verified, Archived
 
     // Document Uploads
     [StringLength(255)]

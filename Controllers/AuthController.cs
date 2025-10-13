@@ -147,8 +147,8 @@ namespace c2_eskolar.Controllers
 
                 // Check if student is verified
                 bool isVerified = studentProfile.IsVerified == true && 
-                                 !string.IsNullOrEmpty(studentProfile.VerificationStatus) && 
-                                 studentProfile.VerificationStatus == "Verified";
+                                 !string.IsNullOrEmpty(studentProfile.AccountStatus) && 
+                                 studentProfile.AccountStatus == "Verified";
 
                 return isVerified ? "/dashboard/student" : "/dashboard/unverified";
             }
@@ -180,8 +180,8 @@ namespace c2_eskolar.Controllers
 
                 // Check if benefactor is verified
                 bool isVerified = benefactorProfile.IsVerified == true && 
-                                 !string.IsNullOrEmpty(benefactorProfile.VerificationStatus) && 
-                                 benefactorProfile.VerificationStatus == "Verified";
+                                 !string.IsNullOrEmpty(benefactorProfile.AccountStatus) && 
+                                 benefactorProfile.AccountStatus == "Verified";
 
                 return isVerified ? "/dashboard/benefactor" : "/dashboard/benefactor/unverified";
             }
@@ -213,8 +213,8 @@ namespace c2_eskolar.Controllers
 
                 // Check if institution is verified
                 bool isVerified = institutionProfile.IsVerified == true && 
-                                 !string.IsNullOrEmpty(institutionProfile.VerificationStatus) && 
-                                 institutionProfile.VerificationStatus == "Verified";
+                                 !string.IsNullOrEmpty(institutionProfile.AccountStatus) && 
+                                 institutionProfile.AccountStatus == "Verified";
 
                 return isVerified ? "/dashboard/institution" : "/dashboard/institution/unverified";
             }
