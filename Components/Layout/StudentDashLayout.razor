@@ -49,8 +49,22 @@
         // --- VERIFICATION MODAL LOGIC ---
         private async Task CheckVerificationStatus()
         {
+            // Prevent modal on verification page
+            var currentUri = Navigation.Uri;
+            if (currentUri.Contains("/student/verification"))
+            {
+                showVerificationModal = false;
+                return;
+            }
             try
             {
+                var currentPath = Navigation.ToBaseRelativePath(Navigation.Uri).Split('?')[0].TrimEnd('/').ToLower();
+                // Prevent modal on verification page
+                if (currentPath == "student/verification")
+                {
+                    showVerificationModal = false;
+                    return;
+                }
                 var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
                 userId = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
                 if (!string.IsNullOrEmpty(userId))
@@ -270,6 +284,18 @@
         Navigation.NavigateTo("/dashboard/student/profile/");
     }
 
+    // Gets the appropriate dashboard URL based on verification status
+    private string GetDashboardUrl()
+    {
+        // If user is verified, go to verified dashboard
+        if (isVerified == true && verificationStatus == "Verified")
+        {
+            return "/dashboard/student";
+        }
+        // If user is not verified, go to unverified dashboard
+        return "/dashboard/unverified";
+    }
+
     // --- CHATBOT STATE ---
     private bool ShowChatbot = false;
     private void OpenChatbot() => ShowChatbot = true;
@@ -312,7 +338,7 @@
         <div>
             <!-- Logo Section -->
             <div class="sidebar-brand-container text-center">
-                <a class="eskolar-logo" href="/dashboard/student">
+                <a class="eskolar-logo" href="@GetDashboardUrl()">
                     <img src="images/main/eSkolar-White.svg" alt="eSkolar Logo" class="eskolar-logo-img" />
                 </a>
             </div>
@@ -320,7 +346,7 @@
             <!-- Navigation Links -->
             <ul class="nav flex-column gap-1">
                 <li class="nav-item">
-                    <a href="/dashboard/student" class="@GetSidebarLinkClass("/dashboard/student")">
+                    <a href="@GetDashboardUrl()" class="@GetSidebarLinkClass(GetDashboardUrl())">
                         <i class="fa fa-home"></i> Dashboard
                     </a>
                 </li>
