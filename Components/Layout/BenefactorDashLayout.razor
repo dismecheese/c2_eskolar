@@ -16,33 +16,7 @@
 
 </div>
 
-<!-- Logout Confirmation Modal -->
-<div class="modal fade" id="logoutModal" tabindex="-1" aria-labelledby="logoutModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header border-0">
-                <h5 class="modal-title text-danger" id="logoutModalLabel">
-                    <i class="fas fa-sign-out-alt me-2"></i>
-                    Confirm Logout
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body text-center py-4">
-                <i class="fas fa-exclamation-triangle text-warning mb-3" style="font-size: 3rem;"></i>
-                <h6>Are you sure you want to logout?</h6>
-                <p class="text-muted mb-0">You will be redirected to the login page.</p>
-            </div>
-            <div class="modal-footer border-0 justify-content-center">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                    <i class="fas fa-times me-2"></i>Cancel
-                </button>
-                <button type="button" class="btn btn-danger" @onclick="LogOut" data-bs-dismiss="modal">
-                    <i class="fas fa-sign-out-alt me-2"></i>Yes, Logout
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
+<LogoutModal IsVisible="@showLogoutModal" OnCancel="@CancelLogout" OnConfirm="@ConfirmLogout" />
 
 <!-- JavaScript helper to close Bootstrap offcanvas programmatically --> Blazor and Identity components *@
 @using Microsoft.AspNetCore.Components.Web
@@ -246,9 +220,14 @@
         Navigation.NavigateTo("/api/auth/logout", forceLoad: true);
     }
 
-    private async Task ShowLogoutModal()
+    // Logout modal state and handlers (use shared sv-modal styles)
+    private bool showLogoutModal = false;
+    private void ShowLogoutModal() => showLogoutModal = true;
+    private void CancelLogout() => showLogoutModal = false;
+    private void ConfirmLogout()
     {
-        await JSRuntime.InvokeVoidAsync("eval", "new bootstrap.Modal(document.getElementById('logoutModal')).show();");
+        showLogoutModal = false;
+        LogOut();
     }
 
     // --- VERIFICATION MODAL ACTIONS ---
@@ -410,33 +389,7 @@
 </div>
 
 
-<!-- Logout Confirmation Modal -->
-<div class="modal fade" id="logoutModal" tabindex="-1" aria-labelledby="logoutModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header border-0">
-                <h5 class="modal-title text-danger" id="logoutModalLabel">
-                    <i class="fas fa-sign-out-alt me-2"></i>
-                    Confirm Logout
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body text-center py-4">
-                <i class="fas fa-exclamation-triangle text-warning mb-3" style="font-size: 3rem;"></i>
-                <h6>Are you sure you want to logout?</h6>
-                <p class="text-muted mb-0">You will be redirected to the login page.</p>
-            </div>
-            <div class="modal-footer border-0 justify-content-center">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                    <i class="fas fa-times me-2"></i>Cancel
-                </button>
-                <button type="button" class="btn btn-danger" @onclick="LogOut" data-bs-dismiss="modal">
-                    <i class="fas fa-sign-out-alt me-2"></i>Yes, Logout
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
+@* Logout modal handled by sv-modal earlier in this file via showLogoutModal state *@
     @if (showVerificationModal)
     {
         <div class="sv-modal sv-modal-backdrop sv-modal-fixed">
@@ -462,24 +415,7 @@
     <ChatBot CloseChatbot="CloseChatbot" MinimizeChatbot="MinimizeChatbot" />
 }
 
-<!-- Logout Confirmation Modal -->
-<div class="modal fade" id="logoutModal" tabindex="-1" aria-labelledby="logoutModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="logoutModalLabel">Confirm Logout</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                Are you sure you want to log out?
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-primary" @onclick="LogOut">Log Out</button>
-            </div>
-        </div>
-    </div>
-</div>
+@* Removed duplicate Bootstrap logout modal - using sv-modal markup above *@
 
 <!-- JavaScript helper to close Bootstrap offcanvas programmatically -->
 <script>

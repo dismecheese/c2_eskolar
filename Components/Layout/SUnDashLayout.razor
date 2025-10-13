@@ -142,33 +142,23 @@
         <ChatBot CloseChatbot="CloseChatbot" MinimizeChatbot="MinimizeChatbot" />
     }
 </div>
-<!-- Logout Confirmation Modal -->
-<div class="modal fade" id="logoutModal" tabindex="-1" aria-labelledby="logoutModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header border-0">
-                <h5 class="modal-title text-danger" id="logoutModalLabel">
-                    <i class="fas fa-sign-out-alt me-2"></i>
-                    Confirm Logout
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+@if (showLogoutModal)
+{
+    <div class="sv-modal sv-modal-backdrop sv-modal-fixed">
+        <div class="sv-modal-content">
+            <div class="sv-modal-header">
+                <h2>Confirm Logout</h2>
             </div>
-            <div class="modal-body text-center py-4">
-                <i class="fas fa-exclamation-triangle text-warning mb-3" style="font-size: 3rem;"></i>
-                <h6>Are you sure you want to logout?</h6>
-                <p class="text-muted mb-0">You will be redirected to the login page.</p>
+            <div class="sv-modal-body">
+                <p class="sv-modal-justify">Are you sure you want to logout? You will be redirected to the login page.</p>
             </div>
-            <div class="modal-footer border-0 justify-content-center">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                    <i class="fas fa-times me-2"></i>Cancel
-                </button>
-                <button type="button" class="btn btn-danger" @onclick="LogOut" data-bs-dismiss="modal">
-                    <i class="fas fa-sign-out-alt me-2"></i>Yes, Logout
-                </button>
+            <div class="sv-modal-footer" style="display:flex;gap:16px;justify-content:flex-end;">
+                <button class="sv-btn sv-btn-secondary" @onclick="CancelLogout">Cancel</button>
+                <button class="sv-btn sv-btn-primary" @onclick="ConfirmLogout">Yes, Logout</button>
             </div>
         </div>
     </div>
-</div>
+}
 <!-- JavaScript helper to close Bootstrap offcanvas programmatically -->
 <script>
 document.addEventListener('click', function(event) {
@@ -287,24 +277,14 @@ document.addEventListener('click', function(event) {
         }
     }
 
-    async Task ShowLogoutModal()
+    // Logout modal state and handlers (use shared sv-modal styles)
+    bool showLogoutModal = false;
+    void ShowLogoutModal() => showLogoutModal = true;
+    void CancelLogout() => showLogoutModal = false;
+    void ConfirmLogout()
     {
-        try
-        {
-            await JSRuntime.InvokeVoidAsync("eval", @"
-                if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
-                    const modal = new bootstrap.Modal(document.getElementById('logoutModal'));
-                    modal.show();
-                } else {
-                    console.error('Bootstrap not loaded');
-                }
-            ");
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Modal error: {ex.Message}");
-            LogOut();
-        }
+        showLogoutModal = false;
+        LogOut();
     }
 
     void NavigateToUnverifiedProfile()
@@ -314,33 +294,7 @@ document.addEventListener('click', function(event) {
 }
             <!-- ...existing code... -->
 
-<!-- Logout Confirmation Modal -->
-<div class="modal fade" id="logoutModal" tabindex="-1" aria-labelledby="logoutModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header border-0">
-                <h5 class="modal-title text-danger" id="logoutModalLabel">
-                    <i class="fas fa-sign-out-alt me-2"></i>
-                    Confirm Logout
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body text-center py-4">
-                <i class="fas fa-exclamation-triangle text-warning mb-3" style="font-size: 3rem;"></i>
-                <h6>Are you sure you want to logout?</h6>
-                <p class="text-muted mb-0">You will be redirected to the login page.</p>
-            </div>
-            <div class="modal-footer border-0 justify-content-center">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                    <i class="fas fa-times me-2"></i>Cancel
-                </button>
-                <button type="button" class="btn btn-danger" @onclick="LogOut" data-bs-dismiss="modal">
-                    <i class="fas fa-sign-out-alt me-2"></i>Yes, Logout
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
+<LogoutModal IsVisible="@showLogoutModal" OnCancel="@CancelLogout" OnConfirm="@ConfirmLogout" />
 
 <!-- JavaScript helper to close Bootstrap offcanvas programmatically -->
 <script>

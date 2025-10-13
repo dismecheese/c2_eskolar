@@ -1,0 +1,28 @@
+@using Microsoft.AspNetCore.Components
+
+@* Logout Modal Component *@
+@* Reusable logout confirmation modal with sv-modal styling *@
+
+@if (IsVisible)
+{
+    <div class="sv-modal sv-modal-backdrop sv-modal-fixed">
+        <div class="sv-modal-content">
+            <div class="sv-modal-header">
+                <h2>Confirm Logout</h2>
+            </div>
+            <div class="sv-modal-body">
+                <p class="sv-modal-justify">Are you sure you want to logout? You will be redirected to the login page.</p>
+            </div>
+            <div class="sv-modal-footer" style="display:flex;gap:16px;justify-content:flex-end;">
+                <button class="sv-btn sv-btn-secondary" @onclick="OnCancel">Cancel</button>
+                <button class="sv-btn sv-btn-primary" @onclick="OnConfirm">Yes, Logout</button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public bool IsVisible { get; set; } = false;
+    [Parameter] public EventCallback OnCancel { get; set; }
+    [Parameter] public EventCallback OnConfirm { get; set; }
+}
