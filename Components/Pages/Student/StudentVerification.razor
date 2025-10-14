@@ -238,10 +238,10 @@
                         @if (ShowSexDropdown)
                         {
                             <ul class="sv-custom-select-list">
-                                <li class="sv-custom-select-item" @onclick='() => SelectSex("")'>Select sex</li>
-                                <li class="sv-custom-select-item" @onclick='() => SelectSex("Male")'>Male</li>
-                                <li class="sv-custom-select-item" @onclick='() => SelectSex("Female")'>Female</li>
-                                <li class="sv-custom-select-item" @onclick='() => SelectSex("Other")'>Other</li>
+                                    <li class="sv-custom-select-item" @onmousedown='() => SelectSex("")'>Select sex</li>
+                                    <li class="sv-custom-select-item" @onmousedown='() => SelectSex("Male")'>Male</li>
+                                    <li class="sv-custom-select-item" @onmousedown='() => SelectSex("Female")'>Female</li>
+                                    <li class="sv-custom-select-item" @onmousedown='() => SelectSex("Other")'>Other</li>
                             </ul>
                         }
                     </div>
@@ -319,13 +319,13 @@
                     @if (ShowYearLevelDropdown)
                     {
                         <ul class="sv-custom-select-list">
-                            <li class="sv-custom-select-item" @onclick='() => SelectYearLevel("")'>Select year level</li>
-                            <li class="sv-custom-select-item" @onclick='() => SelectYearLevel("1st Year")'>1st Year</li>
-                            <li class="sv-custom-select-item" @onclick='() => SelectYearLevel("2nd Year")'>2nd Year</li>
-                            <li class="sv-custom-select-item" @onclick='() => SelectYearLevel("3rd Year")'>3rd Year</li>
-                            <li class="sv-custom-select-item" @onclick='() => SelectYearLevel("4th Year")'>4th Year</li>
-                            <li class="sv-custom-select-item" @onclick='() => SelectYearLevel("5th Year")'>5th Year</li>
-                            <li class="sv-custom-select-item" @onclick='() => SelectYearLevel("Other")'>Other</li>
+                            <li class="sv-custom-select-item" @onmousedown='() => SelectYearLevel("")'>Select year level</li>
+                            <li class="sv-custom-select-item" @onmousedown='() => SelectYearLevel("1st Year")'>1st Year</li>
+                            <li class="sv-custom-select-item" @onmousedown='() => SelectYearLevel("2nd Year")'>2nd Year</li>
+                            <li class="sv-custom-select-item" @onmousedown='() => SelectYearLevel("3rd Year")'>3rd Year</li>
+                            <li class="sv-custom-select-item" @onmousedown='() => SelectYearLevel("4th Year")'>4th Year</li>
+                            <li class="sv-custom-select-item" @onmousedown='() => SelectYearLevel("5th Year")'>5th Year</li>
+                            <li class="sv-custom-select-item" @onmousedown='() => SelectYearLevel("Other")'>Other</li>
                         </ul>
                     }
                 </div>
@@ -491,6 +491,7 @@
             {
                 var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
                 var userId = authState.User?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+                var userEmail = authState.User?.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value;
                 if (!string.IsNullOrWhiteSpace(userId))
                 {
                     var studentProfile = await StudentProfileService.GetProfileByUserIdAsync(userId);
@@ -504,12 +505,18 @@
                         verificationModel.PermanentAddress = studentProfile.PermanentAddress ?? "";
                         verificationModel.BirthDate = studentProfile.BirthDate ?? DateTime.Now;
                         verificationModel.Phone = studentProfile.MobileNumber ?? "";
-                        verificationModel.Email = studentProfile.Email ?? verificationModel.Email;
+                        // Always prepopulate email from profile, fallback to authenticated user's email
+                        verificationModel.Email = !string.IsNullOrWhiteSpace(studentProfile.Email) ? studentProfile.Email : (userEmail ?? "");
                         verificationModel.University = studentProfile.UniversityName ?? "";
                         verificationModel.StudentNumber = studentProfile.StudentNumber ?? "";
                         verificationModel.Program = studentProfile.Course ?? "";
                         verificationModel.YearLevel = studentProfile.YearLevel.HasValue ? $"{studentProfile.YearLevel} year" : "";
                         Status = studentProfile.VerificationStatus ?? "Pending";
+                    }
+                    else
+                    {
+                        // If no profile, prepopulate email from authentication state
+                        verificationModel.Email = userEmail ?? "";
                     }
                 }
             }
@@ -729,34 +736,29 @@
 
         private void PrepopulateFromIdDocument(Services.ExtractedIdData extractedData)
         {
+            // Debug log for extracted address
+            Console.WriteLine($"[DEBUG] Extracted Address: '{extractedData.Address}'");
             // Prepopulate personal information fields
             if (!string.IsNullOrEmpty(extractedData.FirstName))
                 verificationModel.FirstName = extractedData.FirstName;
-                
             if (!string.IsNullOrEmpty(extractedData.MiddleName))
                 verificationModel.MiddleName = extractedData.MiddleName;
-                
             if (!string.IsNullOrEmpty(extractedData.LastName))
                 verificationModel.LastName = extractedData.LastName;
-                
             if (!string.IsNullOrEmpty(extractedData.Sex))
             {
                 verificationModel.Sex = extractedData.Sex;
                 SelectedSex = extractedData.Sex; // Update the dropdown selection
             }
-                
             if (extractedData.DateOfBirth.HasValue)
                 verificationModel.BirthDate = extractedData.DateOfBirth;
-                
             if (!string.IsNullOrEmpty(extractedData.Address))
                 verificationModel.PermanentAddress = extractedData.Address;
-                
             if (!string.IsNullOrEmpty(extractedData.Nationality))
                 verificationModel.Nationality = extractedData.Nationality;
 
             // Show success message
             ProfileErrorMessage = "Personal information has been automatically filled from your ID document. Please review and complete any missing fields.";
-            
             StateHasChanged();
         }
 
@@ -820,7 +822,7 @@
         }
 
         // Institution Check
-        private bool IsInstitutionAffiliated = true;
+        private bool IsInstitutionAffiliated = false;
         private void SetInstitutionCheck(bool affiliated)
         {
             IsInstitutionAffiliated = affiliated;

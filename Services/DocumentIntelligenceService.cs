@@ -606,8 +606,18 @@ namespace c2_eskolar.Services
                         var improvedData = await _openAIService.ImprovePhilippineIdExtractionAsync(docResponse.AnalyzeResult.Content, extractedData);
                         if (improvedData != null)
                         {
-                            _logger.LogInformation($"AI improved extraction: FirstName={improvedData.FirstName}, MiddleName={improvedData.MiddleName}, LastName={improvedData.LastName}");
-                            extractedData = improvedData;
+                            _logger.LogInformation($"AI improved extraction: FirstName={improvedData.FirstName}, MiddleName={improvedData.MiddleName}, LastName={improvedData.LastName}, Address={improvedData.Address}");
+                            // Only overwrite address if AI returns a non-empty value
+                            if (!string.IsNullOrWhiteSpace(improvedData.Address))
+                                extractedData.Address = improvedData.Address;
+                            // Overwrite other fields as usual
+                            extractedData.FirstName = improvedData.FirstName;
+                            extractedData.MiddleName = improvedData.MiddleName;
+                            extractedData.LastName = improvedData.LastName;
+                            extractedData.Sex = improvedData.Sex;
+                            extractedData.DateOfBirth = improvedData.DateOfBirth;
+                            extractedData.DocumentNumber = improvedData.DocumentNumber;
+                            extractedData.Nationality = improvedData.Nationality;
                         }
                     }
 

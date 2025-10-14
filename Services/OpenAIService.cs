@@ -307,30 +307,30 @@ namespace c2_eskolar.Services
         {
             string prompt = $@"You are an expert at extracting structured data from institution authorization letters and official documents.
 
-Analyze the OCR text below from an institution authorization letter and extract the following information. Return ONLY a JSON object with these exact field names:
+            Analyze the OCR text below from an institution authorization letter and extract the following information. Return ONLY a JSON object with these exact field names:
 
-InstitutionName: The official name of the educational institution (university, college, school)
-InstitutionType: Type of institution (University, College, School, Institute, etc.)
-Address: Physical address of the institution
-ContactNumber: Phone number or contact number of the institution
-Website: Institution website URL (if mentioned)
-Description: Brief description of the institution or its mission
-DeanName: Name of the Dean, Director, President, or head of institution mentioned
-DeanEmail: Email address of the Dean or institutional head
-InstitutionalEmailDomain: The email domain used by the institution (like @university.edu.ph)
+            InstitutionName: The official name of the educational institution (university, college, school)
+            InstitutionType: Type of institution (University, College, School, Institute, etc.)
+            Address: Physical address of the institution
+            ContactNumber: Phone number or contact number of the institution
+            Website: Institution website URL (if mentioned)
+            Description: Brief description of the institution or its mission
+            DeanName: Name of the Dean, Director, President, or head of institution mentioned
+            DeanEmail: Email address of the Dean or institutional head
+            InstitutionalEmailDomain: The email domain used by the institution (like @university.edu.ph)
 
-Look for:
-- Institution headers, letterheads, official names
-- Contact information, addresses, phone numbers
-- Official signatures from deans, directors, presidents
-- Email addresses and domains
-- Institutional descriptions or mission statements
-- Website URLs or social media
+            Look for:
+            - Institution headers, letterheads, official names
+            - Contact information, addresses, phone numbers
+            - Official signatures from deans, directors, presidents
+            - Email addresses and domains
+            - Institutional descriptions or mission statements
+            - Website URLs or social media
 
-Raw OCR Text:
-{rawText}
+            Raw OCR Text:
+            {rawText}
 
-Return only valid JSON:";
+            Return only valid JSON:";
 
             var chatClient = _client.GetChatClient(_deploymentName);
             var messages = new OpenAI.Chat.ChatMessage[]
@@ -403,28 +403,28 @@ JSON:";
         public async Task<ExtractedBenefactorIdData?> ExtractBenefactorIdFieldsAsync(string rawText)
         {
             string prompt = $@"Extract the following fields from the Philippine ID document text below. Return only the fields in JSON format:
-AdminFirstName, AdminMiddleName, AdminLastName, AdminEmail, AdminContactNumber, AdminPosition, Sex, DateOfBirth (in YYYY-MM-DD format), Nationality.
+        AdminFirstName, AdminMiddleName, AdminLastName, AdminEmail, AdminContactNumber, AdminPosition, Sex, DateOfBirth (in YYYY-MM-DD format), Nationality.
 
-CRITICAL Philippine ID naming conventions - follow exactly:
-- Names are formatted as ""LAST NAME, GIVEN NAMES"" (e.g., ""ALONZO, ADRIAN FRANCIS TECSON"")
-- Everything BEFORE the comma = AdminLastName (e.g., ""ALONZO"")
-- Everything AFTER the comma = Given names that need to be split correctly
-- For given names like ""ADRIAN FRANCIS TECSON"":
-  * The LAST word is typically the middle name (""TECSON"")
-  * Everything BEFORE the last word is the first name (""ADRIAN FRANCIS"")
-- So ""ALONZO, ADRIAN FRANCIS TECSON"" should extract as:
-  * AdminLastName: ""ALONZO""
-  * AdminFirstName: ""ADRIAN FRANCIS""
-  * AdminMiddleName: ""TECSON""
-- Look for patterns like ""Last Name, First Name, Middle Name"" or similar
-- Sex: Look for ""M""/""MALE"" or ""F""/""FEMALE""
-- Dates: Convert formats like ""2003/05/15"" to ""2003-05-15""
-- Nationality: ""PHL"" or ""FILIPINO"" for Philippine documents
+        CRITICAL Philippine ID naming conventions - follow exactly:
+        - Names are formatted as ""LAST NAME, GIVEN NAMES"" (e.g., ""ALONZO, ADRIAN FRANCIS TECSON"")
+        - Everything BEFORE the comma = AdminLastName (e.g., ""ALONZO"")
+        - Everything AFTER the comma = Given names that need to be split correctly
+        - For given names like ""ADRIAN FRANCIS TECSON"":
+        * The LAST word is typically the middle name (""TECSON"")
+        * Everything BEFORE the last word is the first name (""ADRIAN FRANCIS"")
+        - So ""ALONZO, ADRIAN FRANCIS TECSON"" should extract as:
+        * AdminLastName: ""ALONZO""
+        * AdminFirstName: ""ADRIAN FRANCIS""
+        * AdminMiddleName: ""TECSON""
+        - Look for patterns like ""Last Name, First Name, Middle Name"" or similar
+        - Sex: Look for ""M""/""MALE"" or ""F""/""FEMALE""
+        - Dates: Convert formats like ""2003/05/15"" to ""2003-05-15""
+        - Nationality: ""PHL"" or ""FILIPINO"" for Philippine documents
 
-Text:
-{rawText}
+        Text:
+        {rawText}
 
-JSON:";
+        JSON:";
 
             var chatClient = _client.GetChatClient(_deploymentName);
             var messages = new OpenAI.Chat.ChatMessage[]
@@ -462,33 +462,33 @@ JSON:";
         {
             string prompt = $@"You are an expert at extracting structured data from benefactor/donor organization authorization letters and official documents.
 
-Analyze the OCR text below from a benefactor/donor organization authorization letter and extract the following information. Return ONLY a JSON object with these exact field names:
+        Analyze the OCR text below from a benefactor/donor organization authorization letter and extract the following information. Return ONLY a JSON object with these exact field names:
 
-OrganizationName: The official name of the organization, company, foundation, or donor entity
-OrganizationType: Type of organization (Corporation, Foundation, Non-Profit Organization, Government Agency, Educational Institution, Healthcare Organization, Religious Organization, Individual Donor, etc.)
-Address: Physical or official address of the organization
-ContactNumber: Phone number or contact number of the organization
-Website: Organization website URL (if mentioned)
-AuthorizedRepresentativeName: Name of the PERSON WHO SIGNED/AUTHORIZED the letter - the supervisor, director, head, or person with authority who is GRANTING permission. Look for:
-  - Person who signed at the bottom (e.g., 'Respectfully, Dr. John Smith, Director')
-  - Person mentioned as Director, Head, Supervisor, Manager
-  - The person GRANTING authorization (not the person receiving it)
-  - Names near titles like 'Director', 'President', 'Head', 'Supervisor'
-  - Person who appears in signature blocks or closing statements
-AuthorizedRepresentativeEmail: Email address mentioned anywhere in the document - contact info, letter body, or signatures
-OfficialEmailDomain: The email domain extracted from any email addresses found in the document
+        OrganizationName: The official name of the organization, company, foundation, or donor entity
+        OrganizationType: Type of organization (Corporation, Foundation, Non-Profit Organization, Government Agency, Educational Institution, Healthcare Organization, Religious Organization, Individual Donor, etc.)
+        Address: Physical or official address of the organization
+        ContactNumber: Phone number or contact number of the organization
+        Website: Organization website URL (if mentioned)
+        AuthorizedRepresentativeName: Name of the PERSON WHO SIGNED/AUTHORIZED the letter - the supervisor, director, head, or person with authority who is GRANTING permission. Look for:
+        - Person who signed at the bottom (e.g., 'Respectfully, Dr. John Smith, Director')
+        - Person mentioned as Director, Head, Supervisor, Manager
+        - The person GRANTING authorization (not the person receiving it)
+        - Names near titles like 'Director', 'President', 'Head', 'Supervisor'
+        - Person who appears in signature blocks or closing statements
+        AuthorizedRepresentativeEmail: Email address mentioned anywhere in the document - contact info, letter body, or signatures
+        OfficialEmailDomain: The email domain extracted from any email addresses found in the document
 
-CRITICAL EXTRACTION RULES:
-1. AuthorizedRepresentativeName: Find the person who SIGNED or AUTHORIZED the letter (the boss/supervisor), NOT the person being authorized
-2. Look for signature blocks, closing statements with titles (Director, Head, etc.)
-3. The authorizing person is usually at the end of the letter with their title
-4. AuthorizedRepresentativeEmail: Extract ANY email address found in the document
+        CRITICAL EXTRACTION RULES:
+        1. AuthorizedRepresentativeName: Find the person who SIGNED or AUTHORIZED the letter (the boss/supervisor), NOT the person being authorized
+        2. Look for signature blocks, closing statements with titles (Director, Head, etc.)
+        3. The authorizing person is usually at the end of the letter with their title
+        4. AuthorizedRepresentativeEmail: Extract ANY email address found in the document
 
-Example patterns to look for:
-- 'Respectfully, Dr. Jane Smith, Director'
-- 'Sincerely, John Doe, Head of Department'
-- Signature sections with names and titles
-- Email: contact@organization.com or admin@company.gov.ph
+        Example patterns to look for:
+        - 'Respectfully, Dr. Jane Smith, Director'
+        - 'Sincerely, John Doe, Head of Department'
+        - Signature sections with names and titles
+        - Email: contact@organization.com or admin@company.gov.ph
 
 Raw OCR Text:
 {rawText}
