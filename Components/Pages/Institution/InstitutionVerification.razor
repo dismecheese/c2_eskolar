@@ -243,7 +243,26 @@
 		</div>
 
 	</div>
+
 </EditForm>
+
+@if (ShowSuccessModal)
+{
+	<div class="sv-modal-overlay">
+		<div class="sv-modal sv-modal-simple">
+			<div class="sv-modal-header">
+				<h3>Verification Submitted!</h3>
+			</div>
+			<div class="sv-modal-body">
+				<p>Your institution verification has been submitted successfully. Your account status is now <b>Pending</b>.</p>
+			</div>
+			<div class="sv-modal-footer">
+				<button class="sv-btn sv-btn-primary" @onclick="@(() => ViewProfile())">View Profile</button>
+				<button class="sv-btn sv-btn-secondary" @onclick="@(() => CloseSuccessModal())">Close</button>
+			</div>
+		</div>
+	</div>
+}
 
 
 

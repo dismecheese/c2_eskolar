@@ -23,8 +23,12 @@ namespace c2_eskolar.Models
 
     public string AdminFullName => $"{AdminFirstName} {AdminMiddleName} {AdminLastName}";
 
-        [StringLength(100)]
-        public string? AdminPosition { get; set; } // "Dean of Student Affairs", "Registrar", etc.
+    [StringLength(100)]
+    public string? AdminPosition { get; set; } // "Dean of Student Affairs", "Registrar", etc.
+
+    [Phone]
+    [StringLength(15)]
+    public string? AdminContactNumber { get; set; } // Personal contact number of admin
 
         // Institution Information
         [Required]
