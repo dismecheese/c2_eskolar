@@ -480,8 +480,8 @@
  .announcement-action-icons {
      display: none !important;
 }
-/* Hide like buttons and other icons */
- .announcement-icons, .action-icons, .like-button, .card .btn-outline-secondary, .thumbs-up, .like-icon, .fas.fa-thumbs-up, .far.fa-thumbs-up, .bi-hand-thumbs-up, .bi-hand-thumbs-up-fill, .emoji-like, .like-emoji, .card-header .like, .card-body .like, .like-section, .interaction-buttons, .social-buttons {
+/* Hide like buttons and other icons - EXCLUDES bookmark buttons */
+ .announcement-icons, .action-icons, .like-button, .card .btn-outline-secondary:not(.bookmark-btn), .thumbs-up, .like-icon, .fas.fa-thumbs-up, .far.fa-thumbs-up, .bi-hand-thumbs-up, .bi-hand-thumbs-up-fill, .emoji-like, .like-emoji, .card-header .like, .card-body .like, .like-section, .interaction-buttons, .social-buttons {
      display: none !important;
 }
 /* More specific selectors for like buttons */
@@ -497,6 +497,29 @@
      display: inline-block !important;
      visibility: visible !important;
      opacity: 1 !important;
+}
+
+/* BOOKMARK BUTTON STYLING - Force visibility and proper styling */
+.bookmark-btn {
+    display: inline-block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    min-width: 36px;
+    height: 32px;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+}
+
+.bookmark-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+
+.bookmark-btn i {
+    display: inline-block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    font-size: 16px;
 }
 /* Modal Optimization Styles */
  ::deep .modern-modal .modern-form-group {
