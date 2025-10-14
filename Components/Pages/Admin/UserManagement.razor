@@ -394,6 +394,12 @@
         }
         else if (activeFilter == "Unverified")
         {
+            // Debug logging for unverified users calculation
+            Console.WriteLine($"[DEBUG] Calculating unverified users. Total users: {allUsers.Count}");
+            Console.WriteLine($"[DEBUG] Student profiles: {studentProfilesByUserId.Count}");
+            Console.WriteLine($"[DEBUG] Institution profiles: {institutionProfilesByUserId.Count}");
+            Console.WriteLine($"[DEBUG] Benefactor profiles: {benefactorProfilesByUserId.Count}");
+            
             // Get users who have roles but no profiles (unverified users)
             var unverifiedUsers = allUsers.Where(u =>
             {
@@ -405,6 +411,12 @@
                 // Exclude SuperAdmin users
                 if (userRoles.TryGetValue(u.Id, out var role) && role == "SuperAdmin")
                     return false;
+                
+                // Debug log each user evaluation
+                if (hasNoProfile)
+                {
+                    Console.WriteLine($"[DEBUG] Unverified user found: {u.Email} (ID: {u.Id})");
+                }
                 
                 return hasNoProfile;
             });
@@ -641,11 +653,12 @@
         {
             isLoading = true;
             StateHasChanged();
-            Console.WriteLine("LoadUsersData: Starting to load users data...");
+            Console.WriteLine("[DEBUG] LoadUsersData: Starting to load users data...");
             using var context = DbContextFactory.CreateDbContext();
             // Load all users
             allUsers = await UserManager.Users.ToListAsync();
             totalUsers = allUsers.Count;
+            Console.WriteLine($"[DEBUG] LoadUsersData: Loaded {totalUsers} users from UserManager");
             // Bulk load all profiles and cache by UserId
             studentProfilesByUserId = (await context.StudentProfiles.ToListAsync())
                 .ToDictionary(sp => sp.UserId ?? "", sp => sp);
@@ -899,8 +912,11 @@
     
     private async Task RefreshUsers()
     {
+        Console.WriteLine("[DEBUG] RefreshUsers: Starting refresh...");
         await LoadUsersData();
+        Console.WriteLine("[DEBUG] RefreshUsers: LoadUsersData completed");
         await LoadUserVerificationStatuses();
+        Console.WriteLine("[DEBUG] RefreshUsers: LoadUserVerificationStatuses completed");
     }
     
     private void LoadMoreUsers()
@@ -955,16 +971,24 @@
     private async Task ConfirmPermanentDeleteUser()
     {
         if (string.IsNullOrEmpty(userIdToPermanentDelete)) return;
+        
+        Console.WriteLine($"[DEBUG] Starting permanent deletion of user: {userIdToPermanentDelete}");
+        
         try
         {
             await using var context = DbContextFactory.CreateDbContext();
+            
+            // Check if user exists before deletion
+            var identityUserBeforeDeletion = await UserManager.FindByIdAsync(userIdToPermanentDelete);
+            Console.WriteLine($"[DEBUG] User exists before deletion: {identityUserBeforeDeletion != null} (Email: {identityUserBeforeDeletion?.Email})");
+            
             // Remove profile
             var student = await context.StudentProfiles.FirstOrDefaultAsync(sp => sp.UserId == userIdToPermanentDelete);
             if (student != null)
             {
                 context.StudentProfiles.Remove(student);
                 await context.SaveChangesAsync();
-                Console.WriteLine($"Student {userIdToPermanentDelete} permanently deleted.");
+                Console.WriteLine($"[DEBUG] Student profile {userIdToPermanentDelete} permanently deleted.");
             }
             else
             {
@@ -973,7 +997,7 @@
                 {
                     context.InstitutionProfiles.Remove(institution);
                     await context.SaveChangesAsync();
-                    Console.WriteLine($"Institution {userIdToPermanentDelete} permanently deleted.");
+                    Console.WriteLine($"[DEBUG] Institution profile {userIdToPermanentDelete} permanently deleted.");
                 }
                 else
                 {
@@ -982,29 +1006,45 @@
                     {
                         context.BenefactorProfiles.Remove(benefactor);
                         await context.SaveChangesAsync();
-                        Console.WriteLine($"Benefactor {userIdToPermanentDelete} permanently deleted.");
+                        Console.WriteLine($"[DEBUG] Benefactor profile {userIdToPermanentDelete} permanently deleted.");
                     }
                     else
                     {
-                        Console.WriteLine($"No profile found for user {userIdToPermanentDelete}.");
+                        Console.WriteLine($"[DEBUG] No profile found for user {userIdToPermanentDelete}.");
                     }
                 }
             }
+            
             // Remove IdentityUser
             var identityUser = await UserManager.FindByIdAsync(userIdToPermanentDelete);
             if (identityUser != null)
             {
-                await UserManager.DeleteAsync(identityUser);
-                Console.WriteLine($"IdentityUser {userIdToPermanentDelete} permanently deleted.");
+                var deleteResult = await UserManager.DeleteAsync(identityUser);
+                Console.WriteLine($"[DEBUG] IdentityUser {userIdToPermanentDelete} deletion result: {deleteResult.Succeeded}");
+                if (!deleteResult.Succeeded)
+                {
+                    Console.WriteLine($"[DEBUG] Delete errors: {string.Join(", ", deleteResult.Errors.Select(e => e.Description))}");
+                }
             }
+            else
+            {
+                Console.WriteLine($"[DEBUG] IdentityUser {userIdToPermanentDelete} not found for deletion.");
+            }
+            
+            Console.WriteLine($"[DEBUG] About to refresh users data...");
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error permanently deleting user: {ex.Message}");
+            Console.WriteLine($"[DEBUG] Error permanently deleting user: {ex.Message}");
+            Console.WriteLine($"[DEBUG] Stack trace: {ex.StackTrace}");
         }
+        
         showPermanentDeleteModal = false;
+        Console.WriteLine($"[DEBUG] Calling RefreshUsers...");
         await RefreshUsers();
+        Console.WriteLine($"[DEBUG] RefreshUsers completed. Calling StateHasChanged...");
         StateHasChanged();
+        Console.WriteLine($"[DEBUG] StateHasChanged completed.");
     }
 
     private void CancelPermanentDeleteUser()
