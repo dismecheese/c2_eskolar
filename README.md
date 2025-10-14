@@ -37,7 +37,28 @@
   ```
 # eSkolar - Scholarship Application and Management System
 
-A comprehensive scholarship management platform built with **Blazor Server** and **ASP.NET Core**. This system aims to connect students, benefactors, and educational institutions to streamline the scholarship application and management process.
+# eSkolar
+
+eSkolar is a comprehensive web platform designed to streamline scholarship management, bringing together students, educational institutions, and scholarship benefactors in a centralized and efficient system.
+
+## Recent Database Changes (October 13, 2025)
+
+**IMPORTANT**: If you're pulling the latest changes, please run the following command to update your database:
+
+```bash
+dotnet ef database update
+```
+
+**What changed:**
+- Updated user verification workflow to use `AccountStatus` for the complete lifecycle
+- New workflow: Unverified → Pending → Verified → Archived
+- Migration `UpdateAccountStatusWorkflow` updates existing data to use the new status system
+
+**Backup your database first if you have important local data:**
+```bash
+# For SQL Server (if using local database)
+sqlcmd -S (localdb)\MSSQLLocalDB -Q "BACKUP DATABASE eskolardb TO DISK='C:\backup\eskolardb_backup.bak'"
+```
 
 ## 🚀 Features
 

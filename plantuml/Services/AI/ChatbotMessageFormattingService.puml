@@ -1,5 +1,0 @@
-@startuml
-class ChatbotMessageFormattingService {
-    + FormatBotMessage(text:string) : string
-}
-@enduml

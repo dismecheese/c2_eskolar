@@ -1,7 +1,0 @@
-@startuml
-class SchemaController {
-    + SchemaController(config:IConfiguration)
-    + VerifyDecimalColumns() : IActionResult
-}
-ControllerBase <|-- SchemaController
-@enduml

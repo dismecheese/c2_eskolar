@@ -1,8 +1,7 @@
 
-
 @page "/dashboard/student/profile"
-@attribute [Authorize(Roles = "Student,SuperAdmin")]
 @layout Layout.StudentDashLayout
+@attribute [Authorize(Roles = "Student,SuperAdmin")]
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @inject UserManager<IdentityUser> UserManager
 @inject Services.StudentProfileService StudentProfileService

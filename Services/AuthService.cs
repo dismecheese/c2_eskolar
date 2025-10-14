@@ -27,7 +27,7 @@ namespace c2_eskolar.Services
                 _contextFactory = contextFactory;
         }
 
-        // Register a new user and create profile based on selected role
+        // Register a new user and assign role - profile creation happens during verification
         public async Task<IdentityResult> RegisterAsync(RegisterViewModel model)
         {
             // Create new IdentityUser object from registration info
@@ -43,9 +43,8 @@ namespace c2_eskolar.Services
             if (result.Succeeded)
             {
                 // Assign role (Student, Institution, Benefactor)
+                // Users remain "Unverified" until they complete verification forms
                 await _userManager.AddToRoleAsync(user, model.UserRole.ToString());
-                // Create matching profile entry in database
-                await CreateUserProfileAsync(user.Id, model);
             }
 
             return result;
@@ -106,10 +105,11 @@ namespace c2_eskolar.Services
             await _signInManager.SignOutAsync();
         }
 
+        // DEPRECATED: Profile creation now happens during verification submission
         // Create corresponding profile entry (Student, Benefactor, or Institution)
+        /*
         private async Task CreateUserProfileAsync(string identityUserId, RegisterViewModel model)
         {
-
             // Use a short-lived DbContext for the profile creation to avoid concurrent use of a shared context
             using var context = _contextFactory.CreateDbContext();
             switch (model.UserRole)
@@ -157,6 +157,7 @@ namespace c2_eskolar.Services
             // Commit profile changes to database
             await context.SaveChangesAsync();
         }
+        */
         
         // Helper method to get role ID based on UserRole enum
         private int GetRoleId(UserRole userRole)

@@ -1048,6 +1048,10 @@ namespace c2_eskolar.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
 
+                    b.Property<string>("IconUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
                     b.Property<Guid?>("InstitutionProfileId")
                         .HasColumnType("uniqueidentifier");
 

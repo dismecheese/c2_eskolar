@@ -23,251 +23,401 @@
 
 <PageTitle>Scholarship Application</PageTitle>
 
-<div class="container py-5" style="max-width: 900px;">
-    <div class="row justify-content-center">
-        <div class="col-lg-10">
-
-            <!-- ✅ SCHOLARSHIP INFORMATION -->
-            @if (!isLoading && scholarship != null)
-            {
-                var progress = CalculateFormProgress();
-                <div class="card shadow-sm border-0 mb-4">
-                    <div class="card-header section-header">
-                        <h5 class="mb-0 fw-bold"><i class="fas fa-graduation-cap me-2"></i>Scholarship Information</h5>
+@if (!isLoading && scholarship != null)
+    {
+            var progress = CalculateFormProgress();
+            <header>
+                <div class="scholarship-title-banner" role="banner" aria-label="Scholarship title">
+                    <div class="icon" aria-hidden="true">
+                        <i class="fas fa-graduation-cap"></i>
                     </div>
-                    <div class="card-body">
-                        <h4 class="fw-bold mb-1 text-primary">@scholarship.Title</h4>
-                        <p class="text-muted mb-2">@scholarship.Institution?.AdminFullName</p>
-                        <span class="badge bg-info text-dark mb-3">Deadline: @scholarship.ApplicationDeadline.ToString("MMMM dd, yyyy")</span>
-                        <p class="mb-0"><strong>Description:</strong> @scholarship.Description</p>
+                    <div class="title-text">
+                        <div class="title">@scholarship.Title</div>
+                        <span class="subtitle">Deadline: @scholarship.ApplicationDeadline.ToString("MMMM dd, yyyy")</span>
+                        <p class="subtitle"><strong>Description:</strong> @scholarship.Description</p>
                     </div>
                 </div>
-            }
-
-            <!-- ✅ MAIN APPLICATION FORM -->
-            <div class="card shadow-lg border-0">
-                <div class="card-body p-4">
-                    @if (isLoading)
-                    {
-                        <div class="d-flex justify-content-center align-items-center" style="min-height: 200px;">
-                            <div class="spinner-border text-primary" role="status"></div>
-                            <span class="ms-3 fw-semibold">Loading...</span>
+            
+            </header>
+    }
+    
+        @if (isLoading)
+        {
+            <div class="d-flex justify-content-center align-items-center" style="min-height: 200px;">
+                <div class="spinner-border text-primary" role="status"></div>
+                <span class="ms-3">Loading...</span>
+            </div>
+        }
+        else if (scholarship == null)
+        {
+            <div class="alert alert-danger">Scholarship not found.</div>
+        }
+        else
+        {
+            <!-- Scholarship Application Statistics Container -->
+            <div class="application-stats-container mb-4">
+                <div class="application-stats-title">
+                    <i class="fas fa-chart-bar me-2"></i>
+                    My Scholarship Application Stats
+                </div>
+                <div class="application-stats-cards">
+                    <div class="stat-card stat-total">
+                        <div class="stat-icon"><i class="fas fa-file-alt"></i></div>
+                        <div class="stat-label">Total Applied</div>
+                        <div class="stat-value">5</div>
+                    </div>
+                    <div class="stat-card stat-approved">
+                        <div class="stat-icon"><i class="fas fa-check-circle"></i></div>
+                        <div class="stat-label">Approved</div>
+                        <div class="stat-value">2</div>
+                    </div>
+                    <div class="stat-card stat-pending">
+                        <div class="stat-icon"><i class="fas fa-hourglass-half"></i></div>
+                        <div class="stat-label">Pending</div>
+                        <div class="stat-value">2</div>
+                    </div>
+                    <div class="stat-card stat-rejected">
+                        <div class="stat-icon"><i class="fas fa-times-circle"></i></div>
+                        <div class="stat-label">Rejected</div>
+                        <div class="stat-value">1</div>
+                    </div>
+                </div>
+            </div>
+            <div class="modern-form-container">
+                <EditForm Model="application" OnValidSubmit="HandleSubmit">
+                    <DataAnnotationsValidator />
+                    <ValidationSummary />
+                    
+                    <!-- Form fields section -->
+                    <div class="mt-4">
+                        <!-- Application Type Selection -->
+                        <div class="mb-4">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="isExternalApplication" @bind="application.IsExternalApplication" @bind:after="OnFieldChanged" aria-labelledby="isExternalApplicationLabel">
+                                <label class="form-check-label fw-bold" id="isExternalApplicationLabel" for="isExternalApplication">
+                                    <i class="fas fa-external-link-alt me-2"></i>
+                                    External Application (Apply through institution's own system)
+                                </label>
+                            </div>
                         </div>
-                    }
-                    else if (scholarship == null)
-                    {
-                        <div class="alert alert-danger">Scholarship not found.</div>
-                    }
-                    else
-                    {
-                        <EditForm Model="application" OnValidSubmit="HandleSubmit">
-                            <DataAnnotationsValidator />
-                            <ValidationSummary />
 
-                            <!-- ✅ APPLICATION TYPE -->
-                            <div class="card shadow-sm border-0 mb-4">
-                                <div class="card-header section-header">
-                                    <h6 class="mb-0 fw-bold"><i class="fas fa-file-alt me-2"></i>Application Type</h6>
+                        @if (application.IsExternalApplication)
+                        {
+                            <!-- External Application Fields -->
+                            <div class="mb-4">
+                                <label for="externalUrl" class="modern-form-label">
+                                    <i class="fas fa-link text-primary"></i>
+                                    External Application URL 
+                                    <span class="required">*</span>
+                                </label>
+                                <input type="url" class="form-control modern-input" id="externalUrl" @bind="application.ExternalApplicationUrl" @bind:after="OnFieldChanged" 
+                                        placeholder="https://institution.edu/apply/scholarship-123" required aria-describedby="externalUrlHelp" />
+                                <div id="externalUrlHelp" class="modern-form-text">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    Please provide the direct link to the external application form
                                 </div>
-                                <div class="card-body">
-                                    <div class="form-check form-switch mb-3">
-                                        <input class="form-check-input" type="checkbox" id="isExternalApplication" 
-                                               @bind="application.IsExternalApplication" @bind:after="OnFieldChanged">
-                                        <label class="form-check-label fw-semibold" for="isExternalApplication">
-                                            Apply via institution's external system
-                                        </label>
-                                    </div>
-
-                                    @if (application.IsExternalApplication)
-                                    {
-                                        <div class="mb-3">
-                                            <label for="externalUrl" class="form-label fw-bold text-primary">External Application URL <span class="text-danger">*</span></label>
-                                            <input type="url" class="form-control" id="externalUrl" 
-                                                   @bind="application.ExternalApplicationUrl" @bind:after="OnFieldChanged" required 
-                                                   placeholder="https://institution.edu/apply/scholarship-123" />
-                                            <div class="form-text">Provide the direct link to the external form.</div>
-                                            <ValidationMessage For="@(() => application.ExternalApplicationUrl)" />
-                                        </div>
-
-                                        <div class="form-check">
-                                            <input class="form-check-input" type="checkbox" id="hasAppliedExternally" 
-                                                   @bind="application.HasAppliedExternally" @bind:after="OnFieldChanged" required>
-                                            <label class="form-check-label" for="hasAppliedExternally">
-                                                <span class="text-danger">*</span> I confirm I already submitted my external application
-                                            </label>
-                                            <ValidationMessage For="@(() => application.HasAppliedExternally)" />
-                                        </div>
-                                    }
-                                    else
-                                    {
-                                        <div>
-                                            <label for="personalStatement" class="form-label fw-bold text-primary">Personal Statement <span class="text-danger">*</span></label>
-                                            <textarea class="form-control" id="personalStatement" rows="6" 
-                                                      @bind="application.PersonalStatement" @bind:after="OnFieldChanged" required
-                                                      placeholder="Tell us about yourself and your goals..."></textarea>
-                                            <div class="form-text">Minimum 100 words recommended</div>
-                                            <ValidationMessage For="@(() => application.PersonalStatement)" />
-                                        </div>
-                                    }
-                                </div>
+                                <ValidationMessage For="@(() => application.ExternalApplicationUrl)" />
                             </div>
 
-                            <!-- ✅ ACADEMIC DETAILS -->
-                            <div class="card shadow-sm border-0 mb-4">
-                                <div class="card-header section-header">
-                                    <h6 class="mb-0 fw-bold"><i class="fas fa-book me-2"></i>Academic Details</h6>
+                            <div class="mb-4">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="hasAppliedExternally" @bind="application.HasAppliedExternally" @bind:after="OnFieldChanged" required>
+                                    <label class="form-check-label" for="hasAppliedExternally">
+                                        <i class="fas fa-check-circle text-success me-2"></i>
+                                        <span class="required">*</span> I confirm that I have already submitted my application through the external system
+                                    </label>
                                 </div>
-                                <div class="card-body">
-                                    <div class="mb-3">
-                                        <label for="gwa" class="form-label fw-bold text-primary">General Weighted Average (GWA) <span class="text-danger">*</span></label>
-                                        <input type="number" step="0.01" min="1.00" max="4.00" class="form-control" id="gwa" 
-                                               @bind="application.GWA" @bind:after="OnFieldChanged" required placeholder="1.00 - 4.00" />
-                                        <div class="form-text">Enter your current GWA (1.00 = highest, 4.00 = lowest)</div>
-                                        <ValidationMessage For="@(() => application.GWA)" />
-                                    </div>
-
-                                    @if (!application.IsExternalApplication)
-                                    {
-                                        <div class="mb-3">
-                                            <label for="firstSemGrades" class="form-label fw-bold text-primary">First Semester Grades (Optional)</label>
-                                            <textarea class="form-control" id="firstSemGrades" rows="4" 
-                                                      @bind="application.FirstSemesterGrades" @bind:after="OnFieldChanged"
-                                                      placeholder="List your first semester subjects and grades..."></textarea>
-                                            <ValidationMessage For="@(() => application.FirstSemesterGrades)" />
-                                        </div>
-
-                                        <div>
-                                            <label for="secondSemGrades" class="form-label fw-bold text-primary">Second Semester Grades (Optional)</label>
-                                            <textarea class="form-control" id="secondSemGrades" rows="4" 
-                                                      @bind="application.SecondSemesterGrades" @bind:after="OnFieldChanged"
-                                                      placeholder="List your second semester subjects and grades..."></textarea>
-                                            <ValidationMessage For="@(() => application.SecondSemesterGrades)" />
-                                        </div>
-                                    }
+                                <ValidationMessage For="@(() => application.HasAppliedExternally)" />
+                            </div>
+                        }
+                        else
+                        {
+                            <!-- Internal Application Fields -->
+                            <div class="mb-4">
+                                <label for="personalStatement" class="modern-form-label">
+                                    <i class="fas fa-user-edit text-primary"></i>
+                                    Personal Statement 
+                                    <span class="required">*</span>
+                                </label>
+                                <textarea class="form-control modern-input" id="personalStatement" rows="6" @bind="application.PersonalStatement" @bind:after="OnFieldChanged" 
+                                            placeholder="Tell us about yourself, your academic goals, and why you deserve this scholarship..." required aria-describedby="personalStatementHelp"></textarea>
+                                <div id="personalStatementHelp" class="modern-form-text">
+                                    <i class="fas fa-lightbulb me-1"></i>
+                                    Minimum 100 words recommended
                                 </div>
+                                <ValidationMessage For="@(() => application.PersonalStatement)" />
+                            </div>
+                        }
+
+                    <!-- GWA Field (Always Required) -->
+                    <div class="gwa-field">
+                        <label for="gwa" class="gwa-label">
+                            <i class="fas fa-trophy text-warning me-2"></i>
+                            General Weighted Average (GWA) <span class="required">*</span>
+                        </label>
+
+                        <div class="gwa-input-wrapper">
+                            <input 
+                            type="number" step="0.01" min="1.00" max="4.00"
+                            class="gwa-input"
+                            id="gwa"
+                            @bind="application.GWA"
+                            @bind:after="OnFieldChanged"
+                            placeholder="e.g., 1.25"
+                            required
+                            aria-describedby="gwaHelp"
+                            />
+                        </div>
+
+                        <small id="gwaHelp" class="gwa-help">
+                            <i class="fas fa-info-circle me-1"></i>
+                            Enter your current GWA (1.00 = highest, 4.00 = lowest)
+                        </small>
+                        <ValidationMessage For="@(() => application.GWA)" />
+                    </div>
+
+                        @if (!application.IsExternalApplication)
+                        {
+                            <!-- Optional Grade Details for Internal Applications -->
+                            <div class="mb-4">
+                                <label for="firstSemGrades" class="modern-form-label">
+                                    <i class="fas fa-calendar-alt text-info"></i>
+                                    First Semester Grades (Optional)
+                                </label>
+                                <textarea class="form-control modern-input" id="firstSemGrades" rows="4" @bind="application.FirstSemesterGrades" @bind:after="OnFieldChanged" 
+                                            placeholder="List your first semester subjects and grades..." aria-describedby="firstSemGradesHelp"></textarea>
+                                <div id="firstSemGradesHelp" class="modern-form-text">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    Upload your transcript or manually enter your first semester grades
+                                </div>
+                                <ValidationMessage For="@(() => application.FirstSemesterGrades)" />
                             </div>
 
-                            <!-- ✅ SUPPORTING DOCUMENTS -->
-                            @if (!application.IsExternalApplication)
-                            {
-                                <div class="card shadow-sm border-0 mb-4">
-                                    <div class="card-header section-header">
-                                        <h6 class="mb-0 fw-bold"><i class="fas fa-paperclip me-2"></i>Supporting Documents</h6>
-                                    </div>
-                                    <div class="card-body">
-                                        <div class="border border-2 rounded-3 p-3" style="border-style: dashed;">
-                                            <InputFile OnChange="OnFileSelected" class="form-control" multiple 
-                                                       accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" />
-                                            <div class="form-text">Upload PDFs, DOCs, or images (max 10MB each).</div>
-                                        </div>
+                            <div class="mb-4">
+                                <label for="secondSemGrades" class="modern-form-label">
+                                    <i class="fas fa-calendar-check text-info"></i>
+                                    Second Semester Grades (Optional)
+                                </label>
+                                <textarea class="form-control modern-input" id="secondSemGrades" rows="4" @bind="application.SecondSemesterGrades" @bind:after="OnFieldChanged" 
+                                            placeholder="List your second semester subjects and grades..." aria-describedby="secondSemGradesHelp"></textarea>
+                                <div id="secondSemGradesHelp" class="modern-form-text">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    Upload your transcript or manually enter your second semester grades
+                                </div>
+                                <ValidationMessage For="@(() => application.SecondSemesterGrades)" />
+                            </div>
 
-                                        @if (selectedFiles.Any())
+                            <!-- File Upload Section -->
+                            <div class="mb-4">
+                                <label class="modern-form-label">
+                                    <i class="fas fa-cloud-upload-alt text-primary"></i>
+                                    Supporting Documents (Optional)
+                                </label>
+                                <div class="file-upload-section">
+                                    <InputFile OnChange="OnFileSelected" class="form-control" multiple accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" aria-describedby="documentsHelp" />
+                                    <div id="documentsHelp" class="modern-form-text text-center">
+                                        <strong>Upload transcripts, certificates, or other supporting documents</strong><br>
+                                        <small>Supported formats: PDF, DOC, DOCX, JPG, PNG • Max file size: 10MB each, total: 50MB</small>
+                                    </div>
+                                </div>
+                                @if (selectedFiles.Any())
+                                {
+                                    <div class="mt-3">
+                                        <h6 class="modern-form-label">
+                                            <i class="fas fa-paperclip text-success"></i>
+                                            Selected Files:
+                                        </h6>
+                                        @foreach (var file in selectedFiles)
                                         {
-                                            <div class="mt-3">
-                                                <h6 class="fw-semibold">Selected Files:</h6>
-                                                @foreach (var file in selectedFiles)
-                                                {
-                                                    <div class="d-flex align-items-center justify-content-between bg-light border rounded p-2 mb-2">
-                                                        <div>
-                                                            <i class="fas fa-file me-2 text-secondary"></i>
-                                                            <span>@file.Name</span>
-                                                            <small class="text-muted ms-2">(@(file.Size / 1024) KB)</small>
-                                                        </div>
-                                                        <button type="button" class="btn btn-sm btn-outline-danger" @onclick="() => RemoveFile(file)">
-                                                            <i class="fas fa-times"></i>
-                                                        </button>
-                                                    </div>
-                                                }
+                                            <div class="file-item">
+                                                <div>
+                                                    @{
+                                                        var extension = System.IO.Path.GetExtension(file.Name).ToLowerInvariant();
+                                                        var iconClass = extension switch
+                                                        {
+                                                            ".pdf" => "fas fa-file-pdf text-danger",
+                                                            ".doc" or ".docx" => "fas fa-file-word text-primary",
+                                                            ".jpg" or ".jpeg" or ".png" or ".gif" => "fas fa-file-image text-success",
+                                                            _ => "fas fa-file text-secondary"
+                                                        };
+                                                    }
+                                                    <i class="@iconClass"></i>
+                                                    <span class="fw-medium">@file.Name</span>
+                                                    <small class="text-muted ms-2">(@(file.Size / 1024) KB)</small>
+                                                    @if (processingFiles.Contains(file.Name))
+                                                    {
+                                                        <span class="badge bg-warning ms-2">
+                                                            <i class="fas fa-spinner fa-spin me-1"></i>
+                                                            Processing...
+                                                        </span>
+                                                    }
+                                                </div>
+                                                <button type="button" class="file-remove-btn" @onclick="() => RemoveFile(file)">
+                                                    <i class="fas fa-times"></i>
+                                                </button>
                                             </div>
+                                            @if (uploadProgress.ContainsKey(file.Name) && uploadProgress[file.Name] > 0)
+                                            {
+                                                <div class="progress mb-2">
+                                                    <div class="progress-bar" role="progressbar" style="width: @(uploadProgress[file.Name])%"></div>
+                                                </div>
+                                            }
                                         }
+                                    </div>
+                                }
+                        </div>
+                        <ValidationMessage For="@(() => application.UploadedDocuments)" />
+
+                            <!-- Extracted Grades & Confidence Feedback -->
+                            @if (!string.IsNullOrWhiteSpace(application.FirstSemesterGrades) || !string.IsNullOrWhiteSpace(application.SecondSemesterGrades) || application.GWA != null)
+                            {
+                                <div class="alert alert-info">
+                                    <div class="d-flex align-items-center mb-3">
+                                        <i class="fas fa-robot me-2 text-primary" style="font-size: 1.5rem;"></i>
+                                        <strong style="font-size: 1.1rem;">AI Extracted Grades</strong>
+                                    </div>
+                                    
+                                    @if (application.GWA != null)
+                                    {
+                                        <div class="text-center mb-4 p-3 rounded" style="background: rgba(21, 96, 212, 0.1); border: 2px solid rgba(21, 96, 212, 0.2);">
+                                            <div class="fw-bold text-muted small mb-2">GENERAL WEIGHTED AVERAGE</div>
+                                            <div class="display-5 fw-bold text-primary">@application.GWA.Value.ToString("0.00")</div>
+                                        </div>
+                                    }
+                                    
+                                    @if (!string.IsNullOrWhiteSpace(application.FirstSemesterGrades) || !string.IsNullOrWhiteSpace(application.SecondSemesterGrades))
+                                    {
+                                        <div class="row">
+                                            @if (!string.IsNullOrWhiteSpace(application.FirstSemesterGrades))
+                                            {
+                                                <div class="col-md-6 mb-3">
+                                                    <div class="p-3 rounded" style="background: rgba(59, 130, 246, 0.05); border-left: 4px solid #3b82f6;">
+                                                        <h6 class="fw-bold text-primary mb-2">
+                                                            <i class="fas fa-calendar-alt me-1"></i>
+                                                            First Semester Subjects:
+                                                        </h6>
+                                                        <ul class="mb-0 small">
+                                                            @foreach (var line in CleanSemesterGradesText(application.FirstSemesterGrades, "First Semester").Split(new[] { '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries))
+                                                            {
+                                                                <li>@line</li>
+                                                            }
+                                                        </ul>
+                                                    </div>
+                                                </div>
+                                            }
+                                            @if (!string.IsNullOrWhiteSpace(application.SecondSemesterGrades))
+                                            {
+                                                <div class="col-md-6 mb-3">
+                                                    <div class="p-3 rounded" style="background: rgba(16, 185, 129, 0.05); border-left: 4px solid #10b981;">
+                                                        <h6 class="fw-bold text-success mb-2">
+                                                            <i class="fas fa-calendar-check me-1"></i>
+                                                            Second Semester Subjects:
+                                                        </h6>
+                                                        <ul class="mb-0 small">
+                                                            @foreach (var line in CleanSemesterGradesText(application.SecondSemesterGrades, "Second Semester").Split(new[] { '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries))
+                                                            {
+                                                                <li>@line</li>
+                                                            }
+                                                        </ul>
+                                                    </div>
+                                                </div>
+                                            }
+                                        </div>
+                                    }
+                                    
+                                    <div class="alert alert-warning mt-3 mb-0" style="background: rgba(251, 191, 36, 0.1); border: 1px solid rgba(251, 191, 36, 0.3); border-radius: 8px;">
+                                        <i class="fas fa-exclamation-triangle me-2 text-warning"></i>
+                                        <small><strong>Please verify:</strong> If the extracted grades are incorrect or incomplete, please review and manually correct them above before submitting.</small>
                                     </div>
                                 </div>
                             }
-
-                            <!-- ✅ SUBMISSION SECTION -->
-                            <div class="card shadow-sm border-0 mb-3">
-                                <div class="card-header section-header">
-                                    <h6 class="mb-0 fw-bold"><i class="fas fa-paper-plane me-2"></i>Submit Application</h6>
-                                </div>
-                                <div class="card-body text-center">
-                                    <button type="submit" class="btn btn-success px-5" disabled="@(!IsFormValid() || isSubmitting)">
-                                        @if (isSubmitting)
-                                        {
-                                            <span class="spinner-border spinner-border-sm me-2">Submitting...</span>
-                                        }
-                                        else
-                                        {
-                                            @:Submit Application
-                                        }
-                                    </button>
-                                    <button type="button" class="btn btn-outline-secondary ms-2" @onclick="CancelAndClearAsync">Cancel</button>
-                                </div>
-                            </div>
-                        </EditForm>
                     }
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
 
-<!-- ✅ SUCCESS MODAL -->
-@if (showSubmittedModal)
-{
-    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header bg-success text-white">
-                    <h5 class="modal-title">
-                        <i class="fas fa-check-circle me-2"></i>Application Submitted Successfully!
-                    </h5>
-                </div>
-                <div class="modal-body text-center py-4">
-                    <div class="mb-3">
-                        <i class="fas fa-graduation-cap text-success" style="font-size: 3rem;"></i>
+                            <div class="d-flex align-items-center justify-content-between mt-5 pt-4" style="border-top: 1px solid #e2e8f0;">
+                                <button type="button" class="modern-btn-secondary" @onclick="CancelAndClearAsync">
+                                    <i class="fas fa-times me-2"></i>
+                                    Cancel
+                                </button>
+                                <button type="submit" class="modern-btn-primary" disabled="@(!IsFormValid() || isSubmitting)">
+                                    @if (isSubmitting)
+                                    {
+                                        <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                                        <span>Submitting...</span>
+                                    }
+                                    else
+                                    {
+                                        <i class="fas fa-paper-plane me-2"></i>
+                                        <span>Submit Application</span>
+                                    }
+                                </button>
+                            </div>
+
+                    @if (!string.IsNullOrEmpty(successMessage))
+                    {
+                        <div class="alert alert-success mt-4" role="alert" aria-live="polite">
+                            <i class="fas fa-check-circle me-2" aria-hidden="true"></i>
+                            <span>@successMessage</span>
+                            <div class="mt-2">
+                                @if (application.ScholarshipApplicationId != Guid.Empty)
+                                {
+                                    <a href="/dashboard/student/applications" class="btn btn-sm btn-outline-secondary ms-2">
+                                        <i class="fas fa-list-alt me-1"></i>
+                                        View My Applications
+                                    </a>
+                                }
+                            </div>
+                            @if (!string.IsNullOrWhiteSpace(application.FirstSemesterGrades) || !string.IsNullOrWhiteSpace(application.SecondSemesterGrades) || application.GWA != null)
+                            {
+                                <div class="mt-2">
+                                    <span class="text-muted small"><i class="fas fa-robot me-1" aria-hidden="true"></i>AI grade extraction was used. Please verify your grades above.</span>
+                                </div>
+                            }
+                        </div>
+                    }
+    </div>
+                                @if (showSubmittedModal)
+                                {
+                                    <div class="modern-modal" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.6); z-index: 1050; display: flex; align-items: center; justify-content: center;">
+                                        <div class="modal-dialog modal-dialog-centered" style="z-index: 1060; max-width: 450px; width: 90%;">
+                                            <div class="modal-content">
+                                                <div class="modal-header">
+                                                    <div class="text-center w-100">
+                                                        <div class="mb-3">
+                                                            <i class="fas fa-check-circle" style="font-size: 4rem; color: white; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.2));"></i>
+                                                        </div>
+                                                        <h3 class="mb-0 fw-bold">Application Submitted!</h3>
+                                                        <p class="mb-0 mt-2 opacity-90">Successfully processed</p>
+                                                    </div>
+                                                </div>
+                                                <div class="modal-body text-center">
+                                                    <div class="mb-4">
+                                                        <p class="mb-3 fs-5">Your scholarship application has been successfully submitted.</p>
+                                                        <div class="p-3 rounded" style="background: rgba(34, 197, 94, 0.1); border: 1px solid rgba(34, 197, 94, 0.2);">
+                                                            <i class="fas fa-envelope text-success me-2"></i>
+                                                            <small class="text-muted">You will receive updates via email regarding your application status.</small>
+                                                        </div>
+                                                    </div>
+                                                    <button type="button" class="modern-btn-primary" @onclick="CloseSubmittedModal">
+                                                        <i class="fas fa-arrow-right me-2"></i>
+                                                        Continue to Dashboard
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                }
+
+                                @if (!string.IsNullOrEmpty(errorMessage))
+                                {
+                                    <div class="alert alert-danger mt-4" role="alert" aria-live="assertive">
+                                        <i class="fas fa-exclamation-triangle me-2" aria-hidden="true"></i>
+                                        <span>@errorMessage</span>
+                                    </div>
+                                }
+                        
+                        </EditForm>
                     </div>
-                    <h6 class="fw-bold mb-3">Your scholarship application has been submitted!</h6>
-                    <p class="text-muted mb-0">@successMessage</p>
-                    <div class="mt-3">
-                        <small class="text-muted">
-                            <i class="fas fa-info-circle me-1"></i>
-                            You will be redirected to the scholarship information page.
-                        </small>
-                    </div>
-                </div>
-                <div class="modal-footer justify-content-center">
-                    <button type="button" class="btn btn-success px-4" @onclick="CloseSubmittedModal">
-                        <i class="fas fa-arrow-right me-2"></i>Continue
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-}
-
-<!-- ✅ ERROR DISPLAY -->
-@if (!string.IsNullOrEmpty(errorMessage))
-{
-    <div class="position-fixed top-0 start-50 translate-middle-x mt-3" style="z-index: 1050;">
-        <div class="alert alert-danger alert-dismissible fade show shadow" role="alert">
-            <i class="fas fa-exclamation-triangle me-2"></i>
-            @errorMessage
-            <button type="button" class="btn-close" @onclick="() => errorMessage = null"></button>
-        </div>
-    </div>
-}
-
-<!-- ✅ SUCCESS MESSAGE DISPLAY -->
-@if (!string.IsNullOrEmpty(successMessage) && !showSubmittedModal)
-{
-    <div class="position-fixed top-0 start-50 translate-middle-x mt-3" style="z-index: 1050;">
-        <div class="alert alert-success alert-dismissible fade show shadow" role="alert">
-            <i class="fas fa-check-circle me-2"></i>
-            @successMessage
-            <button type="button" class="btn-close" @onclick="() => successMessage = null"></button>
-        </div>
-    </div>
-}
+                }
 
 @code {
     // --- Component parameters ---
@@ -308,70 +458,83 @@
         {
             errorMessage = null;
             var validFiles = new List<IBrowserFile>();
-            var invalidFiles = new List<string>();
-            
-            Logger?.LogInformation("Processing {Count} selected files", e.FileCount);
-            
             foreach (var file in e.GetMultipleFiles())
             {
                 var ext = Path.GetExtension(file.Name).ToLowerInvariant();
                 if (!allowedExtensions.Contains(ext))
-                {
-                    invalidFiles.Add($"{file.Name} (invalid extension: {ext})");
                     continue;
-                }
                 if (file.Size > perFileMaxBytes)
-                {
-                    invalidFiles.Add($"{file.Name} (too large: {file.Size / 1024 / 1024:F1}MB)");
                     continue;
-                }
                 validFiles.Add(file);
             }
-            
-            // Show validation errors if any
-            if (invalidFiles.Any())
-            {
-                errorMessage = $"Some files were not uploaded: {string.Join(", ", invalidFiles)}";
-                StateHasChanged();
-            }
-            
-            if (!validFiles.Any())
-            {
-                Logger?.LogWarning("No valid files to upload");
-                return;
-            }
-            
             selectedFiles.AddRange(validFiles);
             uploadedFileNames.AddRange(validFiles.Select(f => f.Name));
+            errorMessage = null;
 
             // Upload files to temp blob storage for Document Intelligence
-            var uploadedCount = 0;
             foreach (var file in validFiles)
             {
                 var tempBlobName = $"temp/{Guid.NewGuid()}_{file.Name}";
                 try
                 {
-                    Logger?.LogInformation("Uploading temp file: {FileName} ({Size} bytes) as {TempBlobName}", 
-                        file.Name, file.Size, tempBlobName);
+                    Logger?.LogInformation("Starting temp blob upload for file {FileName} ({Size} bytes)", file.Name, file.Size);
                     
-                    await using var stream = file.OpenReadStream(perFileMaxBytes);
-                    var blobUrl = await BlobStorageService.UploadDocumentAsync(stream, tempBlobName, file.ContentType);
-                    tempBlobFileNames.Add(tempBlobName);
-                    uploadedCount++;
+                    // Read the file into a byte array first to avoid stream position issues
+                    await using var fileStream = file.OpenReadStream(perFileMaxBytes);
+                    using var memoryStream = new MemoryStream();
+                    await fileStream.CopyToAsync(memoryStream);
+                    var fileBytes = memoryStream.ToArray();
                     
-                    Logger?.LogInformation("Successfully uploaded temp file: {TempBlobName} to {BlobUrl}", 
-                        tempBlobName, blobUrl);
+                    // Create a new memory stream for the upload
+                    using var uploadStream = new MemoryStream(fileBytes);
+                    var uploadResult = await BlobStorageService.UploadDocumentAsync(uploadStream, tempBlobName, file.ContentType);
+                    
+                    if (!string.IsNullOrEmpty(uploadResult))
+                    {
+                        tempBlobFileNames.Add(tempBlobName);
+                        Logger?.LogInformation("Successfully uploaded temp file {FileName} to {TempBlobName}", file.Name, tempBlobName);
+                    }
+                    else
+                    {
+                        Logger?.LogError("Failed to upload temp file {FileName} - no URL returned", file.Name);
+                        errorMessage = $"Failed to upload file {file.Name}. Please try again.";
+                    }
                 }
                 catch (Exception ex)
                 {
-                    Logger?.LogError(ex, "Failed to upload temp file {FileName}", file.Name);
-                    errorMessage = $"Failed to upload {file.Name}: {ex.Message}";
-                    StateHasChanged();
+                    Logger?.LogError(ex, "Failed to upload temp file {FileName} to blob storage", file.Name);
+                    errorMessage = $"Failed to upload file {file.Name}: {ex.Message}";
                 }
             }
-            
-            Logger?.LogInformation("Successfully uploaded {UploadedCount}/{TotalCount} files to temp storage", 
-                uploadedCount, validFiles.Count);
+
+            // Only proceed if all files were uploaded successfully
+            if (tempBlobFileNames.Count != validFiles.Count)
+            {
+                Logger?.LogWarning("Not all files were uploaded successfully. Expected {Expected}, got {Actual}", validFiles.Count, tempBlobFileNames.Count);
+                // Clean up any successfully uploaded temp files
+                foreach (var tempBlobName in tempBlobFileNames.ToList())
+                {
+                    try
+                    {
+                        await BlobStorageService.DeleteDocumentAsync(tempBlobName);
+                        tempBlobFileNames.Remove(tempBlobName);
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger?.LogWarning(ex, "Failed to cleanup temp blob file {TempBlobName}", tempBlobName);
+                    }
+                }
+                
+                // Remove failed files from the UI
+                foreach (var failedFile in validFiles.Where(f => !tempBlobFileNames.Any(t => t.Contains(f.Name))))
+                {
+                    selectedFiles.Remove(failedFile);
+                    uploadedFileNames.Remove(failedFile.Name);
+                }
+                
+                StateHasChanged();
+                return;
+            }
 
             // Persist a minimal safe state
             await DebouncedSaveFormStateAsync();
@@ -542,8 +705,6 @@
             if (!application.IsExternalApplication && string.IsNullOrWhiteSpace(application.PersonalStatement))
             {
                 errorMessage = "Personal statement is required for internal applications.";
-                isSubmitting = false;
-                StateHasChanged();
                 return;
             }
 
@@ -554,66 +715,74 @@
             {
                 Logger?.LogWarning("Duplicate application prevented for scholarship {ScholarshipId} student {StudentProfileId}", ScholarshipId, application.StudentProfileId);
                 errorMessage = "You have already applied to this scholarship.";
-                isSubmitting = false;
-                StateHasChanged();
                 return;
             }
 
             // Move temp files to permanent blob storage on submit
             var savedUrls = new List<string>();
-            Logger?.LogInformation("Moving {Count} temp files to permanent storage", tempBlobFileNames.Count);
+            var failedMoves = new List<string>();
             
             foreach (var tempBlobName in tempBlobFileNames)
             {
                 try
                 {
-                    Logger?.LogInformation("Processing temp file: {TempBlobName}", tempBlobName);
+                    Logger?.LogInformation("Moving temp file {TempBlobName} to permanent storage", tempBlobName);
                     
                     // Copy temp file to permanent location (remove 'temp/' prefix)
                     var permanentBlobName = tempBlobName.Replace("temp/", "");
                     
-                    // Download temp blob and properly dispose stream
-                    await using var tempStream = await BlobStorageService.DownloadDocumentAsync(tempBlobName);
+                    // Download temp blob with proper disposal
+                    using var tempStream = await BlobStorageService.DownloadDocumentAsync(tempBlobName);
                     
-                    // Determine content type from file extension
-                    var fileExtension = Path.GetExtension(permanentBlobName).ToLowerInvariant();
-                    var contentType = fileExtension switch
+                    if (tempStream == null)
                     {
-                        ".pdf" => "application/pdf",
-                        ".doc" => "application/msword",
-                        ".docx" => "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-                        ".jpg" or ".jpeg" => "image/jpeg",
-                        ".png" => "image/png",
-                        _ => "application/octet-stream"
-                    };
+                        Logger?.LogError("Failed to download temp file {TempBlobName} - stream is null", tempBlobName);
+                        failedMoves.Add(tempBlobName);
+                        continue;
+                    }
                     
-                    // Upload to permanent location with correct content type
-                    var permanentUrl = await BlobStorageService.UploadDocumentAsync(tempStream, permanentBlobName, contentType);
-                    savedUrls.Add(permanentBlobName);
+                    // Upload to permanent location with proper content type detection
+                    var contentType = GetContentTypeFromFileName(permanentBlobName);
+                    var uploadResult = await BlobStorageService.UploadDocumentAsync(tempStream, permanentBlobName, contentType);
                     
-                    Logger?.LogInformation("Successfully moved {TempBlobName} to {PermanentBlobName}", tempBlobName, permanentBlobName);
-                    
-                    // Delete temp file after successful copy
-                    await BlobStorageService.DeleteDocumentAsync(tempBlobName);
+                    if (!string.IsNullOrEmpty(uploadResult))
+                    {
+                        savedUrls.Add(permanentBlobName);
+                        Logger?.LogInformation("Successfully moved {TempBlobName} to permanent storage as {PermanentBlobName}", tempBlobName, permanentBlobName);
+                        
+                        // Delete temp file after successful copy
+                        await BlobStorageService.DeleteDocumentAsync(tempBlobName);
+                        Logger?.LogDebug("Deleted temp file {TempBlobName}", tempBlobName);
+                    }
+                    else
+                    {
+                        Logger?.LogError("Failed to upload temp file {TempBlobName} to permanent storage - no URL returned", tempBlobName);
+                        failedMoves.Add(tempBlobName);
+                    }
                 }
                 catch (Exception ex)
                 {
                     Logger?.LogError(ex, "Failed to move temp file {TempBlobName} to permanent storage", tempBlobName);
-                    // Continue processing other files even if one fails
+                    failedMoves.Add(tempBlobName);
                 }
             }
-            tempBlobFileNames.Clear();
             
-            Logger?.LogInformation("Successfully processed {Count} files for permanent storage", savedUrls.Count);
+            // Check if any moves failed
+            if (failedMoves.Any())
+            {
+                Logger?.LogWarning("Failed to move {FailedCount} temp files to permanent storage: {FailedFiles}", 
+                    failedMoves.Count, string.Join(", ", failedMoves));
+                errorMessage = $"Some files failed to upload properly. Please try again.";
+                return;
+            }
+            
+            tempBlobFileNames.Clear();
 
             // Store the permanent blob URLs
             application.UploadedDocuments = string.Join(",", savedUrls);
-            Logger?.LogInformation("Saving application with {DocumentCount} uploaded documents: {Documents}", 
-                savedUrls.Count, application.UploadedDocuments);
 
             DbContext.ScholarshipApplications.Add(application);
             await DbContext.SaveChangesAsync();
-            Logger?.LogInformation("Application saved successfully with ID: {ApplicationId}", application.ScholarshipApplicationId);
 
             successMessage = $"Application submitted successfully! Reference ID: {application.ScholarshipApplicationId}";
             uploadedFileNames.Clear();
@@ -634,7 +803,6 @@
         finally
         {
             isSubmitting = false;
-            StateHasChanged(); // Ensure UI updates
         }
     }
 
@@ -699,12 +867,18 @@
                         StateHasChanged();
                     });
                     
-                    await using var stream = file.OpenReadStream(perFileMaxBytes);
-                    using var ms = new MemoryStream();
-                    await stream.CopyToAsync(ms);
-                    ms.Position = 0;
+                    // Read file into byte array to avoid stream position issues
+                    byte[] fileBytes;
+                    await using (var stream = file.OpenReadStream(perFileMaxBytes))
+                    {
+                        using var ms = new MemoryStream();
+                        await stream.CopyToAsync(ms);
+                        fileBytes = ms.ToArray();
+                    }
                     
-                    var extractedData = await ExtractGradesFromDocumentAsync(ms, file.Name, file.ContentType);
+                    // Create a fresh memory stream for OCR processing
+                    using var ocrStream = new MemoryStream(fileBytes);
+                    var extractedData = await ExtractGradesFromDocumentAsync(ocrStream, file.Name, file.ContentType);
                     
                     bool foundAnyData = false;
                     var extractedItems = new List<string>();
@@ -808,11 +982,11 @@
         await TriggerOcrForFilesAsync(selectedFiles);
     }
 
-    // Closes the submitted modal and navigates to the scholarship info page.
+    // Closes the submitted modal and navigates to the dashboard.
     private void CloseSubmittedModal()
     {
         showSubmittedModal = false;
-        Navigation.NavigateTo($"/dashboard/student/scholarships-info/{ScholarshipId}");
+        Navigation.NavigateTo("/dashboard/student");
     }
 
     // Cancels the application and clears form state.
@@ -1766,5 +1940,23 @@ Return only valid JSON:";
         }
         
         return result;
+    }
+
+    // Helper method to determine content type from file extension
+    private string GetContentTypeFromFileName(string fileName)
+    {
+        var extension = Path.GetExtension(fileName).ToLowerInvariant();
+        return extension switch
+        {
+            ".pdf" => "application/pdf",
+            ".doc" => "application/msword",
+            ".docx" => "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            ".jpg" or ".jpeg" => "image/jpeg",
+            ".png" => "image/png",
+            ".gif" => "image/gif",
+            ".bmp" => "image/bmp",
+            ".tiff" or ".tif" => "image/tiff",
+            _ => "application/octet-stream"
+        };
     }
 }

@@ -932,6 +932,36 @@ button.dashboard-profile-absolute:hover svg * {
     to { opacity: 1; transform: translateY(0);}
 }
 
+/* Responsive Chatbot Styles */
+@media (max-width: 768px) {
+    .chatbot-float-window {
+        width: 350px;
+        height: 450px;
+        bottom: 16px;
+        right: 16px;
+    }
+    
+    .help-box-bottom {
+        padding: 12px 6px 8px 6px;
+        margin-top: 14px;
+    }
+    
+    .help-box-img {
+        width: 120px;
+        height: 120px;
+        margin-top: -60px;
+        margin-left: -16px;
+    }
+    
+    .help-box-title {
+        font-size: 0.95rem;
+    }
+    
+    .help-box-desc {
+        font-size: 0.7rem;
+    }
+}
+
 /* =======================
    HELP BOX STYLES
    ======================= */
@@ -941,10 +971,10 @@ button.dashboard-profile-absolute:hover svg * {
 .help-box-bottom {
     width: 100%;
     background: rgba(255,255,255,0.13);
-    border-radius: 16px;
+    border-radius: 14px;
     border: 1px solid rgba(255, 255, 255, 0.3);
-    padding: 18px 8px 12px 8px;
-    margin-top: 24px;
+    padding: 16px 8px 10px 8px;
+    margin-top: 18px;
     box-shadow: 0 2px 8px rgba(0,0,0,0.06);
     display: flex;
     flex-direction: column;
@@ -970,10 +1000,10 @@ button.dashboard-profile-absolute:hover svg * {
 
 /* Image inside help box */
 .help-box-img {
-    width: 200px;
-    height: 200px;
-    margin-top: -100px;   
-    margin-left: -24px;
+    width: 150px;
+    height: 150px;
+    margin-top: -75px;   
+    margin-left: -20px;
     z-index: 10;
     position: relative;
 }
@@ -986,7 +1016,7 @@ button.dashboard-profile-absolute:hover svg * {
 
 .help-box-title {
     font-weight: 700;
-    font-size: 1.15rem;
+    font-size: 1.05rem;
     color: #ffd700; /* yellow */
     margin-bottom: 2px;
 }
@@ -994,6 +1024,7 @@ button.dashboard-profile-absolute:hover svg * {
 .help-box-desc {
     font-size: 0.75rem;
     color: rgba(255, 255, 255, 0.9);
+    line-height: 1.3;
 }
 
 /* =======================

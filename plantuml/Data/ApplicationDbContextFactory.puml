@@ -1,8 +1,0 @@
-@startuml
-class ApplicationDbContextFactory {
-    + CreateDbContext(args:string[]) : ApplicationDbContext
-}
-class "IDesignTimeDbContextFactory`1"<T> {
-}
-"IDesignTimeDbContextFactory`1" "<ApplicationDbContext>" <|-- ApplicationDbContextFactory
-@enduml

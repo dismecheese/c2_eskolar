@@ -1,5 +1,0 @@
-@startuml
-class AddAgeStoredColumn <<partial>> {
-}
-Migration <|-- AddAgeStoredColumn
-@enduml

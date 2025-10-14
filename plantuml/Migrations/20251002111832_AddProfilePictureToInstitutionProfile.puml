@@ -1,5 +1,0 @@
-@startuml
-class AddProfilePictureToInstitutionProfile <<partial>> {
-}
-Migration <|-- AddProfilePictureToInstitutionProfile
-@enduml

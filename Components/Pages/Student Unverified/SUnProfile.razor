@@ -1,0 +1,387 @@
+@page "/dashboard/unverified/profile"
+@layout Layout.SUnDashLayout
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject UserManager<IdentityUser> UserManager
+@inject Services.StudentProfileService StudentProfileService
+@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.AspNetCore.Identity
+
+<PageTitle>Profile</PageTitle>
+
+<style>
+    /* Scoped styles for unverified profile to match verified profile exactly */
+    .form-control-plaintext {
+        display: block;
+        width: 100%;
+        padding: 0.5em 1em;
+        font-size: 0.95em;
+        color: #333;
+        background-color: #f6f8fc;
+        border: 1px solid #d0d7e2;
+        border-radius: 8px;
+        min-height: 2.5em;
+        margin-bottom: 0.2em;
+        box-shadow: 0 1px 2px rgba(21,96,212,0.04);
+        transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .profile-image {
+        width: 120px;
+        height: 120px;
+        object-fit: cover;
+        object-position: center;
+        border-radius: 50%;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.10);
+    }
+
+    .profile-label-bold {
+        font-weight: 700;
+        font-size: 0.95em;
+        color: #2d3748;
+        margin-bottom: 8px;
+    }
+
+    .profile-card {
+        border-radius: 18px;
+        box-shadow: 0 4px 24px rgba(21,96,212,0.10), 0 2px 8px rgba(0,0,0,0.04);
+        border: none;
+        background: linear-gradient(120deg, #f6f8fc 0%, #eaf1fb 100%);
+        margin-bottom: 1.2rem;
+        transition: box-shadow 0.2s;
+    }
+
+    .profile-card:hover {
+        box-shadow: 0 8px 32px rgba(21,96,212,0.16), 0 4px 16px rgba(0,0,0,0.08);
+    }
+
+    .profile-card .card-body {
+        padding: 1.2em 1.5em;
+    }
+
+    .profile-section-title {
+        color: #fff !important;
+        font-weight: 700;
+        font-size: 1.15rem;
+        letter-spacing: 0.5px;
+        display: flex;
+        align-items: center;
+        gap: 0.5em;
+    }
+
+    .profile-header-icon {
+        color: #FFD600 !important;
+        font-size: 1.3em !important;
+        margin-right: 0.5em !important;
+    }
+
+    .profile-name {
+        font-weight: 600;
+        color: #2d3748;
+    }
+
+    .profile-title {
+        color: #1560d4;
+        font-weight: 700;
+        font-size: 2.2rem;
+        letter-spacing: 1px;
+        margin-bottom: 0.5rem;
+    }
+
+    .student-profile-bg {
+        background: linear-gradient(120deg, #eaf1fb 0%, #f6f8fc 100%);
+        min-height: 100vh;
+    }
+
+    .card-header.bg-white {
+        background: linear-gradient(90deg, rgba(21,96,212,0.92) 0%, rgba(21,96,212,0.80) 100%) !important;
+        color: #fff !important;
+        border-bottom: none;
+        padding: 0.8em 1.2em;
+        border-radius: 16px 16px 0 0;
+        display: flex;
+        align-items: center;
+    }
+</style>
+
+<div class="container-fluid px-5 pt-3 pb-5 student-profile-bg">
+    <!-- Header Section -->
+    <div class="row mb-3">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <h2 class="mb-0 profile-title">My Profile</h2>
+                <div class="d-flex gap-2">
+                    <div class="university-input" style="padding-left: 15px; padding-right: 15px; color: #d84453; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; height: 32px; display: flex; align-items: center; font-size: 0.9rem; font-weight: 500; user-select: none; cursor: default;">Account not verified.</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @if (isLoading)
+    {
+        <div class="text-center mt-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-2">Loading profile...</p>
+        </div>
+    }
+    else if (profile != null)
+    {
+        <div class="row">
+            <!-- Profile Summary (Left Column) -->
+            <div class="col-lg-4 mb-4">
+                <div class="card profile-card mb-4">
+                    <div class="card-body text-center">
+                        <div class="position-relative d-inline-block mb-3">
+                            @if (string.IsNullOrWhiteSpace(profile.ProfilePicture) || profile.ProfilePicture == "https://via.placeholder.com/120")
+                            {
+                                <!-- Facebook-style blank avatar SVG -->
+                                <svg class="rounded-circle profile-image shadow" width="120" height="120" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <circle cx="60" cy="60" r="60" fill="#eaf1fb"/>
+                                    <ellipse cx="60" cy="54" rx="28" ry="26" fill="#b3c6e6"/>
+                                    <ellipse cx="60" cy="92" rx="36" ry="18" fill="#b3c6e6"/>
+                                </svg>
+                            }
+                            else
+                            {
+                                <img src="@profile.ProfilePicture" class="rounded-circle profile-image shadow" alt="Profile Picture" width="120" height="120" />
+                            }
+                        </div>
+                        <h4 class="card-title mb-1 profile-name">@profile.FirstName @profile.LastName</h4>
+                        <div class="d-flex flex-row justify-content-center align-items-center gap-2 mt-2">
+                            @if (profile.AccountStatus == "Verified")
+                            {
+                                <span class="profile-badge-pill profile-badge-status" style="background: #e6f6ff; color: #3182ce; font-weight: 500; font-size: 0.95rem; border-radius: 1.2rem; padding: 0.25rem 0.75rem; box-shadow: 0 1px 4px rgba(0,0,0,0.06); border: 1px solid #63b3ed; letter-spacing: 0.2px;">Verified</span>
+                            }
+                            else if (profile.AccountStatus == "Archived")
+                            {
+                                <span class="profile-badge-pill profile-badge-status" style="background: #fed7d7; color: #e53e3e; font-weight: 500; font-size: 0.95rem; border-radius: 1.2rem; padding: 0.25rem 0.75rem; box-shadow: 0 1px 4px rgba(0,0,0,0.06); border: 1px solid #fc8181; letter-spacing: 0.2px;">Rejected</span>
+                            }
+                            else
+                            {
+                                <span class="profile-badge-pill profile-badge-status" style="background: #ffe066; color: #444; font-weight: 500; font-size: 0.95rem; border-radius: 1.2rem; padding: 0.25rem 0.75rem; box-shadow: 0 1px 4px rgba(0,0,0,0.06); border: 1px solid #f7c948; letter-spacing: 0.2px;">Pending</span>
+                            }
+                            <span class="profile-badge-pill profile-badge-year" style="background: #eaf1fb; color: #2563eb; font-weight: 500; font-size: 0.95rem; border-radius: 1.2rem; padding: 0.25rem 0.75rem; box-shadow: 0 1px 4px rgba(0,0,0,0.06); border: 1px solid #b3c6e6; letter-spacing: 0.2px;">@GetYearLevelText(profile.YearLevel?.ToString() ?? "1")</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Verification Requirements Card -->
+                <div class="card profile-card">
+                    <div class="card-header d-flex align-items-center" style="background: #3b6dcc; color: #fff; border-top-left-radius: 24px; border-top-right-radius: 24px;">
+                        <span class="me-2" style="font-size: 1.5rem;">
+                            <i class="fas fa-check-circle" style="color: #ffd600;"></i>
+                        </span>
+                        <span style="font-weight: 600; font-size: 1.25rem;">Verification</span>
+                    </div>
+                    <div class="card-body" style="background: #f8fbff; border-bottom-left-radius: 24px; border-bottom-right-radius: 24px;">
+                        <div class="d-flex flex-column gap-3">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span style="font-weight: 600; font-size: 1.1rem;">Email</span>
+                                <span>
+                                    <i class="fas fa-clock" style="color: #ffd600; font-size: 1.2rem;"></i>
+                                </span>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span style="font-weight: 600; font-size: 1.1rem;">Student ID</span>
+                                <span>
+                                    @if (!string.IsNullOrEmpty(profile.StudentIdDocumentPath))
+                                    {
+                                        <i class="fas fa-check-circle" style="color: #3b6dcc; font-size: 1.2rem;"></i>
+                                    }
+                                    else
+                                    {
+                                        <i class="fas fa-clock" style="color: #ffd600; font-size: 1.2rem;"></i>
+                                    }
+                                </span>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span style="font-weight: 600; font-size: 1.1rem;">COR</span>
+                                <span>
+                                    @if (!string.IsNullOrEmpty(profile.CorDocumentPath))
+                                    {
+                                        <i class="fas fa-check-circle" style="color: #3b6dcc; font-size: 1.2rem;"></i>
+                                    }
+                                    else
+                                    {
+                                        <i class="fas fa-clock" style="color: #ffd600; font-size: 1.2rem;"></i>
+                                    }
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Profile Details (Right Column) -->
+            <div class="col-lg-8">
+                <div class="card profile-card mb-4">
+                    <div class="card-header bg-white">
+                        <h5 class="mb-0 profile-section-title"><i class="fas fa-user profile-header-icon"></i>Personal Information</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label profile-label-bold">First Name</label>
+                                <div class="form-control-plaintext">@profile.FirstName</div>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label profile-label-bold">Middle Name</label>
+                                <div class="form-control-plaintext">@(profile.MiddleName ?? "")</div>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label profile-label-bold">Last Name</label>
+                                <div class="form-control-plaintext">@profile.LastName</div>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label profile-label-bold">Sex</label>
+                                <div class="form-control-plaintext">@(profile.Sex ?? "")</div>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label profile-label-bold">Birthday</label>
+                                <div class="form-control-plaintext">@(profile.BirthDate?.ToShortDateString() ?? "")</div>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label profile-label-bold">Nationality</label>
+                                <div class="form-control-plaintext">@(profile.Nationality ?? "")</div>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label class="form-label profile-label-bold">Phone Number</label>
+                                <div class="form-control-plaintext">@(profile.MobileNumber ?? "")</div>
+                            </div>
+                            <div class="col-md-8 mb-3">
+                                <label class="form-label profile-label-bold">Permanent Address</label>
+                                <div class="form-control-plaintext">@(profile.PermanentAddress ?? "")</div>
+                            </div>
+                            <div class="col-12 mb-3">
+                                <label class="form-label profile-label-bold">Personal Email</label>
+                                <div class="d-flex align-items-center" style="min-width:350px;max-width:100%;white-space:nowrap;overflow-x:auto;">
+                                    <span class="form-control-plaintext flex-grow-1">@currentUserEmail</span>
+                                </div>
+                            </div>
+                            <div class="col-12 mb-3">
+                                <label class="form-label profile-label-bold">Institutional Email</label>
+                                <div class="d-flex align-items-center" style="min-width:350px;max-width:100%;white-space:nowrap;overflow-x:auto;">
+                                    <span class="form-control-plaintext flex-grow-1">@(profile.InstitutionalEmail ?? "")</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card profile-card">
+                    <div class="card-header bg-white">
+                        <h5 class="mb-0 profile-section-title"><i class="fas fa-graduation-cap profile-header-icon"></i>Educational Information</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label profile-label-bold">University</label>
+                                <div class="form-control-plaintext">@(profile.UniversityName ?? "")</div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label profile-label-bold">Student Number</label>
+                                <div class="form-control-plaintext">@(profile.StudentNumber ?? "")</div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label profile-label-bold">Program</label>
+                                <div class="form-control-plaintext">@(profile.Course ?? "")</div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label profile-label-bold">Year Level</label>
+                                <div class="form-control-plaintext">@GetYearLevelText(profile.YearLevel?.ToString() ?? "1")</div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label profile-label-bold">Enrollment Status</label>
+                                <div class="form-control-plaintext">@(profile.EnrollmentStatus ?? "Regular")</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="text-center">
+            <div class="alert alert-info">
+                <i class="fas fa-user-plus fa-2x mb-3 d-block"></i>
+                <h5>No Profile Found</h5>
+                <p>It looks like you haven't completed your profile yet.</p>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private StudentProfile? profile;
+    private bool isLoading = true;
+    private string? currentUserEmail;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadProfile();
+    }
+
+    private async Task LoadProfile()
+    {
+        try
+        {
+            var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+            var user = authState.User;
+            
+            if (user?.Identity?.IsAuthenticated == true)
+            {
+                var userId = user.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+                currentUserEmail = user.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value;
+                
+                if (!string.IsNullOrEmpty(userId))
+                {
+                    profile = await StudentProfileService.GetProfileByUserIdAsync(userId);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading profile: {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private string GetYearLevelText(string yearLevel)
+    {
+        if (string.IsNullOrWhiteSpace(yearLevel)) return "1st Year";
+        
+        // Handle numeric values
+        if (int.TryParse(yearLevel, out var level))
+        {
+            return level switch
+            {
+                1 => "1st Year",
+                2 => "2nd Year",
+                3 => "3rd Year",
+                4 => "4th Year",
+                5 => "5th Year",
+                6 => "6th Year",
+                7 => "7th Year",
+                8 => "8th Year",
+                _ => $"{level}th Year"
+            };
+        }
+        
+        // Handle text values
+        var lower = yearLevel.ToLower();
+        if (lower.Contains("1")) return "1st Year";
+        if (lower.Contains("2")) return "2nd Year";
+        if (lower.Contains("3")) return "3rd Year";
+        if (lower.Contains("4")) return "4th Year";
+        if (lower.Contains("5")) return "5th Year";
+        if (lower.Contains("6")) return "6th Year";
+        if (lower.Contains("7")) return "7th Year";
+        if (lower.Contains("8")) return "8th Year";
+        return yearLevel;
+    }
+}

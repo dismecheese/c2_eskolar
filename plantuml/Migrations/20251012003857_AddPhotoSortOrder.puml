@@ -1,5 +1,0 @@
-@startuml
-class AddPhotoSortOrder <<partial>> {
-}
-Migration <|-- AddPhotoSortOrder
-@enduml

@@ -1,73 +1,999 @@
-.app-header {
-  background: #fff;
-  border-bottom: 2px solid #e3f2fd;
-  z-index: 1030;
-  width: 100vw;
-  margin-left: calc(-50vw + 50%);
+/* Global Font Family */
+* {
+    font-family: 'Inter', 'Helvetica Neue', Helvetica, Arial, sans-serif !important;
 }
 
-.app-badge {
-  background: linear-gradient(135deg, #1976d2, #64b5f6);
-  border-radius: 50px;
-  box-shadow: 0 4px 10px rgba(25, 118, 210, 0.25);
-  color: #fff;
-  transition: all 0.3s ease;
+/* Modern responsive title for a card/header */
+.icon{
+display:inline-grid;
+place-items:center;
+width:56px;
+height:56px;
+border-radius:12px;
+font-size:1.4rem;
+background:linear-gradient(135deg,#1976d2 0%, #64b5f6 100%);
+color:white;
+box-shadow: 0 4px 12px rgba(25,118,210,0.18);
 }
 
-.app-badge:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 14px rgba(25, 118, 210, 0.3);
+/* Stretch banner edge-to-edge */
+.scholarship-title-banner {
+	display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 1.2rem 2.5vw;
+  background: linear-gradient(90deg, #1e40af 0%, #2563eb 100%);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border-radius: 0;
+  min-height: 72px;
+  gap: 1.2rem;
+  z-index: 1;
 }
 
-.app-badge i {
-  color: #ffeb3b;
-  transition: transform 0.3s ease;
+.scholarship-title-banner .icon {
+	flex-shrink: 0;
 }
 
-.app-badge:hover i:first-child { transform: rotate(-10deg) scale(1.1); }
-.app-badge:hover i:last-child { transform: rotate(10deg) scale(1.1); }
-
-.app-badge h2 {
-  color: #fff;
-  font-size: 1.6rem;
-  text-shadow: 0 1px 3px rgba(0,0,0,0.2);
+.scholarship-title-banner .title-text {
+	display: flex;
+	flex-direction: column;
+	min-width: 0;
+	align-items: center;
 }
 
-@media (max-width: 768px) {
-  .app-badge h2 { font-size: 1.2rem; }
+.text{
+min-width:0;
 }
 
-.form-section {
-        transition: all 0.3s ease;
+
+.title{
+font-weight:700;
+font-size:clamp(1rem, 1.6vw, 1.25rem); /* responsive */
+line-height:1.1;
+color: #fff;
+white-space:nowrap;
+overflow:hidden;
+text-overflow:ellipsis;
+}
+
+
+.subtitle{
+margin-top:0.18rem;
+font-size:0.85rem;
+color:#dbeafe;
+line-height: 1.4;
+}
+
+
+.sponsor{
+font-weight:600;
+color:#bfdbfe;
+}
+
+
+.right{
+display:flex;
+align-items:center;
+gap:0.75rem;
+}
+
+
+.badge{
+font-size:0.85rem;
+padding:0.38rem 0.6rem;
+border-radius:999px;
+background: rgba(99,102,241,0.08);
+color:#312e81;
+border:1px solid rgba(99,102,241,0.12);
+}
+
+
+.apply{
+padding:0.45rem 0.9rem;
+border-radius:10px;
+border: none;
+background: linear-gradient(180deg,#2563eb,#1e40af);
+color:white;
+font-weight:600;
+cursor:pointer;
+box-shadow: 0 6px 18px rgba(14,165,233,0.12);
+}
+
+
+.apply:active{transform:translateY(1px)}
+
+
+/* Make component stack on small screens */
+@media (max-width:520px){
+.scholarship-header{
+flex-direction:column;
+align-items:flex-start;
+gap:0.6rem;
+}
+.right{align-self:stretch; display:flex; justify-content:space-between; width:100%}
+	.scholarship-title-banner {
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		padding: 1rem 4vw;
+		min-height: 0;
+		gap: 0.7rem;
+		max-width: 100%;
+	}
+}
+
+/* Modern rounded container for the form, inspired by the title banner */
+.scholarship-form-container {
+	display: flex;
+	flex-direction: column;
+	align-items: stretch;
+	justify-content: flex-start;
+	width: 100%;
+	max-width: 1200px;
+	margin: 2.5rem auto 0 auto;
+	padding: 2rem 2.5vw;
+	background: linear-gradient(120deg, #2563eb 0%, #60a5fa 100%);
+	box-shadow: 0 4px 24px rgba(25,118,210,0.10);
+	border-radius: 2rem;
+	min-height: 320px;
+	gap: 1.5rem;
+	z-index: 0;
+	transition: box-shadow 0.2s;
+}
+
+.scholarship-form-container:hover {
+	box-shadow: 0 8px 32px rgba(25,118,210,0.16);
+}
+
+.scholarship-form-container .form-title {
+	font-weight: 700;
+	font-size: clamp(1.1rem, 2vw, 1.5rem);
+	color: #fff;
+	margin-bottom: 0.5rem;
+	text-align: center;
+}
+
+.scholarship-form-container .form-section {
+	background: rgba(255,255,255,0.85);
+	border-radius: 1.2rem;
+	padding: 1.2rem 1rem;
+	box-shadow: 0 2px 8px rgba(99,102,241,0.07);
+	margin-bottom: 1.2rem;
+}
+
+.scholarship-form-container label {
+	font-weight: 600;
+	color: #1e3a8a;
+}
+
+.scholarship-form-container input,
+.scholarship-form-container textarea,
+.scholarship-form-container select {
+	width: 100%;
+	padding: 0.6rem 0.9rem;
+	border-radius: 0.7rem;
+	border: 1px solid #c7d2fe;
+	margin-top: 0.3rem;
+	margin-bottom: 1rem;
+	font-size: 1rem;
+	background: #f8fafc;
+	color: #1e293b;
+	transition: border-color 0.2s;
+}
+
+.scholarship-form-container input:focus,
+.scholarship-form-container textarea:focus,
+.scholarship-form-container select:focus {
+	border-color: #2563eb;
+	outline: none;
+}
+
+.scholarship-form-container .form-actions {
+	display: flex;
+	gap: 1rem;
+	justify-content: flex-end;
+	margin-top: 1.5rem;
+}
+
+.scholarship-form-container .apply {
+	padding: 0.45rem 1.2rem;
+	border-radius: 10px;
+	border: none;
+	background: linear-gradient(180deg,#2563eb,#1e40af);
+	color: white;
+	font-weight: 600;
+	cursor: pointer;
+	box-shadow: 0 6px 18px rgba(14,165,233,0.12);
+}
+
+.scholarship-form-container .apply:active {
+	transform: translateY(1px);
+}
+
+@media (max-width: 600px) {
+	.scholarship-form-container {
+		padding: 1rem 2vw;
+		border-radius: 1.2rem;
+		min-height: 0;
+		gap: 1rem;
+		max-width: 100%;
+	}
+	.scholarship-form-container .form-section {
+		padding: 0.8rem 0.5rem;
+		border-radius: 0.7rem;
+	}
+}
+
+/* ========== ENHANCED FORM STYLING ========== */
+
+/* Modern Form Container */
+.modern-form-container {
+    background: #ffffff;
+    border-radius: 2rem;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+    border: 1px solid #e5e7eb;
+    padding: 2.5rem;
+    margin: 2rem 0;
+    position: relative;
+    overflow: hidden;
+}
+
+.modern-form-container::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #2563eb, #1d4ed8);
+    z-index: 1;
+}
+
+/* Modern Form Input Styles */
+::deep .modern-input,
+::deep .form-control {
+    border: 2px solid #d1d5db !important;
+    border-radius: 12px !important;
+    padding: 0.875rem 1.125rem !important;
+    font-size: 1rem !important;
+    background: #ffffff !important;
+    color: #111827 !important;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    font-family: 'Inter', 'Helvetica Neue', Helvetica, Arial, sans-serif !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
+}
+
+::deep .modern-input:hover,
+::deep .modern-input:focus,
+::deep .form-control:hover,
+::deep .form-control:focus {
+    border-color: #2563eb !important;
+    background: #ffffff !important;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1), 0 4px 12px rgba(37, 99, 235, 0.15) !important;
+    transform: none !important;
+    outline: none !important;
+}
+
+::deep .modern-input::placeholder,
+::deep .form-control::placeholder {
+    color: #6b7280 !important;
+    font-weight: 400 !important;
+    font-size: 0.95rem !important;
+}
+
+/* Textarea Specific Styles */
+::deep textarea.modern-input,
+::deep textarea.form-control {
+    resize: vertical !important;
+    min-height: 120px !important;
+    line-height: 1.6 !important;
+}
+
+/* Modern Form Labels */
+.modern-form-label,
+::deep .form-label {
+    font-weight: 600 !important;
+    color: #111827 !important;
+    font-size: 1rem !important;
+    margin-bottom: 0.5rem !important;
+    letter-spacing: 0.025em !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 0.5rem !important;
+}
+
+.modern-form-label .required,
+::deep .form-label .text-danger {
+    color: #dc2626 !important;
+    font-weight: 700 !important;
+}
+
+/* Form Help Text */
+.modern-form-text,
+::deep .form-text {
+    color: #4b5563 !important;
+    font-size: 0.875rem !important;
+    margin-top: 0.375rem !important;
+    font-weight: 400 !important;
+    line-height: 1.5 !important;
+}
+
+/* Modern Switch/Checkbox Styling */
+::deep .form-check {
+    margin-bottom: 1.5rem !important;
+    padding: 1.25rem !important;
+    background: #f9fafb !important;
+    border-radius: 12px !important;
+    border: 1px solid #e5e7eb !important;
+    transition: all 0.3s ease !important;
+}
+
+::deep .form-check:hover {
+    background: #f3f4f6 !important;
+    border-color: #d1d5db !important;
+    transform: translateY(-1px) !important;
+}
+
+::deep .form-check-input {
+    width: 1.5rem !important;
+    height: 1.5rem !important;
+    border: 2px solid #9ca3af !important;
+    border-radius: 6px !important;
+    transition: all 0.3s ease !important;
+}
+
+::deep .form-check-input:checked {
+    background-color: #2563eb !important;
+    border-color: #2563eb !important;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1) !important;
+}
+
+::deep .form-check-input:focus {
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2) !important;
+}
+
+::deep .form-check-label {
+    font-weight: 500 !important;
+    color: #111827 !important;
+    font-size: 1rem !important;
+    margin-left: 0.75rem !important;
+    line-height: 1.5 !important;
+}
+
+/* Modern Button Styles */
+.modern-btn-primary,
+::deep .btn-success {
+    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
+    border: none !important;
+    border-radius: 12px !important;
+    padding: 0.875rem 2rem !important;
+    font-weight: 600 !important;
+    font-size: 1rem !important;
+    color: #ffffff !important;
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25) !important;
+    transition: all 0.3s ease !important;
+    text-transform: none !important;
+    letter-spacing: 0.025em !important;
+}
+
+.modern-btn-primary:hover,
+::deep .btn-success:hover {
+    transform: translateY(-1px) !important;
+    box-shadow: 0 6px 16px rgba(37, 99, 235, 0.35) !important;
+    background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%) !important;
+    color: #ffffff !important;
+}
+
+.modern-btn-primary:focus,
+::deep .btn-success:focus {
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2), 0 4px 12px rgba(37, 99, 235, 0.25) !important;
+    outline: none !important;
+}
+
+.modern-btn-secondary,
+::deep .btn-outline-secondary {
+    background: #ffffff !important;
+    border: 2px solid #d1d5db !important;
+    border-radius: 12px !important;
+    padding: 0.875rem 2rem !important;
+    font-weight: 600 !important;
+    color: #374151 !important;
+    transition: all 0.3s ease !important;
+}
+
+.modern-btn-secondary:hover,
+::deep .btn-outline-secondary:hover {
+    background: #f9fafb !important;
+    border-color: #9ca3af !important;
+    transform: translateY(-1px) !important;
+    color: #111827 !important;
+}
+
+.modern-btn-secondary:focus,
+::deep .btn-outline-secondary:focus {
+    box-shadow: 0 0 0 3px rgba(156, 163, 175, 0.2) !important;
+    outline: none !important;
+}
+
+/* GWA Field Styling */
+.gwa-field {
+    margin-bottom: 2rem !important;
+    padding: 1.5rem !important;
+    background: linear-gradient(135deg, rgba(37, 99, 235, 0.04) 0%, rgba(29, 78, 216, 0.02) 100%) !important;
+    border-radius: 16px !important;
+    border: 1px solid rgba(37, 99, 235, 0.15) !important;
+    position: relative !important;
+    overflow: hidden !important;
+}
+
+.gwa-field::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #2563eb, #1d4ed8);
+    border-radius: 16px 16px 0 0;
+}
+
+.gwa-label {
+    font-weight: 700 !important;
+    color: #111827 !important;
+    font-size: 1.1rem !important;
+    margin-bottom: 0.75rem !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 0.5rem !important;
+}
+
+.gwa-label .required {
+    color: #dc2626 !important;
+    font-weight: 700 !important;
+}
+
+.gwa-input-wrapper {
+    position: relative !important;
+    margin-bottom: 0.5rem !important;
+}
+
+.gwa-input {
+    width: 100% !important;
+    padding: 1rem 1.25rem !important;
+    border: 2px solid #d1d5db !important;
+    border-radius: 12px !important;
+    font-size: 1.125rem !important;
+    font-weight: 600 !important;
+    background: #ffffff !important;
+    color: #2563eb !important;
+    text-align: center !important;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
+}
+
+.gwa-input:focus {
+    border-color: #2563eb !important;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1), 0 4px 12px rgba(37, 99, 235, 0.15) !important;
+    transform: none !important;
+    outline: none !important;
+}
+
+.gwa-help {
+    color: #4b5563 !important;
+    font-size: 0.875rem !important;
+    text-align: center !important;
+    font-weight: 500 !important;
+    line-height: 1.5 !important;
+}
+
+/* File Upload Section */
+.file-upload-section {
+    background: #f9fafb !important;
+    border: 2px dashed #9ca3af !important;
+    border-radius: 16px !important;
+    padding: 2rem !important;
+    text-align: center !important;
+    transition: all 0.3s ease !important;
+    position: relative !important;
+    overflow: hidden !important;
+}
+
+.file-upload-section:hover {
+    border-color: #2563eb !important;
+    background: rgba(37, 99, 235, 0.03) !important;
+    transform: translateY(-1px) !important;
+}
+
+.file-upload-section::after {
+    content: '\f093'; /* FontAwesome cloud-upload icon */
+    font-family: 'Font Awesome 6 Free';
+    font-weight: 900;
+    font-size: 3rem;
+    display: block;
+    margin-bottom: 1rem;
+    opacity: 0.7;
+    color: #6b7280;
+}
+
+::deep .file-upload-section input[type="file"] {
+    background: transparent !important;
+    border: none !important;
+    padding: 1rem !important;
+    font-size: 1rem !important;
+    color: #374151 !important;
+}
+
+/* File List Styling */
+.file-item {
+    background: #ffffff !important;
+    border: 1px solid #e5e7eb !important;
+    border-radius: 12px !important;
+    padding: 1rem !important;
+    margin-bottom: 0.75rem !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    transition: all 0.3s ease !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
+}
+
+.file-item:hover {
+    border-color: #2563eb !important;
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.1) !important;
+    transform: translateY(-1px) !important;
+}
+
+.file-item i {
+    color: #2563eb !important;
+    font-size: 1.25rem !important;
+    margin-right: 0.75rem !important;
+}
+
+.file-remove-btn {
+    background: #fef2f2 !important;
+    border: 1px solid #fecaca !important;
+    color: #dc2626 !important;
+    border-radius: 8px !important;
+    padding: 0.375rem 0.75rem !important;
+    font-size: 0.875rem !important;
+    transition: all 0.3s ease !important;
+}
+
+.file-remove-btn:hover {
+    background: #fee2e2 !important;
+    border-color: #f87171 !important;
+    transform: scale(1.05) !important;
+}
+
+.file-remove-btn:focus {
+    box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1) !important;
+    outline: none !important;
+}
+
+/* Progress Bar Styling */
+::deep .progress {
+    height: 8px !important;
+    border-radius: 8px !important;
+    background: #e5e7eb !important;
+    overflow: hidden !important;
+    margin-top: 0.5rem !important;
+}
+
+::deep .progress-bar {
+    background: linear-gradient(90deg, #2563eb, #1d4ed8) !important;
+    border-radius: 8px !important;
+    transition: width 0.3s ease !important;
+}
+
+/* Alert Styling */
+::deep .alert {
+    border-radius: 12px !important;
+    border: 1px solid transparent !important;
+    padding: 1.25rem 1.5rem !important;
+    margin: 1.5rem 0 !important;
+    font-weight: 500 !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
+}
+
+::deep .alert-info {
+    background: #eff6ff !important;
+    color: #1e40af !important;
+    border-color: #bfdbfe !important;
+    border-left: 4px solid #3b82f6 !important;
+}
+
+::deep .alert-success {
+    background: #f0fdf4 !important;
+    color: #166534 !important;
+    border-color: #bbf7d0 !important;
+    border-left: 4px solid #22c55e !important;
+}
+
+::deep .alert-danger {
+    background: #fef2f2 !important;
+    color: #991b1b !important;
+    border-color: #fecaca !important;
+    border-left: 4px solid #ef4444 !important;
+}
+
+::deep .alert-warning {
+    background: #fffbeb !important;
+    color: #92400e !important;
+    border-color: #fed7aa !important;
+    border-left: 4px solid #f59e0b !important;
+}
+
+/* Badge Styling */
+::deep .badge {
+    border-radius: 8px !important;
+    padding: 0.5rem 1rem !important;
+    font-weight: 600 !important;
+    font-size: 0.875rem !important;
+    letter-spacing: 0.025em !important;
+}
+
+::deep .badge.bg-warning {
+    background: #fbbf24 !important;
+    color: #92400e !important;
+    border: 1px solid #f59e0b !important;
+}
+
+::deep .badge.bg-success {
+    background: #22c55e !important;
+    color: #ffffff !important;
+    border: 1px solid #16a34a !important;
+}
+
+::deep .badge.bg-primary {
+    background: #2563eb !important;
+    color: #ffffff !important;
+    border: 1px solid #1d4ed8 !important;
+}
+
+/* Validation Message Styling */
+::deep .validation-message {
+    color: #dc2626 !important;
+    font-size: 0.875rem !important;
+    font-weight: 500 !important;
+    margin-top: 0.375rem !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 0.375rem !important;
+    background: #fef2f2 !important;
+    padding: 0.5rem 0.75rem !important;
+    border-radius: 8px !important;
+    border: 1px solid #fecaca !important;
+}
+
+::deep .validation-message::before {
+    content: '⚠️';
+    font-size: 0.875rem;
+}
+
+/* Modal Enhancements */
+.modern-modal {
+    backdrop-filter: blur(10px) !important;
+}
+
+.modern-modal .modal-content {
+    border-radius: 20px !important;
+    border: none !important;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15) !important;
+    overflow: hidden !important;
+}
+
+.modern-modal .modal-header {
+    background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%) !important;
+    color: white !important;
+    border: none !important;
+    padding: 2rem !important;
+    text-align: center !important;
+}
+
+.modern-modal .modal-body {
+    padding: 2rem !important;
+    background: #ffffff !important;
+}
+
+/* Spinner Styling */
+::deep .spinner-border {
+    color: #2563eb !important;
+    width: 1.25rem !important;
+    height: 1.25rem !important;
+    border-width: 2px !important;
+}
+
+::deep .spinner-border.text-primary {
+    color: #2563eb !important;
+}
+
+/* Loading States */
+.loading-overlay {
+    background: rgba(255, 255, 255, 0.95) !important;
+}
+
+.loading-spinner {
+    color: #2563eb !important;
+}
+
+/* Loading States */
+.loading-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.9);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+    border-radius: 12px;
+}
+
+.loading-spinner {
+    color: #1560d4;
+    font-size: 2rem;
+}
+
+/* Form Animation */
+.modern-form-container {
+    animation: slideInUp 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes slideInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
     }
-.form-section:hover {
-    background-color: #f9fbfc;
-    border-radius: 8px;
-}
-textarea.form-control {
-    resize: vertical;
-}
-.form-label {
-    font-size: 0.95rem;
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
-.section-header {
-    background: linear-gradient(135deg, #1976d2, #64b5f6);
-    color: white;
-    border-bottom: none;
-    padding: 0.75rem 1.25rem;
-    border-top-left-radius: 0.5rem;
-    border-top-right-radius: 0.5rem;
+/* Focus Ring Enhancement */
+::deep .modern-input:focus-visible,
+::deep .form-control:focus-visible {
+    outline: 2px solid #1560d4 !important;
+    outline-offset: 2px !important;
 }
-.card {
-    border-radius: 0.75rem;
+
+/* Custom Scrollbar for Textareas */
+::deep textarea.modern-input::-webkit-scrollbar,
+::deep textarea.form-control::-webkit-scrollbar {
+    width: 8px;
 }
-.form-label {
-    font-size: 0.95rem;
+
+::deep textarea.modern-input::-webkit-scrollbar-track,
+::deep textarea.form-control::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 4px;
 }
-textarea.form-control {
-    resize: vertical;
+
+::deep textarea.modern-input::-webkit-scrollbar-thumb,
+::deep textarea.form-control::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 4px;
 }
-.form-text {
-    font-size: 0.85rem;
+
+::deep textarea.modern-input::-webkit-scrollbar-thumb:hover,
+::deep textarea.form-control::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+/* Enhanced Disabled State */
+.modern-btn-primary:disabled,
+::deep .btn-success:disabled {
+    background: #f3f4f6 !important;
+    color: #9ca3af !important;
+    cursor: not-allowed !important;
+    transform: none !important;
+    box-shadow: none !important;
+    border: 1px solid #e5e7eb !important;
+    opacity: 0.6 !important;
+}
+
+/* Form Progress Indicator */
+.form-progress-indicator {
+    background: rgba(21, 96, 212, 0.1);
+    border-radius: 12px;
+    padding: 1rem;
+    margin-bottom: 2rem;
+    border: 1px solid rgba(21, 96, 212, 0.2);
+}
+
+.progress-bar-custom {
+    height: 8px;
+    border-radius: 8px;
+    background: #e2e8f0;
+    overflow: hidden;
+    margin: 0.5rem 0;
+}
+
+/* Hover Effects for Interactive Elements */
+.modern-form-container .form-check:hover .form-check-input {
+    transform: scale(1.05);
+}
+
+.modern-form-container .file-item:hover .file-remove-btn {
+    transform: scale(1.1);
+}
+
+/* Dark Mode Support (Optional) */
+@media (prefers-color-scheme: dark) {
+    .modern-form-container {
+        background: #1e293b;
+        color: #f1f5f9;
+    }
+    
+    ::deep .modern-input,
+    ::deep .form-control {
+        background: #334155 !important;
+        color: #f1f5f9 !important;
+        border-color: #475569 !important;
+    }
+    
+    .modern-form-label,
+    ::deep .form-label {
+        color: #f1f5f9 !important;
+    }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .modern-form-container {
+        padding: 1.5rem !important;
+        border-radius: 1rem !important;
+        margin: 1rem 0 !important;
+    }
+    
+    .gwa-field {
+        padding: 1rem !important;
+    }
+    
+    .modern-btn-primary,
+    .modern-btn-secondary,
+    ::deep .btn-success,
+    ::deep .btn-outline-secondary {
+        padding: 0.75rem 1.5rem !important;
+        font-size: 0.95rem !important;
+        width: 100% !important;
+        margin-bottom: 0.75rem !important;
+    }
+    
+    .d-flex.justify-content-between .modern-btn-primary,
+    .d-flex.justify-content-between .modern-btn-secondary {
+        width: 48% !important;
+        margin-bottom: 0 !important;
+    }
+    
+    .file-upload-section {
+        padding: 1.5rem !important;
+    }
+    
+    .file-upload-section::before {
+        font-size: 2rem;
+        margin-bottom: 0.5rem;
+    }
+    
+    .file-item {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 0.75rem !important;
+    }
+    
+    .file-remove-btn {
+        align-self: flex-end !important;
+    }
+    
+    .modern-modal .modal-dialog {
+        width: 95% !important;
+        max-width: none !important;
+    }
+}
+
+@media (max-width: 480px) {
+    .d-flex.justify-content-between {
+        flex-direction: column !important;
+        gap: 0.75rem !important;
+    }
+    
+    .d-flex.justify-content-between .modern-btn-primary,
+    .d-flex.justify-content-between .modern-btn-secondary {
+        width: 100% !important;
+    }
+    
+    .scholarship-title-banner {
+        padding: 1rem 1rem !important;
+    }
+    
+    .title {
+        font-size: 1rem !important;
+    }
+}
+
+/* Scholarship Application Statistics Container */
+.application-stats-container {
+    background: linear-gradient(90deg, #2563eb 0%, #3b82f6 100%);
+    border-radius: 18px;
+    box-shadow: 0 2px 12px rgba(37,99,235,0.10);
+    padding: 1.5rem 2rem;
+    margin-bottom: 2rem;
+    color: #fff;
+    position: relative;
+    max-width: 900px;
+    margin-left: auto;
+    margin-right: auto;
+}
+.application-stats-title {
+    font-size: 1.3rem;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    color: #fff;
+    margin-bottom: 1.2rem;
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+}
+.application-stats-cards {
+    display: flex;
+    gap: 1.5rem;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+.stat-card {
+    background: rgba(255,255,255,0.13);
+    border-radius: 14px;
+    box-shadow: 0 2px 8px rgba(37,99,235,0.10);
+    padding: 1.1rem 1.7rem;
+    min-width: 120px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    transition: box-shadow 0.2s, transform 0.2s;
+    position: relative;
+}
+.stat-card:hover {
+    box-shadow: 0 4px 16px rgba(37,99,235,0.18);
+    transform: translateY(-2px) scale(1.04);
+}
+.stat-icon {
+    font-size: 1.7rem;
+    color: #fff;
+    margin-bottom: 0.2rem;
+    filter: drop-shadow(0 2px 6px rgba(37,99,235,0.18));
+}
+.stat-label {
+    font-size: 1rem;
+    color: #e0e7ff;
+    font-weight: 500;
+    margin-bottom: 0.1rem;
+}
+.stat-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #fff;
+    letter-spacing: 0.5px;
+}
+.stat-total .stat-icon { color: #fff; }
+.stat-approved .stat-icon { color: #34d399; }
+.stat-pending .stat-icon { color: #fbbf24; }
+.stat-rejected .stat-icon { color: #f87171; }
+
+@media (max-width: 700px) {
+    .application-stats-cards {
+        gap: 0.7rem;
+    }
+    .stat-card {
+        padding: 0.8rem 1rem;
+        min-width: 90px;
+    }
+    .application-stats-container {
+        padding: 1rem 0.5rem;
+    }
 }

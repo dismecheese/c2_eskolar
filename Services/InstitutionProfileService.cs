@@ -31,11 +31,12 @@ namespace c2_eskolar.Services
                 if (string.IsNullOrWhiteSpace(profile.AdminFirstName) || string.IsNullOrWhiteSpace(profile.AdminLastName))
                     throw new ArgumentException("AdminFirstName and AdminLastName are required.");
                 
-                // Set default values for new profiles
+                // Set default values for new profiles submitted for verification
                 profile.CreatedAt = DateTime.Now;
                 profile.UpdatedAt = DateTime.Now;
                 profile.IsVerified = false;
                 profile.VerificationStatus = "Pending";
+                profile.AccountStatus = "Pending";
                 
                 context.InstitutionProfiles.Add(profile);
             }

@@ -1,5 +1,0 @@
-@startuml
-class AddInstitutionalEmailToStudentProfile <<partial>> {
-}
-Migration <|-- AddInstitutionalEmailToStudentProfile
-@enduml

@@ -1,5 +1,0 @@
-@startuml
-class AddVerificationFieldsToStudentProfile <<partial>> {
-}
-Migration <|-- AddVerificationFieldsToStudentProfile
-@enduml

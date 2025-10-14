@@ -1,7 +1,0 @@
-@startuml
-class InstitutionProfileService {
-    + InstitutionProfileService(contextFactory:IDbContextFactory<ApplicationDbContext>)
-    + <<async>> GetProfileByUserIdAsync(userId:string) : Task<InstitutionProfile?>
-    + <<async>> SaveProfileAsync(profile:InstitutionProfile) : Task
-}
-@enduml

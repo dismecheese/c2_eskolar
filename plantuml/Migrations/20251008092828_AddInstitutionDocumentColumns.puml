@@ -1,5 +1,0 @@
-@startuml
-class AddInstitutionDocumentColumns <<partial>> {
-}
-Migration <|-- AddInstitutionDocumentColumns
-@enduml

@@ -1,0 +1,71 @@
+/* Application Summary Banner Styles */
+.app-summary-banner {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    background: linear-gradient(90deg, #2563eb 0%, #3b82f6 100%);
+    border-radius: 18px;
+    box-shadow: 0 2px 12px rgba(37,99,235,0.10);
+    padding: 1.5rem 2rem;
+    margin-bottom: 2rem;
+    color: #fff;
+    position: relative;
+    min-height: 90px;
+}
+
+.banner-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255,255,255,0.18);
+    border-radius: 50%;
+    width: 64px;
+    height: 64px;
+    margin-right: 1.5rem;
+    box-shadow: 0 2px 8px rgba(37,99,235,0.10);
+}
+
+.banner-icon i {
+    font-size: 2.5rem;
+    color: #fff;
+    filter: drop-shadow(0 2px 6px rgba(37,99,235,0.18));
+}
+
+.banner-text {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.banner-title {
+    font-size: 2rem;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    color: #fff;
+    margin-bottom: 0.25rem;
+}
+
+.banner-subtitle {
+    font-size: 1.1rem;
+    color: #e0e7ff;
+    font-weight: 400;
+    opacity: 0.85;
+}
+
+@media (max-width: 600px) {
+    .app-summary-banner {
+        flex-direction: column;
+        align-items: flex-start;
+        padding: 1rem 1rem;
+    }
+    .banner-icon {
+        margin-right: 0;
+        margin-bottom: 0.75rem;
+    }
+    .banner-title {
+        font-size: 1.3rem;
+    }
+    .banner-subtitle {
+        font-size: 0.95rem;
+    }
+}

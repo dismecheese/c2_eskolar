@@ -41,13 +41,31 @@
         private bool showVerificationModal = false;
         private bool? isVerified = null;
         private string? verificationStatus = null;
+        private string? accountStatus = null;
         private string? userId;
+
+        // --- LOGOUT MODAL STATE ---
+        private bool showLogoutModal = false;
 
         // --- VERIFICATION MODAL LOGIC ---
         private async Task CheckVerificationStatus()
         {
+            // Prevent modal on verification page
+            var currentUri = Navigation.Uri;
+            if (currentUri.Contains("/student/verification"))
+            {
+                showVerificationModal = false;
+                return;
+            }
             try
             {
+                var currentPath = Navigation.ToBaseRelativePath(Navigation.Uri).Split('?')[0].TrimEnd('/').ToLower();
+                // Prevent modal on verification page
+                if (currentPath == "student/verification")
+                {
+                    showVerificationModal = false;
+                    return;
+                }
                 var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
                 userId = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
                 if (!string.IsNullOrEmpty(userId))
@@ -55,8 +73,9 @@
                     var profile = await StudentProfileService.GetProfileByUserIdAsync(userId);
                     isVerified = profile?.IsVerified;
                     verificationStatus = profile?.VerificationStatus;
-                    // Show modal if not verified (null or false) or status is not "Verified"
-                    if (isVerified != true && (string.IsNullOrEmpty(verificationStatus) || verificationStatus != "Verified"))
+                    accountStatus = profile?.AccountStatus;
+                    // Show modal if not verified (null or false) or account status is not "Verified"
+                    if (isVerified != true && (string.IsNullOrEmpty(accountStatus) || accountStatus != "Verified"))
                     {
                         showVerificationModal = true;
                     }
@@ -79,6 +98,23 @@
             showVerificationModal = false;
             Navigation.NavigateTo("/dashboard/unverified");
         }
+
+        // --- LOGOUT MODAL LOGIC ---
+        private void ShowLogoutModal()
+        {
+            showLogoutModal = true;
+        }
+
+        private void CancelLogout()
+        {
+            showLogoutModal = false;
+        }
+
+        private void ConfirmLogout()
+        {
+            showLogoutModal = false;
+            LogOut();
+        }
     
     // --- LIFECYCLE METHODS ---
 
@@ -89,7 +125,7 @@
         await LoadCurrentUser();
         await LoadStudentProfile();
         await LoadNotifications();
-            await CheckVerificationStatus();
+        await CheckVerificationStatus();
     }
 
         private async Task LoadStudentProfile()
@@ -250,6 +286,18 @@
         Navigation.NavigateTo("/dashboard/student/profile/");
     }
 
+    // Gets the appropriate dashboard URL based on verification status
+    private string GetDashboardUrl()
+    {
+        // If user is verified, go to verified dashboard
+        if (isVerified == true && accountStatus == "Verified")
+        {
+            return "/dashboard/student";
+        }
+        // If user is not verified, go to unverified dashboard
+        return "/dashboard/unverified";
+    }
+
     // --- CHATBOT STATE ---
     private bool ShowChatbot = false;
     private void OpenChatbot() => ShowChatbot = true;
@@ -269,26 +317,7 @@
         }
     }
 
-    private async Task ShowLogoutModal()
-    {
-        try
-        {
-            await JSRuntime.InvokeVoidAsync("eval", @"
-                if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
-                    const modal = new bootstrap.Modal(document.getElementById('logoutModal'));
-                    modal.show();
-                } else {
-                    console.error('Bootstrap not loaded');
-                }
-            ");
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Modal error: {ex.Message}");
-            // Fallback to direct logout if modal fails
-            LogOut();
-        }
-    }
+
 
     // --- NOTIFICATION MODEL ---
     // Defines a notification item
@@ -311,7 +340,7 @@
         <div>
             <!-- Logo Section -->
             <div class="sidebar-brand-container text-center">
-                <a class="eskolar-logo" href="/dashboard/student">
+                <a class="eskolar-logo" href="@GetDashboardUrl()">
                     <img src="images/main/eSkolar-White.svg" alt="eSkolar Logo" class="eskolar-logo-img" />
                 </a>
             </div>
@@ -319,7 +348,7 @@
             <!-- Navigation Links -->
             <ul class="nav flex-column gap-1">
                 <li class="nav-item">
-                    <a href="/dashboard/student" class="@GetSidebarLinkClass("/dashboard/student")">
+                    <a href="@GetDashboardUrl()" class="@GetSidebarLinkClass(GetDashboardUrl())">
                         <i class="fa fa-home"></i> Dashboard
                     </a>
                 </li>
@@ -493,35 +522,11 @@
                 </div>
         }
 
+        <LogoutModal IsVisible="@showLogoutModal" OnCancel="@CancelLogout" OnConfirm="@ConfirmLogout" />
+
 </div>
 
-<!-- Logout Confirmation Modal -->
-<div class="modal fade" id="logoutModal" tabindex="-1" aria-labelledby="logoutModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header border-0">
-                <h5 class="modal-title text-danger" id="logoutModalLabel">
-                    <i class="fas fa-sign-out-alt me-2"></i>
-                    Confirm Logout
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body text-center py-4">
-                <i class="fas fa-exclamation-triangle text-warning mb-3" style="font-size: 3rem;"></i>
-                <h6>Are you sure you want to logout?</h6>
-                <p class="text-muted mb-0">You will be redirected to the login page.</p>
-            </div>
-            <div class="modal-footer border-0 justify-content-center">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                    <i class="fas fa-times me-2"></i>Cancel
-                </button>
-                <button type="button" class="btn btn-danger" @onclick="LogOut" data-bs-dismiss="modal">
-                    <i class="fas fa-sign-out-alt me-2"></i>Yes, Logout
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
+
 
 <!-- JavaScript helper to close Bootstrap offcanvas programmatically -->
 <script>

@@ -516,6 +516,7 @@
     private void SkipVerification()
     {
         showVerificationModal = false;
+        Navigation.NavigateTo("/dashboard/unverified");
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)

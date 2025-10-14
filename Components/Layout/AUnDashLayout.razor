@@ -1,0 +1,466 @@
+
+@inherits LayoutComponentBase
+@implements IDisposable
+
+@inject NavigationManager Navigation
+@inject IJSRuntime JSRuntime
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject UserManager<IdentityUser> UserManager
+@inject InstitutionProfileService InstitutionProfileService
+@inject BenefactorProfileService BenefactorProfileService
+
+@using Microsoft.AspNetCore.Components.Web
+@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.AspNetCore.Identity
+@using c2_eskolar.Components.UI
+@using System.ComponentModel.DataAnnotations
+
+@rendermode InteractiveServer
+
+@code {
+    // --- SIDEBAR/PROFILE STATE ---
+    private string? adminFirstName;
+    private string? adminLastName;
+    private DateTime currentMonth = new(DateTime.Now.Year, DateTime.Now.Month, 1);
+
+    // --- VERIFICATION MODAL STATE ---
+    private bool showVerificationModal = false;
+    private bool? isVerified = null;
+    private string? verificationStatus = null;
+    private string? userId;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await DebugUserState();
+        await LoadInstitutionProfile();
+        await CheckVerificationStatus();
+    }
+
+    private async Task DebugUserState()
+    {
+        try
+        {
+            var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+            var user = authState.User;
+            var userId = user.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            var roles = user.Claims.Where(c => c.Type == System.Security.Claims.ClaimTypes.Role).Select(c => c.Value);
+            
+            Console.WriteLine($"[DEBUG] User authenticated: {user.Identity?.IsAuthenticated ?? false}");
+            Console.WriteLine($"[DEBUG] User ID: {userId ?? "null"}");
+            Console.WriteLine($"[DEBUG] User roles: {string.Join(", ", roles)}");
+            Console.WriteLine($"[DEBUG] Current URL: {Navigation.Uri}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[DEBUG] Error checking user state: {ex.Message}");
+        }
+    }
+
+    private async Task CheckVerificationStatus()
+    {
+        try
+        {
+            var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+            userId = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (!string.IsNullOrEmpty(userId))
+            {
+                // Try institution profile first
+                var institutionProfile = await InstitutionProfileService.GetProfileByUserIdAsync(userId);
+                if (institutionProfile != null)
+                {
+                    isVerified = institutionProfile?.IsVerified;
+                    verificationStatus = institutionProfile?.VerificationStatus;
+                }
+                else
+                {
+                    // Try benefactor profile
+                    var benefactorProfile = await BenefactorProfileService.GetProfileByUserIdAsync(userId);
+                    if (benefactorProfile != null)
+                    {
+                        isVerified = benefactorProfile?.IsVerified;
+                        verificationStatus = benefactorProfile?.VerificationStatus;
+                    }
+                }
+                
+                // Show modal if not verified (null or false) or status is not "Verified"
+                if (isVerified != true && (string.IsNullOrEmpty(verificationStatus) || verificationStatus != "Verified"))
+                {
+                    showVerificationModal = true;
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error checking verification status: {ex.Message}");
+        }
+    }
+
+    private async Task LoadInstitutionProfile()
+    {
+        try
+        {
+            var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+            var userId = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (!string.IsNullOrEmpty(userId))
+            {
+                // Try to load institution profile first
+                var institutionProfile = await InstitutionProfileService.GetProfileByUserIdAsync(userId);
+                if (institutionProfile != null)
+                {
+                    adminFirstName = institutionProfile?.AdminFirstName;
+                    adminLastName = institutionProfile?.AdminLastName;
+                }
+                else
+                {
+                    // If no institution profile, try benefactor profile
+                    var benefactorProfile = await BenefactorProfileService.GetProfileByUserIdAsync(userId);
+                    if (benefactorProfile != null)
+                    {
+                        adminFirstName = benefactorProfile?.AdminFirstName;
+                        adminLastName = benefactorProfile?.AdminLastName;
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading profile: {ex.Message}");
+        }
+        StateHasChanged();
+    }
+
+    private string GetSidebarLinkClass(string href)
+    {
+        var currentPath = Navigation.ToBaseRelativePath(Navigation.Uri).Split('?')[0].TrimEnd('/');
+        var linkPath = href.TrimStart('/').TrimEnd('/');
+        if (currentPath == linkPath)
+            return "nav-link d-flex align-items-center gap-2 sidebar-link active";
+        return "nav-link d-flex align-items-center gap-2 sidebar-link";
+    }
+
+    private void NavigateToUnverifiedProfile()
+    {
+        var currentPath = Navigation.ToBaseRelativePath(Navigation.Uri);
+        var profileUrl = currentPath.Contains("/institution/") 
+            ? "/dashboard/institution/unverified/profile" 
+            : "/dashboard/benefactor/unverified/profile";
+        Navigation.NavigateTo(profileUrl);
+    }
+
+    // Helper method to determine user type
+    private async Task<bool> IsInstitutionUser()
+    {
+        try
+        {
+            var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+            var userId = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (!string.IsNullOrEmpty(userId))
+            {
+                var institutionProfile = await InstitutionProfileService.GetProfileByUserIdAsync(userId);
+                return institutionProfile != null;
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error determining user type: {ex.Message}");
+        }
+        return false; // Default to benefactor if unsure
+    }
+
+    // Helper methods for dynamic routing
+    private string GetDashboardUrl()
+    {
+        var currentPath = Navigation.ToBaseRelativePath(Navigation.Uri);
+        return currentPath.Contains("/institution/") 
+            ? "/dashboard/institution/unverified" 
+            : "/dashboard/benefactor/unverified";
+    }
+
+    private string GetPageUrl(string page)
+    {
+        var currentPath = Navigation.ToBaseRelativePath(Navigation.Uri);
+        var baseUrl = currentPath.Contains("/institution/") 
+            ? "/dashboard/institution/unverified" 
+            : "/dashboard/benefactor/unverified";
+        return $"{baseUrl}/{page}";
+    }
+
+    // --- LOGOUT FUNCTIONALITY ---
+    private void LogOut()
+    {
+        try
+        {
+            Console.WriteLine("LogOut called - navigating to logout endpoint");
+            Navigation.NavigateTo("/api/auth/logout", forceLoad: true);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error in LogOut: {ex.Message}");
+            // Fallback: try alternative logout approach
+            try
+            {
+                Navigation.NavigateTo("/logout", forceLoad: true);
+            }
+            catch (Exception fallbackEx)
+            {
+                Console.WriteLine($"Fallback logout failed: {fallbackEx.Message}");
+            }
+        }
+    }
+
+    // Logout modal state and handlers (use shared sv-modal styles)
+    private bool showLogoutModal = false;
+    private async Task ShowLogoutModal() 
+    {
+        try
+        {
+            Console.WriteLine("ShowLogoutModal called - setting modal visible");
+            showLogoutModal = true;
+            await InvokeAsync(StateHasChanged);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error in ShowLogoutModal: {ex.Message}");
+        }
+    }
+    private async Task CancelLogout() 
+    {
+        try
+        {
+            Console.WriteLine("CancelLogout called");
+            showLogoutModal = false;
+            await InvokeAsync(StateHasChanged);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error in CancelLogout: {ex.Message}");
+        }
+    }
+    
+    private async Task ConfirmLogout()
+    {
+        try
+        {
+            Console.WriteLine("ConfirmLogout called - starting logout process");
+            showLogoutModal = false;
+            await InvokeAsync(StateHasChanged);
+            LogOut();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error in ConfirmLogout: {ex.Message}");
+        }
+    }
+
+    // --- CHATBOT STATE ---
+    private bool ShowChatbot = false;
+    private void OpenChatbot() => ShowChatbot = true;
+    private void CloseChatbot() => ShowChatbot = false;
+    private void MinimizeChatbot() => ShowChatbot = false;
+    
+    // --- VERIFICATION MODAL ACTIONS ---
+    private void GoToVerification()
+    {
+        showVerificationModal = false;
+        var currentPath = Navigation.ToBaseRelativePath(Navigation.Uri);
+        var verificationUrl = currentPath.Contains("/institution/") 
+            ? "/institution/verification" 
+            : "/benefactor/verification";
+        Navigation.NavigateTo(verificationUrl);
+    }
+
+    private void SkipVerification()
+    {
+        showVerificationModal = false;
+        Navigation.NavigateTo(GetDashboardUrl());
+    }
+    
+    public void Dispose() { }
+}
+
+<!-- --- MAIN LAYOUT STRUCTURE --- -->
+
+<div class="d-flex min-vh-100">
+    <!-- --- SIDEBAR --- -->
+    <nav class="sidebar d-flex flex-column justify-content-between"
+         style="width: 260px; background: linear-gradient(180deg, #1560d4 0%, #0d387e 100%); padding: 2rem 1.5rem 1rem 1.5rem;">
+        
+        <div>
+            <!-- Logo Section -->
+            <div class="sidebar-brand-container text-center">
+                <a class="eskolar-logo" href="@GetDashboardUrl()">
+                    <img src="images/main/eSkolar-White.svg" alt="eSkolar Logo" class="eskolar-logo-img" />
+                </a>
+            </div>
+
+            <!-- Navigation Links -->
+            <ul class="nav flex-column gap-1">
+                <li class="nav-item">
+                    <a href="@GetDashboardUrl()" class="@GetSidebarLinkClass(GetDashboardUrl())">
+                        <i class="fa fa-home"></i> Dashboard
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="@GetPageUrl("scholarships")" class="@GetSidebarLinkClass(GetPageUrl("scholarships"))">
+                        <i class="fa fa-graduation-cap"></i> Scholarships
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="@GetPageUrl("announcements")" class="@GetSidebarLinkClass(GetPageUrl("announcements"))">
+                        <i class="fa fa-bullhorn"></i> Announcements
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="@GetPageUrl("partners")" class="@GetSidebarLinkClass(GetPageUrl("partners"))">
+                        <i class="fa fa-handshake"></i> Partners
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="@GetPageUrl("analytics")" class="@GetSidebarLinkClass(GetPageUrl("analytics"))">
+                        <i class="fa fa-chart-line"></i> Analytics
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="@GetPageUrl("about")" class="@GetSidebarLinkClass(GetPageUrl("about"))">
+                        <i class="fa fa-info-circle"></i> About
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="@GetPageUrl("settings")" class="@GetSidebarLinkClass(GetPageUrl("settings"))">
+                        <i class="fa fa-cog"></i> Settings
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="@GetPageUrl("faqs")" class="@GetSidebarLinkClass(GetPageUrl("faqs"))">
+                        <i class="fa fa-question-circle"></i> FAQs
+                    </a>
+                </li>
+            </ul>
+            
+            <!-- Logout Button in Main Navigation -->
+            <div class="sidebar-logout-section mt-4 pt-3" style="border-top: 1px solid rgba(255,255,255,0.2);">
+                <button class="sidebar-link logout-link w-100 border-0 text-start" 
+                        @onclick="ShowLogoutModal"
+                        style="background: transparent; color: rgba(255,255,255,0.8); padding: 12px 16px; border-radius: 8px; transition: all 0.3s ease;">
+                    <i class="fa fa-sign-out-alt"></i> Logout
+                </button>
+            </div>
+        </div>
+
+        <!-- Help Box Button (opens chatbot) -->
+        <button class="help-box-bottom" @onclick="OpenChatbot" type="button">
+            <div class="help-box-content">
+                <img src="images/NeedHelp.svg" alt="Help" class="help-box-img" />
+                <div class="help-box-text">
+                    <div class="help-box-title">Need help?</div>
+                    <div class="help-box-desc">Having trouble using eSkolar?<br />We're here to assist you!</div>
+                </div>
+            </div>
+        </button>
+
+    </nav>
+
+            <!-- --- PROFILE SIDEBAR (Bootstrap Offcanvas) --- -->
+            <button class="dashboard-profile-absolute mt-5" type="button" data-bs-toggle="offcanvas" data-bs-target="#rightSidebar" aria-controls="rightSidebar">
+                <svg width="32" height="32" fill="none" viewBox="0 0 24 24">
+                    <circle cx="12" cy="8" r="4" stroke="#222" stroke-width="2"/>
+                    <circle cx="12" cy="12" r="11" stroke="#222" stroke-width="2"/>
+                    <path d="M4 20c1.5-3 5.5-5 8-5s6.5 2 8 5" stroke="#222" stroke-width="2"/>
+                </svg>
+            </button>
+
+            <!-- Profile Sidebar Content -->
+                <div class="offcanvas offcanvas-end" tabindex="-1" id="rightSidebar" aria-labelledby="rightSidebarLabel" data-bs-backdrop="false">
+                <div class="offcanvas-header">
+                    <h5 class="offcanvas-title" id="rightSidebarLabel">Profile</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+                </div>
+
+        <div class="offcanvas-body">
+
+    <!-- Sidebar Profile Section -->
+    <div class="sidebar-profile">
+        <svg width="32" height="32" fill="none" viewBox="0 0 24 24">
+            <circle cx="12" cy="8" r="4" stroke="#222" stroke-width="2"/>
+            <circle cx="12" cy="12" r="11" stroke="#222" stroke-width="2"/>
+            <path d="M4 20c1.5-3 5.5-5 8-5s6.5 2 8 5" stroke="#222" stroke-width="2"/>
+        </svg>
+    <div class="sidebar-profile-name">@((adminFirstName ?? "Institution") + (string.IsNullOrWhiteSpace(adminLastName) ? "" : $" {adminLastName}"))</div>
+    <div class="sidebar-profile-role">Account Pending Verification</div>
+    <button class="sidebar-profile-btn" @onclick="NavigateToUnverifiedProfile" data-bs-dismiss="offcanvas">Profile</button>
+    <button class="sidebar-profile-btn logout-btn" @onclick="ShowLogoutModal" data-bs-dismiss="offcanvas">Log Out</button>
+    </div>
+    
+    <!-- Sidebar Calendar -->
+    <div class="sidebar-calendar">
+        <DashboardCalendar CurrentMonth="@currentMonth" CurrentMonthChanged="@(m => currentMonth = m)" />
+    </div>
+
+    <!-- Sidebar Notifications -->
+    <div class="sidebar-notifications">
+        <div class="sidebar-notifications-header">
+            Notifications
+        </div>
+        <div class="sidebar-notification-list">
+            <div class="text-center text-muted p-3">
+                <i class="fa fa-bell mb-2"></i><br />
+                Please verify your institution to access full features.
+            </div>
+        </div>
+    </div>
+</div>
+</div>
+
+    <!-- --- MAIN CONTENT AREA --- -->
+    <main class="main-content" style="flex:1; min-width:0; background: #f5f6fa;">
+        @Body
+
+    </main>
+
+    @if (ShowChatbot)
+    {
+        <ChatBot CloseChatbot="CloseChatbot" MinimizeChatbot="MinimizeChatbot" />
+    }
+
+}
+
+@if (showVerificationModal)
+{
+    <div class="sv-modal sv-modal-backdrop sv-modal-fixed">
+        <div class="sv-modal-content">
+            <div class="sv-modal-header">
+                <h2>Institution Verification Required</h2>
+            </div>
+            <div class="sv-modal-body">
+                <p class="sv-modal-justify">To maintain the integrity of eSkolar, all institutions must complete verification before gaining full access to platform features.
+                Please verify your institution by providing accurate details, administrator information, and the necessary supporting documents.</p>
+            </div>
+            <div class="sv-modal-footer" style="display:flex;gap:16px;justify-content:flex-end;">
+                <button class="sv-btn sv-btn-secondary" @onclick="SkipVerification">Skip for Now</button>
+                <button class="sv-btn sv-btn-primary" @onclick="GoToVerification">Verify Institution</button>
+            </div>
+        </div>
+    </div>
+}
+
+</div>
+
+<LogoutModal IsVisible="@showLogoutModal" 
+             OnCancel="@EventCallback.Factory.Create(this, CancelLogout)" 
+             OnConfirm="@EventCallback.Factory.Create(this, ConfirmLogout)" />
+
+<!-- JavaScript helper to close Bootstrap offcanvas programmatically -->
+<script>
+document.addEventListener('click', function(event) {
+    const offcanvas = document.getElementById('rightSidebar');
+    if (offcanvas && offcanvas.classList.contains('show')) {
+        // Ignore clicks inside the offcanvas or on the toggle button
+        if (!offcanvas.contains(event.target) && !event.target.matches('[data-bs-toggle="offcanvas"]')) {
+            const bsOffcanvas = bootstrap.Offcanvas.getInstance(offcanvas);
+            if (bsOffcanvas) {
+                bsOffcanvas.hide();
+            }
+        }
+    }
+});
+</script>

@@ -202,69 +202,6 @@ builder.Services.AddScoped<AITokenTrackingService>();
                     Console.WriteLine($"❌ Failed to create SuperAdmin: {string.Join(", ", result.Errors.Select(e => e.Description))}");
                 }
             }
-            var testEmail = "student@test.com";
-            var existingUser = await userManager.FindByEmailAsync(testEmail);
-            if (existingUser == null)
-            {
-                var testUser = new IdentityUser
-                {
-                    UserName = testEmail,
-                    Email = testEmail,
-                    EmailConfirmed = true
-                };
-                var result = await userManager.CreateAsync(testUser, "Student123!");
-                if (result.Succeeded)
-                {
-                    await userManager.AddToRoleAsync(testUser, "Student");
-                    Console.WriteLine($"✅ Created test user: {testEmail} / Student123!");
-                }
-                else
-                {
-                    Console.WriteLine($"❌ Failed to create test user: {string.Join(", ", result.Errors.Select(e => e.Description))}");
-                }
-            }
-            var benefactorEmail = "benefactor@test.com";
-            var existingBenefactor = await userManager.FindByEmailAsync(benefactorEmail);
-            if (existingBenefactor == null)
-            {
-                var benefactorUser = new IdentityUser
-                {
-                    UserName = benefactorEmail,
-                    Email = benefactorEmail,
-                    EmailConfirmed = true
-                };
-                var result = await userManager.CreateAsync(benefactorUser, "Benefactor123!");
-                if (result.Succeeded)
-                {
-                    await userManager.AddToRoleAsync(benefactorUser, "Benefactor");
-                    Console.WriteLine($"✅ Created test benefactor: {benefactorEmail} / Benefactor123!");
-                }
-                else
-                {
-                    Console.WriteLine($"❌ Failed to create test benefactor: {string.Join(", ", result.Errors.Select(e => e.Description))}");
-                }
-            }
-            var institutionEmail = "institution@test.com";
-            var existingInstitution = await userManager.FindByEmailAsync(institutionEmail);
-            if (existingInstitution == null)
-            {
-                var institutionUser = new IdentityUser
-                {
-                    UserName = institutionEmail,
-                    Email = institutionEmail,
-                    EmailConfirmed = true
-                };
-                var result = await userManager.CreateAsync(institutionUser, "Institution123!");
-                if (result.Succeeded)
-                {
-                    await userManager.AddToRoleAsync(institutionUser, "Institution");
-                    Console.WriteLine($"✅ Created test institution: {institutionEmail} / Institution123!");
-                }
-                else
-                {
-                    Console.WriteLine($"❌ Failed to create test institution: {string.Join(", ", result.Errors.Select(e => e.Description))}");
-                }
-            }
             var seedService = scope.ServiceProvider.GetRequiredService<AnnouncementSeedService>();
             await seedService.SeedSampleAnnouncementsAsync();
         }

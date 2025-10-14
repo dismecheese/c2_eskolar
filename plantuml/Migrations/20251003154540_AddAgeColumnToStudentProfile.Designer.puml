@@ -1,4 +1,0 @@
-@startuml
-class AddAgeColumnToStudentProfile <<partial>> {
-}
-@enduml

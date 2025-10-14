@@ -75,7 +75,19 @@ namespace c2_eskolar.Services
         {
             try
             {
-                Console.WriteLine($"BlobStorageService: Starting upload - Container: {containerName}, File: {fileName}, Size: {fileStream.Length} bytes, ContentType: {contentType}");
+                // Try to get stream length safely
+                var streamSize = "unknown";
+                try 
+                { 
+                    if (fileStream.CanSeek)
+                        streamSize = fileStream.Length.ToString(); 
+                }
+                catch 
+                { 
+                    // Stream doesn't support Length, that's fine
+                }
+                
+                Console.WriteLine($"BlobStorageService: Starting upload - Container: {containerName}, File: {fileName}, Size: {streamSize} bytes, ContentType: {contentType}");
                 
                 var containerClient = GetContainerClient(containerName);
                 var blobClient = containerClient.GetBlobClient(fileName);
@@ -86,20 +98,39 @@ namespace c2_eskolar.Services
                 
                 var uploadOptions = new BlobUploadOptions
                 {
-                    HttpHeaders = new BlobHttpHeaders { ContentType = contentType }
+                    HttpHeaders = new BlobHttpHeaders { ContentType = contentType },
+                    Conditions = null // Remove any conditions that might cause conflicts
                 };
-                await blobClient.UploadAsync(fileStream, uploadOptions);
+                
+                var uploadResult = await blobClient.UploadAsync(fileStream, uploadOptions, cancellationToken: default);
                 
                 var blobUrl = blobClient.Uri.ToString();
                 Console.WriteLine($"[BlobStorageService] Successfully uploaded blob '{fileName}' to '{blobUrl}'");
+                Console.WriteLine($"[BlobStorageService] Upload result - ETag: {uploadResult.Value.ETag}, LastModified: {uploadResult.Value.LastModified}");
                 return blobUrl;
             }
             catch (Exception ex)
             {
-                // Log error (replace with your logger if available)
+                // Log detailed error information
                 Console.WriteLine($"[BlobStorageService] UploadFileAsync error for {fileName}: {ex.Message}");
+                Console.WriteLine($"[BlobStorageService] Exception type: {ex.GetType().Name}");
+                if (ex.InnerException != null)
+                {
+                    Console.WriteLine($"[BlobStorageService] Inner exception: {ex.InnerException.Message}");
+                }
                 Console.WriteLine($"[BlobStorageService] Stack trace: {ex.StackTrace}");
-                throw new InvalidOperationException($"Failed to upload file '{fileName}' to container '{containerName}'.", ex);
+                
+                // Check if it's a connection/authentication issue
+                if (ex.Message.Contains("authentication") || ex.Message.Contains("unauthorized") || ex.Message.Contains("forbidden"))
+                {
+                    Console.WriteLine($"[BlobStorageService] This appears to be an authentication issue. Check your connection string and account key.");
+                }
+                else if (ex.Message.Contains("network") || ex.Message.Contains("timeout") || ex.Message.Contains("connection"))
+                {
+                    Console.WriteLine($"[BlobStorageService] This appears to be a network connectivity issue.");
+                }
+                
+                throw new InvalidOperationException($"Failed to upload file '{fileName}' to container '{containerName}': {ex.Message}", ex);
             }
         }
 

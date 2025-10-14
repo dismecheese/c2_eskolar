@@ -107,13 +107,20 @@
             <div class="stat-label">Total Archived</div>
         </div>
 
+                <div class="stat-card">
+            <div class="stat-card-header">
+                <div class="stat-icon unverified" style="background: #ff6b6b;">
+                    <i class="bi bi-person-x"></i>
+                </div>
+            </div>
+            <div class="stat-value">@unverifiedCount</div>
+            <div class="stat-label">Unverified</div>
+        </div>
+
     </div>
 
     <!-- Filter Tabs -->
     <div class="filter-tabs">
-        <button class="filter-tab @(activeFilter == "All" ? "active" : "")" @onclick="@(() => SetFilter("All"))">
-            <i class="bi bi-list me-2"></i>All Users
-        </button>
         <button class="filter-tab @(activeFilter == "Student" ? "active" : "")" @onclick="@(() => SetFilter("Student"))">
             <i class="bi bi-mortarboard me-2"></i>Students
         </button>
@@ -129,6 +136,9 @@
         <button class="filter-tab @(activeFilter == "Archive" ? "active" : "")" @onclick="@(() => SetFilter("Archive"))">
             <i class="bi bi-archive me-2"></i>Archive
         </button>
+        <button class="filter-tab @(activeFilter == "Unverified" ? "active" : "")" @onclick="@(() => SetFilter("Unverified"))">
+            <i class="bi bi-person-x me-2"></i>Unverified
+        </button>
     </div>
 
     <!-- Users Table -->
@@ -142,13 +152,13 @@
                     </div>
                     <div class="sv-modal-body">
                         <p class="sv-modal-justify">
-                            Are you sure you want to delete <b>@userNameToDelete</b>?<br />
-                            This action will move the account to the Archive tab and mark it as deleted. You can restore it later if needed.
+                            Are you sure you want to archive <b>@userNameToDelete</b>?<br />
+                            This action will move the account to the Archive tab. You can restore it later if needed.
                         </p>
                     </div>
                     <div class="sv-modal-footer" style="display:flex;gap:16px;justify-content:flex-end;">
                         <button class="sv-btn sv-btn-secondary" @onclick="CancelDeleteUser">Cancel</button>
-                        <button class="sv-btn sv-btn-primary" @onclick="ConfirmDeleteUser">Delete</button>
+                        <button class="sv-btn sv-btn-primary" @onclick="ConfirmDeleteUser">Archive</button>
                     </div>
                 </div>
             </div>
@@ -307,9 +317,9 @@
         else if (activeFilter == "Archive")
         {
             var archivedUsers = allUsers.Where(u =>
-                (studentProfilesByUserId.TryGetValue(u.Id, out var student) && student.AccountStatus == "Deleted") ||
-                (institutionProfilesByUserId.TryGetValue(u.Id, out var institution) && institution.AccountStatus == "Deleted") ||
-                (benefactorProfilesByUserId.TryGetValue(u.Id, out var benefactor) && benefactor.AccountStatus == "Deleted")
+                (studentProfilesByUserId.TryGetValue(u.Id, out var student) && student.AccountStatus == "Archived") ||
+                (institutionProfilesByUserId.TryGetValue(u.Id, out var institution) && institution.AccountStatus == "Archived") ||
+                (benefactorProfilesByUserId.TryGetValue(u.Id, out var benefactor) && benefactor.AccountStatus == "Archived")
             ).ToList();
             
             if (archivedUsers.Any())
@@ -379,6 +389,108 @@
                     <i class="bi bi-people" style="font-size: 4rem; color: #ccc;"></i>
                     <h4>No Users Found</h4>
                     <p>@(string.IsNullOrEmpty(searchQuery) ? "No users match the current filter." : $"No users found matching \"{searchQuery}\".")</p>
+                </div>
+            }
+        }
+        else if (activeFilter == "Unverified")
+        {
+            // Debug logging for unverified users calculation
+            Console.WriteLine($"[DEBUG] Calculating unverified users. Total users: {allUsers.Count}");
+            Console.WriteLine($"[DEBUG] Student profiles: {studentProfilesByUserId.Count}");
+            Console.WriteLine($"[DEBUG] Institution profiles: {institutionProfilesByUserId.Count}");
+            Console.WriteLine($"[DEBUG] Benefactor profiles: {benefactorProfilesByUserId.Count}");
+            
+            // Get users who have roles but no profiles (unverified users)
+            var unverifiedUsers = allUsers.Where(u =>
+            {
+                // Check if user has no profile
+                bool hasNoProfile = !studentProfilesByUserId.ContainsKey(u.Id) &&
+                                   !institutionProfilesByUserId.ContainsKey(u.Id) &&
+                                   !benefactorProfilesByUserId.ContainsKey(u.Id);
+                
+                // Exclude SuperAdmin users
+                if (userRoles.TryGetValue(u.Id, out var role) && role == "SuperAdmin")
+                    return false;
+                
+                // Debug log each user evaluation
+                if (hasNoProfile)
+                {
+                    Console.WriteLine($"[DEBUG] Unverified user found: {u.Email} (ID: {u.Id})");
+                }
+                
+                return hasNoProfile;
+            });
+
+            // Apply search filter if provided
+            if (!string.IsNullOrEmpty(searchQuery))
+            {
+                unverifiedUsers = unverifiedUsers.Where(u => 
+                    u.Email?.Contains(searchQuery, StringComparison.OrdinalIgnoreCase) == true);
+            }
+
+            var unverifiedUsersList = unverifiedUsers.ToList();
+
+            if (unverifiedUsersList.Any())
+            {
+                <div class="table-responsive">
+                    <table class="table users-table" style="table-layout: fixed;">
+                        <thead>
+                            <tr>
+                                <th style="width: 200px; white-space: nowrap;">Email</th>
+                                <th style="width: 120px; white-space: nowrap;">Intended Role</th>
+                                <th style="width: 150px; white-space: nowrap;">Registration Date</th>
+                                <th style="width: 90px; text-align: left;">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var unverifiedUser in unverifiedUsersList.Take(pageSize))
+                            {
+                                string intendedRole = "Unknown";
+                                if (userRoles.TryGetValue(unverifiedUser.Id, out var userRole))
+                                {
+                                    intendedRole = userRole;
+                                }
+
+                                // For now, we'll use a placeholder for registration date since IdentityUser doesn't have it built-in
+                                string registrationDate = "Unknown";
+                                
+                                <tr>
+                                    <td style="max-width: 200px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                        @unverifiedUser.Email
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-secondary">@intendedRole</span>
+                                    </td>
+                                    <td style="font-size: 0.9rem; color: #666;">
+                                        @registrationDate
+                                    </td>
+                                    <td>
+                                        <div class="action-buttons">
+                                            <button class="btn btn-danger btn-sm" @onclick="() => PromptDeleteUnverifiedUser(unverifiedUser.Id)" title="Delete Account">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+                @if (unverifiedUsersList.Count > pageSize)
+                {
+                    <div class="pagination-container">
+                        <button class="btn btn-outline-primary" @onclick="LoadMoreUsers">
+                            Load More Users (@(unverifiedUsersList.Count - pageSize) remaining)
+                        </button>
+                    </div>
+                }
+            }
+            else
+            {
+                <div class="empty-state">
+                    <i class="bi bi-person-x" style="font-size: 4rem; color: #ccc;"></i>
+                    <h4>No Unverified Users Found</h4>
+                    <p>@(string.IsNullOrEmpty(searchQuery) ? "All registered users have submitted verification forms." : $"No unverified users found matching \"{searchQuery}\".")</p>
                 </div>
             }
         }
@@ -467,8 +579,9 @@
     private int superAdminCount = 0;
     private int totalRequests = 0;
     private int totalArchived = 0;
+    private int unverifiedCount = 0;
     
-    private string activeFilter = "All";
+    private string activeFilter = "Student";
     // Only for requests tab
     private string requestTypeDropdownValue = "All";
     // Only for requests tab
@@ -540,11 +653,12 @@
         {
             isLoading = true;
             StateHasChanged();
-            Console.WriteLine("LoadUsersData: Starting to load users data...");
+            Console.WriteLine("[DEBUG] LoadUsersData: Starting to load users data...");
             using var context = DbContextFactory.CreateDbContext();
             // Load all users
             allUsers = await UserManager.Users.ToListAsync();
             totalUsers = allUsers.Count;
+            Console.WriteLine($"[DEBUG] LoadUsersData: Loaded {totalUsers} users from UserManager");
             // Bulk load all profiles and cache by UserId
             studentProfilesByUserId = (await context.StudentProfiles.ToListAsync())
                 .ToDictionary(sp => sp.UserId ?? "", sp => sp);
@@ -558,9 +672,16 @@
             await LoadUserVerificationStatuses();
             // Calculate totalArchived
             totalArchived = allUsers.Count(u =>
-                (studentProfilesByUserId.TryGetValue(u.Id, out var student) && student.AccountStatus == "Deleted") ||
-                (institutionProfilesByUserId.TryGetValue(u.Id, out var institution) && institution.AccountStatus == "Deleted") ||
-                (benefactorProfilesByUserId.TryGetValue(u.Id, out var benefactor) && benefactor.AccountStatus == "Deleted")
+                (studentProfilesByUserId.TryGetValue(u.Id, out var student) && student.AccountStatus == "Archived") ||
+                (institutionProfilesByUserId.TryGetValue(u.Id, out var institution) && institution.AccountStatus == "Archived") ||
+                (benefactorProfilesByUserId.TryGetValue(u.Id, out var benefactor) && benefactor.AccountStatus == "Archived")
+            );
+            // Calculate unverified count (users with roles but no profiles, excluding SuperAdmin)
+            unverifiedCount = allUsers.Count(u =>
+                !studentProfilesByUserId.ContainsKey(u.Id) &&
+                !institutionProfilesByUserId.ContainsKey(u.Id) &&
+                !benefactorProfilesByUserId.ContainsKey(u.Id) &&
+                (!userRoles.TryGetValue(u.Id, out var role) || role != "SuperAdmin")
             );
             // Apply current filter
             ApplyFilter();
@@ -721,50 +842,38 @@
             // Filter regular users
             var filtered = allUsers.AsEnumerable();
 
-            // Apply role filter
-            if (activeFilter != "All")
-            {
-                filtered = filtered.Where(u => GetUserRole(u.Id) == activeFilter);
-                Console.WriteLine($"After role filter: {filtered.Count()} users");
-            }
-            else if (activeFilter == "All")
-            {
-                // For "All" tab, exclude deleted users
-                filtered = filtered.Where(u => 
-                    !((studentProfilesByUserId.TryGetValue(u.Id, out var student) && student.AccountStatus == "Deleted") ||
-                      (institutionProfilesByUserId.TryGetValue(u.Id, out var institution) && institution.AccountStatus == "Deleted") ||
-                      (benefactorProfilesByUserId.TryGetValue(u.Id, out var benefactor) && benefactor.AccountStatus == "Deleted")));
-                Console.WriteLine($"After excluding deleted users from All tab: {filtered.Count()} users");
-            }
+            // Apply role filter - now all filters are specific role filters
+            filtered = filtered.Where(u => GetUserRole(u.Id) == activeFilter);
+            Console.WriteLine($"After role filter: {filtered.Count()} users");
 
-            // For Students tab, only show verified and non-deleted students
+            // For Students tab, only show verified students
             if (activeFilter == "Student")
             {
                 using var context = DbContextFactory.CreateDbContext();
                 var verifiedStudentIds = context.StudentProfiles
-                    .Where(sp => sp.VerificationStatus == "Verified" && sp.AccountStatus != "Deleted")
+                    .Where(sp => sp.AccountStatus == "Verified")
                     .Select(sp => sp.UserId)
                     .ToHashSet();
                 filtered = filtered.Where(u => verifiedStudentIds.Contains(u.Id));
                 Console.WriteLine($"After verified filter: {filtered.Count()} users");
             }
-            // For Institutions tab, only show verified and non-deleted institutions
+            // For Institutions tab, only show verified institutions
             if (activeFilter == "Institution")
             {
                 using var context = DbContextFactory.CreateDbContext();
                 var verifiedInstitutionIds = context.InstitutionProfiles
-                    .Where(ip => ip.VerificationStatus == "Verified" && ip.AccountStatus != "Deleted")
+                    .Where(ip => ip.AccountStatus == "Verified")
                     .Select(ip => ip.UserId)
                     .ToHashSet();
                 filtered = filtered.Where(u => verifiedInstitutionIds.Contains(u.Id));
                 Console.WriteLine($"After verified institution filter: {filtered.Count()} users");
             }
-            // For Benefactor tab, only show verified and non-deleted benefactors
+            // For Benefactor tab, only show verified benefactors
             if (activeFilter == "Benefactor")
             {
                 using var context = DbContextFactory.CreateDbContext();
                 var verifiedBenefactorIds = context.BenefactorProfiles
-                    .Where(bp => bp.VerificationStatus == "Verified" && bp.AccountStatus != "Deleted")
+                    .Where(bp => bp.AccountStatus == "Verified")
                     .Select(bp => bp.UserId)
                     .ToHashSet();
                 filtered = filtered.Where(u => verifiedBenefactorIds.Contains(u.Id));
@@ -803,8 +912,11 @@
     
     private async Task RefreshUsers()
     {
+        Console.WriteLine("[DEBUG] RefreshUsers: Starting refresh...");
         await LoadUsersData();
+        Console.WriteLine("[DEBUG] RefreshUsers: LoadUsersData completed");
         await LoadUserVerificationStatuses();
+        Console.WriteLine("[DEBUG] RefreshUsers: LoadUserVerificationStatuses completed");
     }
     
     private void LoadMoreUsers()
@@ -859,16 +971,24 @@
     private async Task ConfirmPermanentDeleteUser()
     {
         if (string.IsNullOrEmpty(userIdToPermanentDelete)) return;
+        
+        Console.WriteLine($"[DEBUG] Starting permanent deletion of user: {userIdToPermanentDelete}");
+        
         try
         {
             await using var context = DbContextFactory.CreateDbContext();
+            
+            // Check if user exists before deletion
+            var identityUserBeforeDeletion = await UserManager.FindByIdAsync(userIdToPermanentDelete);
+            Console.WriteLine($"[DEBUG] User exists before deletion: {identityUserBeforeDeletion != null} (Email: {identityUserBeforeDeletion?.Email})");
+            
             // Remove profile
             var student = await context.StudentProfiles.FirstOrDefaultAsync(sp => sp.UserId == userIdToPermanentDelete);
             if (student != null)
             {
                 context.StudentProfiles.Remove(student);
                 await context.SaveChangesAsync();
-                Console.WriteLine($"Student {userIdToPermanentDelete} permanently deleted.");
+                Console.WriteLine($"[DEBUG] Student profile {userIdToPermanentDelete} permanently deleted.");
             }
             else
             {
@@ -877,7 +997,7 @@
                 {
                     context.InstitutionProfiles.Remove(institution);
                     await context.SaveChangesAsync();
-                    Console.WriteLine($"Institution {userIdToPermanentDelete} permanently deleted.");
+                    Console.WriteLine($"[DEBUG] Institution profile {userIdToPermanentDelete} permanently deleted.");
                 }
                 else
                 {
@@ -886,29 +1006,45 @@
                     {
                         context.BenefactorProfiles.Remove(benefactor);
                         await context.SaveChangesAsync();
-                        Console.WriteLine($"Benefactor {userIdToPermanentDelete} permanently deleted.");
+                        Console.WriteLine($"[DEBUG] Benefactor profile {userIdToPermanentDelete} permanently deleted.");
                     }
                     else
                     {
-                        Console.WriteLine($"No profile found for user {userIdToPermanentDelete}.");
+                        Console.WriteLine($"[DEBUG] No profile found for user {userIdToPermanentDelete}.");
                     }
                 }
             }
+            
             // Remove IdentityUser
             var identityUser = await UserManager.FindByIdAsync(userIdToPermanentDelete);
             if (identityUser != null)
             {
-                await UserManager.DeleteAsync(identityUser);
-                Console.WriteLine($"IdentityUser {userIdToPermanentDelete} permanently deleted.");
+                var deleteResult = await UserManager.DeleteAsync(identityUser);
+                Console.WriteLine($"[DEBUG] IdentityUser {userIdToPermanentDelete} deletion result: {deleteResult.Succeeded}");
+                if (!deleteResult.Succeeded)
+                {
+                    Console.WriteLine($"[DEBUG] Delete errors: {string.Join(", ", deleteResult.Errors.Select(e => e.Description))}");
+                }
             }
+            else
+            {
+                Console.WriteLine($"[DEBUG] IdentityUser {userIdToPermanentDelete} not found for deletion.");
+            }
+            
+            Console.WriteLine($"[DEBUG] About to refresh users data...");
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error permanently deleting user: {ex.Message}");
+            Console.WriteLine($"[DEBUG] Error permanently deleting user: {ex.Message}");
+            Console.WriteLine($"[DEBUG] Stack trace: {ex.StackTrace}");
         }
+        
         showPermanentDeleteModal = false;
+        Console.WriteLine($"[DEBUG] Calling RefreshUsers...");
         await RefreshUsers();
+        Console.WriteLine($"[DEBUG] RefreshUsers completed. Calling StateHasChanged...");
         StateHasChanged();
+        Console.WriteLine($"[DEBUG] StateHasChanged completed.");
     }
 
     private void CancelPermanentDeleteUser()
@@ -938,48 +1074,48 @@
             var student = await context.StudentProfiles.FirstOrDefaultAsync(sp => sp.UserId == userIdToRestore);
             if (student != null)
             {
-                student.AccountStatus = "Active";
+                student.AccountStatus = "Verified";
                 context.StudentProfiles.Update(student);
                 await context.SaveChangesAsync();
                 
                 // Update local cache immediately
                 if (studentProfilesByUserId.ContainsKey(userIdToRestore))
                 {
-                    studentProfilesByUserId[userIdToRestore].AccountStatus = "Active";
+                    studentProfilesByUserId[userIdToRestore].AccountStatus = "Verified";
                 }
-                Console.WriteLine($"Student {userIdToRestore} restored to Active status.");
+                Console.WriteLine($"Student {userIdToRestore} restored to Verified status.");
             }
             else
             {
                 var institution = await context.InstitutionProfiles.FirstOrDefaultAsync(ip => ip.UserId == userIdToRestore);
                 if (institution != null)
                 {
-                    institution.AccountStatus = "Active";
+                    institution.AccountStatus = "Verified";
                     context.InstitutionProfiles.Update(institution);
                     await context.SaveChangesAsync();
                     
                     // Update local cache immediately
                     if (institutionProfilesByUserId.ContainsKey(userIdToRestore))
                     {
-                        institutionProfilesByUserId[userIdToRestore].AccountStatus = "Active";
+                        institutionProfilesByUserId[userIdToRestore].AccountStatus = "Verified";
                     }
-                    Console.WriteLine($"Institution {userIdToRestore} restored to Active status.");
+                    Console.WriteLine($"Institution {userIdToRestore} restored to Verified status.");
                 }
                 else
                 {
                     var benefactor = await context.BenefactorProfiles.FirstOrDefaultAsync(bp => bp.UserId == userIdToRestore);
                     if (benefactor != null)
                     {
-                        benefactor.AccountStatus = "Active";
+                        benefactor.AccountStatus = "Verified";
                         context.BenefactorProfiles.Update(benefactor);
                         await context.SaveChangesAsync();
                         
                         // Update local cache immediately
                         if (benefactorProfilesByUserId.ContainsKey(userIdToRestore))
                         {
-                            benefactorProfilesByUserId[userIdToRestore].AccountStatus = "Active";
+                            benefactorProfilesByUserId[userIdToRestore].AccountStatus = "Verified";
                         }
-                        Console.WriteLine($"Benefactor {userIdToRestore} restored to Active status.");
+                        Console.WriteLine($"Benefactor {userIdToRestore} restored to Verified status.");
                     }
                     else
                     {
@@ -1026,48 +1162,48 @@
             var student = await context.StudentProfiles.FirstOrDefaultAsync(sp => sp.UserId == userIdToDelete);
             if (student != null)
             {
-                student.AccountStatus = "Deleted";
+                student.AccountStatus = "Archived";
                 context.StudentProfiles.Update(student);
                 await context.SaveChangesAsync();
                 
                 // Update local cache immediately
                 if (studentProfilesByUserId.ContainsKey(userIdToDelete))
                 {
-                    studentProfilesByUserId[userIdToDelete].AccountStatus = "Deleted";
+                    studentProfilesByUserId[userIdToDelete].AccountStatus = "Archived";
                 }
-                Console.WriteLine($"Student {userIdToDelete} marked as Deleted.");
+                Console.WriteLine($"Student {userIdToDelete} marked as Archived.");
             }
             else
             {
                 var institution = await context.InstitutionProfiles.FirstOrDefaultAsync(ip => ip.UserId == userIdToDelete);
                 if (institution != null)
                 {
-                    institution.AccountStatus = "Deleted";
+                    institution.AccountStatus = "Archived";
                     context.InstitutionProfiles.Update(institution);
                     await context.SaveChangesAsync();
                     
                     // Update local cache immediately
                     if (institutionProfilesByUserId.ContainsKey(userIdToDelete))
                     {
-                        institutionProfilesByUserId[userIdToDelete].AccountStatus = "Deleted";
+                        institutionProfilesByUserId[userIdToDelete].AccountStatus = "Archived";
                     }
-                    Console.WriteLine($"Institution {userIdToDelete} marked as Deleted.");
+                    Console.WriteLine($"Institution {userIdToDelete} marked as Archived.");
                 }
                 else
                 {
                     var benefactor = await context.BenefactorProfiles.FirstOrDefaultAsync(bp => bp.UserId == userIdToDelete);
                     if (benefactor != null)
                     {
-                        benefactor.AccountStatus = "Deleted";
+                        benefactor.AccountStatus = "Archived";
                         context.BenefactorProfiles.Update(benefactor);
                         await context.SaveChangesAsync();
                         
                         // Update local cache immediately
                         if (benefactorProfilesByUserId.ContainsKey(userIdToDelete))
                         {
-                            benefactorProfilesByUserId[userIdToDelete].AccountStatus = "Deleted";
+                            benefactorProfilesByUserId[userIdToDelete].AccountStatus = "Archived";
                         }
-                        Console.WriteLine($"Benefactor {userIdToDelete} marked as Deleted. AccountStatus: {benefactor.AccountStatus}");
+                        Console.WriteLine($"Benefactor {userIdToDelete} marked as Archived. AccountStatus: {benefactor.AccountStatus}");
                     }
                     else
                     {
@@ -1092,6 +1228,16 @@
         showDeleteModal = false;
         userIdToDelete = null;
         userNameToDelete = null;
+        StateHasChanged();
+    }
+
+    // Handle deletion of unverified users (these can be permanently deleted since they have no profiles)
+    private void PromptDeleteUnverifiedUser(string userId)
+    {
+        userIdToPermanentDelete = userId;
+        var user = allUsers.FirstOrDefault(u => u.Id == userId);
+        userNameToPermanentDelete = user?.Email ?? "Unknown User";
+        showPermanentDeleteModal = true;
         StateHasChanged();
     }
     
@@ -1133,7 +1279,7 @@
             await using var context = DbContextFactory.CreateDbContext();
             // Pending Institutions
             var pendingProfiles = context.InstitutionProfiles
-                .Where(ip => ip.VerificationStatus == "Pending")
+                .Where(ip => ip.AccountStatus == "Pending")
                 .ToList();
             foreach (var profile in pendingProfiles)
             {
@@ -1150,7 +1296,7 @@
 
             // Pending Students
             var pendingStudents = context.StudentProfiles
-                .Where(sp => sp.VerificationStatus == "Pending")
+                .Where(sp => sp.AccountStatus == "Pending")
                 .ToList();
             foreach (var student in pendingStudents)
             {
@@ -1167,7 +1313,7 @@
 
             // Pending Benefactors
             var pendingBenefactors = context.BenefactorProfiles
-                .Where(bp => bp.VerificationStatus == "Pending")
+                .Where(bp => bp.AccountStatus == "Pending")
                 .ToList();
             foreach (var benefactor in pendingBenefactors)
             {
@@ -1213,6 +1359,7 @@
                 if (student != null)
                 {
                     student.VerificationStatus = "Verified";
+                    student.AccountStatus = "Verified";
                     student.IsVerified = true;
                     context.StudentProfiles.Update(student);
                     await context.SaveChangesAsync();
@@ -1258,6 +1405,7 @@
                 if (institution != null)
                 {
                     institution.VerificationStatus = "Verified";
+                    institution.AccountStatus = "Verified";
                     institution.IsVerified = true;
                     context.InstitutionProfiles.Update(institution);
                     await context.SaveChangesAsync();
@@ -1303,6 +1451,7 @@
                 if (benefactor != null)
                 {
                     benefactor.VerificationStatus = "Verified";
+                    benefactor.AccountStatus = "Verified";
                     benefactor.IsVerified = true;
                     context.BenefactorProfiles.Update(benefactor);
                     await context.SaveChangesAsync();
@@ -1371,11 +1520,72 @@
 
     private async Task RejectInstitution(string institutionId)
     {
-        if (!string.IsNullOrEmpty(institutionId))
+        if (string.IsNullOrEmpty(institutionId)) return;
+
+        Console.WriteLine($"RejectInstitution: attempting to reject request {institutionId}");
+
+        try
         {
-            // TODO: Reject logic
-            await Task.Delay(200);
+            await using var context = DbContextFactory.CreateDbContext();
+
+            // Find the request type from the local pending list
+            var req = pendingInstitutions.FirstOrDefault(i => i.Id == institutionId);
+            if (req == null)
+            {
+                Console.WriteLine($"RejectInstitution: request {institutionId} not found in pending list");
+                return;
+            }
+
+            if (req.InstitutionType == "Student")
+            {
+                var student = await context.StudentProfiles.FirstOrDefaultAsync(sp => sp.UserId == institutionId);
+                if (student != null)
+                {
+                    student.VerificationStatus = "Rejected";
+                    student.AccountStatus = "Archived";
+                    student.IsVerified = false;
+                    context.StudentProfiles.Update(student);
+                    await context.SaveChangesAsync();
+                    Console.WriteLine($"RejectInstitution: student {institutionId} marked as Archived");
+                }
+            }
+            else if (req.InstitutionType == "Institution")
+            {
+                var institution = await context.InstitutionProfiles.FirstOrDefaultAsync(ip => ip.UserId == institutionId);
+                if (institution != null)
+                {
+                    institution.VerificationStatus = "Rejected";
+                    institution.AccountStatus = "Archived";
+                    institution.IsVerified = false;
+                    context.InstitutionProfiles.Update(institution);
+                    await context.SaveChangesAsync();
+                    Console.WriteLine($"RejectInstitution: institution {institutionId} marked as Archived");
+                }
+            }
+            else if (req.InstitutionType == "Benefactor")
+            {
+                var benefactor = await context.BenefactorProfiles.FirstOrDefaultAsync(bp => bp.UserId == institutionId);
+                if (benefactor != null)
+                {
+                    benefactor.VerificationStatus = "Rejected";
+                    benefactor.AccountStatus = "Archived";
+                    benefactor.IsVerified = false;
+                    context.BenefactorProfiles.Update(benefactor);
+                    await context.SaveChangesAsync();
+                    Console.WriteLine($"RejectInstitution: benefactor {institutionId} marked as Archived");
+                }
+            }
+
+            // Remove from pending list and refresh
             pendingInstitutions.RemoveAll(i => i.Id == institutionId);
+            await RefreshPendingAndUsers();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error rejecting user: {ex.Message}");
+        }
+        finally
+        {
             StateHasChanged();
         }
     }

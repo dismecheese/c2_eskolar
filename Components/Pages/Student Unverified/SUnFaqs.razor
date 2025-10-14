@@ -1,0 +1,115 @@
+@page "/dashboard/unverified/faqs"
+@layout Layout.SUnDashLayout
+
+<PageTitle>FAQs - Account Verification Required</PageTitle>
+
+<div class="dashboard-center-container" style="padding: 1rem 2rem 2rem 2rem;">
+    <!-- Top Bar -->
+    <div class="dashboard-topbar">
+        <div style="position: relative; flex: 1; max-width: 500px; display: flex; flex-direction: column; align-items: center; gap: 8px;">
+            <div class="university-input" style="padding-left: 15px; padding-right: 15px; color: #d84453; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; height: 32px; display: flex; align-items: center; font-size: 0.9rem; font-weight: 500; user-select: none; cursor: default;">Account not verified.</div>
+        </div>
+        <span class="dashboard-date">@DateTime.Now.ToString("dd MMM yyyy, ddd")</span>
+    </div>
+
+    <!-- Welcome Banner -->
+    <div class="dashboard-banner-centered">
+        <div class="banner-text">
+            <h2>Frequently Asked Questions</h2>
+            <p class="text-muted">Find answers to common questions and get help</p>
+        </div>
+        <img src="images/eskolar_books.svg" alt="FAQs" class="banner-img" />
+    </div>
+
+    <!-- Verification Message -->
+    <div class="verification-message-container">
+        <div class="verification-card">
+            <div class="verification-icon">
+                <i class="fas fa-question-circle fa-3x text-primary"></i>
+            </div>
+            <h3>FAQs Access Restricted</h3>
+            <p class="lead">You need to verify your account to access the complete FAQ section and support resources.</p>
+            <p>Once verified, you'll be able to:</p>
+            <ul class="feature-list">
+                <li><i class="fas fa-check text-success me-2"></i>Browse comprehensive FAQs</li>
+                <li><i class="fas fa-check text-success me-2"></i>Search for specific help topics</li>
+                <li><i class="fas fa-check text-success me-2"></i>Access video tutorials</li>
+                <li><i class="fas fa-check text-success me-2"></i>Contact support directly</li>
+                <li><i class="fas fa-check text-success me-2"></i>Submit feedback and suggestions</li>
+            </ul>
+            <a href="/student/verification" class="verify-account-btn">Verify Account</a>
+        </div>
+    </div>
+</div>
+
+<style>
+    .verification-message-container {
+        width: 100%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin-top: 10px;
+        padding: 20px;
+    }
+
+    .verification-card {
+        background: white;
+        border-radius: 12px;
+        padding: 40px;
+        text-align: center;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        max-width: 500px;
+        width: 100%;
+    }
+
+    .verification-icon {
+        margin-bottom: 20px;
+    }
+
+    .verification-card h3 {
+        color: #333;
+        margin-bottom: 15px;
+        font-weight: 600;
+    }
+
+    .verification-card .lead {
+        color: #666;
+        margin-bottom: 20px;
+    }
+
+    .feature-list {
+        text-align: left;
+        margin: 20px 0;
+        padding-left: 0;
+        list-style: none;
+    }
+
+    .feature-list li {
+        margin-bottom: 10px;
+        display: flex;
+        align-items: center;
+    }
+
+    .verify-account-btn {
+        font-size: 1.15rem;
+        padding: 12px 32px;
+        border-radius: 8px;
+        background: transparent;
+        color: #3c7ee2;
+        border: 2px solid #1560d4;
+        text-decoration: none;
+        box-shadow: none;
+        transition: background 0.2s, color 0.2s;
+        display: inline-block;
+        margin-top: 20px;
+        font-weight: 600;
+        cursor: pointer;
+    }
+
+    .verify-account-btn:hover, .verify-account-btn:focus {
+        background: #1560d4;
+        color: #fff;
+        box-shadow: 0 2px 8px rgba(21,96,212,0.10);
+        text-decoration: none;
+    }
+</style>

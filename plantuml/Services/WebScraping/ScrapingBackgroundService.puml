@@ -1,6 +1,0 @@
-@startuml
-class ScrapingBackgroundService {
-    + ScrapingBackgroundService(serviceProvider:IServiceProvider, logger:ILogger<ScrapingBackgroundService>)
-}
-BackgroundService <|-- ScrapingBackgroundService
-@enduml
