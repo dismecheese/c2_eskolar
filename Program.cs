@@ -1,3 +1,4 @@
+﻿
 using System;
 using c2_eskolar.Components;
 using c2_eskolar.Data;
@@ -179,7 +180,7 @@ builder.Services.AddScoped<SuperAdminAnalyticsService>();
                 if (!await roleManager.RoleExistsAsync(role))
                 {
                     await roleManager.CreateAsync(new IdentityRole(role));
-                    Console.WriteLine($"✅ Created role: {role}");
+                    Console.WriteLine($"âœ… Created role: {role}");
                 }
             }
             // Create SuperAdmin user if not exists
@@ -197,11 +198,11 @@ builder.Services.AddScoped<SuperAdminAnalyticsService>();
                 if (result.Succeeded)
                 {
                     await userManager.AddToRoleAsync(superAdminUser, "SuperAdmin");
-                    Console.WriteLine($"✅ Created SuperAdmin: {superAdminEmail} / @Super123");
+                    Console.WriteLine($"âœ… Created SuperAdmin: {superAdminEmail} / @Super123");
                 }
                 else
                 {
-                    Console.WriteLine($"❌ Failed to create SuperAdmin: {string.Join(", ", result.Errors.Select(e => e.Description))}");
+                    Console.WriteLine($"âŒ Failed to create SuperAdmin: {string.Join(", ", result.Errors.Select(e => e.Description))}");
                 }
             }
             var testEmail = "student@test.com";
@@ -218,11 +219,11 @@ builder.Services.AddScoped<SuperAdminAnalyticsService>();
                 if (result.Succeeded)
                 {
                     await userManager.AddToRoleAsync(testUser, "Student");
-                    Console.WriteLine($"✅ Created test user: {testEmail} / Student123!");
+                    Console.WriteLine($"âœ… Created test user: {testEmail} / Student123!");
                 }
                 else
                 {
-                    Console.WriteLine($"❌ Failed to create test user: {string.Join(", ", result.Errors.Select(e => e.Description))}");
+                    Console.WriteLine($"âŒ Failed to create test user: {string.Join(", ", result.Errors.Select(e => e.Description))}");
                 }
             }
             var benefactorEmail = "benefactor@test.com";
@@ -239,11 +240,11 @@ builder.Services.AddScoped<SuperAdminAnalyticsService>();
                 if (result.Succeeded)
                 {
                     await userManager.AddToRoleAsync(benefactorUser, "Benefactor");
-                    Console.WriteLine($"✅ Created test benefactor: {benefactorEmail} / Benefactor123!");
+                    Console.WriteLine($"âœ… Created test benefactor: {benefactorEmail} / Benefactor123!");
                 }
                 else
                 {
-                    Console.WriteLine($"❌ Failed to create test benefactor: {string.Join(", ", result.Errors.Select(e => e.Description))}");
+                    Console.WriteLine($"âŒ Failed to create test benefactor: {string.Join(", ", result.Errors.Select(e => e.Description))}");
                 }
             }
             var institutionEmail = "institution@test.com";
@@ -260,11 +261,11 @@ builder.Services.AddScoped<SuperAdminAnalyticsService>();
                 if (result.Succeeded)
                 {
                     await userManager.AddToRoleAsync(institutionUser, "Institution");
-                    Console.WriteLine($"✅ Created test institution: {institutionEmail} / Institution123!");
+                    Console.WriteLine($"âœ… Created test institution: {institutionEmail} / Institution123!");
                 }
                 else
                 {
-                    Console.WriteLine($"❌ Failed to create test institution: {string.Join(", ", result.Errors.Select(e => e.Description))}");
+                    Console.WriteLine($"âŒ Failed to create test institution: {string.Join(", ", result.Errors.Select(e => e.Description))}");
                 }
             }
             var seedService = scope.ServiceProvider.GetRequiredService<AnnouncementSeedService>();
@@ -272,7 +273,7 @@ builder.Services.AddScoped<SuperAdminAnalyticsService>();
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"❌ Startup error: {ex.Message}\n{ex.StackTrace}");
+            Console.WriteLine($"âŒ Startup error: {ex.Message}\n{ex.StackTrace}");
             throw;
         }
     }

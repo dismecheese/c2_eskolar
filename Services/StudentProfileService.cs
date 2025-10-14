@@ -43,8 +43,9 @@ namespace c2_eskolar.Services
                 if (!string.IsNullOrWhiteSpace(identityEmail))
                     profile.Email = identityEmail;
                 
-                // Always set status to Pending for new profiles - institution will verify
+                // Set status to Pending for new profiles submitted for verification
                 profile.VerificationStatus = "Pending";
+                profile.AccountStatus = "Pending";
                 profile.IsVerified = false;
                 profile.CreatedAt = DateTime.Now;
                 profile.UpdatedAt = DateTime.Now;

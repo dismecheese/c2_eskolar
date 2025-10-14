@@ -41,6 +41,7 @@
         private bool showVerificationModal = false;
         private bool? isVerified = null;
         private string? verificationStatus = null;
+        private string? accountStatus = null;
         private string? userId;
 
         // --- LOGOUT MODAL STATE ---
@@ -72,8 +73,9 @@
                     var profile = await StudentProfileService.GetProfileByUserIdAsync(userId);
                     isVerified = profile?.IsVerified;
                     verificationStatus = profile?.VerificationStatus;
-                    // Show modal if not verified (null or false) or status is not "Verified"
-                    if (isVerified != true && (string.IsNullOrEmpty(verificationStatus) || verificationStatus != "Verified"))
+                    accountStatus = profile?.AccountStatus;
+                    // Show modal if not verified (null or false) or account status is not "Verified"
+                    if (isVerified != true && (string.IsNullOrEmpty(accountStatus) || accountStatus != "Verified"))
                     {
                         showVerificationModal = true;
                     }
@@ -288,7 +290,7 @@
     private string GetDashboardUrl()
     {
         // If user is verified, go to verified dashboard
-        if (isVerified == true && verificationStatus == "Verified")
+        if (isVerified == true && accountStatus == "Verified")
         {
             return "/dashboard/student";
         }
