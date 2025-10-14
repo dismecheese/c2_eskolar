@@ -191,7 +191,7 @@
                 Id = profile.StudentProfileId,
                 Name = profile.FullName,
                 Email = profile.Email ?? "",
-                Status = profile.VerificationStatus ?? "Pending",
+                Status = profile.AccountStatus ?? "Unverified",
                 GPA = profile.GPA?.ToString("0.0") ?? "N/A",
                 Year = profile.YearLevel.HasValue ? $"{profile.YearLevel} Year" : "N/A",
                 Documents = allDocuments

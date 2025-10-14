@@ -81,11 +81,12 @@ namespace c2_eskolar.Models
 
         // Verification & Status
     public bool IsVerified { get; set; } = false;
-    public string? VerificationStatus { get; set; } = "Pending"; // Deprecated: Use AccountStatus instead
     public DateTime? VerificationDate { get; set; }
 
-    // Account lifecycle status: Unverified → Pending → Verified → Archived
-    public string AccountStatus { get; set; } = "Unverified"; // Unverified, Pending, Verified, Archived
+    // Account lifecycle status: Unverified → Pending → Verified → Rejected → Locked
+    [Required]
+    [StringLength(50)]
+    public string AccountStatus { get; set; } = "Unverified"; // Unverified, Pending, Verified, Rejected, Locked
 
         // Timestamps
         public DateTime CreatedAt { get; set; } = DateTime.Now;

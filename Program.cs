@@ -1,4 +1,3 @@
-﻿
 using System;
 using c2_eskolar.Components;
 using c2_eskolar.Data;

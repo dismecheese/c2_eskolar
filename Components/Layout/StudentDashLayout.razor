@@ -40,7 +40,6 @@
         // --- VERIFICATION MODAL STATE ---
         private bool showVerificationModal = false;
         private bool? isVerified = null;
-        private string? verificationStatus = null;
         private string? accountStatus = null;
         private string? userId;
 
@@ -72,10 +71,9 @@
                 {
                     var profile = await StudentProfileService.GetProfileByUserIdAsync(userId);
                     isVerified = profile?.IsVerified;
-                    verificationStatus = profile?.VerificationStatus;
                     accountStatus = profile?.AccountStatus;
-                    // Show modal if not verified (null or false) or account status is not "Verified"
-                    if (isVerified != true && (string.IsNullOrEmpty(accountStatus) || accountStatus != "Verified"))
+                    // Show modal if account status is not "Verified"
+                    if (string.IsNullOrEmpty(accountStatus) || accountStatus != "Verified")
                     {
                         showVerificationModal = true;
                     }

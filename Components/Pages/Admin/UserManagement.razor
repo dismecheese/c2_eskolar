@@ -394,6 +394,12 @@
         }
         else if (activeFilter == "Unverified")
         {
+            // Debug logging for unverified users calculation
+            Console.WriteLine($"[DEBUG] Calculating unverified users. Total users: {allUsers.Count}");
+            Console.WriteLine($"[DEBUG] Student profiles: {studentProfilesByUserId.Count}");
+            Console.WriteLine($"[DEBUG] Institution profiles: {institutionProfilesByUserId.Count}");
+            Console.WriteLine($"[DEBUG] Benefactor profiles: {benefactorProfilesByUserId.Count}");
+            
             // Get users who have roles but no profiles (unverified users)
             var unverifiedUsers = allUsers.Where(u =>
             {
@@ -405,6 +411,12 @@
                 // Exclude SuperAdmin users
                 if (userRoles.TryGetValue(u.Id, out var role) && role == "SuperAdmin")
                     return false;
+                
+                // Debug log each user evaluation
+                if (hasNoProfile)
+                {
+                    Console.WriteLine($"[DEBUG] Unverified user found: {u.Email} (ID: {u.Id})");
+                }
                 
                 return hasNoProfile;
             });
@@ -554,7 +566,7 @@
     private List<IdentityUser> allUsers = new();
     private IEnumerable<IdentityUser> filteredUsers = new List<IdentityUser>();
     private Dictionary<string, string> userRoles = new();
-    private Dictionary<string, string> userVerificationStatuses = new();
+    private Dictionary<string, string> userAccountStatuses = new();
     // Profile caches for instant lookup
     private Dictionary<string, StudentProfile> studentProfilesByUserId = new();
     private Dictionary<string, InstitutionProfile> institutionProfilesByUserId = new();
@@ -641,11 +653,12 @@
         {
             isLoading = true;
             StateHasChanged();
-            Console.WriteLine("LoadUsersData: Starting to load users data...");
+            Console.WriteLine("[DEBUG] LoadUsersData: Starting to load users data...");
             using var context = DbContextFactory.CreateDbContext();
             // Load all users
             allUsers = await UserManager.Users.ToListAsync();
             totalUsers = allUsers.Count;
+            Console.WriteLine($"[DEBUG] LoadUsersData: Loaded {totalUsers} users from UserManager");
             // Bulk load all profiles and cache by UserId
             studentProfilesByUserId = (await context.StudentProfiles.ToListAsync())
                 .ToDictionary(sp => sp.UserId ?? "", sp => sp);
@@ -734,31 +747,31 @@
     {
         try
         {
-            userVerificationStatuses.Clear();
+            userAccountStatuses.Clear();
             using var context = DbContextFactory.CreateDbContext();
             
-            // Load all verification statuses in bulk
+            // Load all account statuses in bulk
             var studentStatuses = await context.StudentProfiles
-                .Select(sp => new { sp.UserId, sp.VerificationStatus })
+                .Select(sp => new { sp.UserId, sp.AccountStatus })
                 .ToListAsync();
                 
             var institutionStatuses = await context.InstitutionProfiles
-                .Select(ip => new { ip.UserId, ip.VerificationStatus })
+                .Select(ip => new { ip.UserId, ip.AccountStatus })
                 .ToListAsync();
                 
             var benefactorStatuses = await context.BenefactorProfiles
-                .Select(bp => new { bp.UserId, bp.VerificationStatus })
+                .Select(bp => new { bp.UserId, bp.AccountStatus })
                 .ToListAsync();
             
             // Populate the dictionary
             foreach (var status in studentStatuses)
-                userVerificationStatuses[status.UserId] = status.VerificationStatus ?? "Pending";
+                userAccountStatuses[status.UserId] = status.AccountStatus ?? "Unverified";
                 
             foreach (var status in institutionStatuses)
-                userVerificationStatuses[status.UserId] = status.VerificationStatus ?? "Pending";
+                userAccountStatuses[status.UserId] = status.AccountStatus ?? "Unverified";
                 
             foreach (var status in benefactorStatuses)
-                userVerificationStatuses[status.UserId] = status.VerificationStatus ?? "Pending";
+                userAccountStatuses[status.UserId] = status.AccountStatus ?? "Unverified";
             
             // Set SuperAdmins as verified
             foreach (var user in allUsers)
@@ -766,24 +779,24 @@
                 var role = GetUserRole(user.Id);
                 if (role == "SuperAdmin")
                 {
-                    userVerificationStatuses[user.Id] = "Verified";
+                    userAccountStatuses[user.Id] = "Verified";
                 }
-                else if (!userVerificationStatuses.ContainsKey(user.Id))
+                else if (!userAccountStatuses.ContainsKey(user.Id))
                 {
                     // Fall back to email confirmation for users without profiles
-                    userVerificationStatuses[user.Id] = user.EmailConfirmed ? "Verified" : "Pending";
+                    userAccountStatuses[user.Id] = user.EmailConfirmed ? "Verified" : "Unverified";
                 }
             }
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error loading user verification statuses: {ex.Message}");
+            Console.WriteLine($"Error loading user account statuses: {ex.Message}");
         }
     }
     
     private string GetUserVerificationStatus(string userId)
     {
-        return userVerificationStatuses.TryGetValue(userId, out var status) ? status : "Pending";
+        return userAccountStatuses.TryGetValue(userId, out var status) ? status : "Unverified";
     }
     
     private void SetFilter(string filter)
@@ -899,8 +912,11 @@
     
     private async Task RefreshUsers()
     {
+        Console.WriteLine("[DEBUG] RefreshUsers: Starting refresh...");
         await LoadUsersData();
+        Console.WriteLine("[DEBUG] RefreshUsers: LoadUsersData completed");
         await LoadUserVerificationStatuses();
+        Console.WriteLine("[DEBUG] RefreshUsers: LoadUserVerificationStatuses completed");
     }
     
     private void LoadMoreUsers()
@@ -955,16 +971,24 @@
     private async Task ConfirmPermanentDeleteUser()
     {
         if (string.IsNullOrEmpty(userIdToPermanentDelete)) return;
+        
+        Console.WriteLine($"[DEBUG] Starting permanent deletion of user: {userIdToPermanentDelete}");
+        
         try
         {
             await using var context = DbContextFactory.CreateDbContext();
+            
+            // Check if user exists before deletion
+            var identityUserBeforeDeletion = await UserManager.FindByIdAsync(userIdToPermanentDelete);
+            Console.WriteLine($"[DEBUG] User exists before deletion: {identityUserBeforeDeletion != null} (Email: {identityUserBeforeDeletion?.Email})");
+            
             // Remove profile
             var student = await context.StudentProfiles.FirstOrDefaultAsync(sp => sp.UserId == userIdToPermanentDelete);
             if (student != null)
             {
                 context.StudentProfiles.Remove(student);
                 await context.SaveChangesAsync();
-                Console.WriteLine($"Student {userIdToPermanentDelete} permanently deleted.");
+                Console.WriteLine($"[DEBUG] Student profile {userIdToPermanentDelete} permanently deleted.");
             }
             else
             {
@@ -973,7 +997,7 @@
                 {
                     context.InstitutionProfiles.Remove(institution);
                     await context.SaveChangesAsync();
-                    Console.WriteLine($"Institution {userIdToPermanentDelete} permanently deleted.");
+                    Console.WriteLine($"[DEBUG] Institution profile {userIdToPermanentDelete} permanently deleted.");
                 }
                 else
                 {
@@ -982,29 +1006,45 @@
                     {
                         context.BenefactorProfiles.Remove(benefactor);
                         await context.SaveChangesAsync();
-                        Console.WriteLine($"Benefactor {userIdToPermanentDelete} permanently deleted.");
+                        Console.WriteLine($"[DEBUG] Benefactor profile {userIdToPermanentDelete} permanently deleted.");
                     }
                     else
                     {
-                        Console.WriteLine($"No profile found for user {userIdToPermanentDelete}.");
+                        Console.WriteLine($"[DEBUG] No profile found for user {userIdToPermanentDelete}.");
                     }
                 }
             }
+            
             // Remove IdentityUser
             var identityUser = await UserManager.FindByIdAsync(userIdToPermanentDelete);
             if (identityUser != null)
             {
-                await UserManager.DeleteAsync(identityUser);
-                Console.WriteLine($"IdentityUser {userIdToPermanentDelete} permanently deleted.");
+                var deleteResult = await UserManager.DeleteAsync(identityUser);
+                Console.WriteLine($"[DEBUG] IdentityUser {userIdToPermanentDelete} deletion result: {deleteResult.Succeeded}");
+                if (!deleteResult.Succeeded)
+                {
+                    Console.WriteLine($"[DEBUG] Delete errors: {string.Join(", ", deleteResult.Errors.Select(e => e.Description))}");
+                }
             }
+            else
+            {
+                Console.WriteLine($"[DEBUG] IdentityUser {userIdToPermanentDelete} not found for deletion.");
+            }
+            
+            Console.WriteLine($"[DEBUG] About to refresh users data...");
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error permanently deleting user: {ex.Message}");
+            Console.WriteLine($"[DEBUG] Error permanently deleting user: {ex.Message}");
+            Console.WriteLine($"[DEBUG] Stack trace: {ex.StackTrace}");
         }
+        
         showPermanentDeleteModal = false;
+        Console.WriteLine($"[DEBUG] Calling RefreshUsers...");
         await RefreshUsers();
+        Console.WriteLine($"[DEBUG] RefreshUsers completed. Calling StateHasChanged...");
         StateHasChanged();
+        Console.WriteLine($"[DEBUG] StateHasChanged completed.");
     }
 
     private void CancelPermanentDeleteUser()
@@ -1318,7 +1358,6 @@
                 var student = await context.StudentProfiles.FirstOrDefaultAsync(sp => sp.UserId == institutionId);
                 if (student != null)
                 {
-                    student.VerificationStatus = "Verified";
                     student.AccountStatus = "Verified";
                     student.IsVerified = true;
                     context.StudentProfiles.Update(student);
@@ -1364,7 +1403,6 @@
                 var institution = await context.InstitutionProfiles.FirstOrDefaultAsync(ip => ip.UserId == institutionId);
                 if (institution != null)
                 {
-                    institution.VerificationStatus = "Verified";
                     institution.AccountStatus = "Verified";
                     institution.IsVerified = true;
                     context.InstitutionProfiles.Update(institution);
@@ -1410,7 +1448,6 @@
                 var benefactor = await context.BenefactorProfiles.FirstOrDefaultAsync(bp => bp.UserId == institutionId);
                 if (benefactor != null)
                 {
-                    benefactor.VerificationStatus = "Verified";
                     benefactor.AccountStatus = "Verified";
                     benefactor.IsVerified = true;
                     context.BenefactorProfiles.Update(benefactor);
@@ -1501,8 +1538,7 @@
                 var student = await context.StudentProfiles.FirstOrDefaultAsync(sp => sp.UserId == institutionId);
                 if (student != null)
                 {
-                    student.VerificationStatus = "Rejected";
-                    student.AccountStatus = "Archived";
+                    student.AccountStatus = "Rejected";
                     student.IsVerified = false;
                     context.StudentProfiles.Update(student);
                     await context.SaveChangesAsync();
@@ -1514,8 +1550,7 @@
                 var institution = await context.InstitutionProfiles.FirstOrDefaultAsync(ip => ip.UserId == institutionId);
                 if (institution != null)
                 {
-                    institution.VerificationStatus = "Rejected";
-                    institution.AccountStatus = "Archived";
+                    institution.AccountStatus = "Rejected";
                     institution.IsVerified = false;
                     context.InstitutionProfiles.Update(institution);
                     await context.SaveChangesAsync();
@@ -1527,8 +1562,7 @@
                 var benefactor = await context.BenefactorProfiles.FirstOrDefaultAsync(bp => bp.UserId == institutionId);
                 if (benefactor != null)
                 {
-                    benefactor.VerificationStatus = "Rejected";
-                    benefactor.AccountStatus = "Archived";
+                    benefactor.AccountStatus = "Rejected";
                     benefactor.IsVerified = false;
                     context.BenefactorProfiles.Update(benefactor);
                     await context.SaveChangesAsync();
