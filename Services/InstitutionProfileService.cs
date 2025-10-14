@@ -35,7 +35,6 @@ namespace c2_eskolar.Services
                 profile.CreatedAt = DateTime.Now;
                 profile.UpdatedAt = DateTime.Now;
                 profile.IsVerified = false;
-                profile.VerificationStatus = "Pending";
                 profile.AccountStatus = "Pending";
                 
                 context.InstitutionProfiles.Add(profile);
@@ -67,7 +66,7 @@ namespace c2_eskolar.Services
                 
                 // Verification & Status
                 existing.IsVerified = profile.IsVerified;
-                existing.VerificationStatus = profile.VerificationStatus;
+                existing.AccountStatus = profile.AccountStatus;
                 existing.VerificationDate = profile.VerificationDate;
                 
                 // Update timestamp

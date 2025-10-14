@@ -26,7 +26,7 @@
     // --- VERIFICATION MODAL STATE ---
     private bool showVerificationModal = false;
     private bool? isVerified = null;
-    private string? verificationStatus = null;
+    private string? accountStatus = null;
     private string? userId;
 
     protected override async Task OnInitializedAsync()
@@ -69,7 +69,7 @@
                 if (institutionProfile != null)
                 {
                     isVerified = institutionProfile?.IsVerified;
-                    verificationStatus = institutionProfile?.VerificationStatus;
+                    accountStatus = institutionProfile?.AccountStatus;
                 }
                 else
                 {
@@ -78,12 +78,12 @@
                     if (benefactorProfile != null)
                     {
                         isVerified = benefactorProfile?.IsVerified;
-                        verificationStatus = benefactorProfile?.VerificationStatus;
+                        accountStatus = benefactorProfile?.AccountStatus;
                     }
                 }
                 
-                // Show modal if not verified (null or false) or status is not "Verified"
-                if (isVerified != true && (string.IsNullOrEmpty(verificationStatus) || verificationStatus != "Verified"))
+                // Show modal if account status is not "Verified"
+                if (string.IsNullOrEmpty(accountStatus) || accountStatus != "Verified")
                 {
                     showVerificationModal = true;
                 }

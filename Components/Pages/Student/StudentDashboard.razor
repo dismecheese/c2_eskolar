@@ -493,7 +493,7 @@
     // --- Modal State for Verification ---
     private bool showVerificationModal = false;
     private bool? isVerified = null;
-    private string? verificationStatus = null;
+    private string? accountStatus = null;
     private string? userId;
 
     // --- Bookmark State ---
@@ -648,9 +648,9 @@
         {
             var profile = await StudentProfileService.GetProfileByUserIdAsync(userId);
             isVerified = profile?.IsVerified;
-            verificationStatus = profile?.VerificationStatus;
-            // Show modal if not verified (null or false) or status is not "Verified"
-            if (isVerified != true && (string.IsNullOrEmpty(verificationStatus) || verificationStatus != "Verified"))
+            accountStatus = profile?.AccountStatus;
+            // Show modal if account status is not "Verified"
+            if (string.IsNullOrEmpty(accountStatus) || accountStatus != "Verified")
             {
                 showVerificationModal = true;
             }

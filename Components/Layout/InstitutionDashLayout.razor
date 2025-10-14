@@ -44,7 +44,7 @@
             {
                 var profile = await InstitutionProfileService.GetProfileByUserIdAsync(userId);
                 isVerified = profile?.IsVerified;
-                verificationStatus = profile?.VerificationStatus;
+                verificationStatus = profile?.AccountStatus;
                 // Show modal if not verified (null or false) or status is not "Verified"
                 if (isVerified != true && (string.IsNullOrEmpty(verificationStatus) || verificationStatus != "Verified"))
                 {

@@ -44,7 +44,6 @@ namespace c2_eskolar.Services
                     profile.Email = identityEmail;
                 
                 // Set status to Pending for new profiles submitted for verification
-                profile.VerificationStatus = "Pending";
                 profile.AccountStatus = "Pending";
                 profile.IsVerified = false;
                 profile.CreatedAt = DateTime.Now;
@@ -75,11 +74,11 @@ namespace c2_eskolar.Services
                 existing.Course = profile.Course;
                 existing.YearLevel = profile.YearLevel;
                 
-                // Only update verification status if it's being changed from outside (admin/institution)
+                // Only update account status if it's being changed from outside (admin/institution)
                 // For student profile updates, keep status as Pending if it was already verified
-                if (existing.VerificationStatus != "Verified")
+                if (existing.AccountStatus != "Verified")
                 {
-                    existing.VerificationStatus = "Pending"; // Reset to pending when profile is updated
+                    existing.AccountStatus = "Pending"; // Reset to pending when profile is updated
                     existing.IsVerified = false;
                 }
                 

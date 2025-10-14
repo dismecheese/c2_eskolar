@@ -71,11 +71,12 @@ namespace c2_eskolar.Models
     public string? ProfilePicture { get; set; }
 
     public bool IsVerified { get; set; } = false;
-    public string? VerificationStatus { get; set; } = "Pending"; // Deprecated: Use AccountStatus instead
     public DateTime? VerificationDate { get; set; }
 
-    // Account lifecycle status: Unverified → Pending → Verified → Archived
-    public string AccountStatus { get; set; } = "Unverified"; // Unverified, Pending, Verified, Archived
+    // Account lifecycle status: Unverified → Pending → Verified → Rejected → Locked
+    [Required]
+    [StringLength(50)]
+    public string AccountStatus { get; set; } = "Unverified"; // Unverified, Pending, Verified, Rejected, Locked
 
     // Document Uploads
     [StringLength(255)]
@@ -87,6 +88,11 @@ namespace c2_eskolar.Models
     public bool? IsPartnerInstitution { get; set; }
     [StringLength(100)]
     public string? PartnerInstitutionName { get; set; }
+
+    // Benefactor Check
+    public bool? IsPartnerBenefactor { get; set; }
+    [StringLength(100)]
+    public string? PartnerBenefactorName { get; set; }
 
         // Academic Performance (for AI recommendations)
         [Range(1.0, 5.0)]

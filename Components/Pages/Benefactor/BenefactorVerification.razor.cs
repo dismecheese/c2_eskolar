@@ -443,7 +443,7 @@ namespace c2_eskolar.Components.Pages.Benefactor
                 benefactorProfile.BirthDate = verificationModel.BirthDate;
                 benefactorProfile.Description = verificationModel.Description;
                 benefactorProfile.Logo = LogoUploadUrl;
-                benefactorProfile.VerificationStatus = "Pending";
+                benefactorProfile.AccountStatus = "Pending";
                 benefactorProfile.AccountStatus = "Pending";
 
                 await BenefactorProfileService.SaveProfileAsync(benefactorProfile);

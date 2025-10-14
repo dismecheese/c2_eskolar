@@ -636,7 +636,7 @@
                 YearLevel = studentProfile.YearLevel.HasValue ? GetYearLevelText(studentProfile.YearLevel.Value.ToString()) : "1st Year";
                 
                 // Status should always reflect the actual verification status from DB
-                Status = studentProfile.VerificationStatus ?? "Pending";
+                Status = studentProfile.AccountStatus ?? "Pending";
                 EnrollmentStatus = studentProfile.EnrollmentStatus ?? "Regular";
                 
                 ProfilePicture = !string.IsNullOrWhiteSpace(studentProfile.ProfilePicture) ? studentProfile.ProfilePicture : "https://via.placeholder.com/120";

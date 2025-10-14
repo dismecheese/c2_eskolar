@@ -15,12 +15,12 @@
 
     @if (!string.IsNullOrEmpty(ProfileErrorMessage))
     {
-        <div class="alert @(ProfileErrorMessage.Contains("✅") ? "alert-success" : "alert-info")" role="alert">
+        <div class="alert @(ProfileErrorMessage.Contains("✓") ? "alert-success" : "alert-info")" role="alert">
             @ProfileErrorMessage
-            @if (ProfileErrorMessage.Contains("✅"))
+            @if (ProfileErrorMessage.Contains("✓"))
             {
                 <button type="button" class="btn btn-sm btn-outline-secondary ms-2" @onclick="ClearAiExtractedData">
-                    Clear AI Data
+                    Reset Form
                 </button>
             }
         </div>
@@ -342,7 +342,18 @@
     <div class="sv-actions-container">
         <div class="sv-actions-buttons">
             <button type="button" class="sv-btn sv-btn-secondary">Skip for now</button>
-            <button type="submit" class="sv-btn sv-btn-primary" disabled="@(IsSubmitting)">Submit Verification</button>
+            <button type="submit" class="sv-btn sv-btn-primary" disabled="@(IsSubmitting)">
+                @if (IsSubmitting)
+                {
+                    <span>
+                        <i class="fas fa-spinner fa-spin"></i> Submitting...
+                    </span>
+                }
+                else
+                {
+                    <span>Submit Verification</span>
+                }
+            </button>
         </div>
         <div class="sv-status-messages">
             <div class="sv-status-info" style="display:none;">
@@ -359,6 +370,49 @@
             </div>
         </div>
     </div>
+
+    <!-- Success Modal -->
+    @if (ShowSuccessModal)
+    {
+        <div class="sv-modal-overlay" @onclick="CloseSuccessModal">
+            <div class="sv-modal" @onclick:stopPropagation="true">
+                <div class="sv-modal-header">
+                    <h3>Verification Submitted Successfully!</h3>
+                    <button type="button" class="sv-modal-close" @onclick="CloseSuccessModal">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                    </button>
+                </div>
+                <div class="sv-modal-body">
+                    <div class="sv-modal-icon">
+                        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M9 12l2 2 4-4"/>
+                            <circle cx="12" cy="12" r="10"/>
+                        </svg>
+                    </div>
+                    <div class="sv-modal-content">
+                        <h4>Your verification request has been submitted!</h4>
+                        <p>Thank you for submitting your verification documents. Our admin team will review your information and documents within 2-3 business days.</p>
+                        <div class="sv-modal-info-box">
+                            <h5>What happens next?</h5>
+                            <ul>
+                                <li>Admin review of your submitted documents</li>
+                                <li>Verification of your academic information</li>
+                                <li>Email notification once verification is complete</li>
+                                <li>Access to all scholarship features upon approval</li>
+                            </ul>
+                        </div>
+                        <p><strong>Status:</strong> <span class="sv-status-badge sv-status-pending">Pending Review</span></p>
+                    </div>
+                </div>
+                <div class="sv-modal-footer">
+                    <button type="button" class="sv-btn sv-btn-secondary" @onclick="CloseSuccessModal">Stay Here</button>
+                    <button type="button" class="sv-btn sv-btn-primary" @onclick="NavigateToProfile">View Profile</button>
+                </div>
+            </div>
+        </div>
+    }
 
     @code {
         // Validation model for the form
@@ -408,13 +462,24 @@
 
         private StudentVerificationModel verificationModel = new StudentVerificationModel();
 
-    private bool IsSubmitting = false;
+        private bool IsSubmitting = false;
+        private bool ShowSuccessModal = false;
 
     private async Task HandleValidSubmit()
         {
-            if (IsSubmitting) return;
+            Console.WriteLine("[StudentVerification] HandleValidSubmit called");
+            
+            if (IsSubmitting) 
+            {
+                Console.WriteLine("[StudentVerification] Already submitting, returning");
+                return;
+            }
+            
             IsSubmitting = true;
             ProfileErrorMessage = "";
+            
+            Console.WriteLine("[StudentVerification] Starting form validation and submission");
+            
             try
             {
                 var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
@@ -445,13 +510,31 @@
                 studentProfile.StudentNumber = verificationModel.StudentNumber;
                 studentProfile.Course = verificationModel.Program;
                 studentProfile.YearLevel = ParseYearLevel(verificationModel.YearLevel);
-                studentProfile.VerificationStatus = "Pending";
+                studentProfile.InstitutionalEmail = verificationModel.InstitutionalEmail;
                 studentProfile.AccountStatus = "Pending";
                 studentProfile.StudentIdDocumentPath = StudentIdUploadUrl;
                 studentProfile.CorDocumentPath = CorUploadUrl;
+                
+                // Save institution affiliation
+                studentProfile.IsPartnerInstitution = IsInstitutionAffiliated;
+                studentProfile.PartnerInstitutionName = IsInstitutionAffiliated ? SelectedInstitution : null;
+                
+                // Save benefactor affiliation
+                studentProfile.IsPartnerBenefactor = IsBenefactorAffiliated;
+                studentProfile.PartnerBenefactorName = IsBenefactorAffiliated ? SelectedBenefactor : null;
 
                 await StudentProfileService.SaveProfileAsync(studentProfile, studentProfile.Email);
-                ProfileErrorMessage = "Verification submitted successfully!";
+                
+                Console.WriteLine("[StudentVerification] Profile saved successfully, showing success modal");
+                
+                // Show success modal instead of immediate redirect
+                ShowSuccessModal = true;
+                ProfileErrorMessage = ""; // Clear any previous error messages
+                
+                Console.WriteLine($"[StudentVerification] ShowSuccessModal set to: {ShowSuccessModal}");
+                StateHasChanged();
+                
+                Console.WriteLine("[StudentVerification] StateHasChanged called, modal should be visible");
             }
             catch (Exception ex)
             {
@@ -479,6 +562,7 @@
         [Inject] private Services.StudentProfileService StudentProfileService { get; set; } = default!;
         [Inject] private AuthenticationStateProvider AuthenticationStateProvider { get; set; } = default!;
         [Inject] private Services.DocumentIntelligenceService DocumentIntelligenceService { get; set; } = default!;
+        [Inject] private NavigationManager Navigation { get; set; } = default!;
 
         protected override async Task OnInitializedAsync()
         {
@@ -511,7 +595,7 @@
                         verificationModel.StudentNumber = studentProfile.StudentNumber ?? "";
                         verificationModel.Program = studentProfile.Course ?? "";
                         verificationModel.YearLevel = studentProfile.YearLevel.HasValue ? $"{studentProfile.YearLevel} year" : "";
-                        Status = studentProfile.VerificationStatus ?? "Pending";
+                        Status = studentProfile.AccountStatus;
                     }
                     else
                     {
@@ -634,16 +718,24 @@
                     if (extractedData != null)
                     {
                         PrepopulateFromIdDocument(extractedData);
-                        StudentIdUploadStatus = "Uploaded & Data Extracted!";
+                        StudentIdUploadStatus = "Document uploaded and processed successfully.";
                     }
                     else
                     {
-                        StudentIdUploadStatus = "Uploaded! (AI extraction failed). Please check file clarity and type.";
+                        StudentIdUploadStatus = "Document uploaded successfully. Automated extraction could not be completed - please verify image quality and document type.";
                     }
+                }
+                catch (HttpRequestException ex) when (ex.Message.Contains("Connection reset") || ex.Message.Contains("network"))
+                {
+                    StudentIdUploadStatus = "Document uploaded successfully. Network connectivity issues prevented automated processing - please complete the form manually or retry upload.";
+                }
+                catch (TaskCanceledException ex) when (ex.Message.Contains("timeout"))
+                {
+                    StudentIdUploadStatus = "Document uploaded successfully. Processing timeout occurred - please complete the form manually or retry upload.";
                 }
                 catch (Exception ex)
                 {
-                    StudentIdUploadStatus = $"AI extraction error: {ex.Message}";
+                    StudentIdUploadStatus = $"AI extraction error: {ex.Message.Substring(0, Math.Min(100, ex.Message.Length))}...";
                 }
             }
             else
@@ -707,16 +799,24 @@
                     if (extractedData != null)
                     {
                         PrepopulateFromCorDocument(extractedData);
-                        CorUploadStatus = "Uploaded & Data Extracted!";
+                        CorUploadStatus = "Document uploaded and processed successfully.";
                     }
                     else
                     {
-                        CorUploadStatus = "Uploaded! (AI extraction failed). Please check file clarity and type.";
+                        CorUploadStatus = "Document uploaded successfully. Automated extraction could not be completed - please verify image quality and document type.";
                     }
+                }
+                catch (HttpRequestException ex) when (ex.Message.Contains("Connection reset") || ex.Message.Contains("network"))
+                {
+                    CorUploadStatus = "Document uploaded successfully. Network connectivity issues prevented automated processing - please complete the form manually or retry upload.";
+                }
+                catch (TaskCanceledException ex) when (ex.Message.Contains("timeout"))
+                {
+                    CorUploadStatus = "Document uploaded successfully. Processing timeout occurred - please complete the form manually or retry upload.";
                 }
                 catch (Exception ex)
                 {
-                    CorUploadStatus = $"AI extraction error: {ex.Message}";
+                    CorUploadStatus = $"AI extraction error: {ex.Message.Substring(0, Math.Min(100, ex.Message.Length))}...";
                 }
             }
             else
@@ -780,30 +880,115 @@
                 SelectedYearLevel = extractedData.YearLevel; // Update the dropdown selection
             }
 
-            // If student name is found and our current form is empty, prepopulate it
+            // Enhanced name parsing for Philippine naming conventions
             if (!string.IsNullOrEmpty(extractedData.StudentName) && 
                 string.IsNullOrEmpty(verificationModel.FirstName))
             {
-                var nameParts = extractedData.StudentName.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-                if (nameParts.Length >= 2)
+                ParseAndSetStudentName(extractedData.StudentName);
+            }
+
+            // Prepopulate address if available and current address is empty
+            if (!string.IsNullOrEmpty(extractedData.Address) && 
+                string.IsNullOrEmpty(verificationModel.PermanentAddress))
+            {
+                verificationModel.PermanentAddress = extractedData.Address;
+            }
+
+            // Prepopulate phone number if available and current phone is empty
+            if (!string.IsNullOrEmpty(extractedData.PhoneNumber) && 
+                string.IsNullOrEmpty(verificationModel.Phone))
+            {
+                verificationModel.Phone = extractedData.PhoneNumber;
+            }
+
+            // Store additional COR data in a format we can display to the user
+            var extractedFields = new List<string>();
+            
+            if (!string.IsNullOrEmpty(extractedData.PhoneNumber))
+                extractedFields.Add($"Phone: {extractedData.PhoneNumber}");
+                
+            if (!string.IsNullOrEmpty(extractedData.Semester))
+                extractedFields.Add($"Semester: {extractedData.Semester}");
+                
+            if (!string.IsNullOrEmpty(extractedData.AcademicYear))
+                extractedFields.Add($"Academic Year: {extractedData.AcademicYear}");
+                
+            if (!string.IsNullOrEmpty(extractedData.College))
+                extractedFields.Add($"College: {extractedData.College}");
+                
+            if (!string.IsNullOrEmpty(extractedData.EnrollmentStatus))
+                extractedFields.Add($"Status: {extractedData.EnrollmentStatus}");
+                
+            if (!string.IsNullOrEmpty(extractedData.UnitsEnrolled))
+                extractedFields.Add($"Units: {extractedData.UnitsEnrolled}");
+                
+            if (!string.IsNullOrEmpty(extractedData.GPA))
+                extractedFields.Add($"GPA: {extractedData.GPA}");
+
+            // Show professional success message with extracted details
+            var additionalInfo = extractedFields.Any() 
+                ? $" Additional information extracted: {string.Join(", ", extractedFields.Take(3))}{(extractedFields.Count > 3 ? ", and more" : "")}."
+                : "";
+                
+            ProfileErrorMessage = $"Educational information has been automatically populated from your COR. Please review all fields for accuracy before proceeding.";
+            
+            StateHasChanged();
+        }
+
+        private void ParseAndSetStudentName(string fullName)
+        {
+            try
+            {
+                // Handle Philippine naming conventions:
+                // Format 1: "LAST NAME, FIRST NAME MIDDLE NAME" 
+                // Format 2: "FIRST NAME MIDDLE NAME LAST NAME"
+                
+                if (fullName.Contains(','))
                 {
-                    verificationModel.FirstName = nameParts[0];
-                    if (nameParts.Length == 2)
+                    // Format: "LAST NAME, FIRST NAME MIDDLE NAME"
+                    var parts = fullName.Split(',', StringSplitOptions.RemoveEmptyEntries);
+                    if (parts.Length >= 2)
                     {
-                        verificationModel.LastName = nameParts[1];
+                        verificationModel.LastName = parts[0].Trim();
+                        
+                        var givenNames = parts[1].Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                        if (givenNames.Length == 1)
+                        {
+                            verificationModel.FirstName = givenNames[0];
+                        }
+                        else if (givenNames.Length >= 2)
+                        {
+                            // Last word is middle name, everything else is first name
+                            verificationModel.MiddleName = givenNames[^1];
+                            verificationModel.FirstName = string.Join(" ", givenNames.Take(givenNames.Length - 1));
+                        }
                     }
-                    else if (nameParts.Length >= 3)
+                }
+                else
+                {
+                    // Format: "FIRST NAME MIDDLE NAME LAST NAME"
+                    var nameParts = fullName.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                    if (nameParts.Length >= 2)
                     {
-                        verificationModel.MiddleName = string.Join(" ", nameParts.Skip(1).Take(nameParts.Length - 2));
-                        verificationModel.LastName = nameParts[^1];
+                        verificationModel.FirstName = nameParts[0];
+                        if (nameParts.Length == 2)
+                        {
+                            verificationModel.LastName = nameParts[1];
+                        }
+                        else if (nameParts.Length >= 3)
+                        {
+                            verificationModel.MiddleName = string.Join(" ", nameParts.Skip(1).Take(nameParts.Length - 2));
+                            verificationModel.LastName = nameParts[^1];
+                        }
                     }
                 }
             }
-
-            // Show success message
-            ProfileErrorMessage = "Educational information has been automatically filled from your COR document. Please review and complete any missing fields.";
-            
-            StateHasChanged();
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error parsing student name '{fullName}': {ex.Message}");
+                // Fallback: just use the full name as first name
+                verificationModel.FirstName = fullName.Trim();
+            }
         }
 
         private void ClearAiExtractedData()
@@ -900,6 +1085,21 @@
         {
             SelectedYearLevel = value;
             ShowYearLevelDropdown = false;
+        }
+
+        // Success Modal Methods
+        private void CloseSuccessModal()
+        {
+            Console.WriteLine("[StudentVerification] CloseSuccessModal called");
+            ShowSuccessModal = false;
+            StateHasChanged();
+        }
+
+        private void NavigateToProfile()
+        {
+            Console.WriteLine("[StudentVerification] NavigateToProfile called");
+            ShowSuccessModal = false;
+            Navigation.NavigateTo("/dashboard/student");
         }
     }
     </div>

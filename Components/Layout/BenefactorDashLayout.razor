@@ -108,7 +108,7 @@
             {
                 var profile = await BenefactorProfileService.GetProfileByUserIdAsync(userId);
                 var isVerified = profile?.IsVerified;
-                verificationStatus = profile?.VerificationStatus;
+                verificationStatus = profile?.AccountStatus;
 
                 if (isVerified != true && (string.IsNullOrEmpty(verificationStatus) || verificationStatus != "Verified"))
                 {
