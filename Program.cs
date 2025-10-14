@@ -103,6 +103,7 @@ builder.Services.AddScoped<InstitutionProfileService>();
 builder.Services.AddScoped<BlobStorageService>();
 builder.Services.AddScoped<BookmarkService>();
 
+
 // Register web scraping services
 builder.Services.AddScoped<c2_eskolar.Services.WebScraping.IWebScrapingService, c2_eskolar.Services.WebScraping.WebScrapingService>();
 builder.Services.AddScoped<c2_eskolar.Services.WebScraping.IEnhancedWebScrapingService, c2_eskolar.Services.WebScraping.EnhancedWebScrapingService>();
@@ -139,6 +140,7 @@ builder.Services.AddScoped<DisplayContextAwarenessService>();
 builder.Services.AddScoped<ChatbotMessageFormattingService>();
 builder.Services.AddScoped<OpenAIService>();
 builder.Services.AddScoped<AITokenTrackingService>();
+builder.Services.AddScoped<SuperAdminAnalyticsService>();
 
     var app = builder.Build();
 
@@ -200,6 +202,69 @@ builder.Services.AddScoped<AITokenTrackingService>();
                 else
                 {
                     Console.WriteLine($"❌ Failed to create SuperAdmin: {string.Join(", ", result.Errors.Select(e => e.Description))}");
+                }
+            }
+            var testEmail = "student@test.com";
+            var existingUser = await userManager.FindByEmailAsync(testEmail);
+            if (existingUser == null)
+            {
+                var testUser = new IdentityUser
+                {
+                    UserName = testEmail,
+                    Email = testEmail,
+                    EmailConfirmed = true
+                };
+                var result = await userManager.CreateAsync(testUser, "Student123!");
+                if (result.Succeeded)
+                {
+                    await userManager.AddToRoleAsync(testUser, "Student");
+                    Console.WriteLine($"✅ Created test user: {testEmail} / Student123!");
+                }
+                else
+                {
+                    Console.WriteLine($"❌ Failed to create test user: {string.Join(", ", result.Errors.Select(e => e.Description))}");
+                }
+            }
+            var benefactorEmail = "benefactor@test.com";
+            var existingBenefactor = await userManager.FindByEmailAsync(benefactorEmail);
+            if (existingBenefactor == null)
+            {
+                var benefactorUser = new IdentityUser
+                {
+                    UserName = benefactorEmail,
+                    Email = benefactorEmail,
+                    EmailConfirmed = true
+                };
+                var result = await userManager.CreateAsync(benefactorUser, "Benefactor123!");
+                if (result.Succeeded)
+                {
+                    await userManager.AddToRoleAsync(benefactorUser, "Benefactor");
+                    Console.WriteLine($"✅ Created test benefactor: {benefactorEmail} / Benefactor123!");
+                }
+                else
+                {
+                    Console.WriteLine($"❌ Failed to create test benefactor: {string.Join(", ", result.Errors.Select(e => e.Description))}");
+                }
+            }
+            var institutionEmail = "institution@test.com";
+            var existingInstitution = await userManager.FindByEmailAsync(institutionEmail);
+            if (existingInstitution == null)
+            {
+                var institutionUser = new IdentityUser
+                {
+                    UserName = institutionEmail,
+                    Email = institutionEmail,
+                    EmailConfirmed = true
+                };
+                var result = await userManager.CreateAsync(institutionUser, "Institution123!");
+                if (result.Succeeded)
+                {
+                    await userManager.AddToRoleAsync(institutionUser, "Institution");
+                    Console.WriteLine($"✅ Created test institution: {institutionEmail} / Institution123!");
+                }
+                else
+                {
+                    Console.WriteLine($"❌ Failed to create test institution: {string.Join(", ", result.Errors.Select(e => e.Description))}");
                 }
             }
             var seedService = scope.ServiceProvider.GetRequiredService<AnnouncementSeedService>();

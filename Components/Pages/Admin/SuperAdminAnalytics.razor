@@ -1,0 +1,502 @@
+@page "/dashboard/superadmin/analytics"
+@attribute [Authorize(Roles = "SuperAdmin")]
+@using Microsoft.EntityFrameworkCore
+@using c2_eskolar.Models
+@using c2_eskolar.Services
+@using Microsoft.AspNetCore.Authorization
+@layout Layout.SuperAdminDashLayout
+@inject c2_eskolar.Services.SuperAdminAnalyticsService SuperAdminAnalyticsService
+@inject AuthenticationStateProvider AuthStateProvider
+@rendermode InteractiveServer
+
+@code {
+    public class PieSliceData
+    {
+        public string? Label { get; set; }
+        public double Value { get; set; }
+        public string? Color { get; set; }
+    }
+
+    private SuperAdminAnalyticsResult? analyticsData;
+    private bool IsLoading = true;
+    private string? ErrorMessage = null;
+    private List<PieSliceData> UserDistributionPieData = new();
+    private List<PieSliceData> ApplicationStatusPieData = new();
+    private List<PieSliceData> VerificationStatusPieData = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            await LoadAnalyticsData();
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = ex.Message;
+            IsLoading = false;
+        }
+    }
+
+    private async Task LoadAnalyticsData()
+    {
+        try
+        {
+            IsLoading = true;
+            analyticsData = await SuperAdminAnalyticsService.GetSystemAnalyticsAsync();
+            
+            if (analyticsData != null)
+            {
+                PrepareChartData();
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"Error loading analytics: {ex.Message}";
+        }
+        finally
+        {
+            IsLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private void PrepareChartData()
+    {
+        if (analyticsData == null) return;
+
+        // User Distribution Pie Chart
+        UserDistributionPieData = new List<PieSliceData>
+        {
+            new() { Label = "Students", Value = analyticsData.TotalStudents, Color = "#3b82f6" },
+            new() { Label = "Benefactors", Value = analyticsData.TotalBenefactors, Color = "#10b981" },
+            new() { Label = "Institutions", Value = analyticsData.TotalInstitutions, Color = "#f59e0b" }
+        };
+
+        // Application Status Pie Chart
+        ApplicationStatusPieData = new List<PieSliceData>
+        {
+            new() { Label = "Accepted", Value = analyticsData.AcceptedApplications, Color = "#10b981" },
+            new() { Label = "Pending", Value = analyticsData.PendingApplications, Color = "#f59e0b" },
+            new() { Label = "Rejected", Value = analyticsData.RejectedApplications, Color = "#ef4444" }
+        };
+
+        // Verification Status Pie Chart
+        var totalUsers = analyticsData.TotalStudents + analyticsData.TotalBenefactors + analyticsData.TotalInstitutions;
+        var unverifiedUsers = totalUsers - analyticsData.VerifiedUsers;
+        
+        VerificationStatusPieData = new List<PieSliceData>
+        {
+            new() { Label = "Verified", Value = analyticsData.VerifiedUsers, Color = "#10b981" },
+            new() { Label = "Unverified", Value = unverifiedUsers, Color = "#ef4444" }
+        };
+    }
+
+    private string GetStatusBadgeClass(string status)
+    {
+        return status?.ToLower() switch
+        {
+            "accepted" => "status-badge status-accepted",
+            "pending" => "status-badge status-pending",
+            "rejected" => "status-badge status-rejected",
+            _ => "status-badge status-pending"
+        };
+    }
+
+    private string FormatCurrency(decimal amount)
+    {
+        return amount.ToString("C2", System.Globalization.CultureInfo.GetCultureInfo("en-PH"));
+    }
+
+    private string FormatPercentage(double value)
+    {
+        return $"{value:F1}%";
+    }
+
+    private string GetMonthName(int month)
+    {
+        return new DateTime(2025, month, 1).ToString("MMM");
+    }
+}
+
+<div class="analytics-container">
+    @if (IsLoading)
+    {
+        <div class="loading-container">
+            <div class="loading-spinner"></div>
+            <p>Loading system analytics...</p>
+        </div>
+    }
+    else if (!string.IsNullOrEmpty(ErrorMessage))
+    {
+        <div class="error-container">
+            <div class="error-message">
+                <i class="bi bi-exclamation-triangle"></i>
+                <span>@ErrorMessage</span>
+            </div>
+            <button class="btn btn-primary" @onclick="LoadAnalyticsData">
+                <i class="bi bi-arrow-clockwise"></i> Retry
+            </button>
+        </div>
+    }
+    else if (analyticsData != null)
+    {
+        <!-- Header Section -->
+        <div class="analytics-header">
+            <h1>System Analytics Dashboard</h1>
+            <p>Comprehensive overview of platform performance and user engagement</p>
+            <div class="last-updated">
+                Last updated: @DateTime.Now.ToString("MMM dd, yyyy hh:mm tt")
+            </div>
+        </div>
+
+        <!-- Key Metrics Cards -->
+        <div class="metrics-grid">
+            <div class="metric-card user-stats">
+                <div class="metric-icon">
+                    <i class="bi bi-people"></i>
+                </div>
+                <div class="metric-info">
+                    <div class="metric-value">@analyticsData.TotalUsers</div>
+                    <div class="metric-label">Total Users</div>
+                    <div class="metric-breakdown">
+                        @analyticsData.VerifiedUsers verified | @analyticsData.NewUsersThisMonth new this month
+                    </div>
+                </div>
+            </div>
+
+            <div class="metric-card scholarship-stats">
+                <div class="metric-icon">
+                    <i class="bi bi-award"></i>
+                </div>
+                <div class="metric-info">
+                    <div class="metric-value">@analyticsData.TotalScholarships</div>
+                    <div class="metric-label">Total Scholarships</div>
+                    <div class="metric-breakdown">
+                        @analyticsData.ActiveScholarships active (@FormatPercentage(analyticsData.ScholarshipUtilizationRate))
+                    </div>
+                </div>
+            </div>
+
+            <div class="metric-card application-stats">
+                <div class="metric-icon">
+                    <i class="bi bi-file-earmark-text"></i>
+                </div>
+                <div class="metric-info">
+                    <div class="metric-value">@analyticsData.TotalApplications</div>
+                    <div class="metric-label">Total Applications</div>
+                    <div class="metric-breakdown">
+                        @FormatPercentage(analyticsData.SystemUtilizationRate) success rate
+                    </div>
+                </div>
+            </div>
+
+            <div class="metric-card financial-stats">
+                <div class="metric-icon">
+                    <i class="bi bi-currency-dollar"></i>
+                </div>
+                <div class="metric-info">
+                    <div class="metric-value">@FormatCurrency(analyticsData.TotalScholarshipValue)</div>
+                    <div class="metric-label">Total Scholarship Value</div>
+                    <div class="metric-breakdown">
+                        @FormatCurrency(analyticsData.DistributedValue) distributed
+                    </div>
+                </div>
+            </div>
+
+            <div class="metric-card growth-stats">
+                <div class="metric-icon">
+                    <i class="bi bi-graph-up-arrow"></i>
+                </div>
+                <div class="metric-info">
+                    <div class="metric-value">@FormatPercentage(analyticsData.UserGrowthRate)</div>
+                    <div class="metric-label">User Growth Rate</div>
+                    <div class="metric-breakdown">
+                        @FormatPercentage(analyticsData.UserRetentionRate) retention
+                    </div>
+                </div>
+            </div>
+
+            <div class="metric-card efficiency-stats">
+                <div class="metric-icon">
+                    <i class="bi bi-speedometer2"></i>
+                </div>
+                <div class="metric-info">
+                    <div class="metric-value">@FormatPercentage(analyticsData.PlatformEfficiencyScore)</div>
+                    <div class="metric-label">Platform Efficiency</div>
+                    <div class="metric-breakdown">
+                        @analyticsData.AverageProcessingTime.ToString("F1") days avg processing
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Financial Analytics Section -->
+        <div class="financial-section">
+            <h3>Financial Analytics</h3>
+            <div class="financial-grid">
+                <div class="financial-card">
+                    <div class="financial-header">
+                        <i class="bi bi-piggy-bank"></i>
+                        <span>Platform ROI</span>
+                    </div>
+                    <div class="financial-value">@FormatPercentage(analyticsData.PlatformROI)</div>
+                    <div class="financial-detail">Return on Investment</div>
+                </div>
+                <div class="financial-card">
+                    <div class="financial-header">
+                        <i class="bi bi-bar-chart"></i>
+                        <span>Average Value</span>
+                    </div>
+                    <div class="financial-value">@FormatCurrency(analyticsData.AverageScholarshipValue)</div>
+                    <div class="financial-detail">Per Scholarship</div>
+                </div>
+                <div class="financial-card">
+                    <div class="financial-header">
+                        <i class="bi bi-cpu"></i>
+                        <span>AI Costs</span>
+                    </div>
+                    <div class="financial-value">@FormatCurrency(analyticsData.AITokenUsageStats.TotalCost)</div>
+                    <div class="financial-detail">@analyticsData.AITokenUsageStats.TotalRequests requests</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Performance Analytics Section -->
+        <div class="performance-section">
+            <h3>Performance Analytics</h3>
+            <div class="performance-grid">
+                <div class="performance-card">
+                    <h4>Success Rates</h4>
+                    <div class="success-rate-item">
+                        <span>Benefactor Success Rate:</span>
+                        <span class="rate-value">@FormatPercentage(analyticsData.BenefactorSuccessRate)</span>
+                    </div>
+                    <div class="success-rate-item">
+                        <span>Institution Success Rate:</span>
+                        <span class="rate-value">@FormatPercentage(analyticsData.InstitutionSuccessRate)</span>
+                    </div>
+                    <div class="success-rate-item">
+                        <span>Benefactor vs Institution Ratio:</span>
+                        <span class="rate-value">@analyticsData.BenefactorVsInstitutionRatio.ToString("F2")</span>
+                    </div>
+                </div>
+                
+                <div class="performance-card">
+                    <h4>AI Performance</h4>
+                    <div class="ai-stat-item">
+                        <span>Total Tokens Used:</span>
+                        <span class="stat-value">@analyticsData.AITokenUsageStats.TotalTokens.ToString("N0")</span>
+                    </div>
+                    <div class="ai-stat-item">
+                        <span>Success Rate:</span>
+                        <span class="stat-value">@FormatPercentage(analyticsData.AITokenUsageStats.SuccessRate)</span>
+                    </div>
+                    <div class="ai-stat-item">
+                        <span>Most Used Operation:</span>
+                        <span class="stat-value">@analyticsData.AITokenUsageStats.MostUsedOperation</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Charts Section -->
+        <div class="charts-section">
+            <div class="chart-container">
+                <h3>User Distribution</h3>
+                <div class="pie-chart">
+                    @foreach (var slice in UserDistributionPieData)
+                    {
+                        <div class="chart-legend-item">
+                            <div class="legend-color" style="background-color: @slice.Color;"></div>
+                            <span>@slice.Label: @slice.Value</span>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <div class="chart-container">
+                <h3>Application Status</h3>
+                <div class="pie-chart">
+                    @foreach (var slice in ApplicationStatusPieData)
+                    {
+                        <div class="chart-legend-item">
+                            <div class="legend-color" style="background-color: @slice.Color;"></div>
+                            <span>@slice.Label: @slice.Value</span>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <div class="chart-container">
+                <h3>Verification Status</h3>
+                <div class="pie-chart">
+                    @foreach (var slice in VerificationStatusPieData)
+                    {
+                        <div class="chart-legend-item">
+                            <div class="legend-color" style="background-color: @slice.Color;"></div>
+                            <span>@slice.Label: @slice.Value</span>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Demographic Analytics Section -->
+        <div class="demographics-section">
+            <h3>Student Demographics</h3>
+            <div class="demographics-grid">
+                <div class="demographic-card">
+                    <h4>Top Courses</h4>
+                    <div class="demographic-list">
+                        @foreach (var course in analyticsData.CourseDistribution.Take(5))
+                        {
+                            <div class="demographic-item">
+                                <span class="demographic-label">@course.Category</span>
+                                <span class="demographic-count">@course.Count</span>
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                <div class="demographic-card">
+                    <h4>Year Level Distribution</h4>
+                    <div class="demographic-list">
+                        @foreach (var yearLevel in analyticsData.YearLevelDistribution)
+                        {
+                            <div class="demographic-item">
+                                <span class="demographic-label">@yearLevel.Category</span>
+                                <span class="demographic-count">@yearLevel.Count</span>
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                <div class="demographic-card">
+                    <h4>Top Universities</h4>
+                    <div class="demographic-list">
+                        @foreach (var university in analyticsData.UniversityDistribution.Take(5))
+                        {
+                            <div class="demographic-item">
+                                <span class="demographic-label">@university.Category</span>
+                                <span class="demographic-count">@university.Count</span>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Geographic Analytics Section -->
+        <div class="geographic-section">
+            <h3>Geographic Distribution</h3>
+            <div class="geographic-grid">
+                @foreach (var region in analyticsData.GeographicDistribution.Take(6))
+                {
+                    <div class="geographic-card">
+                        <div class="geographic-header">
+                            <i class="bi bi-geo-alt"></i>
+                            <span>@region.Region</span>
+                        </div>
+                        <div class="geographic-count">@region.Count students</div>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- Predictive Analytics Section -->
+        @if (analyticsData.PredictedApplications.Any())
+        {
+            <div class="predictions-section">
+                <h3>Predictive Analytics</h3>
+                <div class="predictions-grid">
+                    <div class="prediction-card">
+                        <h4>Application Predictions</h4>
+                        <div class="prediction-list">
+                            @foreach (var prediction in analyticsData.PredictedApplications)
+                            {
+                                <div class="prediction-item">
+                                    <span class="prediction-month">@prediction.Month.ToString("MMM yyyy")</span>
+                                    <span class="prediction-value">~@prediction.PredictedApplications applications</span>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                    
+                    <div class="prediction-card">
+                        <h4>Growth Forecast</h4>
+                        <div class="growth-forecast">
+                            <div class="forecast-item">
+                                <span>Predicted User Growth:</span>
+                                <span class="forecast-value">@FormatPercentage(analyticsData.PredictedUserGrowth)</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+
+        <!-- Recent Activity Section -->
+        <div class="activity-section">
+            <div class="recent-applications">
+                <h3>Recent Applications</h3>
+                <div class="table-container">
+                    <table class="analytics-table">
+                        <thead>
+                            <tr>
+                                <th>Student</th>
+                                <th>Scholarship</th>
+                                <th>Date</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var app in analyticsData.RecentApplications)
+                            {
+                                <tr>
+                                    <td>@app.StudentName</td>
+                                    <td>@app.ScholarshipTitle</td>
+                                    <td>@app.ApplicationDate.ToString("MMM dd, yyyy")</td>
+                                    <td><span class="@GetStatusBadgeClass(app.Status)">@app.Status</span></td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="top-scholarships">
+                <h3>Top Performing Scholarships</h3>
+                <div class="scholarship-list">
+                    @foreach (var scholarship in analyticsData.TopPerformingScholarships)
+                    {
+                        <div class="scholarship-item">
+                            <div class="scholarship-info">
+                                <h4>@scholarship.Title</h4>
+                                <div class="scholarship-stats">
+                                    <span>@scholarship.ApplicationCount applications</span>
+                                    <span>@scholarship.AcceptedCount accepted</span>
+                                    <span>@FormatCurrency(scholarship.MonetaryValue)</span>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Monthly Trends -->
+        <div class="trends-section">
+            <h3>Monthly Application Trends</h3>
+            <div class="trend-chart">
+                @foreach (var trend in analyticsData.MonthlyApplicationTrends)
+                {
+                    <div class="trend-bar">
+                        <div class="trend-month">@GetMonthName(trend.Month)</div>
+                        <div class="trend-value">@trend.ApplicationCount</div>
+                        <div class="trend-accepted">@trend.AcceptedCount accepted</div>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+</div>

@@ -425,7 +425,6 @@
                 <div class="sidebar-profile-name">@((adminFirstName ?? "Benefactor") + (string.IsNullOrWhiteSpace(adminLastName) ? "" : $" {adminLastName}"))</div>
                 <div class="sidebar-profile-role">Benefactor</div>
                 <button class="sidebar-profile-btn" @onclick="NavigateToBenefactorProfile" data-bs-dismiss="offcanvas">Profile</button>
-                <button class="sidebar-profile-btn logout-btn" @onclick="ShowLogoutModal" data-bs-dismiss="offcanvas">Log Out</button>
             </div>
 
             <!-- Calendar Section -->
