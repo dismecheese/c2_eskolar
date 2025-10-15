@@ -46,57 +46,6 @@
         // --- LOGOUT MODAL STATE ---
         private bool showLogoutModal = false;
 
-        // --- VERIFICATION MODAL LOGIC ---
-        private async Task CheckVerificationStatus()
-        {
-            // Prevent modal on verification page
-            var currentUri = Navigation.Uri;
-            if (currentUri.Contains("/student/verification"))
-            {
-                showVerificationModal = false;
-                return;
-            }
-            try
-            {
-                var currentPath = Navigation.ToBaseRelativePath(Navigation.Uri).Split('?')[0].TrimEnd('/').ToLower();
-                // Prevent modal on verification page
-                if (currentPath == "student/verification")
-                {
-                    showVerificationModal = false;
-                    return;
-                }
-                var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
-                userId = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-                if (!string.IsNullOrEmpty(userId))
-                {
-                    var profile = await StudentProfileService.GetProfileByUserIdAsync(userId);
-                    isVerified = profile?.IsVerified;
-                    accountStatus = profile?.AccountStatus;
-                    // Show modal if account status is not "Verified"
-                    if (string.IsNullOrEmpty(accountStatus) || accountStatus != "Verified")
-                    {
-                        showVerificationModal = true;
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error checking verification status: {ex.Message}");
-            }
-        }
-
-        private void GoToVerification()
-        {
-            showVerificationModal = false;
-            Navigation.NavigateTo("/student/verification");
-        }
-
-        private void SkipVerification()
-        {
-            showVerificationModal = false;
-            Navigation.NavigateTo("/dashboard/unverified");
-        }
-
         // --- LOGOUT MODAL LOGIC ---
         private void ShowLogoutModal()
         {
@@ -123,7 +72,6 @@
         await LoadCurrentUser();
         await LoadStudentProfile();
         await LoadNotifications();
-        await CheckVerificationStatus();
     }
 
         private async Task LoadStudentProfile()
@@ -293,7 +241,7 @@
             return "/dashboard/student";
         }
         // If user is not verified, go to unverified dashboard
-        return "/dashboard/unverified";
+        return "/dashboard/student/unverified";
     }
 
     // --- CHATBOT STATE ---
@@ -501,25 +449,6 @@
     {
         <ChatBot CloseChatbot="CloseChatbot" MinimizeChatbot="MinimizeChatbot" />
     }
-
-        @if (showVerificationModal)
-        {
-                <div class="sv-modal sv-modal-backdrop sv-modal-fixed">
-                    <div class="sv-modal-content">
-                        <div class="sv-modal-header">
-                            <h2>Student Verification Required</h2>
-                        </div>
-                        <div class="sv-modal-body">
-                            <p class="sv-modal-justify">To maintain the integrity of eSkolar, all students must complete verification before gaining full access to platform features. Please verify your student profile by providing accurate details and the necessary supporting documents.</p>
-                        </div>
-                        <div class="sv-modal-footer" style="display:flex;gap:16px;justify-content:flex-end;">
-                            <button class="sv-btn sv-btn-secondary" @onclick="SkipVerification">Skip for Now</button>
-                            <button class="sv-btn sv-btn-primary" @onclick="GoToVerification">Verify Profile</button>
-                        </div>
-                    </div>
-                </div>
-        }
-
         <LogoutModal IsVisible="@showLogoutModal" OnCancel="@CancelLogout" OnConfirm="@ConfirmLogout" />
 
 </div>

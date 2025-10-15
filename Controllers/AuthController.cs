@@ -135,14 +135,14 @@ namespace c2_eskolar.Controllers
                 var user = await _userManager.FindByEmailAsync(email);
                 if (user == null)
                 {
-                    return "/dashboard/unverified";
+                    return "/dashboard/student/unverified";
                 }
 
                 // Get the student profile to check verification status
                 var studentProfile = await _studentProfileService.GetProfileByUserIdAsync(user.Id);
                 if (studentProfile == null)
                 {
-                    return "/dashboard/unverified";
+                    return "/dashboard/student/unverified";
                 }
 
                 // Check if student is verified
@@ -150,13 +150,13 @@ namespace c2_eskolar.Controllers
                                  !string.IsNullOrEmpty(studentProfile.AccountStatus) && 
                                  studentProfile.AccountStatus == "Verified";
 
-                return isVerified ? "/dashboard/student" : "/dashboard/unverified";
+                return isVerified ? "/dashboard/student" : "/dashboard/student/unverified";
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"[AuthController] Error checking student verification: {ex.Message}");
                 // Default to unverified on error for safety
-                return "/dashboard/unverified";
+                return "/dashboard/student/unverified";
             }
         }
 

@@ -459,24 +459,7 @@
 
 
 @* Logout modal handled by sv-modal earlier in this file via showLogoutModal state *@
-    @if (showVerificationModal)
-    {
-        <div class="sv-modal sv-modal-backdrop sv-modal-fixed">
-            <div class="sv-modal-content">
-                <div class="sv-modal-header">
-                    <h2>Benefactor Verification Required</h2>
-                </div>
-                <div class="sv-modal-body">
-                    <p class="sv-modal-justify">To maintain the integrity of eSkolar, all benefactors must complete verification before gaining full access to platform features.
-                    Please verify your organization by providing accurate details, administrator information, and the necessary supporting documents.</p>
-                </div>
-                <div class="sv-modal-footer" style="display:flex;gap:16px;justify-content:flex-end;">
-                    <button class="sv-btn sv-btn-secondary" @onclick="SkipVerification">Skip for Now</button>
-                    <button class="sv-btn sv-btn-primary" @onclick="GoToVerification">Verify Benefactor</button>
-                </div>
-            </div>
-        </div>
-    }
+    
 
 <!-- Floating Chatbot Window -->
 @if (ShowChatbot)

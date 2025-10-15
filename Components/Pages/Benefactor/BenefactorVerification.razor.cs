@@ -84,6 +84,9 @@ namespace c2_eskolar.Components.Pages.Benefactor
         private BenefactorVerificationModel verificationModel = new BenefactorVerificationModel();
         private bool IsSubmitting = false;
         private string ProfileErrorMessage = "";
+        protected bool ShowAlreadySubmittedModal = false;
+        protected bool HasAlreadySubmitted = false;
+        protected string CurrentAccountStatus = "";
 
         // Sex Dropdown logic for custom select (component-level)
         private bool ShowSexDropdown = false;
@@ -468,6 +471,16 @@ namespace c2_eskolar.Components.Pages.Benefactor
                 var profile = await BenefactorProfileService.GetProfileByUserIdAsync(userId);
                 if (profile != null)
                 {
+                    // Check account status to determine if user has already submitted
+                    CurrentAccountStatus = profile.AccountStatus ?? "";
+                    
+                    // Check if user has already submitted (any status except null/empty)
+                    if (!string.IsNullOrEmpty(profile.AccountStatus))
+                    {
+                        HasAlreadySubmitted = true;
+                        ShowAlreadySubmittedModal = true;
+                    }
+                    
                     // Pre-populate form with existing data
                     verificationModel.InstitutionName = profile.OrganizationName ?? string.Empty;
                     verificationModel.InstitutionType = profile.OrganizationType ?? string.Empty;
@@ -502,7 +515,26 @@ namespace c2_eskolar.Components.Pages.Benefactor
         public void ViewProfile()
         {
             ShowSuccessModal = false;
+            Navigation.NavigateTo("/dashboard/benefactor/unverified");
+        }
+
+        // Modal logic for already submitted modal
+        public void CloseAlreadySubmittedModal()
+        {
+            ShowAlreadySubmittedModal = false;
+            InvokeAsync(StateHasChanged);
+        }
+        
+        public void GoToDashboard()
+        {
+            ShowAlreadySubmittedModal = false;
             Navigation.NavigateTo("/dashboard/benefactor");
+        }
+        
+        public void ViewBenefactorProfile()
+        {
+            ShowAlreadySubmittedModal = false;
+            Navigation.NavigateTo("/benefactor/profile");
         }
     }
 }
