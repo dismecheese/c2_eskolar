@@ -224,8 +224,15 @@ namespace c2_eskolar.Services
                 entity.ApplicationDeadline = scholarship.ApplicationDeadline;
                 entity.Requirements = scholarship.Requirements;
                 entity.RequiredCourse = scholarship.RequiredCourse;
+                entity.RequiredUniversity = scholarship.RequiredUniversity;
+                entity.RequiredYearLevel = scholarship.RequiredYearLevel;
+                entity.SlotsAvailable = scholarship.SlotsAvailable;
+                entity.MinimumGPA = scholarship.MinimumGPA;
                 entity.ExternalApplicationUrl = scholarship.ExternalApplicationUrl;
+                entity.SourceUrl = scholarship.SourceUrl;
                 entity.Status = scholarship.Status;
+                entity.ParsingNotes = scholarship.ParsingNotes;
+                entity.ReviewNotes = scholarship.ReviewNotes;
                 entity.UpdatedAt = DateTime.Now;
                 entity.UpdatedBy = scholarship.UpdatedBy ?? "System";
 

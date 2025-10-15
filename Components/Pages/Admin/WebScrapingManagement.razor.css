@@ -614,31 +614,6 @@
     color: #4a5568;
 }
 
-.filters-section {
-    background: white;
-    border-radius: 16px;
-    padding: 24px;
-    margin-bottom: 30px;
-    box-shadow: 0 4px 16px rgba(0,0,0,0.08);
-    border: 1px solid rgba(0,0,0,0.05);
-}
-
-.filters-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
-    padding-bottom: 16px;
-    border-bottom: 1px solid #e2e8f0;
-}
-
-.filters-header h3 {
-    margin: 0;
-    font-size: 1.25rem;
-    font-weight: 600;
-    color: #2d3748;
-}
-
 .filter-row {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -657,27 +632,6 @@
     padding: 24px;
     box-shadow: 0 4px 16px rgba(0,0,0,0.08);
     border: 1px solid rgba(0,0,0,0.05);
-}
-
-.table-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
-    padding-bottom: 16px;
-    border-bottom: 1px solid #e2e8f0;
-}
-
-.table-header h3 {
-    margin: 0;
-    font-size: 1.25rem;
-    font-weight: 600;
-    color: #2d3748;
-}
-
-.record-count {
-    color: #6b7280;
-    font-size: 0.9rem;
 }
 
 .table-actions {
@@ -700,6 +654,8 @@
 
 .scholarship-table {
     margin-bottom: 0;
+    table-layout: fixed;
+    width: 100%;
 }
 
 .scholarship-table th {
@@ -707,7 +663,10 @@
     font-weight: 600;
     color: #374151;
     border: none;
-    padding: 16px 12px;
+    padding: 12px 8px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .scholarship-table th.sortable {
@@ -721,16 +680,55 @@
 }
 
 .scholarship-table td {
-    padding: 16px 12px;
+    padding: 12px 8px;
     border: none;
     border-bottom: 1px solid #f3f4f6;
     vertical-align: middle;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* Allow title column to wrap text */
+.scholarship-table td:first-child {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: initial;
 }
 
 .scholarship-title {
     font-weight: 600;
     color: #1f2937;
-    margin-bottom: 4px;
+    margin-bottom: 2px;
+    line-height: 1.4;
+}
+
+/* Row selection styles */
+.selectable-row {
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.selectable-row:hover {
+    background-color: #f8f9fa !important;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.selectable-row.selected-row {
+    background-color: #e3f2fd !important;
+    border-left: 4px solid #2196f3;
+}
+
+.selectable-row.selected-row:hover {
+    background-color: #d1ecf1 !important;
+}
+
+.scholarship-title {
+    font-weight: 600;
+    color: #1f2937;
+    margin-bottom: 2px;
+    line-height: 1.4;
 }
 
 .confidence-indicator {
@@ -777,13 +775,45 @@
     justify-content: space-between;
     align-items: center;
     margin-top: 24px;
-    padding-top: 16px;
-    border-top: 1px solid #e5e7eb;
+    padding: 12px 20px;
+    border-top: none;
+    background: linear-gradient(135deg, #f8fafc 0%, #eef2f7 100%);
+    border-radius: 0 0 12px 12px;
+    box-shadow: 0 -4px 18px rgba(16,24,40,0.03);
+    gap: 12px;
 }
 
 .pagination-info {
     color: #6b7280;
-    font-size: 0.9rem;
+    font-size: 0.95rem;
+    font-weight: 600;
+}
+
+/* Table card footer actions (left side) */
+.table-card-footer-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.table-card-footer-actions .btn {
+    padding: 8px 12px;
+    border-radius: 10px;
+    font-weight: 600;
+    box-shadow: 0 4px 12px rgba(2,6,23,0.06);
+}
+
+/* Make sure actions column doesn't wrap and can show full controls */
+.scholarship-table thead th:last-child,
+.scholarship-table tbody td:last-child {
+    min-width: 220px;
+    white-space: nowrap;
+    overflow: visible;
+}
+
+/* Ensure cell-level overflow is visible so action buttons are not clipped */
+.scholarship-table tbody td {
+    overflow: visible;
 }
 
 .enhanced-row {
@@ -917,4 +947,1162 @@
 }
 .scholarship-modal .modal-content {
     z-index: 2147483647;
+}
+
+/* Modern button styles matching SuperAdminAnnouncements */
+.btn-modern-primary, .btn-modern-secondary, .btn-modern-success, .btn-modern-danger {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    border-radius: 12px;
+    font-weight: 600;
+    font-size: 0.875rem;
+    border: none;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+    text-decoration: none;
+}
+
+.btn-modern-primary {
+    background: linear-gradient(135deg, #1560d4, #0d387e);
+    color: white;
+    box-shadow: 0 4px 12px rgba(21, 96, 212, 0.3);
+}
+
+.btn-modern-primary:hover:not(:disabled) {
+    background: linear-gradient(135deg, #0d387e, #1560d4);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(21, 96, 212, 0.4);
+    color: white;
+}
+
+.btn-modern-secondary {
+    background: linear-gradient(135deg, #fff 0%, #f8fafc 100%);
+    color: #1560d4;
+    border: 2px solid #e2e8f0;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.btn-modern-secondary:hover:not(:disabled) {
+    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+    border-color: #1560d4;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(21, 96, 212, 0.15);
+    color: #0d387e;
+}
+
+.btn-modern-success {
+    background: linear-gradient(135deg, #48bb78, #38a169);
+    color: white;
+    box-shadow: 0 4px 12px rgba(72, 187, 120, 0.3);
+}
+
+.btn-modern-success:hover:not(:disabled) {
+    background: linear-gradient(135deg, #38a169, #2f855a);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(72, 187, 120, 0.4);
+    color: white;
+}
+
+.btn-modern-danger {
+    background: linear-gradient(135deg, #f56565, #c53030);
+    color: white;
+    box-shadow: 0 4px 12px rgba(245, 101, 101, 0.3);
+}
+
+.btn-modern-danger:hover:not(:disabled) {
+    background: linear-gradient(135deg, #c53030, #9c2626);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(245, 101, 101, 0.4);
+    color: white;
+}
+
+.btn-modern-primary:disabled,
+.btn-modern-secondary:disabled,
+.btn-modern-success:disabled,
+.btn-modern-danger:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* Action buttons layout */
+.action-buttons-modern {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+/* Modern spinner */
+.modern-spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid transparent;
+    border-top: 2px solid currentColor;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Modern modal styles */
+.modern-modal {
+    border: none;
+    border-radius: 24px;
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25);
+    overflow: hidden;
+    background: white;
+    backdrop-filter: blur(10px);
+}
+
+.modern-modal-header {
+    background: linear-gradient(135deg, #1560d4, #0d387e);
+    color: white !important;
+    border: none;
+    padding: 2rem;
+    position: relative;
+    text-align: center;
+}
+
+.modern-modal-header .modal-title {
+    font-weight: 700;
+    font-size: 1.5rem;
+    margin: 0;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    color: white !important;
+    display: block;
+    z-index: 10;
+    position: relative;
+}
+
+.modern-btn-close {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    background: rgba(255, 255, 255, 0.15);
+    border: none;
+    border-radius: 50%;
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    color: white;
+    font-size: 1.2rem;
+    backdrop-filter: blur(10px);
+}
+
+.modern-btn-close:hover {
+    background: rgba(255, 255, 255, 0.25);
+    transform: scale(1.1);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.modern-modal-body {
+    padding: 2.5rem;
+    background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+    max-height: 70vh;
+    overflow-y: auto;
+}
+
+.modern-form-group {
+    margin-bottom: 2rem;
+    position: relative;
+}
+
+.modern-form-label {
+    display: block;
+    font-weight: 700;
+    color: #1a202c;
+    margin-bottom: 0.75rem;
+    font-size: 1rem;
+    letter-spacing: 0.025em;
+}
+
+.modern-modal-footer {
+    display: flex;
+    gap: 1.25rem;
+    justify-content: flex-end;
+    padding: 2rem 2.5rem;
+    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+    border: none;
+}
+
+/* Modern header styling for filters and table sections */
+.filters-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding: 24px;
+    background: linear-gradient(135deg, #1560d4, #0d387e);
+    border-radius: 16px 16px 0 0;
+    color: white;
+    position: relative;
+    overflow: hidden;
+}
+
+.filters-header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="20" cy="20" r="2" fill="rgba(255,255,255,0.1)"/><circle cx="80" cy="80" r="1.5" fill="rgba(255,255,255,0.1)"/><circle cx="40" cy="70" r="1" fill="rgba(255,255,255,0.1)"/></svg>');
+    opacity: 0.3;
+}
+
+.filters-title-section {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    position: relative;
+    z-index: 1;
+}
+
+.filters-icon {
+    width: 56px;
+    height: 56px;
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    color: white;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.filters-title-content {
+    flex: 1;
+}
+
+.filters-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin: 0 0 4px 0;
+    color: white;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.filters-subtitle {
+    font-size: 0.95rem;
+    margin: 0;
+    color: rgba(255, 255, 255, 0.9);
+    font-weight: 400;
+}
+
+.table-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0;
+    padding: 24px 32px;
+    background: linear-gradient(135deg, #059669, #047857);
+    border-radius: 16px 16px 0 0;
+    color: white;
+    position: relative;
+    overflow: hidden;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+    width: 100%; /* Ensure header takes full width of parent container */
+    box-sizing: border-box; /* Include padding in width calculation */
+    min-width: fit-content; /* Allow header to expand based on content */
+}
+
+.table-header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect x="10" y="30" width="15" height="3" fill="rgba(255,255,255,0.1)"/><rect x="10" y="40" width="12" height="3" fill="rgba(255,255,255,0.1)"/><rect x="10" y="50" width="18" height="3" fill="rgba(255,255,255,0.1)"/></svg>');
+    opacity: 0.3;
+}
+
+.table-title-section {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    position: relative;
+    z-index: 1;
+}
+
+.table-icon {
+    width: 56px;
+    height: 56px;
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    color: white;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.table-title-content {
+    flex: 1;
+}
+
+.table-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin: 0 0 4px 0;
+    color: white;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.record-count {
+    font-size: 0.95rem;
+    margin: 0;
+    color: rgba(255, 255, 255, 0.9);
+    font-weight: 400;
+}
+
+.table-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    position: relative;
+    z-index: 1;
+}
+
+.view-toggle {
+    display: flex;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 8px;
+    overflow: hidden;
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+}
+
+.view-toggle .btn {
+    border: none;
+    border-radius: 0;
+    background: transparent;
+    color: white;
+    font-weight: 500;
+}
+
+.view-toggle .btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.view-toggle .btn.btn-primary {
+    background: rgba(255, 255, 255, 0.25);
+    color: white;
+}
+
+/* Enhanced action buttons */
+.action-buttons-modern {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: nowrap;
+}
+
+.action-buttons-modern .btn {
+    min-width: 32px;
+    height: 32px;
+    padding: 0;
+    font-size: 0.75rem;
+    white-space: nowrap;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Enhanced filter sections */
+.filters-section {
+    background: white;
+    border-radius: 16px;
+    margin-bottom: 30px;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    /* allow action buttons to overflow so they don't get clipped by the card */
+    overflow: visible;
+}
+
+.filters-content {
+    padding: 24px;
+}
+
+.scholarships-table-section {
+    background: transparent; /* Remove card background */
+    border-radius: 0; /* Remove rounded corners */
+    box-shadow: none; /* Remove shadow */
+    border: none; /* Remove border */
+    overflow: visible; /* Allow content to flow naturally */
+    margin-bottom: 20px;
+    max-width: none; /* Remove width constraint to allow full expansion */
+    margin: 0 auto 20px auto; /* Center the table section */
+    padding: 0; /* Remove padding to let header and table align perfectly */
+    width: 100%; /* Take full available width */
+}
+
+/* Table header styling to match green design */
+.table-header {
+    background: linear-gradient(135deg, #059669 0%, #047857 100%);
+    color: white;
+    padding: 20px 30px;
+    border-radius: 16px 16px 0 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0;
+    box-shadow: 0 4px 16px rgba(5, 150, 105, 0.2);
+    width: 100%; /* Ensure header takes full width of parent container */
+    box-sizing: border-box; /* Include padding in width calculation */
+}
+
+.table-title-section {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.table-title-section.centered {
+    justify-content: flex-start;
+    text-align: left;
+}
+
+.table-icon {
+    width: 48px;
+    height: 48px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    color: white;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.table-title-content {
+    flex: 1;
+}
+
+.table-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin: 0 0 4px 0;
+    color: white;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.record-count {
+    font-size: 0.95rem;
+    margin: 0;
+    color: rgba(255, 255, 255, 0.9);
+    font-weight: 400;
+}
+
+.table-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    position: relative;
+    z-index: 1;
+}
+
+/* Select All Button Styling */
+.table-actions .btn-outline-primary {
+    background: white;
+    border: 1px solid #059669;
+    color: #059669;
+    font-size: 14px;
+}
+
+.table-actions .btn-outline-primary:hover {
+    background: #059669;
+    border-color: #059669;
+    color: white;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(5, 150, 105, 0.3);
+}
+
+.table-actions .btn-primary {
+    background: #059669;
+    border: 1px solid #059669;
+    color: white;
+}
+
+/* Export Button Styling */
+.table-actions .btn-success {
+    background: white;
+    border: 1px solid #059669;
+    color: #059669;
+    font-size: 14px;
+}
+
+.table-actions .btn-success:hover {
+    background: #059669;
+    border-color: #059669;
+    color: white;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(5, 150, 105, 0.3);
+}
+
+.view-toggle {
+    display: flex;
+    border: 1px solid #059669;
+    border-radius: 6px;
+    overflow: hidden;
+    background: white;
+}
+
+.view-toggle .btn {
+    border: none;
+    border-radius: 0;
+    background: transparent;
+    color: #059669;
+    font-size: 14px;
+}
+
+.view-toggle .btn:hover {
+    background: #059669;
+    color: white;
+}
+
+.view-toggle .btn.btn-primary {
+    background: #059669;
+    color: white;
+}
+
+/* Direct table styling without card wrapper */
+.table-responsive {
+    border-radius: 0 0 12px 12px; /* Rounded bottom corners only */
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    border-top: none; /* Connect with header */
+    background: white;
+    overflow-x: auto; /* Allow horizontal scrolling for wide tables */
+    overflow-y: visible; /* Allow action buttons to overflow vertically */
+    margin-bottom: 20px;
+    width: 100%; /* Ensure table takes full width of parent container */
+    box-sizing: border-box; /* Include padding in width calculation */
+}
+
+/* Add mobile margins for table components */
+@media (max-width: 768px) {
+    .scholarships-table-section {
+        margin: 0 20px 20px 20px; /* Add mobile margin */
+    }
+}
+
+.scholarship-table {
+    margin-bottom: 0;
+    border-radius: 0; /* Remove rounded corners since header handles this */
+    overflow: hidden;
+}
+
+.scholarship-table tbody td {
+    padding: 16px 12px;
+    border-bottom: 1px solid #f3f4f6;
+    vertical-align: middle;
+    font-size: 0.9rem;
+}
+
+.scholarship-table tbody tr:hover {
+    background: rgba(21, 96, 212, 0.02);
+}
+
+/* Single-line scraped date cell */
+.scraped-date-cell {
+    white-space: nowrap;
+    min-width: 200px;
+    text-align: right;
+    padding-right: 24px !important;
+}
+
+.scraped-date-info {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+}
+
+.date-main {
+    font-weight: 500;
+    color: #2d3748;
+    font-size: 0.9rem;
+}
+
+.time-ago-inline {
+    font-size: 0.8rem;
+    color: #6b7280;
+}
+
+/* Card View Styles */
+.cards-view-centered {
+    padding: 20px;
+    max-width: 1400px; /* Constrain max width for better centering */
+    margin: 0 auto; /* Center the container */
+}
+
+.cards-view-centered .row {
+    justify-content: center; /* Center cards when there are fewer than max columns */
+}
+
+.scholarship-card {
+    background: linear-gradient(135deg, #fff 0%, #f8fafc 100%);
+    border-radius: 16px;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
+    transition: all 0.3s ease;
+    position: relative;
+    /* keep card visuals but allow footer/action elements to slightly overflow when needed */
+    overflow: visible;
+    height: 100%;
+    min-height: 400px; /* Make cards taller to accommodate action buttons */
+    display: flex;
+    flex-direction: column;
+}
+
+.scholarship-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #1560d4, #0d387e);
+}
+
+.scholarship-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15);
+}
+
+.scholarship-card.new-row::before {
+    background: linear-gradient(90deg, #48bb78, #38a169);
+}
+
+.scholarship-card.low-confidence::before {
+    background: linear-gradient(90deg, #fbbf24, #f59e0b);
+}
+
+.scholarship-card.error-row::before {
+    background: linear-gradient(90deg, #ef4444, #dc2626);
+}
+
+.scholarship-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px 0 20px;
+}
+
+.scholarship-checkbox {
+    display: flex;
+    align-items: center;
+}
+
+.scholarship-status {
+    display: flex;
+    align-items: center;
+}
+
+.scholarship-card-body {
+    padding: 0 20px 16px 20px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.scholarship-card-title {
+    font-size: 1.15rem;
+    font-weight: 600;
+    color: #2d3748;
+    margin: 16px 0 8px 0;
+    line-height: 1.4;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.scholarship-card-source {
+    font-size: 0.85rem;
+    color: #6b7280;
+    margin: 0 0 16px 0;
+}
+
+.scholarship-card-meta {
+    margin-top: auto;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    padding-top: 16px;
+    border-top: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.confidence-section label,
+.scraped-date label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #6b7280;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+    display: block;
+}
+
+.date-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.date-info .date {
+    font-weight: 500;
+    color: #2d3748;
+    font-size: 0.9rem;
+}
+
+.date-info .time-ago {
+    font-size: 0.8rem;
+    color: #6b7280;
+    margin-top: 2px;
+}
+
+.scholarship-card-actions {
+    padding: 20px 24px;
+    border-top: 1px solid rgba(0, 0, 0, 0.06);
+    background: linear-gradient(135deg, rgba(248, 250, 252, 0.8) 0%, rgba(241, 245, 249, 0.9) 100%);
+    backdrop-filter: blur(10px);
+    display: flex;
+    /* align actions to the right so they don't cover content and are predictable */
+    justify-content: flex-end;
+    gap: 12px;
+    position: relative;
+    /* Ensure action area has enough space */
+    min-height: 82px;
+    flex-shrink: 0; /* Prevent actions from shrinking */
+}
+
+.scholarship-card-actions::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 40px;
+    height: 3px;
+    background: linear-gradient(90deg, transparent, rgba(0, 0, 0, 0.1), transparent);
+    border-radius: 0 0 2px 2px;
+}
+
+.scholarship-card-actions .btn {
+    width: 40px;
+    height: 42px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 12px;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    background: white;
+    color: #374151;
+    font-size: 0.9rem;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    position: relative;
+    overflow: hidden;
+}
+
+.scholarship-card-actions .btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.6), transparent);
+    transition: left 0.6s ease;
+}
+
+.scholarship-card-actions .btn:hover::before {
+    left: 100%;
+}
+
+.scholarship-card-actions .btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+    border-color: rgba(0, 0, 0, 0.12);
+}
+
+.scholarship-card-actions .btn-modern-primary:hover {
+    background: linear-gradient(135deg, #1560d4, #0d387e);
+    color: white;
+    border-color: #1560d4;
+}
+
+.scholarship-card-actions .btn-modern-secondary:hover {
+    background: linear-gradient(135deg, #6b7280, #4b5563);
+    color: white;
+    border-color: #6b7280;
+}
+
+.scholarship-card-actions .btn-modern-success:hover {
+    background: linear-gradient(135deg, #48bb78, #38a169);
+    color: white;
+    border-color: #48bb78;
+}
+
+.scholarship-card-actions .btn-modern-danger:hover {
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+    color: white;
+    border-color: #ef4444;
+}
+
+/* No results card */
+.no-results-card {
+    text-align: center;
+    padding: 60px 20px;
+    background: linear-gradient(135deg, #fff 0%, #f8fafc 100%);
+    border-radius: 16px;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    margin-top: 20px;
+}
+
+.no-results-icon {
+    width: 80px;
+    height: 80px;
+    background: linear-gradient(135deg, #e2e8f0, #cbd5e0);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 32px;
+    color: #6b7280;
+    margin: 0 auto 20px auto;
+}
+
+.no-results-card h5 {
+    color: #2d3748;
+    font-weight: 600;
+    margin-bottom: 8px;
+}
+
+/* Modern Pagination Styling */
+.modern-pagination-section {
+    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+    border-radius: 16px;
+    padding: 20px 30px;
+    margin-top: 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+    border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.pagination-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.pagination-text {
+    font-weight: 600;
+    color: #374151;
+    font-size: 1rem;
+}
+
+.pagination-count {
+    font-size: 0.85rem;
+    color: #6b7280;
+}
+
+.pagination-nav {
+    display: flex;
+    align-items: center;
+}
+
+.modern-pagination {
+    display: flex;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    gap: 8px;
+    align-items: center;
+}
+
+.modern-pagination .page-item {
+    display: flex;
+}
+
+.modern-pagination .page-link {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border: 2px solid transparent;
+    border-radius: 10px;
+    background: white;
+    color: #374151;
+    font-weight: 500;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    cursor: pointer;
+}
+
+.modern-pagination .page-link:hover:not(:disabled) {
+    background: linear-gradient(135deg, #1560d4, #0d387e);
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(21, 96, 212, 0.3);
+    border-color: #1560d4;
+}
+
+.modern-pagination .page-item.active .page-link {
+    background: linear-gradient(135deg, #1560d4, #0d387e);
+    color: white;
+    border-color: #1560d4;
+    box-shadow: 0 4px 12px rgba(21, 96, 212, 0.4);
+}
+
+.modern-pagination .page-item.disabled .page-link {
+    background: #f3f4f6;
+    color: #9ca3af;
+    cursor: not-allowed;
+    box-shadow: none;
+}
+
+.modern-pagination .page-item.disabled .page-link:hover {
+    transform: none;
+    background: #f3f4f6;
+    color: #9ca3af;
+}
+
+@media (max-width: 768px) {
+    .modern-pagination-section {
+        flex-direction: column;
+        gap: 16px;
+        text-align: center;
+    }
+    
+    .pagination-info {
+        align-items: center;
+    }
+    
+    .modern-pagination .page-link {
+        width: 36px;
+        height: 36px;
+        font-size: 0.85rem;
+    }
+}
+
+.filters-content {
+    padding: 36px 40px;
+}
+
+/* Two-row layout: Search on first row, filters on second row */
+.filters-content .row {
+    --bs-gutter-x: 2rem;
+    --bs-gutter-y: 2rem;
+}
+
+/* Search row - full width */
+.search-row {
+    margin-bottom: 1.5rem;
+}
+
+/* Filters row - evenly spaced 4 columns */
+.filters-row {
+    gap: 0;
+}
+
+.filters-row .col-md-3 {
+    padding: 0 8px; /* Add consistent spacing between filters */
+}
+
+@media (max-width: 767.98px) {
+    .filters-row .col-sm-6 {
+        width: 50%;
+        margin-bottom: 1rem;
+        padding: 0 8px;
+    }
+    
+    .search-row .col-12 {
+        padding: 0;
+    }
+}
+
+.filters-content .form-label {
+    font-weight: 600;
+    color: #374151;
+    margin-bottom: 10px;
+    font-size: 0.95rem;
+    display: block;
+}
+
+.filters-content .form-control,
+.filters-content .form-select {
+    border: 2px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 14px 18px;
+    font-size: 0.95rem;
+    background: white;
+    transition: all 0.3s ease;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    min-height: 48px;
+}
+
+.filters-content .form-control:focus,
+.filters-content .form-select:focus {
+    border-color: #1560d4;
+    box-shadow: 0 0 0 3px rgba(21, 96, 212, 0.1);
+    outline: none;
+}
+
+.filters-content .input-group {
+    position: relative;
+}
+
+.filters-content .input-group-text {
+    background: #f9fafb;
+    border: 2px solid #e5e7eb;
+    color: #6b7280;
+    border-radius: 10px 0 0 10px;
+}
+
+.filters-content .form-control:focus + .input-group-text,
+.filters-content .input-group:focus-within .input-group-text {
+    border-color: #1560d4;
+    background: rgba(21, 96, 212, 0.05);
+}
+
+/* Table improvements */
+.scholarship-table thead th {
+    background: #f8f9fa;
+    color: #495057;
+    font-weight: 600;
+    border-bottom: 2px solid #e5e7eb;
+    padding: 18px 16px;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    text-align: center;
+    vertical-align: middle;
+    font-size: 0.95rem;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.scholarship-table thead th:hover {
+    background: #e8f5e8;
+    color: #059669;
+}
+
+.scholarship-table thead th:first-child {
+    width: 50px;
+    text-align: center;
+}
+
+.scholarship-table thead th:nth-child(2) {
+    text-align: left;
+    min-width: 250px;
+}
+
+.scholarship-table thead th:nth-child(3) {
+    width: 120px;
+    text-align: center;
+}
+
+.scholarship-table thead th:nth-child(4) {
+    width: 100px;
+    text-align: center;
+}
+
+.scholarship-table thead th:nth-child(5) {
+    width: 180px;
+    text-align: right;
+    padding-right: 24px;
+}
+
+.scholarship-table thead th:last-child {
+    width: 200px;
+    text-align: center;
+}
+
+.scholarship-table tbody tr {
+    transition: all 0.2s ease;
+}
+
+.scholarship-table tbody tr:hover {
+    background: rgba(21, 96, 212, 0.02);
+    transform: translateZ(0);
+}
+
+.scholarship-table tbody td {
+    padding: 18px 16px;
+    border-bottom: 1px solid #f3f4f6;
+    vertical-align: middle;
+    font-size: 0.9rem;
+}
+
+.scholarship-table tbody td:first-child {
+    text-align: center;
+}
+
+.scholarship-table tbody td:nth-child(3) {
+    text-align: center;
+}
+
+.scholarship-table tbody td:nth-child(4) {
+    text-align: center;
+}
+
+.scholarship-table tbody td:last-child {
+    text-align: center;
+}
+
+/* Search Input with Icon Styling */
+.search-input-container {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.search-input-container .form-control {
+    padding-right: 45px;
+    border-radius: 8px;
+    border: 2px solid #e2e8f0;
+    transition: all 0.3s ease;
+}
+
+.search-input-container .form-control:focus {
+    border-color: #1560d4;
+    box-shadow: 0 0 0 3px rgba(21, 96, 212, 0.1);
+    outline: none;
+}
+
+.search-input-icon {
+    position: absolute;
+    right: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #6b7280;
+    font-size: 1rem;
+    pointer-events: none;
+    z-index: 2;
 }

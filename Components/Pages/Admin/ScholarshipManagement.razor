@@ -1,4 +1,4 @@
-@page "/admin/scholarship-management"
+@page "/admin/scholarships"
 @layout SuperAdminDashLayout
 @using c2_eskolar.Models
 @using c2_eskolar.Data
@@ -282,29 +282,27 @@
                                     <span class="badge bg-light text-dark">@GetScholarshipSource(scholarship)</span>
                                 </td>
                                 <td>
-                                    <div class="btn-group btn-group-sm">
-                                        <button class="btn btn-outline-primary" @onclick="() => EditScholarship(scholarship)" title="Edit">
-                                            <i class="fas fa-edit"></i>
-                                        </button>
-                                        <button class="btn btn-outline-info" @onclick="() => PreviewScholarship(scholarship)" title="Preview">
-                                            <i class="fas fa-eye"></i>
-                                        </button>
-                                        @if (!scholarship.IsActive)
-                                        {
-                                            <button class="btn btn-outline-success" @onclick="() => ActivateScholarship(scholarship)" title="Activate">
-                                                <i class="fas fa-play"></i>
-                                            </button>
-                                        }
-                                        else
-                                        {
-                                            <button class="btn btn-outline-warning" @onclick="() => DeactivateScholarship(scholarship)" title="Deactivate">
-                                                <i class="fas fa-pause"></i>
-                                            </button>
-                                        }
-                                        <button class="btn btn-outline-danger" @onclick="() => DeleteScholarship(scholarship)" title="Delete">
-                                            <i class="fas fa-trash"></i>
-                                        </button>
-                                    </div>
+                                                        <div class="action-buttons">
+                                                            <button class="btn-modern-primary btn-sm" @onclick="() => EditScholarship(scholarship)" title="Edit">
+                                                                <i class="fas fa-edit"></i>
+                                                            </button>
+                                                            <button class="btn-modern-secondary btn-sm" @onclick="() => PreviewScholarship(scholarship)" title="Preview">
+                                                                <i class="fas fa-eye"></i>
+                                                            </button>
+                                                            @if (!scholarship.IsActive)
+                                                            {
+                                                                <!-- Approval not needed in Published Scholarships management -->
+                                                            }
+                                                            else
+                                                            {
+                                                                <button class="btn-modern-warning btn-sm" @onclick="() => DeactivateScholarship(scholarship)" title="Deactivate">
+                                                                    <i class="fas fa-pause"></i>
+                                                                </button>
+                                                            }
+                                                            <button class="btn-modern-danger btn-sm" @onclick="() => DeleteScholarship(scholarship)" title="Delete">
+                                                                <i class="fas fa-trash"></i>
+                                                            </button>
+                                                        </div>
                                 </td>
                             </tr>
                         }
@@ -634,7 +632,23 @@
 
     private async Task EditScholarship(Scholarship scholarship)
     {
-        await JSRuntime.InvokeVoidAsync("alert", $"Edit scholarship: {scholarship.Title}");
+        // Open edit modal prefilled with scholarship data
+        editingScholarship = new Scholarship
+        {
+            ScholarshipId = scholarship.ScholarshipId,
+            Title = scholarship.Title,
+            Description = scholarship.Description,
+            Benefits = scholarship.Benefits,
+            MonetaryValue = scholarship.MonetaryValue,
+            ApplicationDeadline = scholarship.ApplicationDeadline,
+            Requirements = scholarship.Requirements,
+            SlotsAvailable = scholarship.SlotsAvailable,
+            IsActive = scholarship.IsActive,
+            IsInternal = scholarship.IsInternal,
+            ExternalApplicationUrl = scholarship.ExternalApplicationUrl,
+            IconUrl = scholarship.IconUrl
+        };
+        showEditModal = true;
     }
 
     private async Task PreviewScholarship(Scholarship scholarship)
@@ -720,6 +734,67 @@
             {
                 await JSRuntime.InvokeVoidAsync("alert", $"Error deleting scholarship: {ex.Message}");
             }
+        }
+    }
+
+    <!-- Approval action removed: published scholarships are not approved here -->
+
+    // Edit modal state & save
+    private bool showEditModal = false;
+    private Scholarship? editingScholarship = null;
+
+    private async Task SaveEditedScholarship()
+    {
+        if (editingScholarship == null) return;
+        try
+        {
+            using var context = await DbContextFactory.CreateDbContextAsync();
+            var entity = await context.Scholarships.FindAsync(editingScholarship.ScholarshipId);
+            if (entity != null)
+            {
+                entity.Title = editingScholarship.Title;
+                entity.Description = editingScholarship.Description;
+                entity.Benefits = editingScholarship.Benefits;
+                entity.MonetaryValue = editingScholarship.MonetaryValue;
+                entity.ApplicationDeadline = editingScholarship.ApplicationDeadline;
+                entity.Requirements = editingScholarship.Requirements;
+                entity.SlotsAvailable = editingScholarship.SlotsAvailable;
+                entity.ExternalApplicationUrl = editingScholarship.ExternalApplicationUrl;
+                entity.IconUrl = editingScholarship.IconUrl;
+                entity.IsActive = editingScholarship.IsActive;
+                entity.IsInternal = editingScholarship.IsInternal;
+                entity.UpdatedAt = DateTime.UtcNow;
+
+                await context.SaveChangesAsync();
+
+                // reflect changes locally
+                var local = allScholarships.FirstOrDefault(s => s.ScholarshipId == editingScholarship.ScholarshipId);
+                if (local != null)
+                {
+                    local.Title = editingScholarship.Title;
+                    local.Description = editingScholarship.Description;
+                    local.Benefits = editingScholarship.Benefits;
+                    local.MonetaryValue = editingScholarship.MonetaryValue;
+                    local.ApplicationDeadline = editingScholarship.ApplicationDeadline;
+                    local.Requirements = editingScholarship.Requirements;
+                    local.SlotsAvailable = editingScholarship.SlotsAvailable;
+                    local.ExternalApplicationUrl = editingScholarship.ExternalApplicationUrl;
+                    local.IconUrl = editingScholarship.IconUrl;
+                    local.IsActive = editingScholarship.IsActive;
+                    local.IsInternal = editingScholarship.IsInternal;
+                    local.UpdatedAt = editingScholarship.UpdatedAt;
+                }
+
+                showEditModal = false;
+                editingScholarship = null;
+                CalculateStatistics();
+                ApplyFilters();
+                await JSRuntime.InvokeVoidAsync("alert", "Scholarship updated successfully.");
+            }
+        }
+        catch (Exception ex)
+        {
+            await JSRuntime.InvokeVoidAsync("alert", $"Failed to save scholarship: {ex.Message}");
         }
     }
 
