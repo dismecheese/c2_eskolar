@@ -18,11 +18,6 @@
 <div class="dashboard-center-container">
     <!-- Top Bar -->
     <div class="dashboard-topbar">
-        <div style="position: relative; flex: 1; max-width: 500px;">
-            <i class="bi bi-search" style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: #64748b; z-index: 1;"></i>
-            <input class="university-input" type="text" placeholder="Search scraping operations..." 
-                   style="padding-left: 45px; padding-right: 18px;" readonly />
-        </div>
         <span class="dashboard-date">@DateTime.Now.ToString("dd MMM yyyy, ddd")</span>
     </div>
 
@@ -214,7 +209,7 @@
                                             </span>
                                         </td>
                                         <td>
-                                            <button class="btn btn-sm btn-outline-primary" @onclick="() => ViewScholarshipDetails(scholarship)">
+                                            <button class="btn btn-modern-secondary btn-sm" @onclick="() => ViewScholarshipDetails(scholarship)" title="View">
                                                 <i class="bi bi-eye"></i>
                                             </button>
                                         </td>
@@ -1476,11 +1471,9 @@
         
         try
         {
-            // Step 1: Scrape and parse with AI
-            progressText = "Contacting website and parsing content with AI...";
-            StateHasChanged();
-            var newScholarships = await EnhancedWebScrapingService.ScrapeAndParseScholarshipsAsync(enhancedScholarshipUrl);
-            progressPercent = 30;
+            // Step 1: Scrape and parse with AI using progress callback
+            var newScholarships = await EnhancedWebScrapingService.ScrapeAndParseScholarshipsAsync(enhancedScholarshipUrl, UpdateProgress);
+            progressPercent = 95;
             progressText = $"Parsed {newScholarships.Count} scholarship(s). Preparing to save...";
             StateHasChanged();
             
@@ -1590,6 +1583,13 @@
             Logger.LogError(ex, "Error exporting enhanced CSV");
             errorMessage = $"Failed to export CSV: {ex.Message}";
         }
+    }
+
+    private void UpdateProgress(int percent, string message)
+    {
+        progressPercent = percent;
+        progressText = message;
+        StateHasChanged();
     }
 
     private void ViewScholarshipDetails(EnhancedScrapedScholarship scholarship)
@@ -2098,14 +2098,14 @@
                 approvalToasts.Add($"✅ Updated: {editingApprovalScholarship.Title}");
                 
                 // Auto-dismiss toast
-                _ = Task.Run(async () => {
+                var _ = Task.Run(async () => {
                     await Task.Delay(3000);
                     if (approvalToasts?.Any() == true)
                     {
                         approvalToasts.RemoveAt(0);
                         await InvokeAsync(StateHasChanged);
                     }
-                });
+                }).ContinueWith(t => { if (t.Exception != null) { try { Console.WriteLine($"WebScrapingManagement Task.Run exception: {t.Exception}"); } catch { } } }, TaskScheduler.Current);
             }
             else
             {
@@ -2293,14 +2293,14 @@
             approvalInProgress.Remove(scholarship.Id);
             StateHasChanged();
             // auto-dismiss toasts after a short delay
-            _ = Task.Run(async () => {
+            var _ = Task.Run(async () => {
                 await Task.Delay(4000);
                 if (approvalToasts.Any())
                 {
                     approvalToasts.RemoveAt(0);
                     await InvokeAsync(StateHasChanged);
                 }
-            });
+            }).ContinueWith(t => { if (t.Exception != null) { try { Console.WriteLine($"WebScrapingManagement Task.Run exception: {t.Exception}"); } catch { } } }, TaskScheduler.Current);
         }
     }
 
@@ -2348,14 +2348,14 @@
             approvalToasts.Add($"✅ Exported {approvalFilteredScholarships.Count()} scholarships to {fileName}");
             
             // Auto-dismiss toast
-            _ = Task.Run(async () => {
+            var _ = Task.Run(async () => {
                 await Task.Delay(3000);
                 if (approvalToasts.Any())
                 {
                     approvalToasts.RemoveAt(0);
                     await InvokeAsync(StateHasChanged);
                 }
-            });
+            }).ContinueWith(t => { if (t.Exception != null) { try { Console.WriteLine($"WebScrapingManagement Task.Run exception: {t.Exception}"); } catch { } } }, TaskScheduler.Current);
         }
         catch (Exception ex)
         {

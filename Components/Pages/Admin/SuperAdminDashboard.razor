@@ -2,6 +2,7 @@
 @attribute [Authorize(Roles = "SuperAdmin")]
 @layout Layout.SuperAdminDashLayout
 @implements IDisposable
+@implements IAsyncDisposable
 
 @inject IDbContextFactory<ApplicationDbContext> DbContextFactory
 @inject UserManager<IdentityUser> UserManager
@@ -249,6 +250,10 @@
     private bool isLoading = false;
     private readonly SemaphoreSlim loadingSemaphore = new SemaphoreSlim(1, 1);
 
+    // Cancellation & in-flight task tracking for graceful component teardown
+    private readonly CancellationTokenSource _cts = new();
+    private Task? _loadTask;
+
     private void SetTab(int tab)
     {
         activeTab = tab;
@@ -259,15 +264,18 @@
         // Prevent concurrent initialization
         if (isLoading) 
             return;
-            
-        await loadingSemaphore.WaitAsync();
+
+        bool entered = false;
         try
         {
-            if (isLoading) 
+            await loadingSemaphore.WaitAsync(_cts.Token);
+            entered = true;
+
+            if (isLoading)
                 return;
-                
+
             isLoading = true;
-            
+
             var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
             var user = authState.User;
 
@@ -277,19 +285,42 @@
                 currentUserEmail = user.FindFirst("email")?.Value;
             }
 
-            await LoadDashboardData();
+            // Start and track the load task so DisposeAsync can wait for it
+            _loadTask = LoadDashboardData(_cts.Token);
+            await _loadTask;
+        }
+        catch (OperationCanceledException)
+        {
+            // Initialization was cancelled during teardown
+            return;
+        }
+        catch (ObjectDisposedException)
+        {
+            // If the semaphore was disposed concurrently, bail out safely
+            return;
         }
         finally
         {
             isLoading = false;
-            loadingSemaphore.Release();
+            if (entered)
+            {
+                try
+                {
+                    loadingSemaphore.Release();
+                }
+                catch (ObjectDisposedException)
+                {
+                    // Nothing to do
+                }
+            }
         }
     }
 
-    private async Task LoadDashboardData()
+    private async Task LoadDashboardData(CancellationToken ct = default)
     {
         try
         {
+            ct.ThrowIfCancellationRequested();
             Console.WriteLine("LoadDashboardData: Starting to load dashboard data...");
             
             // Create a single context for all database operations
@@ -339,7 +370,7 @@
             Console.WriteLine($"LoadDashboardData: Scraped scholarships: {scrapedScholarships}");
             
             // Calculate AI token usage
-            await CalculateTokenUsage();
+            await CalculateTokenUsage(ct);
             Console.WriteLine($"LoadDashboardData: Total tokens used: {totalTokensUsed}");
             
             Console.WriteLine("LoadDashboardData: Completed successfully, calling StateHasChanged()");
@@ -387,9 +418,82 @@
             totalTokensUsed = 127500; // Placeholder based on previous calculation
         }
     }
+
+    private async Task CalculateTokenUsage(CancellationToken ct)
+    {
+        ct.ThrowIfCancellationRequested();
+        try
+        {
+            using var context = DbContextFactory.CreateDbContext();
+            
+            // Get actual token usage from the database
+            var tokenUsageRecords = await context.AITokenUsages.ToListAsync(ct);
+            
+            if (tokenUsageRecords.Any())
+            {
+                // Use real tracking data - calculate total from PromptTokens + CompletionTokens
+                totalTokensUsed = tokenUsageRecords.Sum(t => t.PromptTokens + t.CompletionTokens);
+                Console.WriteLine($"LoadDashboardData: Using real token data - {totalTokensUsed} tokens from {tokenUsageRecords.Count} operations");
+            }
+            else
+            {
+                // Fallback: estimate token usage based on AI-enhanced scholarships (for demo purposes)
+                var enhancedScholarships = await context.ScrapedScholarships
+                    .Where(s => s.IsEnhanced && !string.IsNullOrEmpty(s.AiModel))
+                    .CountAsync(ct);
+                
+                // Conservative estimate: 2500 tokens average per AI-enhanced scholarship
+                totalTokensUsed = enhancedScholarships * 2500;
+                Console.WriteLine($"LoadDashboardData: Using estimated token data - {totalTokensUsed} tokens estimated from {enhancedScholarships} enhanced scholarships");
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // Operation was cancelled; preserve current totalTokensUsed
+            return;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error calculating token usage: {ex.Message}");
+            totalTokensUsed = 127500;
+        }
+    }
     
     public void Dispose()
     {
-        loadingSemaphore?.Dispose();
+        // Do not dispose the semaphore here. Disposing a SemaphoreSlim while
+        // async operations that may be waiting or releasing it are still in
+        // flight can lead to ObjectDisposedException in the renderer.
+        // Leave it to the GC; this is a lightweight managed object.
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        try
+        {
+            // Signal cancellation for any in-flight work
+            _cts.Cancel();
+
+            // Wait for any tracked load task to finish
+            if (_loadTask != null)
+            {
+                try
+                {
+                    await _loadTask;
+                }
+                catch (OperationCanceledException)
+                {
+                    // expected during teardown
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Exception while awaiting load task during DisposeAsync: {ex.Message}");
+                }
+            }
+        }
+        finally
+        {
+            _cts.Dispose();
+        }
     }
 }

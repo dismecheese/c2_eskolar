@@ -2,6 +2,7 @@
 @attribute [Authorize(Roles = "Student,SuperAdmin")]
 @layout Layout.StudentDashLayout
 @implements IDisposable
+@implements IAsyncDisposable
 
 @inject BookmarkService BookmarkService
 @inject AuthenticationStateProvider AuthenticationStateProvider
@@ -814,13 +815,19 @@
     // Thread-safety for loading data
     private readonly SemaphoreSlim loadingSemaphore = new SemaphoreSlim(1, 1);
 
+    // Cancellation & in-flight task tracking for graceful teardown
+    private readonly CancellationTokenSource _cts = new();
+    private Task? _loadTask;
+
     protected override async Task OnInitializedAsync()
     {
         if (loadingSemaphore.CurrentCount == 0) return;
-        
-        await loadingSemaphore.WaitAsync();
+
+        bool entered = false;
         try
         {
+            await loadingSemaphore.WaitAsync(_cts.Token);
+            entered = true;
             var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
             var user = authState.User;
 
@@ -831,7 +838,8 @@
 
             if (!string.IsNullOrEmpty(currentUserId))
             {
-                await LoadBookmarksData();
+                _loadTask = LoadBookmarksData(_cts.Token);
+                await _loadTask;
             }
             else
             {
@@ -852,20 +860,18 @@
         }
         finally
         {
-            try
+            if (entered)
             {
-                loadingSemaphore.Release();
-            }
-            catch (ObjectDisposedException)
-            {
+                try { loadingSemaphore.Release(); } catch (ObjectDisposedException) { }
             }
         }
     }
 
-    private async Task LoadBookmarksData()
+    private async Task LoadBookmarksData(CancellationToken ct = default)
     {
         try
         {
+            ct.ThrowIfCancellationRequested();
             isLoading = true;
             StateHasChanged();
             
@@ -876,6 +882,7 @@
             
             // Load user's bookmarks using the BookmarkService
             var bookmarkOrganization = await BookmarkService.GetOrganizedBookmarksAsync(currentUserId!);
+            ct.ThrowIfCancellationRequested();
             allBookmarks = bookmarkOrganization.AllBookmarks;
             
             // Calculate statistics
@@ -915,6 +922,23 @@
         {
             isLoading = false;
             StateHasChanged();
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        try
+        {
+            _cts.Cancel();
+            if (_loadTask != null)
+            {
+                try { await _loadTask; } catch (OperationCanceledException) { }
+                catch (Exception ex) { Console.WriteLine($"Exception while awaiting load task during DisposeAsync: {ex.Message}"); }
+            }
+        }
+        finally
+        {
+            _cts.Dispose();
         }
     }
     
@@ -1144,6 +1168,8 @@
     
     public void Dispose()
     {
-        loadingSemaphore?.Dispose();
+        // Do not dispose the semaphore here to avoid races between Dispose()
+        // and any async operations that may call WaitAsync/Release. Let the GC
+        // clean up the SemaphoreSlim instance.
     }
 }

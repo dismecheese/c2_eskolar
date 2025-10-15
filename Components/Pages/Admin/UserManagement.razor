@@ -3,6 +3,7 @@
 @attribute [Authorize(Roles = "SuperAdmin")]
 @layout Layout.SuperAdminDashLayout
 @implements IDisposable
+@implements IAsyncDisposable
 
 @inject IDbContextFactory<ApplicationDbContext> DbContextFactory
 @inject c2_eskolar.Services.InstitutionProfileService InstitutionProfileService
@@ -251,7 +252,7 @@
             if (!showInstitutionRequestsTable)
             {
                 showInstitutionRequestsTable = true;
-                LoadPendingInstitutions();
+                _ = LoadPendingInstitutions();
             }
             if (isLoadingRequests)
             {
@@ -591,6 +592,23 @@
         requestTypeDropdownValue = selected;
         ApplyFilter();
     }
+
+    public async ValueTask DisposeAsync()
+    {
+        try
+        {
+            _cts.Cancel();
+            if (_loadTask != null)
+            {
+                try { await _loadTask; } catch (OperationCanceledException) { }
+                catch (Exception ex) { Console.WriteLine($"Exception while awaiting load task during DisposeAsync: {ex.Message}"); }
+            }
+        }
+        finally
+        {
+            _cts.Dispose();
+        }
+    }
     private string searchQuery
     {
         get => _searchQuery;
@@ -611,13 +629,20 @@
     // Thread-safety for loading data
     private readonly SemaphoreSlim loadingSemaphore = new SemaphoreSlim(1, 1);
 
+    // Cancellation & in-flight task tracking for graceful teardown
+    private readonly CancellationTokenSource _cts = new();
+    private Task? _loadTask;
+
     protected override async Task OnInitializedAsync()
     {
         if (loadingSemaphore.CurrentCount == 0) return;
-        
-        await loadingSemaphore.WaitAsync();
+
+        bool entered = false;
         try
         {
+            await loadingSemaphore.WaitAsync(_cts.Token);
+            entered = true;
+
             var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
             var user = authState.User;
 
@@ -627,27 +652,27 @@
                 currentUserEmail = user.FindFirst("email")?.Value;
             }
 
-            await LoadUsersData();
+            _loadTask = LoadUsersData(_cts.Token);
+            await _loadTask;
+        }
+        catch (OperationCanceledException)
+        {
+            return;
         }
         catch (ObjectDisposedException)
         {
-            // Ignore if already disposed
             return;
         }
         finally
         {
-            try
+            if (entered)
             {
-                loadingSemaphore.Release();
-            }
-            catch (ObjectDisposedException)
-            {
-                // Ignore if already disposed
+                try { loadingSemaphore.Release(); } catch (ObjectDisposedException) { }
             }
         }
     }
 
-    private async Task LoadUsersData()
+    private async Task LoadUsersData(CancellationToken ct = default)
     {
         try
         {
@@ -656,20 +681,20 @@
             Console.WriteLine("[DEBUG] LoadUsersData: Starting to load users data...");
             using var context = DbContextFactory.CreateDbContext();
             // Load all users
-            allUsers = await UserManager.Users.ToListAsync();
+            allUsers = await UserManager.Users.ToListAsync(ct);
             totalUsers = allUsers.Count;
             Console.WriteLine($"[DEBUG] LoadUsersData: Loaded {totalUsers} users from UserManager");
             // Bulk load all profiles and cache by UserId
-            studentProfilesByUserId = (await context.StudentProfiles.ToListAsync())
+            studentProfilesByUserId = (await context.StudentProfiles.ToListAsync(ct))
                 .ToDictionary(sp => sp.UserId ?? "", sp => sp);
-            institutionProfilesByUserId = (await context.InstitutionProfiles.ToListAsync())
+            institutionProfilesByUserId = (await context.InstitutionProfiles.ToListAsync(ct))
                 .ToDictionary(ip => ip.UserId ?? "", ip => ip);
-            benefactorProfilesByUserId = (await context.BenefactorProfiles.ToListAsync())
+            benefactorProfilesByUserId = (await context.BenefactorProfiles.ToListAsync(ct))
                 .ToDictionary(bp => bp.UserId ?? "", bp => bp);
             // Load role counts and user roles
             await LoadUserRoles();
             // Load verification statuses
-            await LoadUserVerificationStatuses();
+            await LoadUserVerificationStatuses(ct);
             // Calculate totalArchived
             totalArchived = allUsers.Count(u =>
                 (studentProfilesByUserId.TryGetValue(u.Id, out var student) && student.AccountStatus == "Archived") ||
@@ -743,7 +768,7 @@
         return userRoles.TryGetValue(userId, out var role) ? role : "Unknown";
     }
     
-    private async Task LoadUserVerificationStatuses()
+    private async Task LoadUserVerificationStatuses(CancellationToken ct = default)
     {
         try
         {
@@ -753,15 +778,15 @@
             // Load all account statuses in bulk
             var studentStatuses = await context.StudentProfiles
                 .Select(sp => new { sp.UserId, sp.AccountStatus })
-                .ToListAsync();
+                .ToListAsync(ct);
                 
             var institutionStatuses = await context.InstitutionProfiles
                 .Select(ip => new { ip.UserId, ip.AccountStatus })
-                .ToListAsync();
+                .ToListAsync(ct);
                 
             var benefactorStatuses = await context.BenefactorProfiles
                 .Select(bp => new { bp.UserId, bp.AccountStatus })
-                .ToListAsync();
+                .ToListAsync(ct);
             
             // Populate the dictionary
             foreach (var status in studentStatuses)
@@ -915,7 +940,7 @@
         Console.WriteLine("[DEBUG] RefreshUsers: Starting refresh...");
         await LoadUsersData();
         Console.WriteLine("[DEBUG] RefreshUsers: LoadUsersData completed");
-        await LoadUserVerificationStatuses();
+    await LoadUserVerificationStatuses(_cts.Token);
         Console.WriteLine("[DEBUG] RefreshUsers: LoadUserVerificationStatuses completed");
     }
     
@@ -1243,7 +1268,9 @@
     
     public void Dispose()
     {
-        loadingSemaphore?.Dispose();
+        // Avoid disposing the semaphore here to prevent disposal races with
+        // any in-flight async operations that may still be releasing it.
+        // SemaphoreSlim is a managed resource and can be left for the GC.
     }
     // Institution Requests Table State
     private bool showInstitutionRequestsTable = false;
@@ -1254,7 +1281,7 @@
 
     // Removed ToggleInstitutionRequests, replaced by Requests tab logic
 
-    private async void LoadPendingInstitutions()
+    private async Task LoadPendingInstitutions()
     {
         isLoadingRequests = true;
         StateHasChanged();
@@ -1512,7 +1539,7 @@
         // Reload pending requests and users to ensure UI consistency
         pendingInstitutions = await FetchPendingInstitutionsAsync();
         await LoadUsersData();
-        await LoadUserVerificationStatuses();
+    await LoadUserVerificationStatuses(_cts.Token);
     }
 
     private async Task RejectInstitution(string institutionId)
