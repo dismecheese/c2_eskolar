@@ -124,7 +124,7 @@
     private void SkipVerification()
     {
         showVerificationModal = false;
-        Navigation.NavigateTo("/dashboard/unverified");
+        Navigation.NavigateTo("/dashboard/institution/unverified");
     }
     
     public void Dispose() { }
@@ -277,26 +277,6 @@
     }
 
 }
-
-@if (showVerificationModal)
-{
-    <div class="sv-modal sv-modal-backdrop sv-modal-fixed">
-        <div class="sv-modal-content">
-            <div class="sv-modal-header">
-                <h2>Institution Verification Required</h2>
-            </div>
-            <div class="sv-modal-body">
-                <p class="sv-modal-justify">To maintain the integrity of eSkolar, all institutions must complete verification before gaining full access to platform features.
-                Please verify your institution by providing accurate details, administrator information, and the necessary supporting documents.</p>
-            </div>
-            <div class="sv-modal-footer" style="display:flex;gap:16px;justify-content:flex-end;">
-                <button class="sv-btn sv-btn-secondary" @onclick="SkipVerification">Skip for Now</button>
-                <button class="sv-btn sv-btn-primary" @onclick="GoToVerification">Verify Institution</button>
-            </div>
-        </div>
-    </div>
-}
-
 </div>
 
 <LogoutModal IsVisible="@showLogoutModal" OnCancel="@CancelLogout" OnConfirm="@ConfirmLogout" />

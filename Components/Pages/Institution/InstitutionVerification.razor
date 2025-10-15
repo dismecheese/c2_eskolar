@@ -9,10 +9,12 @@
 @layout Layout.AUnDashLayout
 
 
-<EditForm Model="verificationModel" OnValidSubmit="HandleValidSubmit">
-	<DataAnnotationsValidator />
-	<ValidationSummary />
-	<div class="dashboard-center-container">
+@if (!HasAlreadySubmitted || CurrentAccountStatus == "Rejected")
+{
+	<EditForm Model="verificationModel" OnValidSubmit="HandleValidSubmit">
+		<DataAnnotationsValidator />
+		<ValidationSummary />
+		<div class="dashboard-center-container">
 		<div class="sv-header">
 			<h2 id="sv-modal-title">Institution Verification</h2>
 			<div class="sv-divider"></div>
@@ -191,6 +193,31 @@
 					<ValidationMessage For="@(() => verificationModel.InstitutionName)" />
 				</div>
 				<div class="sv-field sv-field-vertical sv-field-full">
+					<label for="institutionTypeDropdown" class="sv-field-label">Institution Type</label>
+					<div class="sv-custom-select @(ShowInstitutionTypeDropdown ? "sv-custom-select-open" : null)" tabindex="0"
+						 @onclick="ToggleInstitutionTypeDropdown"
+						 @onblur="CloseInstitutionTypeDropdown"
+						 id="institutionTypeDropdown">
+						<span class="sv-custom-select-value">@SelectedInstitutionTypeText</span>
+						<svg class="sv-custom-select-arrow" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+						@if (ShowInstitutionTypeDropdown)
+						{
+							<ul class="sv-custom-select-list">
+								<li class="sv-custom-select-item" @onclick='() => SelectInstitutionType("")'>Select type</li>
+								<li class="sv-custom-select-item" @onclick='() => SelectInstitutionType("University")'>University</li>
+								<li class="sv-custom-select-item" @onclick='() => SelectInstitutionType("College")'>College</li>
+								<li class="sv-custom-select-item" @onclick='() => SelectInstitutionType("Technical School")'>Technical School</li>
+								<li class="sv-custom-select-item" @onclick='() => SelectInstitutionType("Vocational School")'>Vocational School</li>
+								<li class="sv-custom-select-item" @onclick='() => SelectInstitutionType("High School")'>High School</li>
+								<li class="sv-custom-select-item" @onclick='() => SelectInstitutionType("Elementary School")'>Elementary School</li>
+								<li class="sv-custom-select-item" @onclick='() => SelectInstitutionType("Private School")'>Private School</li>
+								<li class="sv-custom-select-item" @onclick='() => SelectInstitutionType("Public School")'>Public School</li>
+								<li class="sv-custom-select-item" @onclick='() => SelectInstitutionType("Other")'>Other</li>
+							</ul>
+						}
+					</div>
+				</div>
+				<div class="sv-field sv-field-vertical sv-field-full">
 					<label for="institutionAddress" class="sv-field-label">Official Address <span class="sv-required">*</span></label>
 					<InputText id="institutionAddress" class="sv-input" placeholder="Enter official address" @bind-Value="verificationModel.Address" />
 					<ValidationMessage For="@(() => verificationModel.Address)" />
@@ -242,9 +269,73 @@
 			</div>
 		</div>
 
-	</div>
+		</div>
 
-</EditForm>
+	</EditForm>
+}
+else
+{
+	<!-- Show read-only view for approved users -->
+	<div class="dashboard-center-container">
+		<div class="sv-header">
+			<h2 id="sv-modal-title">Institution Verification</h2>
+			<div class="sv-divider"></div>
+		</div>
+		
+		<div class="sv-card sv-card-elevated" style="text-align: center; padding: 3rem;">
+			<div class="sv-modal-icon" style="margin-bottom: 1.5rem;">
+				@if (CurrentAccountStatus == "Approved")
+				{
+					<svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2">
+						<path d="M9 12l2 2 4-4"/>
+						<circle cx="12" cy="12" r="10"/>
+					</svg>
+				}
+				else
+				{
+					<svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2">
+						<circle cx="12" cy="12" r="10"/>
+						<path d="M12 6v6"/>
+						<path d="m16 10-4 4-4-4"/>
+					</svg>
+				}
+			</div>
+			
+			<h3 style="color: #1a237e; margin-bottom: 1rem;">
+				@if (CurrentAccountStatus == "Approved")
+				{
+					<text>Institution Verified</text>
+				}
+				else
+				{
+					<text>Verification Under Review</text>
+				}
+			</h3>
+			
+			<p style="color: #64748b; margin-bottom: 1.5rem;">
+				@if (CurrentAccountStatus == "Approved")
+				{
+					<text>Your institution has been successfully verified and approved.</text>
+				}
+				else
+				{
+					<text>Your verification request is currently being reviewed by our admin team.</text>
+				}
+			</p>
+			
+			<p><strong>Status:</strong> 
+				<span class="sv-status-badge @(CurrentAccountStatus == "Approved" ? "sv-status-approved" : "sv-status-pending")">
+					@(string.IsNullOrEmpty(CurrentAccountStatus) ? "Pending Review" : CurrentAccountStatus)
+				</span>
+			</p>
+			
+			<div style="margin-top: 2rem;">
+				<button type="button" class="sv-btn sv-btn-primary" @onclick="GoToDashboard" style="margin-right: 1rem;">Go to Dashboard</button>
+				<button type="button" class="sv-btn sv-btn-secondary" @onclick="ViewInstitutionProfile">View Profile</button>
+			</div>
+		</div>
+	</div>
+}
 
 @if (ShowSuccessModal)
 {
@@ -283,6 +374,86 @@
 			<div class="sv-modal-footer">
 				<button type="button" class="sv-btn sv-btn-secondary" @onclick="CloseSuccessModal">Stay Here</button>
 				<button type="button" class="sv-btn sv-btn-primary" @onclick="ViewProfile">View Profile</button>
+			</div>
+		</div>
+	</div>
+}
+
+@if (ShowAlreadySubmittedModal)
+{
+	<div class="sv-modal-overlay" @onclick="CloseAlreadySubmittedModal">
+		<div class="sv-modal" @onclick:stopPropagation="true">
+			<div class="sv-modal-header">
+				<h3>Verification Already Submitted</h3>
+				<button type="button" class="sv-modal-close" @onclick="CloseAlreadySubmittedModal">
+					<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+						<path d="M6 18L18 6M6 6l12 12"/>
+					</svg>
+				</button>
+			</div>
+			<div class="sv-modal-body">
+				<div class="sv-modal-icon">
+					@if (CurrentAccountStatus == "Approved")
+					{
+						<svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2">
+							<path d="M9 12l2 2 4-4"/>
+							<circle cx="12" cy="12" r="10"/>
+						</svg>
+					}
+					else if (CurrentAccountStatus == "Rejected")
+					{
+						<svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2">
+							<circle cx="12" cy="12" r="10"/>
+							<path d="m15 9-6 6"/>
+							<path d="m9 9 6 6"/>
+						</svg>
+					}
+					else
+					{
+						<svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2">
+							<circle cx="12" cy="12" r="10"/>
+							<path d="M12 6v6"/>
+							<path d="m16 10-4 4-4-4"/>
+						</svg>
+					}
+				</div>
+				<div class="sv-modal-content">
+					@if (CurrentAccountStatus == "Approved")
+					{
+						<h4>Your institution has been verified!</h4>
+						<p>Congratulations! Your institution verification has been approved. You now have full access to all features.</p>
+					}
+					else if (CurrentAccountStatus == "Rejected")
+					{
+						<h4>Verification was not approved</h4>
+						<p>Unfortunately, your institution verification was not approved. Please contact support for more information or to resubmit with corrected documents.</p>
+					}
+					else
+					{
+						<h4>Your verification is under review</h4>
+						<p>You have already submitted your institution verification request. Our admin team is currently reviewing your information and documents.</p>
+					}
+					
+					<div class="sv-modal-info-box">
+						<h5>Current Status:</h5>
+						<p><strong>Status:</strong> 
+							<span class="sv-status-badge @(CurrentAccountStatus == "Approved" ? "sv-status-approved" : 
+																CurrentAccountStatus == "Rejected" ? "sv-status-rejected" : 
+																"sv-status-pending")">
+								@(string.IsNullOrEmpty(CurrentAccountStatus) ? "Pending Review" : CurrentAccountStatus)
+							</span>
+						</p>
+						@if (CurrentAccountStatus == "Pending")
+						{
+							<p>Please wait 2-3 business days for review completion. You will receive an email notification once the review is complete.</p>
+						}
+					</div>
+				</div>
+			</div>
+			<div class="sv-modal-footer">
+				<button type="button" class="sv-btn sv-btn-secondary" @onclick="CloseAlreadySubmittedModal">Close</button>
+				<button type="button" class="sv-btn sv-btn-primary" @onclick="GoToDashboard">Go to Dashboard</button>
+				<button type="button" class="sv-btn sv-btn-primary" @onclick="ViewInstitutionProfile">View Profile</button>
 			</div>
 		</div>
 	</div>
