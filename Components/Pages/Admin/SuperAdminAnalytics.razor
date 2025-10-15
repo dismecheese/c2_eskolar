@@ -8,6 +8,8 @@
 @layout Layout.SuperAdminDashLayout
 @inject c2_eskolar.Services.SuperAdminAnalyticsService SuperAdminAnalyticsService
 @inject c2_eskolar.Services.OpenAIService OpenAIService
+@inject c2_eskolar.Services.UniversityNormalizationService UniversityNormalizationService
+@inject c2_eskolar.Services.CourseNormalizationService CourseNormalizationService
 @inject AuthenticationStateProvider AuthStateProvider
 @inject IJSRuntime JSRuntime
 @rendermode InteractiveServer
@@ -43,6 +45,8 @@
     private string aiAnalyticsResult = "";
     private bool isProcessingAI = false;
     private AIChartData? aiChartData = null;
+    private bool showRawJson = false;
+    private string rawJsonData = "";
     
     public class AIChartData
     {
@@ -197,10 +201,10 @@
     private async Task AnalyzeGeography() { aiAnalyticsQuery = "Show me a bar chart of geographic distribution"; await ProcessAIAnalytics(); }
     private async Task AnalyzeTrends() { aiAnalyticsQuery = "Create a line chart of application trends over time"; await ProcessAIAnalytics(); }
     private async Task AnalyzeSuccessRates() { aiAnalyticsQuery = "Show me success rate comparison by institution type"; await ProcessAIAnalytics(); }
-    private async Task AnalyzeTopScholarships() { aiAnalyticsQuery = "What are the top performing scholarships?"; await ProcessAIAnalytics(); }
+    private async Task AnalyzeSexDistribution() { aiAnalyticsQuery = "Show me a pie chart of sex/gender distribution"; await ProcessAIAnalytics(); }
     private async Task AnalyzeEngagement() { aiAnalyticsQuery = "Show me student engagement metrics"; await ProcessAIAnalytics(); }
     private async Task AnalyzeApplicationStatus() { aiAnalyticsQuery = "Create a pie chart of application statuses"; await ProcessAIAnalytics(); }
-    private async Task AnalyzeScholarshipValue() { aiAnalyticsQuery = "Show me scholarship value distribution"; await ProcessAIAnalytics(); }
+    private async Task AnalyzeAgeDistribution() { aiAnalyticsQuery = "Show me a bar chart of age distribution"; await ProcessAIAnalytics(); }
     private async Task AnalyzeGPA() { aiAnalyticsQuery = "What is the average GPA by course?"; await ProcessAIAnalytics(); }
     private async Task AnalyzeVerification() { aiAnalyticsQuery = "Show verification status breakdown"; await ProcessAIAnalytics(); }
     
@@ -219,6 +223,14 @@
         }
         
         var sliceAngle = (data[index].Value / total) * 360;
+        
+        // Special case: if this is the only slice or represents 100%, draw a full circle
+        if (sliceAngle >= 359.9 || (data.Count == 1 && index == 0))
+        {
+            // Draw a full circle using two 180-degree arcs
+            return "M 150 10 A 140 140 0 0 1 150 290 A 140 140 0 0 1 150 10 Z";
+        }
+        
         var endAngle = startAngle + sliceAngle;
         
         var startRad = (startAngle - 90) * Math.PI / 180;
@@ -275,31 +287,69 @@
             
         isProcessingAI = true;
         aiAnalyticsResult = "";
+        showRawJson = false;
+        rawJsonData = "";
         StateHasChanged();
         
         try
         {
+            // Normalize university names before sending to AI
+            var normalizedUniversities = analyticsData.UniversityDistribution
+                .Select(u => new 
+                { 
+                    Original = u.Category, 
+                    Normalized = UniversityNormalizationService.NormalizeUniversityName(u.Category ?? string.Empty),
+                    Count = u.Count 
+                })
+                .GroupBy(u => u.Normalized)
+                .Select(g => new { Category = g.Key, Count = g.Sum(x => x.Count) })
+                .OrderByDescending(u => u.Count)
+                .ToList();
+            
+            // Normalize course names before sending to AI
+            var normalizedCourses = analyticsData.CourseDistribution
+                .Select(c => new 
+                { 
+                    Original = c.Category, 
+                    Normalized = CourseNormalizationService.NormalizeCourseName(c.Category ?? string.Empty),
+                    Count = c.Count 
+                })
+                .GroupBy(c => c.Normalized)
+                .Select(g => new { Category = g.Key, Count = g.Sum(x => x.Count) })
+                .OrderByDescending(c => c.Count)
+                .ToList();
+            
             // Prepare comprehensive analytics data for AI
-            var courseList = string.Join("\n", analyticsData.CourseDistribution.Select(c => $"- {c.Category}: {c.Count} students"));
+            var courseList = string.Join("\n", normalizedCourses.Select(c => $"- {c.Category}: {c.Count} students"));
             var yearList = string.Join("\n", analyticsData.YearLevelDistribution.Select(y => $"- {y.Category}: {y.Count} students"));
-            var uniList = string.Join("\n", analyticsData.UniversityDistribution.Select(u => $"- {u.Category}: {u.Count} students"));
+            var uniList = string.Join("\n", normalizedUniversities.Select(u => $"- {u.Category}: {u.Count} students"));
             var geoList = string.Join("\n", analyticsData.GeographicDistribution.Select(g => $"- {g.Region}: {g.Count} students"));
             var trendsList = string.Join("\n", analyticsData.MonthlyApplicationTrends.Select(t => $"- {new DateTime(t.Year, t.Month, 1):MMM yyyy}: {t.ApplicationCount} applications ({t.AcceptedCount} accepted)"));
+            var topScholarshipsList = string.Join("\n", analyticsData.TopPerformingScholarships.Select(s => $"- {s.Title}: {s.ApplicationCount} applications ({s.AcceptedCount} accepted, ₱{s.MonetaryValue:N2} value)"));
+            var sexList = string.Join("\n", analyticsData.SexDistribution.Select(s => $"- {s.Category}: {s.Count} students"));
+            var ageList = string.Join("\n", analyticsData.AgeDistribution.Select(a => $"- {a.Category} years: {a.Count} students"));
             
             var analyticsContext = $@"
 STUDENT ANALYTICS DATA:
 - Total Students: {analyticsData.TotalStudents}
 - Verified Students: {analyticsData.VerifiedUsers}
 - New Students This Month: {analyticsData.NewUsersThisMonth}
+- Active Students (Applied in last 3 months): {analyticsData.TotalApplications}
 
-COURSE DISTRIBUTION:
+COURSE DISTRIBUTION (Normalized from acronyms):
 {courseList}
 
 YEAR LEVEL DISTRIBUTION:
 {yearList}
 
-UNIVERSITY DISTRIBUTION:
+UNIVERSITY DISTRIBUTION (Normalized):
 {uniList}
+
+SEX/GENDER DISTRIBUTION:
+{sexList}
+
+AGE DISTRIBUTION:
+{ageList}
 
 GEOGRAPHIC DISTRIBUTION:
 {geoList}
@@ -316,9 +366,28 @@ SCHOLARSHIP STATISTICS:
 - Active Scholarships: {analyticsData.ActiveScholarships}
 - Total Value: ₱{analyticsData.TotalScholarshipValue:N2}
 - Average Value: ₱{analyticsData.AverageScholarshipValue:N2}
+- Distributed Value: ₱{analyticsData.DistributedValue:N2}
+
+TOP PERFORMING SCHOLARSHIPS:
+{topScholarshipsList}
 
 MONTHLY APPLICATION TRENDS (Last 6 months):
 {trendsList}
+
+ENGAGEMENT METRICS:
+- User Retention Rate: {analyticsData.UserRetentionRate:F1}%
+- User Growth Rate: {analyticsData.UserGrowthRate:F1}%
+- System Utilization Rate: {analyticsData.SystemUtilizationRate:F1}%
+- Scholarship Utilization Rate: {analyticsData.ScholarshipUtilizationRate:F1}%
+- Average Processing Time: {analyticsData.AverageProcessingTime:F1} days
+- Platform Efficiency Score: {analyticsData.PlatformEfficiencyScore:F1}%
+
+PERFORMANCE METRICS:
+- Benefactor Success Rate: {analyticsData.BenefactorSuccessRate:F1}%
+- Institution Success Rate: {analyticsData.InstitutionSuccessRate:F1}%
+- Benefactor vs Institution Ratio: {analyticsData.BenefactorVsInstitutionRatio:F2}
+
+NOTE: GPA data is not currently collected in the system. If asked about GPA, explain that this feature is not yet implemented.
 
 Based on this data, please answer the following query and provide visualizations when appropriate:
 
@@ -374,6 +443,7 @@ Always use the actual data provided above. Be specific and cite exact numbers.";
                 if (jsonStart >= 0 && jsonEnd > jsonStart)
                 {
                     var jsonString = response.Substring(jsonStart, jsonEnd - jsonStart + 1);
+                    rawJsonData = jsonString; // Store raw JSON
                     aiChartData = JsonSerializer.Deserialize<AIChartData>(jsonString, new JsonSerializerOptions 
                     { 
                         PropertyNameCaseInsensitive = true 
@@ -384,12 +454,14 @@ Always use the actual data provided above. Be specific and cite exact numbers.";
             {
                 // If JSON parsing fails, just show the text response
                 aiChartData = null;
+                rawJsonData = "";
             }
         }
         catch (Exception ex)
         {
-            aiAnalyticsResult = $"Error processing analytics: {ex.Message}";
+            aiAnalyticsResult = $"Error processing analytics: {ex.Message}\n\nInner Exception: {ex.InnerException?.Message}\n\nStack Trace: {ex.InnerException?.StackTrace}";
             aiChartData = null;
+            rawJsonData = "";
         }
         finally
         {
@@ -832,14 +904,16 @@ Always use the actual data provided above. Be specific and cite exact numbers.";
             
             <div class="ai-analytics-query-box">
                 <div class="query-input-wrapper">
-                    <i class="bi bi-search query-icon"></i>
-                    <input 
-                        type="text" 
-                        class="ai-query-input" 
-                        placeholder="Ask AI to analyze student data or create charts (e.g., 'Show me a pie chart of courses' or 'Create a bar chart of year levels')..."
-                        @bind="aiAnalyticsQuery"
-                        @onkeypress="@(async (KeyboardEventArgs e) => { if (e.Key == "Enter") await ProcessAIAnalytics(); })"
-                        disabled="@isProcessingAI" />
+                    <div class="ai-query-input-group">
+                        <i class="bi bi-search query-icon"></i>
+                        <input 
+                            type="text" 
+                            class="ai-query-input" 
+                            placeholder="Ask AI to analyze student data or create charts (e.g., 'Show me a pie chart of courses' or 'Create a bar chart of year levels')..."
+                            @bind="aiAnalyticsQuery"
+                            @onkeypress="@(async (KeyboardEventArgs e) => { if (e.Key == "Enter") await ProcessAIAnalytics(); })"
+                            disabled="@isProcessingAI" />
+                    </div>
                     <button class="ai-analyze-btn" @onclick="ProcessAIAnalytics" disabled="@isProcessingAI">
                         @if (isProcessingAI)
                         {
@@ -938,6 +1012,27 @@ Always use the actual data provided above. Be specific and cite exact numbers.";
                                     <strong>Analysis:</strong> @aiChartData.Explanation
                                 </div>
                             }
+                            
+                            @if (!string.IsNullOrEmpty(rawJsonData))
+                            {
+                                <div class="json-viewer-controls">
+                                    <button class="btn-show-json" @onclick="@(() => showRawJson = !showRawJson)">
+                                        <i class="bi bi-@(showRawJson ? "eye-slash" : "code-square")"></i>
+                                        @(showRawJson ? "Hide" : "Show") Raw JSON
+                                    </button>
+                                </div>
+                                
+                                @if (showRawJson)
+                                {
+                                    <div class="raw-json-container">
+                                        <div class="json-header">
+                                            <i class="bi bi-file-code"></i>
+                                            <span>AI Response JSON</span>
+                                        </div>
+                                        <pre class="json-content">@rawJsonData</pre>
+                                    </div>
+                                }
+                            }
                         </div>
                     }
                     else
@@ -959,40 +1054,76 @@ Always use the actual data provided above. Be specific and cite exact numbers.";
                 <h4>Quick Analysis</h4>
                 <div class="quick-analysis-grid">
                     <button class="analysis-btn" @onclick="AnalyzeCourseDistribution">
-                        <i class="bi bi-pie-chart"></i> Course Distribution
+                        <i class="bi bi-pie-chart"></i>
+                        <div class="analysis-btn-text">
+                            <strong>Course Distribution</strong>
+                        </div>
                     </button>
                     <button class="analysis-btn" @onclick="AnalyzeYearLevels">
-                        <i class="bi bi-bar-chart"></i> Year Level Analysis
+                        <i class="bi bi-bar-chart"></i>
+                        <div class="analysis-btn-text">
+                            <strong>Year Level Analysis</strong>
+                        </div>
                     </button>
                     <button class="analysis-btn" @onclick="AnalyzeUniversities">
-                        <i class="bi bi-building"></i> University Distribution
+                        <i class="bi bi-building"></i>
+                        <div class="analysis-btn-text">
+                            <strong>University Distribution</strong>
+                        </div>
                     </button>
                     <button class="analysis-btn" @onclick="AnalyzeGeography">
-                        <i class="bi bi-geo-alt"></i> Geographic Breakdown
+                        <i class="bi bi-geo-alt"></i>
+                        <div class="analysis-btn-text">
+                            <strong>Geographic Breakdown</strong>
+                        </div>
                     </button>
                     <button class="analysis-btn" @onclick="AnalyzeTrends">
-                        <i class="bi bi-graph-up"></i> Application Trends
+                        <i class="bi bi-graph-up"></i>
+                        <div class="analysis-btn-text">
+                            <strong>Application Trends</strong>
+                        </div>
                     </button>
                     <button class="analysis-btn" @onclick="AnalyzeSuccessRates">
-                        <i class="bi bi-award"></i> Success Rates
+                        <i class="bi bi-award"></i>
+                        <div class="analysis-btn-text">
+                            <strong>Success Rates</strong>
+                        </div>
                     </button>
-                    <button class="analysis-btn" @onclick="AnalyzeTopScholarships">
-                        <i class="bi bi-trophy"></i> Top Scholarships
+                    <button class="analysis-btn" @onclick="AnalyzeSexDistribution">
+                        <i class="bi bi-gender-ambiguous"></i>
+                        <div class="analysis-btn-text">
+                            <strong>Sex Distribution</strong>
+                        </div>
                     </button>
                     <button class="analysis-btn" @onclick="AnalyzeEngagement">
-                        <i class="bi bi-people"></i> Engagement Metrics
+                        <i class="bi bi-people"></i>
+                        <div class="analysis-btn-text">
+                            <strong>Engagement Metrics</strong>
+                        </div>
                     </button>
                     <button class="analysis-btn" @onclick="AnalyzeApplicationStatus">
-                        <i class="bi bi-file-check"></i> Application Status
+                        <i class="bi bi-file-check"></i>
+                        <div class="analysis-btn-text">
+                            <strong>Application Status</strong>
+                        </div>
                     </button>
-                    <button class="analysis-btn" @onclick="AnalyzeScholarshipValue">
-                        <i class="bi bi-currency-dollar"></i> Value Analysis
+                    <button class="analysis-btn" @onclick="AnalyzeAgeDistribution">
+                        <i class="bi bi-calendar-range"></i>
+                        <div class="analysis-btn-text">
+                            <strong>Age Distribution</strong>
+                        </div>
                     </button>
                     <button class="analysis-btn" @onclick="AnalyzeGPA">
-                        <i class="bi bi-graph-down-arrow"></i> GPA Analysis
+                        <i class="bi bi-graph-down-arrow"></i>
+                        <div class="analysis-btn-text">
+                            <strong>GPA Analysis</strong>
+                        </div>
                     </button>
                     <button class="analysis-btn" @onclick="AnalyzeVerification">
-                        <i class="bi bi-shield-check"></i> Verification Status
+                        <i class="bi bi-shield-check"></i>
+                        <div class="analysis-btn-text">
+                            <strong>Verification Status</strong>
+                        </div>
                     </button>
                 </div>
             </div>

@@ -142,6 +142,8 @@ builder.Services.AddScoped<OpenAIService>();
 builder.Services.AddScoped<AITokenTrackingService>();
 builder.Services.AddScoped<SuperAdminAnalyticsService>();
 builder.Services.AddScoped<MonthlyStatisticsService>();
+builder.Services.AddScoped<UniversityNormalizationService>();
+builder.Services.AddScoped<CourseNormalizationService>();
 
 // Register background services
 builder.Services.AddHostedService<c2_eskolar.BackgroundServices.MonthlyAggregationBackgroundService>();
