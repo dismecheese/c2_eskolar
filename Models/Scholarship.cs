@@ -28,8 +28,10 @@ namespace c2_eskolar.Models
         public DateTime ApplicationDeadline { get; set; }
 
         [StringLength(3000)]
-        public string? Requirements { get; set; }
+        public string? Eligibility { get; set; }
 
+        [StringLength(3000)]
+        public string? Requirements { get; set; }
 
         [Range(1, 1000)]
         public int? SlotsAvailable { get; set; }
@@ -50,6 +52,13 @@ namespace c2_eskolar.Models
         // STATUS AND MANAGEMENT
         public bool IsActive { get; set; } = true;
         public bool IsInternal { get; set; } = false; // true = institutional, false = open
+        
+        // VISIBILITY AND TARGETING
+        [StringLength(50)]
+        public string VisibilityType { get; set; } = "open"; // "open" or "targeted"
+        
+        [StringLength(2000)]
+        public string? TargetInstitutionIds { get; set; } // JSON array of GUIDs for targeted visibility
 
         // APPLICATION MANAGEMENT
         [Url]
