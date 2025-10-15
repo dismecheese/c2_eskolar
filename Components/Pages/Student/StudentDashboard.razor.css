@@ -166,8 +166,6 @@
 }
 
 /* Student Verification Modal Styles (moved from StudentVerification.razor.css) */
-.sv-modal-overlay {}
-.sv-modal {}
 .sv-modal-content, .sv-container {
     max-width: 900px;
 }
