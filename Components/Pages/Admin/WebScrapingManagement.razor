@@ -4,20 +4,20 @@
 @inject c2_eskolar.Services.WebScraping.IWebScrapingService WebScrapingService
 @inject c2_eskolar.Services.WebScraping.IEnhancedWebScrapingService EnhancedWebScrapingService
 @inject c2_eskolar.Services.IScrapedScholarshipService ScrapedScholarshipService
+@inject IDbContextFactory<c2_eskolar.Data.ApplicationDbContext> DbContextFactory
 @inject IJSRuntime JSRuntime
 @inject ILogger<WebScrapingManagement> Logger
 @using c2_eskolar.Services.WebScraping
 @using c2_eskolar.Services
 @using Microsoft.AspNetCore.Authorization
+@using Microsoft.EntityFrameworkCore
+@using System.Threading
+@using System.Text
+@implements IDisposable
 
 <div class="dashboard-center-container">
     <!-- Top Bar -->
     <div class="dashboard-topbar">
-        <div style="position: relative; flex: 1; max-width: 500px;">
-            <i class="bi bi-search" style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: #64748b; z-index: 1;"></i>
-            <input class="university-input" type="text" placeholder="Search scraping operations..." 
-                   style="padding-left: 45px; padding-right: 18px;" readonly />
-        </div>
         <span class="dashboard-date">@DateTime.Now.ToString("dd MMM yyyy, ddd")</span>
     </div>
 
@@ -45,6 +45,19 @@
             <button type="button" class="btn-close" @onclick="() => successMessage = string.Empty"></button>
         </div>
     }
+
+    <!-- Inline toasts container -->
+    <div class="position-fixed top-0 end-0 p-3" style="z-index: 1080;">
+        @foreach (var t in approvalToasts)
+        {
+            <div class="toast show mb-2" role="status">
+                <div class="toast-body">
+                    @t
+                    <button type="button" class="btn-close float-end ms-2" @onclick="() => DismissToast(t)"></button>
+                </div>
+            </div>
+        }
+    </div>
 
     <!-- Dashboard Tabs -->
     <div class="dashboard-tabs">
@@ -90,6 +103,19 @@
                                 <i class="bi bi-info-circle me-2"></i>
                                 AI will automatically extract and structure scholarship data into database-ready format
                             </div>
+                            <!-- Progress / Status Bar -->
+                            @if (showProgress)
+                            {
+                                <div class="scrape-progress mt-3">
+                                    <div class="d-flex justify-content-between align-items-center mb-1">
+                                        <small class="text-muted">@progressText</small>
+                                        <small class="text-muted">@progressPercent% </small>
+                                    </div>
+                                    <div class="progress" style="height: 10px;">
+                                        <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: @progressPercent%" aria-valuenow="@progressPercent" aria-valuemin="0" aria-valuemax="100"></div>
+                                    </div>
+                                </div>
+                            }
                         </div>
                     </div>
                 </div>
@@ -183,7 +209,7 @@
                                             </span>
                                         </td>
                                         <td>
-                                            <button class="btn btn-sm btn-outline-primary" @onclick="() => ViewScholarshipDetails(scholarship)">
+                                            <button class="btn btn-modern-secondary btn-sm" @onclick="() => ViewScholarshipDetails(scholarship)" title="View">
                                                 <i class="bi bi-eye"></i>
                                             </button>
                                         </td>
@@ -250,28 +276,41 @@
             <!-- Filters and Search -->
             <div class="filters-section">
                 <div class="filters-header">
-                    <h3>
-                        <i class="fas fa-filter me-2"></i>
-                        Filter & Search Scholarships
-                    </h3>
-                    <button class="btn btn-outline-secondary btn-sm" @onclick="ClearApprovalFilters">
+                    <div class="filters-title-section">
+                        <div class="filters-icon">
+                            <i class="fas fa-filter"></i>
+                        </div>
+                        <div class="filters-title-content">
+                            <h3 class="filters-title">Filter & Search Scholarships</h3>
+                            <p class="filters-subtitle">Refine your search to find specific scholarships</p>
+                        </div>
+                    </div>
+                    <button class="btn btn-modern-secondary btn-sm" @onclick="ClearApprovalFilters">
                         <i class="fas fa-undo me-1"></i>
                         Clear Filters
                     </button>
                 </div>
 
                 <div class="filters-content">
-                    <div class="row">
-                        <div class="col-md-6 col-lg-3">
+                    <!-- Search Row - Full Width -->
+                    <div class="row search-row">
+                        <div class="col-12">
                             <div class="filter-group">
-                                <label class="form-label">Search</label>
-                                <input type="text" class="form-control" @bind="approvalSearchQuery" @bind:event="oninput" @onkeyup="() => ApplyApprovalFilters()" placeholder="Search scholarships...">
+                                <label class="form-label">Search Scholarships</label>
+                                <div class="search-input-container">
+                                    <input type="text" class="form-control" @bind="approvalSearchQuery" @bind:event="oninput" @bind:after="OnSearchInputChanged" placeholder="Search by title, description, requirements, or source...">
+                                    <i class="fas fa-search search-input-icon"></i>
+                                </div>
                             </div>
                         </div>
-                        <div class="col-md-6 col-lg-2">
+                    </div>
+                    
+                    <!-- Filters Row - Evenly Spaced -->
+                    <div class="row filters-row">
+                        <div class="col-sm-6 col-md-3">
                             <div class="filter-group">
                                 <label class="form-label">Status</label>
-                                <select class="form-select" @bind="approvalStatusFilter">
+                                <select class="form-select" @bind="approvalStatusFilter" @bind:after="ApplyApprovalFilters">
                                     <option value="">All Statuses</option>
                                     <option value="Scraped">Scraped</option>
                                     <option value="UnderReview">Under Review</option>
@@ -281,10 +320,10 @@
                                 </select>
                             </div>
                         </div>
-                        <div class="col-md-6 col-lg-2">
+                        <div class="col-sm-6 col-md-3">
                             <div class="filter-group">
                                 <label class="form-label">Confidence</label>
-                                <select class="form-select" @bind="approvalConfidenceFilter">
+                                <select class="form-select" @bind="approvalConfidenceFilter" @bind:after="ApplyApprovalFilters">
                                     <option value="">All Levels</option>
                                     <option value="high">High (80%+)</option>
                                     <option value="medium">Medium (60-80%)</option>
@@ -292,10 +331,10 @@
                                 </select>
                             </div>
                         </div>
-                        <div class="col-md-6 col-lg-2">
+                        <div class="col-sm-6 col-md-3">
                             <div class="filter-group">
                                 <label class="form-label">Source</label>
-                                <select class="form-select" @bind="approvalSourceFilter">
+                                <select class="form-select" @bind="approvalSourceFilter" @bind:after="ApplyApprovalFilters">
                                     <option value="">All Sources</option>
                                     @foreach (var source in approvalAvailableSources)
                                     {
@@ -304,10 +343,10 @@
                                 </select>
                             </div>
                         </div>
-                        <div class="col-md-6 col-lg-2">
+                        <div class="col-sm-6 col-md-3">
                             <div class="filter-group">
                                 <label class="form-label">Date</label>
-                                <select class="form-select" @bind="approvalDateFilter">
+                                <select class="form-select" @bind="approvalDateFilter" @bind:after="ApplyApprovalFilters">
                                     <option value="">All Dates</option>
                                     <option value="today">Today</option>
                                     <option value="week">This Week</option>
@@ -322,16 +361,21 @@
             <!-- Scholarships Data Table -->
             <div class="scholarships-table-section">
                 <div class="table-header">
-                    <div>
-                        <h3>
-                            <i class="fas fa-table me-2"></i>
-                            Scraped Scholarships
-                        </h3>
-                        <div class="record-count">
-                            Showing @approvalPaginatedScholarships.Count() of @approvalFilteredScholarships.Count() scholarships
+                    <div class="table-title-section centered">
+                        <div class="table-icon">
+                            <i class="fas fa-table"></i>
+                        </div>
+                        <div class="table-title-content">
+                            <h3 class="table-title">Scraped Scholarships</h3>
+                            <div class="record-count">
+                                Showing @approvalPaginatedScholarships.Count() of @approvalFilteredScholarships.Count() scholarships
+                            </div>
                         </div>
                     </div>
                     <div class="table-actions">
+                        <button class="btn @(approvalSelectedScholarshipIds.Count == approvalPaginatedScholarships.Count() && approvalPaginatedScholarships.Any() ? "btn-primary" : "btn-outline-primary") btn-sm" @onclick="ToggleApprovalSelectAllButton" title="@(approvalSelectedScholarshipIds.Count == approvalPaginatedScholarships.Count() && approvalPaginatedScholarships.Any() ? "Deselect All" : "Select All")">
+                            <i class="fas @(approvalSelectedScholarshipIds.Count == approvalPaginatedScholarships.Count() && approvalPaginatedScholarships.Any() ? "fa-check-square" : "fa-square")"></i>
+                        </button>
                         <div class="view-toggle">
                             <button class="btn @(approvalViewMode == "table" ? "btn-primary" : "btn-outline-primary") btn-sm" @onclick='() => SetApprovalViewMode("table")'>
                                 <i class="fas fa-table"></i>
@@ -356,53 +400,46 @@
                 }
                 else if (approvalViewMode == "table")
                 {
+                    <!-- Direct table without card wrapper -->
                     <div class="table-responsive">
                         <table class="table scholarship-table">
                             <thead>
                                 <tr>
-                                    <th style="width: 40px;">
-                                        <input type="checkbox" class="form-check-input" @onchange="ToggleApprovalSelectAll" />
-                                    </th>
-                                    <th class="sortable" @onclick='() => ApprovalSortBy("Title")'>
+                                    <th class="sortable" @onclick='() => ApprovalSortBy("Title")' style="width: 35%;">
                                         Title
                                         @if (approvalSortColumn == "Title")
                                         {
                                             <i class="fas @(approvalSortAscending ? "fa-sort-up" : "fa-sort-down") ms-1"></i>
                                         }
                                     </th>
-                                    <th class="sortable" @onclick='() => ApprovalSortBy("Status")'>
+                                    <th class="sortable" @onclick='() => ApprovalSortBy("Status")' style="width: 15%;">
                                         Status
                                         @if (approvalSortColumn == "Status")
                                         {
                                             <i class="fas @(approvalSortAscending ? "fa-sort-up" : "fa-sort-down") ms-1"></i>
                                         }
                                     </th>
-                                    <th class="sortable" @onclick='() => ApprovalSortBy("ParsingConfidence")'>
+                                    <th class="sortable" @onclick='() => ApprovalSortBy("ParsingConfidence")' style="width: 15%;">
                                         Confidence
                                         @if (approvalSortColumn == "ParsingConfidence")
                                         {
                                             <i class="fas @(approvalSortAscending ? "fa-sort-up" : "fa-sort-down") ms-1"></i>
                                         }
                                     </th>
-                                    <th class="sortable" @onclick='() => ApprovalSortBy("ScrapedAt")'>
-                                        Scraped At
+                                    <th class="sortable" @onclick='() => ApprovalSortBy("ScrapedAt")' style="width: 12%;">
+                                        Date
                                         @if (approvalSortColumn == "ScrapedAt")
                                         {
                                             <i class="fas @(approvalSortAscending ? "fa-sort-up" : "fa-sort-down") ms-1"></i>
                                         }
                                     </th>
-                                    <th style="width: 200px;">Actions</th>
+                                    <th style="width: 23%; text-align: center;">Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 @foreach (var scholarship in approvalPaginatedScholarships)
                                 {
-                                    <tr class="@GetApprovalRowClass(scholarship)">
-                                        <td>
-                                            <input type="checkbox" class="form-check-input" 
-                                                   checked="@approvalSelectedScholarshipIds.Contains(GetApprovalScholarshipId(scholarship))"
-                                                   @onchange="(e) => ToggleApprovalScholarshipSelection(scholarship, e)" />
-                                        </td>
+                                    <tr class="@GetApprovalRowClass(scholarship) selectable-row" @onclick="() => ToggleRowSelection(scholarship)" @onclick:stopPropagation="false">
                                         <td>
                                             <div class="scholarship-title">
                                                 @scholarship.Title
@@ -423,22 +460,31 @@
                                                 <span class="confidence-text">@((scholarship.ParsingConfidence * 100).ToString("F0"))%</span>
                                             </div>
                                         </td>
-                                        <td>
-                                            @scholarship.ScrapedAt.ToString("MMM dd, yyyy")
-                                            <br><small class="time-ago">@((DateTime.Now - scholarship.ScrapedAt).TotalHours < 24 ? (DateTime.Now - scholarship.ScrapedAt).TotalHours.ToString("F0") + "h ago" : (DateTime.Now - scholarship.ScrapedAt).TotalDays.ToString("F0") + "d ago")</small>
+                                        <td class="scraped-date-cell">
+                                            <div class="scraped-date-info">
+                                                <span class="date-main">@scholarship.ScrapedAt.ToString("MMM dd")</span>
+                                                <span class="time-ago-inline">(@((DateTime.Now - scholarship.ScrapedAt).TotalHours < 24 ? (DateTime.Now - scholarship.ScrapedAt).TotalHours.ToString("F0") + "h" : (DateTime.Now - scholarship.ScrapedAt).TotalDays.ToString("F0") + "d"))</span>
+                                            </div>
                                         </td>
-                                        <td>
-                                            <div class="btn-group btn-group-sm" role="group">
-                                                <button class="btn btn-outline-primary" @onclick="() => EditApprovalScholarship(scholarship)" title="Edit">
+                                        <td style="text-align: center;" @onclick:stopPropagation="true">
+                                            <div class="action-buttons-modern">
+                                                <button class="btn btn-modern-primary btn-sm" @onclick="() => EditApprovalScholarship(scholarship)" title="Edit">
                                                     <i class="fas fa-edit"></i>
                                                 </button>
-                                                <button class="btn btn-outline-info" @onclick="() => PreviewApprovalScholarship(scholarship)" title="Preview">
+                                                <button class="btn btn-modern-secondary btn-sm" @onclick="() => PreviewApprovalScholarship(scholarship)" title="View">
                                                     <i class="fas fa-eye"></i>
                                                 </button>
-                                                <button class="btn btn-outline-success" @onclick="() => ApproveApprovalScholarship(scholarship)" title="Approve">
-                                                    <i class="fas fa-check"></i>
+                                                <button class="btn btn-modern-success btn-sm" disabled="@approvalInProgress.Contains(scholarship.Id)" @onclick="() => ApproveApprovalScholarship(scholarship)" title="Approve & Publish">
+                                                    @if (approvalInProgress.Contains(scholarship.Id))
+                                                    {
+                                                        <span class="modern-spinner me-1"></span>
+                                                    }
+                                                    else
+                                                    {
+                                                        <i class="fas fa-check"></i>
+                                                    }
                                                 </button>
-                                                <button class="btn btn-outline-danger" @onclick="() => DeleteApprovalScholarship(scholarship)" title="Delete">
+                                                <button class="btn btn-modern-danger btn-sm" disabled="@approvalInProgress.Contains(scholarship.Id)" @onclick="() => DeleteApprovalScholarship(scholarship)" title="Delete">
                                                     <i class="fas fa-trash"></i>
                                                 </button>
                                             </div>
@@ -449,18 +495,23 @@
                         </table>
                     </div>
 
-                    <!-- Pagination -->
-                    <div class="pagination-section">
+                    <!-- Modern Pagination -->
+                    <div class="modern-pagination-section">
                         <div class="pagination-info">
-                            Page @approvalCurrentPage of @approvalTotalPages (@approvalFilteredScholarships.Count() total scholarships)
+                            <span class="pagination-text">Page @approvalCurrentPage of @approvalTotalPages</span>
+                            <span class="pagination-count">(@approvalFilteredScholarships.Count() total scholarships)</span>
                         </div>
-                        <nav>
-                            <ul class="pagination pagination-sm">
+                        <nav class="pagination-nav">
+                            <ul class="modern-pagination">
                                 <li class="page-item @(approvalCurrentPage == 1 ? "disabled" : "")">
-                                    <button class="page-link" @onclick="() => ChangeApprovalPage(1)" disabled="@(approvalCurrentPage == 1)">First</button>
+                                    <button class="page-link" @onclick="() => ChangeApprovalPage(1)" disabled="@(approvalCurrentPage == 1)">
+                                        <i class="fas fa-angle-double-left"></i>
+                                    </button>
                                 </li>
                                 <li class="page-item @(approvalCurrentPage == 1 ? "disabled" : "")">
-                                    <button class="page-link" @onclick="() => ChangeApprovalPage(approvalCurrentPage - 1)" disabled="@(approvalCurrentPage == 1)">Previous</button>
+                                    <button class="page-link" @onclick="() => ChangeApprovalPage(approvalCurrentPage - 1)" disabled="@(approvalCurrentPage == 1)">
+                                        <i class="fas fa-angle-left"></i>
+                                    </button>
                                 </li>
                                 @for (int i = Math.Max(1, approvalCurrentPage - 2); i <= Math.Min(approvalTotalPages, approvalCurrentPage + 2); i++)
                                 {
@@ -470,10 +521,14 @@
                                     </li>
                                 }
                                 <li class="page-item @(approvalCurrentPage == approvalTotalPages ? "disabled" : "")">
-                                    <button class="page-link" @onclick="() => ChangeApprovalPage(approvalCurrentPage + 1)" disabled="@(approvalCurrentPage == approvalTotalPages)">Next</button>
+                                    <button class="page-link" @onclick="() => ChangeApprovalPage(approvalCurrentPage + 1)" disabled="@(approvalCurrentPage == approvalTotalPages)">
+                                        <i class="fas fa-angle-right"></i>
+                                    </button>
                                 </li>
                                 <li class="page-item @(approvalCurrentPage == approvalTotalPages ? "disabled" : "")">
-                                    <button class="page-link" @onclick="() => ChangeApprovalPage(approvalTotalPages)" disabled="@(approvalCurrentPage == approvalTotalPages)">Last</button>
+                                    <button class="page-link" @onclick="() => ChangeApprovalPage(approvalTotalPages)" disabled="@(approvalCurrentPage == approvalTotalPages)">
+                                        <i class="fas fa-angle-double-right"></i>
+                                    </button>
                                 </li>
                             </ul>
                         </nav>
@@ -481,8 +536,127 @@
                 }
                 else
                 {
-                    <div class="cards-view">
-                        <p class="text-center text-muted">Card view coming soon...</p>
+                    <!-- Cards centered view -->
+                    <div class="cards-view-centered">
+                        <div class="row g-4 justify-content-center">
+                            @foreach (var scholarship in approvalPaginatedScholarships)
+                            {
+                                <div class="col-lg-6 col-xl-4">
+                                    <div class="scholarship-card @GetApprovalRowClass(scholarship)">
+                                        <div class="scholarship-card-header">
+                                            <div class="scholarship-checkbox">
+                                                <input type="checkbox" class="form-check-input" 
+                                                       checked="@approvalSelectedScholarshipIds.Contains(GetApprovalScholarshipId(scholarship))"
+                                                       @onchange="(e) => ToggleApprovalScholarshipSelection(scholarship, e)" />
+                                            </div>
+                                            <div class="scholarship-status">
+                                                <span class="badge @GetApprovalStatusClass(GetApprovalScholarshipStatus(scholarship))">
+                                                    @GetApprovalStatusIcon(GetApprovalScholarshipStatus(scholarship))
+                                                    @GetApprovalScholarshipStatus(scholarship)
+                                                </span>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="scholarship-card-body">
+                                            <h5 class="scholarship-card-title">@scholarship.Title</h5>
+                                            <p class="scholarship-card-source">@GetApprovalSourceName(scholarship.SourceUrl)</p>
+                                            
+                                            <div class="scholarship-card-meta">
+                                                <div class="confidence-section">
+                                                    <label>Confidence</label>
+                                                    <div class="confidence-indicator">
+                                                        <div class="confidence-bar">
+                                                            <div class="confidence-fill" style="width: @((scholarship.ParsingConfidence * 100).ToString("F0"))%"></div>
+                                                        </div>
+                                                        <span class="confidence-text">@((scholarship.ParsingConfidence * 100).ToString("F0"))%</span>
+                                                    </div>
+                                                </div>
+                                                
+                                                <div class="scraped-date">
+                                                    <label>Scraped</label>
+                                                    <div class="date-info">
+                                                        <span class="date">@scholarship.ScrapedAt.ToString("MMM dd, yyyy")</span>
+                                                        <span class="time-ago">@((DateTime.Now - scholarship.ScrapedAt).TotalHours < 24 ? (DateTime.Now - scholarship.ScrapedAt).TotalHours.ToString("F0") + "h ago" : (DateTime.Now - scholarship.ScrapedAt).TotalDays.ToString("F0") + "d ago")</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="scholarship-card-actions">
+                                            <button class="btn btn-modern-primary btn-sm" @onclick="() => EditApprovalScholarship(scholarship)" title="Edit">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+                                            <button class="btn btn-modern-secondary btn-sm" @onclick="() => PreviewApprovalScholarship(scholarship)" title="View">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                            <button class="btn btn-modern-success btn-sm" disabled="@approvalInProgress.Contains(scholarship.Id)" @onclick="() => ApproveApprovalScholarship(scholarship)" title="Approve & Publish">
+                                                @if (approvalInProgress.Contains(scholarship.Id))
+                                                {
+                                                    <span class="modern-spinner me-1"></span>
+                                                }
+                                                else
+                                                {
+                                                    <i class="fas fa-check"></i>
+                                                }
+                                            </button>
+                                            <button class="btn btn-modern-danger btn-sm" disabled="@approvalInProgress.Contains(scholarship.Id)" @onclick="() => DeleteApprovalScholarship(scholarship)" title="Delete">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                        
+                        @if (!approvalPaginatedScholarships.Any())
+                        {
+                            <div class="no-results-card">
+                                <div class="no-results-icon">
+                                    <i class="fas fa-search"></i>
+                                </div>
+                                <h5>No scholarships found</h5>
+                                <p class="text-muted">Try adjusting your filters or search terms.</p>
+                            </div>
+                        }
+                    </div>
+
+                    <!-- Modern Pagination for Cards -->
+                    <div class="modern-pagination-section">
+                        <div class="pagination-info">
+                            <span class="pagination-text">Page @approvalCurrentPage of @approvalTotalPages</span>
+                            <span class="pagination-count">(@approvalFilteredScholarships.Count() total scholarships)</span>
+                        </div>
+                        <nav class="pagination-nav">
+                            <ul class="modern-pagination">
+                                <li class="page-item @(approvalCurrentPage == 1 ? "disabled" : "")">
+                                    <button class="page-link" @onclick="() => ChangeApprovalPage(1)" disabled="@(approvalCurrentPage == 1)">
+                                        <i class="fas fa-angle-double-left"></i>
+                                    </button>
+                                </li>
+                                <li class="page-item @(approvalCurrentPage == 1 ? "disabled" : "")">
+                                    <button class="page-link" @onclick="() => ChangeApprovalPage(approvalCurrentPage - 1)" disabled="@(approvalCurrentPage == 1)">
+                                        <i class="fas fa-angle-left"></i>
+                                    </button>
+                                </li>
+                                @for (int i = Math.Max(1, approvalCurrentPage - 2); i <= Math.Min(approvalTotalPages, approvalCurrentPage + 2); i++)
+                                {
+                                    int page = i;
+                                    <li class="page-item @(approvalCurrentPage == page ? "active" : "")">
+                                        <button class="page-link" @onclick="() => ChangeApprovalPage(page)">@(page)</button>
+                                    </li>
+                                }
+                                <li class="page-item @(approvalCurrentPage == approvalTotalPages ? "disabled" : "")">
+                                    <button class="page-link" @onclick="() => ChangeApprovalPage(approvalCurrentPage + 1)" disabled="@(approvalCurrentPage == approvalTotalPages)">
+                                        <i class="fas fa-angle-right"></i>
+                                    </button>
+                                </li>
+                                <li class="page-item @(approvalCurrentPage == approvalTotalPages ? "disabled" : "")">
+                                    <button class="page-link" @onclick="() => ChangeApprovalPage(approvalTotalPages)" disabled="@(approvalCurrentPage == approvalTotalPages)">
+                                        <i class="fas fa-angle-double-right"></i>
+                                    </button>
+                                </li>
+                            </ul>
+                        </nav>
                     </div>
                 }
             </div>
@@ -651,17 +825,19 @@
     <!-- Scholarship Details Modal -->
     @if (selectedScholarship != null)
     {
-        <div class="modal fade show" style="display: block; background-color: rgba(0,0,0,0.5);" tabindex="-1">
-            <div class="modal-dialog modal-lg modal-dialog-scrollable">
-                <div class="modal-content">
-                    <div class="modal-header">
+        <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+            <div class="modal-dialog modal-lg modal-dialog-scrollable modal-dialog-centered">
+                <div class="modal-content modern-modal">
+                    <div class="modal-header modern-modal-header">
                         <h5 class="modal-title">
-                            <i class="bi bi-mortarboard me-2"></i>
+                            <i class="fas fa-graduation-cap me-2"></i>
                             Scholarship Details
                         </h5>
-                        <button type="button" class="btn-close" @onclick="CloseModal"></button>
+                        <button type="button" class="modern-btn-close" @onclick="CloseModal">
+                            <i class="bi bi-x"></i>
+                        </button>
                     </div>
-                    <div class="modal-body">
+                    <div class="modal-body modern-modal-body">
                         <div class="scholarship-details">
                             @if (isEditingScholarship && editableScholarship != null)
                             {
@@ -929,23 +1105,129 @@
                             }
                         </div>
                     </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" @onclick="CloseModal">Close</button>
+                    <div class="modal-footer modern-modal-footer">
+                        <button type="button" class="btn btn-modern-secondary" @onclick="CloseModal">
+                            <i class="fas fa-times me-1"></i>
+                            Close
+                        </button>
                         @if (isEditingScholarship && editableScholarship != null)
                         {
-                            <button type="button" class="btn btn-success" @onclick="SaveEditedScholarship">
-                                <i class="fas fa-save me-2"></i>Save
+                            <button type="button" class="btn btn-modern-success" @onclick="SaveEditedScholarship">
+                                <i class="fas fa-save me-1"></i>Save
                             </button>
-                            <button type="button" class="btn btn-outline-secondary" @onclick="CancelEditScholarship">Cancel</button>
+                            <button type="button" class="btn btn-modern-secondary" @onclick="CancelEditScholarship">
+                                <i class="fas fa-ban me-1"></i>Cancel
+                            </button>
                         }
                         else if (approvalAllScholarships.Any(s => s.Title == selectedScholarship.Title && s.ScrapedAt == selectedScholarship.ScrapedAt))
                         {
-                            <button type="button" class="btn btn-warning" @onclick="() => EditApprovalScholarship(approvalAllScholarships.First(s => s.Title == selectedScholarship.Title && s.ScrapedAt == selectedScholarship.ScrapedAt))">
-                                <i class="fas fa-edit me-2"></i>Edit
+                            <button type="button" class="btn btn-modern-primary" @onclick="() => EditApprovalScholarship(approvalAllScholarships.First(s => s.Title == selectedScholarship.Title && s.ScrapedAt == selectedScholarship.ScrapedAt))">
+                                <i class="fas fa-edit me-1"></i>Edit
                             </button>
                         }
-                        <button type="button" class="btn btn-primary" @onclick="ExportSingleScholarship">
-                            <i class="bi bi-download me-2"></i>Export as CSV
+                        <button type="button" class="btn btn-modern-success" @onclick="ExportSingleScholarship">
+                            <i class="bi bi-download me-1"></i>Export as CSV
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- Scholarship Edit Modal -->
+    @if (showEditModal)
+    {
+        <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
+            <div class="modal-dialog modal-lg modal-dialog-centered">
+                <div class="modal-content modern-modal">
+                    <div class="modal-header modern-modal-header">
+                        <h5 class="modal-title">
+                            <i class="fas fa-edit me-2"></i>
+                            Edit Scholarship
+                        </h5>
+                        <button type="button" class="modern-btn-close" @onclick="CloseEditModal">
+                            <i class="bi bi-x"></i>
+                        </button>
+                    </div>
+                    <div class="modal-body modern-modal-body">
+                        @if (editingApprovalScholarship != null)
+                        {
+                            <div class="modern-form-group">
+                                <label class="modern-form-label">Title</label>
+                                <input type="text" class="form-control" @bind="editingApprovalScholarship.Title" />
+                            </div>
+                            
+                            <div class="modern-form-group">
+                                <label class="modern-form-label">Description</label>
+                                <textarea class="form-control" rows="4" @bind="editingApprovalScholarship.Description"></textarea>
+                            </div>
+                            
+                            <div class="modern-form-group">
+                                <label class="modern-form-label">Requirements</label>
+                                <textarea class="form-control" rows="3" @bind="editingApprovalScholarship.Requirements"></textarea>
+                            </div>
+                            
+                            <div class="modern-form-group">
+                                <label class="modern-form-label">Benefits</label>
+                                <input type="text" class="form-control" @bind="editingApprovalScholarship.Benefits" />
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="modern-form-group">
+                                        <label class="modern-form-label">Monetary Value</label>
+                                        <input type="number" class="form-control" @bind="editingApprovalScholarship.MonetaryValue" />
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="modern-form-group">
+                                        <label class="modern-form-label">Slots Available</label>
+                                        <input type="number" class="form-control" @bind="editingApprovalScholarship.SlotsAvailable" />
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="modern-form-group">
+                                        <label class="modern-form-label">Application Deadline</label>
+                                        <input type="date" class="form-control" @bind="editingApprovalScholarship.ApplicationDeadline" />
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="modern-form-group">
+                                        <label class="modern-form-label">Minimum GPA</label>
+                                        <input type="number" step="0.01" class="form-control" @bind="editingApprovalScholarship.MinimumGPA" />
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="modern-form-group">
+                                <label class="modern-form-label">External Application URL</label>
+                                <input type="url" class="form-control" @bind="editingApprovalScholarship.ExternalApplicationUrl" />
+                            </div>
+                            
+                            <div class="modern-form-group">
+                                <label class="modern-form-label">Source URL</label>
+                                <input type="url" class="form-control" @bind="editingApprovalScholarship.SourceUrl" readonly />
+                            </div>
+                        }
+                    </div>
+                    <div class="modal-footer modern-modal-footer">
+                        <button type="button" class="btn btn-modern-secondary" @onclick="CloseEditModal">
+                            <i class="fas fa-times me-2"></i>
+                            Cancel
+                        </button>
+                        <button type="button" class="btn btn-modern-primary" @onclick="SaveEditedApprovalScholarship" disabled="@isEditModalLoading">
+                            @if (isEditModalLoading)
+                            {
+                                <span class="modern-spinner me-2"></span>
+                            }
+                            else
+                            {
+                                <i class="fas fa-save me-2"></i>
+                            }
+                            Save Changes
                         </button>
                     </div>
                 </div>
@@ -964,6 +1246,13 @@
     private string errorMessage = "";
     private string successMessage = "";
     private bool isLoading = false;
+    // Track which scraped scholarship IDs are currently being processed
+    private HashSet<string> approvalInProgress = new();
+    // Simple inline toasts for per-row feedback
+    private List<string> approvalToasts = new();
+    private bool showProgress = false;
+    private int progressPercent = 0;
+    private string progressText = "";
     private int activeTab = 0;
     
     // Statistics
@@ -979,6 +1268,11 @@
     private bool isEditingScholarship = false;
     private EnhancedScrapedScholarship? editableScholarship = null;
     private string parsingNotesText = "";
+    
+    // Edit modal for approval scholarships
+    private bool showEditModal = false;
+    private bool isEditModalLoading = false;
+    private c2_eskolar.Models.ScrapedScholarship? editingApprovalScholarship = null;
     
     // Approval Tab Variables
     private int scrapedTotalCount = 0;
@@ -1166,17 +1460,27 @@
             return;
         }
 
-        isLoading = true;
+    isLoading = true;
         errorMessage = "";
         successMessage = "";
+    // Initialize progress
+    showProgress = true;
+    progressPercent = 0;
+    progressText = "Starting AI-enhanced scraping...";
+    StateHasChanged();
         
         try
         {
-            // Step 1: Scrape and parse with AI
-            var newScholarships = await EnhancedWebScrapingService.ScrapeAndParseScholarshipsAsync(enhancedScholarshipUrl);
+            // Step 1: Scrape and parse with AI using progress callback
+            var newScholarships = await EnhancedWebScrapingService.ScrapeAndParseScholarshipsAsync(enhancedScholarshipUrl, UpdateProgress);
+            progressPercent = 95;
+            progressText = $"Parsed {newScholarships.Count} scholarship(s). Preparing to save...";
+            StateHasChanged();
             
             // Step 2: Convert EnhancedScrapedScholarship to database entity and save
             int savedCount = 0;
+            var total = Math.Max(1, newScholarships.Count);
+            int index = 0;
             foreach (var enhancedScholarship in newScholarships)
             {
                 try
@@ -1219,6 +1523,11 @@
                     {
                         savedCount++;
                     }
+                    // Update progress per saved item
+                    index++;
+                    progressPercent = 30 + (int)((double)index / total * 60); // allocate 30-90% for saves
+                    progressText = $"Saving {index} of {total} scholarships... ({savedCount} saved)";
+                    StateHasChanged();
                 }
                 catch (Exception ex)
                 {
@@ -1244,7 +1553,14 @@
         }
         finally
         {
+            // Complete progress and hide
+            progressPercent = 100;
+            progressText = "Completed";
+            StateHasChanged();
+            await Task.Delay(700);
+            showProgress = false;
             isLoading = false;
+            StateHasChanged();
         }
     }
 
@@ -1267,6 +1583,13 @@
             Logger.LogError(ex, "Error exporting enhanced CSV");
             errorMessage = $"Failed to export CSV: {ex.Message}";
         }
+    }
+
+    private void UpdateProgress(int percent, string message)
+    {
+        progressPercent = percent;
+        progressText = message;
+        StateHasChanged();
     }
 
     private void ViewScholarshipDetails(EnhancedScrapedScholarship scholarship)
@@ -1315,15 +1638,16 @@
         }
     }
 
-    private string GetSourceHost(string url)
+    private string GetSourceHost(string? url)
     {
+        if (string.IsNullOrEmpty(url)) return "Unknown";
         try
         {
-            return new Uri(url).Host;
+            return new Uri(url!).Host.Replace("www.", "");
         }
         catch
         {
-            return url;
+            return url!;
         }
     }
 
@@ -1503,6 +1827,21 @@
         ApplyApprovalFilters();
     }
 
+    private Timer? searchDebounceTimer;
+    
+    private void OnSearchInputChanged()
+    {
+        // Debounce search to avoid too many filter applications
+        searchDebounceTimer?.Dispose();
+        searchDebounceTimer = new Timer(_ => 
+        {
+            InvokeAsync(() => {
+                ApplyApprovalFilters();
+                StateHasChanged();
+            });
+        }, null, 300, Timeout.Infinite);
+    }
+
     private void ApprovalSortBy(string column)
     {
         if (approvalSortColumn == column)
@@ -1539,6 +1878,15 @@
         StateHasChanged();
     }
 
+    private void ToggleApprovalSelectAllButton()
+    {
+        var allSelected = approvalSelectedScholarshipIds.Count == approvalPaginatedScholarships.Count() && approvalPaginatedScholarships.Any();
+        approvalSelectedScholarshipIds = allSelected ? 
+            new HashSet<string>() : 
+            approvalPaginatedScholarships.Select(s => GetApprovalScholarshipId(s)).ToHashSet();
+        StateHasChanged();
+    }
+
     private void ToggleApprovalScholarshipSelection(c2_eskolar.Models.ScrapedScholarship scholarship, ChangeEventArgs e)
     {
         var isChecked = (bool)(e.Value ?? false);
@@ -1550,10 +1898,20 @@
         StateHasChanged();
     }
 
+    private void ToggleRowSelection(c2_eskolar.Models.ScrapedScholarship scholarship)
+    {
+        var scholarshipId = GetApprovalScholarshipId(scholarship);
+        if (approvalSelectedScholarshipIds.Contains(scholarshipId))
+            approvalSelectedScholarshipIds.Remove(scholarshipId);
+        else
+            approvalSelectedScholarshipIds.Add(scholarshipId);
+        StateHasChanged();
+    }
+
     // Approval Tab UI Helper Methods
     private string GetApprovalScholarshipId(c2_eskolar.Models.ScrapedScholarship scholarship)
     {
-        return scholarship.Id;
+        return scholarship?.Id ?? "";
     }
 
     private string GetApprovalScholarshipStatus(c2_eskolar.Models.ScrapedScholarship scholarship)
@@ -1563,6 +1921,8 @@
 
     private string GetApprovalRowClass(c2_eskolar.Models.ScrapedScholarship scholarship)
     {
+        if (scholarship == null) return "";
+        
         var classes = new List<string>();
         var scholarshipId = GetApprovalScholarshipId(scholarship);
         if (approvalSelectedScholarshipIds.Contains(scholarshipId))
@@ -1592,12 +1952,12 @@
         _ => "🔵"
     };
 
-    private string GetApprovalSourceName(string sourceUrl)
+    private string GetApprovalSourceName(string? sourceUrl)
     {
         if (string.IsNullOrEmpty(sourceUrl)) return "Unknown";
         try
         {
-            var uri = new Uri(sourceUrl);
+            var uri = new Uri(sourceUrl!);
             return uri.Host.Replace("www.", "");
         }
         catch
@@ -1609,9 +1969,9 @@
     // Approval Tab Action Methods
     private void EditApprovalScholarship(c2_eskolar.Models.ScrapedScholarship scholarship)
     {
-        // Map to editable model
-        editableScholarship = new EnhancedScrapedScholarship
+        editingApprovalScholarship = new c2_eskolar.Models.ScrapedScholarship
         {
+            Id = scholarship.Id,
             Title = scholarship.Title ?? "",
             Description = scholarship.Description ?? "",
             Requirements = scholarship.Requirements ?? "",
@@ -1621,18 +1981,156 @@
             SourceUrl = scholarship.SourceUrl ?? "",
             ExternalApplicationUrl = scholarship.ExternalApplicationUrl ?? "",
             ParsingConfidence = scholarship.ParsingConfidence,
-            ScrapedAt = scholarship.ScrapedAt,  
+            ScrapedAt = scholarship.ScrapedAt,
             RawText = scholarship.RawText ?? "",
             MinimumGPA = scholarship.MinimumGPA,
-            RequiredCourse = scholarship.RequiredCourse,
+            RequiredCourse = scholarship.RequiredCourse ?? "",
             RequiredYearLevel = scholarship.RequiredYearLevel,
-            RequiredUniversity = scholarship.RequiredUniversity,
+            RequiredUniversity = scholarship.RequiredUniversity ?? "",
             SlotsAvailable = scholarship.SlotsAvailable,
-            ParsingNotes = scholarship.ParsingNotes?.Split(';').ToList() ?? new List<string>()
+            ParsingNotes = scholarship.ParsingNotes ?? "",
+            Status = scholarship.Status,
+            IsEnhanced = scholarship.IsEnhanced,
+            AuthorAttribution = scholarship.AuthorAttribution ?? "",
+            AiModel = scholarship.AiModel ?? "",
+            AiPromptVersion = scholarship.AiPromptVersion ?? "",
+            EnhancedAt = scholarship.EnhancedAt,
+            CreatedAt = scholarship.CreatedAt,
+            UpdatedAt = scholarship.UpdatedAt,
+            CreatedBy = scholarship.CreatedBy ?? "System",
+            ApprovedBy = scholarship.ApprovedBy,
+            ApprovedAt = scholarship.ApprovedAt,
+            ReviewNotes = scholarship.ReviewNotes ?? "",
+            PublishedScholarshipId = scholarship.PublishedScholarshipId
         };
-        parsingNotesText = string.Join("; ", editableScholarship.ParsingNotes);
-        isEditingScholarship = true;
+        showEditModal = true;
         StateHasChanged();
+    }
+
+    private void CloseEditModal()
+    {
+        showEditModal = false;
+        editingApprovalScholarship = null;
+        isEditModalLoading = false;
+        StateHasChanged();
+    }
+
+    private async Task SaveEditedApprovalScholarship()
+    {
+        if (editingApprovalScholarship == null) 
+        {
+            Console.WriteLine("ERROR: editingApprovalScholarship is null");
+            approvalToasts.Add("❌ No scholarship selected for editing");
+            return;
+        }
+        
+        isEditModalLoading = true;
+        StateHasChanged();
+        
+        try
+        {
+            Console.WriteLine($"Starting update for scholarship ID: {editingApprovalScholarship.Id}");
+            
+            // Check for incomplete fields and show warnings instead of blocking save
+            var warnings = new List<string>();
+            
+            if (string.IsNullOrWhiteSpace(editingApprovalScholarship.Title))
+                warnings.Add("Title is empty");
+            if (string.IsNullOrWhiteSpace(editingApprovalScholarship.Description))
+                warnings.Add("Description is empty");
+            if (string.IsNullOrWhiteSpace(editingApprovalScholarship.Requirements))
+                warnings.Add("Requirements are empty");
+            if (string.IsNullOrWhiteSpace(editingApprovalScholarship.Benefits))
+                warnings.Add("Benefits are empty");
+            if (!editingApprovalScholarship.ApplicationDeadline.HasValue)
+                warnings.Add("Application deadline is not set");
+            if (!editingApprovalScholarship.MonetaryValue.HasValue)
+                warnings.Add("Monetary value is not set");
+            
+            // Show warnings but allow save to continue
+            if (warnings.Any())
+            {
+                var warningMessage = "⚠️ Some fields are incomplete: " + string.Join(", ", warnings);
+                approvalToasts.Add(warningMessage);
+                Console.WriteLine($"WARNING: {warningMessage}");
+            }
+            
+            // Ensure UpdatedBy is set
+            editingApprovalScholarship.UpdatedBy = "WebScrapingManagement";
+            editingApprovalScholarship.UpdatedAt = DateTime.Now;
+            
+            // Check if service is available
+            if (ScrapedScholarshipService == null)
+            {
+                Console.WriteLine("ERROR: ScrapedScholarshipService is null");
+                approvalToasts.Add("❌ Service unavailable");
+                return;
+            }
+            
+            Console.WriteLine($"Calling ScrapedScholarshipService.UpdateAsync for: {editingApprovalScholarship.Title}");
+            var updated = await ScrapedScholarshipService.UpdateAsync(editingApprovalScholarship);
+            
+            if (updated != null)
+            {
+                Console.WriteLine("Update successful, updating local list");
+                // Update the local scholarship in the list
+                if (approvalAllScholarships != null)
+                {
+                    var index = approvalAllScholarships.FindIndex(s => s.Id == editingApprovalScholarship.Id);
+                    if (index >= 0)
+                    {
+                        approvalAllScholarships[index] = updated;
+                        Console.WriteLine($"Updated local list at index {index}");
+                    }
+                    else
+                    {
+                        Console.WriteLine("WARNING: Could not find scholarship in local list");
+                    }
+                    
+                    ApplyApprovalFilters();
+                }
+                else
+                {
+                    Console.WriteLine("ERROR: approvalAllScholarships is null");
+                }
+                
+                CloseEditModal();
+                approvalToasts.Add($"✅ Updated: {editingApprovalScholarship.Title}");
+                
+                // Auto-dismiss toast
+                var _ = Task.Run(async () => {
+                    await Task.Delay(3000);
+                    if (approvalToasts?.Any() == true)
+                    {
+                        approvalToasts.RemoveAt(0);
+                        await InvokeAsync(StateHasChanged);
+                    }
+                }).ContinueWith(t => { if (t.Exception != null) { try { Console.WriteLine($"WebScrapingManagement Task.Run exception: {t.Exception}"); } catch { } } }, TaskScheduler.Current);
+            }
+            else
+            {
+                Console.WriteLine("ERROR: UpdateAsync returned null");
+                approvalToasts.Add($"❌ Failed to update: {editingApprovalScholarship.Title}");
+            }
+        }
+        catch (NullReferenceException ex)
+        {
+            Console.WriteLine($"NULL REFERENCE ERROR: {ex.Message}");
+            Console.WriteLine($"Stack trace: {ex.StackTrace}");
+            approvalToasts.Add($"❌ Null reference error: {ex.Message}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"GENERAL ERROR updating scholarship: {ex.Message}");
+            Console.WriteLine($"Exception type: {ex.GetType().Name}");
+            Console.WriteLine($"Stack trace: {ex.StackTrace}");
+            approvalToasts.Add($"❌ Error updating scholarship: {ex.Message}");
+        }
+        finally
+        {
+            isEditModalLoading = false;
+            StateHasChanged();
+        }
     }
 
     private void CancelEditScholarship()
@@ -1713,29 +2211,102 @@
 
     private async Task ApproveApprovalScholarship(c2_eskolar.Models.ScrapedScholarship scholarship)
     {
+        if (approvalInProgress.Contains(scholarship.Id)) return;
+        approvalInProgress.Add(scholarship.Id);
+        StateHasChanged();
+
         try
         {
-            var approved = await ScrapedScholarshipService.ApproveAsync(scholarship.Id, "SuperAdmin", "Approved via WebScraping dashboard");
-            if (approved)
-            {
-                scholarship.Status = c2_eskolar.Models.ScrapingStatus.Approved;
-                scholarship.ApprovedBy = "SuperAdmin";
-                scholarship.ApprovedAt = DateTime.UtcNow;
-                scholarship.ReviewNotes = "Approved via WebScraping dashboard";
-                
-                CalculateApprovalStatistics();
-                ApplyApprovalFilters();
-                successMessage = $"Scholarship '{scholarship.Title}' has been approved successfully!";
-            }
-            else
+            // First approve the scraped scholarship
+            var approved = await ScrapedScholarshipService.ApproveAsync(scholarship.Id, "EskoBot", "Approved and published by EskoBot AI");
+            if (!approved)
             {
                 errorMessage = "Failed to approve scholarship.";
+                approvalToasts.Add($"❌ Failed to approve: {scholarship.Title}");
+                return;
+            }
+
+            // Update local status
+            scholarship.Status = c2_eskolar.Models.ScrapingStatus.Approved;
+            scholarship.ApprovedBy = "EskoBot";
+            scholarship.ApprovedAt = DateTime.UtcNow;
+            scholarship.ReviewNotes = "Approved and published by EskoBot AI";
+
+            // Create the main scholarship record with EskoBot as author
+            try
+            {
+                using var context = await DbContextFactory.CreateDbContextAsync();
+                
+                var mainScholarship = new c2_eskolar.Models.Scholarship
+                {
+                    Title = scholarship.Title,
+                    Description = scholarship.Description ?? "",
+                    Benefits = scholarship.Benefits ?? "",
+                    MonetaryValue = scholarship.MonetaryValue,
+                    ApplicationDeadline = scholarship.ApplicationDeadline ?? DateTime.Now.AddYears(1),
+                    Requirements = scholarship.Requirements ?? "",
+                    SlotsAvailable = scholarship.SlotsAvailable,
+                    MinimumGPA = scholarship.MinimumGPA,
+                    ExternalApplicationUrl = scholarship.ExternalApplicationUrl,
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow,
+                    IsActive = true,
+                    IsInternal = false
+                };
+
+                context.Scholarships.Add(mainScholarship);
+                await context.SaveChangesAsync();
+
+                // Update the scraped scholarship to mark it as published
+                var scrapedEntity = await context.ScrapedScholarships.FindAsync(scholarship.Id);
+                if (scrapedEntity != null)
+                {
+                    scrapedEntity.Status = c2_eskolar.Models.ScrapingStatus.Published;
+                    scrapedEntity.PublishedScholarshipId = mainScholarship.ScholarshipId;
+                    scrapedEntity.UpdatedAt = DateTime.UtcNow;
+                    await context.SaveChangesAsync();
+                }
+
+                approvalToasts.Add($"✅ Published: {scholarship.Title} by EskoBot");
+                
+                // Remove the approved scholarship from the local list since it's been published
+                approvalAllScholarships.Remove(scholarship);
+                
+                // Recalculate statistics after successful approval
+                CalculateApprovalStatistics();
+                ApplyApprovalFilters();
+            }
+            catch (Exception publishEx)
+            {
+                // If publishing fails, still show success for approval
+                approvalToasts.Add($"✅ Approved but ❌ publish failed: {scholarship.Title}");
+                Console.WriteLine($"Publish error: {publishEx.Message}");
             }
         }
         catch (Exception ex)
         {
             errorMessage = $"Error approving scholarship: {ex.Message}";
+            approvalToasts.Add($"❌ Error: {scholarship.Title}");
         }
+        finally
+        {
+            approvalInProgress.Remove(scholarship.Id);
+            StateHasChanged();
+            // auto-dismiss toasts after a short delay
+            var _ = Task.Run(async () => {
+                await Task.Delay(4000);
+                if (approvalToasts.Any())
+                {
+                    approvalToasts.RemoveAt(0);
+                    await InvokeAsync(StateHasChanged);
+                }
+            }).ContinueWith(t => { if (t.Exception != null) { try { Console.WriteLine($"WebScrapingManagement Task.Run exception: {t.Exception}"); } catch { } } }, TaskScheduler.Current);
+        }
+    }
+
+    private void DismissToast(string message)
+    {
+        approvalToasts.Remove(message);
     }
 
     private async Task DeleteApprovalScholarship(c2_eskolar.Models.ScrapedScholarship scholarship)
@@ -1767,7 +2338,87 @@
 
     private async Task ExportApprovalFilteredData()
     {
-        await JSRuntime.InvokeVoidAsync("alert", $"Exporting {approvalFilteredScholarships.Count()} scholarships to CSV...");
+        try
+        {
+            var csvContent = GenerateApprovalCsvContent();
+            var fileName = $"scraped_scholarships_{DateTime.Now:yyyyMMdd_HHmmss}.csv";
+            var base64Content = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(csvContent));
+            
+            await JSRuntime.InvokeVoidAsync("downloadFile", fileName, base64Content);
+            approvalToasts.Add($"✅ Exported {approvalFilteredScholarships.Count()} scholarships to {fileName}");
+            
+            // Auto-dismiss toast
+            var _ = Task.Run(async () => {
+                await Task.Delay(3000);
+                if (approvalToasts.Any())
+                {
+                    approvalToasts.RemoveAt(0);
+                    await InvokeAsync(StateHasChanged);
+                }
+            }).ContinueWith(t => { if (t.Exception != null) { try { Console.WriteLine($"WebScrapingManagement Task.Run exception: {t.Exception}"); } catch { } } }, TaskScheduler.Current);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Export error: {ex.Message}");
+            approvalToasts.Add($"❌ Export failed: {ex.Message}");
+        }
+    }
+
+    private string GenerateApprovalCsvContent()
+    {
+        var csv = new StringBuilder();
+        
+        // CSV Headers
+        csv.AppendLine("Title,Status,Confidence,Source,Scraped Date,Description,Requirements,Benefits,Monetary Value,Application Deadline,External URL,Minimum GPA,Required Course,Required Year Level,Required University,Slots Available");
+        
+        // CSV Data
+        foreach (var scholarship in approvalFilteredScholarships)
+        {
+            var row = new[]
+            {
+                EscapeCsvField(scholarship.Title),
+                EscapeCsvField(GetApprovalScholarshipStatus(scholarship)),
+                ((scholarship.ParsingConfidence * 100).ToString("F1") + "%"),
+                EscapeCsvField(GetApprovalSourceName(scholarship.SourceUrl)),
+                scholarship.ScrapedAt.ToString("yyyy-MM-dd HH:mm:ss"),
+                EscapeCsvField(scholarship.Description),
+                EscapeCsvField(scholarship.Requirements),
+                EscapeCsvField(scholarship.Benefits),
+                scholarship.MonetaryValue?.ToString("C") ?? "",
+                scholarship.ApplicationDeadline?.ToString("yyyy-MM-dd") ?? "",
+                EscapeCsvField(scholarship.ExternalApplicationUrl),
+                scholarship.MinimumGPA?.ToString("F2") ?? "",
+                EscapeCsvField(scholarship.RequiredCourse),
+                scholarship.RequiredYearLevel?.ToString() ?? "",
+                EscapeCsvField(scholarship.RequiredUniversity),
+                scholarship.SlotsAvailable?.ToString() ?? ""
+            };
+            
+            csv.AppendLine(string.Join(",", row));
+        }
+        
+        return csv.ToString();
+    }
+
+    private string EscapeCsvField(string? field)
+    {
+        if (string.IsNullOrEmpty(field))
+            return "";
+
+        // Escape quotes and wrap in quotes if contains comma, quote, or newline
+        var safe = field.Replace("\"", "\"\"");
+        if (safe.Contains(",") || safe.Contains("\"") || safe.Contains("\n") || safe.Contains("\r"))
+        {
+            safe = $"\"{safe}\"";
+        }
+
+        return safe;
+    }
+
+    // Cleanup
+    public void Dispose()
+    {
+        searchDebounceTimer?.Dispose();
     }
 }
 

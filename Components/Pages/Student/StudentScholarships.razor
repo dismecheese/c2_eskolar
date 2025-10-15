@@ -118,7 +118,7 @@
                                                 @onclick="(e) => ToggleBookmark(e, scholarship.ScholarshipId)" 
                                                 @onclick:stopPropagation="true"
                                                 title="@(GetBookmarkTooltip(scholarship.ScholarshipId))">
-                                            <i class="bi @(GetBookmarkIcon(scholarship.ScholarshipId))"></i>
+                                            @GetBookmarkIcon(scholarship.ScholarshipId)
                                         </button>
                                     </div>
                                 </div>
@@ -230,8 +230,8 @@
     private string GetBookmarkIcon(int scholarshipId)
     {
         return bookmarkedScholarshipIds.Contains(scholarshipId) 
-            ? "bi-bookmark-heart-fill" // Filled heart bookmark for bookmarked
-            : "bi-bookmark"; // Empty bookmark for unbookmarked
+            ? "♥" // Filled heart symbol
+            : "♡"; // Empty heart symbol
     }
 
     private string GetBookmarkTooltip(int scholarshipId)

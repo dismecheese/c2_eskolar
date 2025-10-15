@@ -7,43 +7,52 @@
 @using c2_eskolar.Services
 @using Microsoft.AspNetCore.Identity
 @using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.AspNetCore.Components.Forms
 @inject AnnouncementService AnnouncementService
 @inject UserManager<IdentityUser> UserManager
 @inject AuthenticationStateProvider AuthenticationStateProvider
+@inject BlobStorageService BlobStorageService
+@inject IJSRuntime JS
 
-<PageTitle>SuperAdmin - Announcements</PageTitle>
+<link href="~/Components/Pages/Admin/SuperAdminAnnouncements.razor.css" rel="stylesheet" />
+
+<PageTitle>System Announcements Management</PageTitle>
 
 <div class="container-fluid" style="min-height: 100vh;">
     <div class="row justify-content-center">
         <div class="col-12 col-lg-10">
-            <!-- Search and Header -->
+
+            <!-- SEARCH BAR + CREATE BUTTON -->
             <div class="search-header-section d-flex flex-column flex-md-row align-items-md-center mb-4 gap-3 mt-5">
                 <div class="flex-grow-1">
                     <div class="input-group">
-                        <input type="text" class="form-control" placeholder="Search all announcements..." @bind="searchTerm" @oninput="OnSearchChanged" />
+                        <input type="text" class="form-control" placeholder="Search announcements..." 
+                               @bind="searchTerm" @oninput="OnSearchChanged" />
                         <span class="input-group-text"><i class="bi bi-search"></i></span>
                     </div>
                 </div>
+
+                <!-- Create new announcement -->
                 <button class="btn btn-custom-primary d-flex align-items-center gap-2" @onclick="ShowCreateForm">
                     <i class="bi bi-plus-circle"></i>
                     <span>Create System Announcement</span>
                 </button>
             </div>
 
-            <!-- Category Tabs -->
+            <!-- CATEGORY TABS + FILTER DROPDOWN -->
             <div class="modern-tabs d-flex align-items-center mb-4 gap-3">
                 <div class="tab-pills">
                     <button class="tab-pill @(activeTab == "all" ? "active" : "")" @onclick='() => SetActiveTab("all")'>
-                        <i class="bi bi-collection"></i> <span>All Announcements</span>
-                    </button>
-                    <button class="tab-pill @(activeTab == "system" ? "active" : "")" @onclick='() => SetActiveTab("system")'>
-                        <i class="bi bi-gear"></i> <span>System</span>
+                        <i class="bi bi-collection"></i> <span>All</span>
                     </button>
                     <button class="tab-pill @(activeTab == "institution" ? "active" : "")" @onclick='() => SetActiveTab("institution")'>
-                        <i class="bi bi-building"></i> <span>Institutions</span>
+                        <i class="bi bi-building"></i> <span>Institution</span>
                     </button>
                     <button class="tab-pill @(activeTab == "benefactor" ? "active" : "")" @onclick='() => SetActiveTab("benefactor")'>
-                        <i class="bi bi-globe"></i> <span>Benefactors</span>
+                        <i class="bi bi-award"></i> <span>Benefactor</span>
+                    </button>
+                    <button class="tab-pill @(activeTab == "system" ? "active" : "")" @onclick='() => SetActiveTab("system")'>
+                        <i class="bi bi-shield-check"></i> <span>System</span>
                     </button>
                 </div>
 
@@ -55,17 +64,16 @@
                         <option value="Results">Results</option>
                         <option value="Events">Events</option>
                         <option value="General">General</option>
-                        <option value="System">System</option>
-                        <option value="Maintenance">Maintenance</option>
                     </select>
                 </div>
             </div>
-
+            
             <div class="row">
-                <!-- Announcements List -->
-                <div class="col-lg-8">
+                <!-- ANNOUNCEMENTS LIST -->
+                <div class="col-lg-9">
                     @if (isLoading)
                     {
+                        <!-- Loading state -->
                         <div class="d-flex justify-content-center py-5">
                             <div class="spinner-border" role="status">
                                 <span class="visually-hidden">Loading...</span>
@@ -74,16 +82,17 @@
                     }
                     else if (filteredAnnouncements?.Any() == true)
                     {
+                        <!-- Tab description -->
                         <div class="mb-3">
-                            <h5 class="text-muted">@GetTabDescription()</h5>
+                            <p class="text-muted mb-0" style="font-size: 0.9rem;">@GetTabDescription()</p>
                         </div>
-
+                        <!-- List of announcement cards -->
                         <div class="d-flex flex-column gap-3">
                             @foreach (var announcement in filteredAnnouncements.OrderByDescending(a => a.IsPinned).ThenByDescending(a => a.CreatedAt))
                             {
                                 <div class="card shadow-sm border-0 @(announcement.IsPinned ? "border-warning border-2" : "")">
                                     <div class="card-body">
-                                        <!-- Header with badges -->
+                                        <!-- Header with badges and date -->
                                         <div class="d-flex justify-content-between align-items-start mb-2">
                                             <div class="d-flex gap-2 flex-wrap">
                                                 @if (announcement.IsPinned)
@@ -102,98 +111,308 @@
                                                 <span class="badge @GetPriorityBadgeClass(announcement.Priority)">
                                                     @announcement.Priority
                                                 </span>
+                                                @if (announcement.Photos?.Any() == true)
+                                                {
+                                                    <span class="badge bg-light text-dark">
+                                                        <i class="bi bi-image"></i> @announcement.Photos.Count
+                                                    </span>
+                                                }
                                             </div>
                                             <div class="d-flex align-items-center gap-2">
                                                 <small class="text-muted">@announcement.CreatedAt.ToString("MMM dd, yyyy")</small>
-                                                <button class="btn btn-sm btn-outline-secondary" 
+                                                <!-- Expand/Collapse toggle -->
+                                                <button class="modern-expand-btn @(IsAnnouncementExpanded(announcement.AnnouncementId) ? "expanded" : "")" 
                                                         @onclick="() => ToggleAnnouncementExpansion(announcement.AnnouncementId)"
-                                                        @onclick:stopPropagation="true">
-                                                    @(expandedAnnouncements.Contains(announcement.AnnouncementId) ? "Collapse" : "Details")
+                                                        @onclick:stopPropagation="true"
+                                                        title="@(IsAnnouncementExpanded(announcement.AnnouncementId) ? "Show less" : "Show more")">
+                                                    <i class="bi bi-chevron-down"></i>
                                                 </button>
                                             </div>
                                         </div>
 
-                                        <!-- Title and Summary -->
-                                        <h6 class="fw-bold mb-2">@announcement.Title</h6>
-                                        @if (!string.IsNullOrEmpty(announcement.Summary))
-                                        {
-                                            <p class="text-secondary mb-3">@announcement.Summary</p>
-                                        }
-                                        else if (!string.IsNullOrEmpty(announcement.Content) && announcement.Content.Length > 150)
-                                        {
-                                            <p class="text-secondary mb-3">@(announcement.Content.Substring(0, 150))...</p>
-                                        }
-                                        else if (!string.IsNullOrEmpty(announcement.Content))
-                                        {
-                                            <p class="text-secondary mb-3">@announcement.Content</p>
-                                        }
+                                        <!-- Content section -->
+                                        <div class="d-flex align-items-start gap-3">
+                                            <div class="flex-grow-1">
+                                                <!-- Title clickable -->
+                                                <div class="announcement-title cursor-pointer" @onclick="() => IncrementView(announcement.AnnouncementId)">
+                                                    @announcement.Title.ToUpper()
+                                                </div>
+                                                
+                                                <!-- Preview text (always visible) -->
+                                                <div class="text-secondary mb-2">
+                                                    @(announcement.Summary ?? 
+                                                      (announcement.Content.Length > 150 ? 
+                                                       announcement.Content.Substring(0, 150) + "..." : 
+                                                       announcement.Content))
+                                                </div>
 
-                                        <!-- Expanded Details -->
-                                        @if (expandedAnnouncements.Contains(announcement.AnnouncementId))
-                                        {
-                                            <div class="announcement-details border-top pt-3 mt-2">
-                                                <!-- Full Content -->
-                                                @if (!string.IsNullOrEmpty(announcement.Content) && announcement.Content.Length > 150)
+                                                <!-- Images Display -->
+                                                @if (announcement.Photos?.Any() == true)
                                                 {
                                                     <div class="mb-3">
-                                                        <h6 class="fw-bold">Full Description:</h6>
-                                                        <div class="text-secondary">@announcement.Content</div>
+                                                        @{
+                                                            var photoCount = announcement.Photos?.Count ?? 0;
+                                                            var photosList = announcement.Photos?.ToList() ?? new List<Photo>();
+                                                        }
+                                                        
+                                                        <div class="facebook-photo-grid">
+                                                            @if (photoCount >= 5 && photosList.Count >= 5)
+                                                            {
+                                                                <!-- Five or more images - 2 top, 3 bottom with +more overlay -->
+                                                                <div class="five-photos-container">
+                                                                    <div class="top-row">
+                                                                        <div class="photo-item">
+                                                                            <img src="@GetSafePhotoUrl(photosList[0].Url)" 
+                                                                                     class="grid-photo cursor-pointer" 
+                                                                                     alt="@(photosList[0].Caption ?? "Announcement image")"
+                                                                                     @onclick="() => OpenPhotoViewer(photosList, 0)"
+                                                                                     loading="lazy" />
+                                                                        </div>
+                                                                        <div class="photo-item">
+                                                             <img src="@GetSafePhotoUrl(photosList[1].Url)" 
+                                                                 class="grid-photo cursor-pointer" 
+                                                                 alt="@(photosList[1].Caption ?? "Announcement image")"
+                                                                 @onclick="() => OpenPhotoViewer(photosList, 1)"
+                                                                 loading="lazy" />
+                                                                        </div>
+                                                                    </div>
+                                                                    <div class="bottom-row">
+                                                                        <div class="photo-item">
+                                                             <img src="@GetSafePhotoUrl(photosList[2].Url)" 
+                                                                 class="grid-photo cursor-pointer" 
+                                                                 alt="@(photosList[2].Caption ?? "Announcement image")"
+                                                                 @onclick="() => OpenPhotoViewer(photosList, 2)"
+                                                                 loading="lazy" />
+                                                                        </div>
+                                                                        <div class="photo-item">
+                                                             <img src="@GetSafePhotoUrl(photosList[3].Url)" 
+                                                                 class="grid-photo cursor-pointer" 
+                                                                 alt="@(photosList[3].Caption ?? "Announcement image")"
+                                                                 @onclick="() => OpenPhotoViewer(photosList, 3)"
+                                                                 loading="lazy" />
+                                                                        </div>
+                                                                        <div class="photo-item photo-with-overlay">
+                                                             <img src="@GetSafePhotoUrl(photosList[4].Url)" 
+                                                                 class="grid-photo cursor-pointer" 
+                                                                 alt="@(photosList[4].Caption ?? "Announcement image")"
+                                                                 @onclick="() => OpenPhotoViewer(photosList, 4)"
+                                                                 loading="lazy" />
+                                                                            
+                                                                            @if (photoCount > 5)
+                                                                            {
+                                                                                <!-- Overlay showing remaining photo count -->
+                                                                                <div class="more-photos-overlay cursor-pointer"
+                                                                                     @onclick="() => OpenPhotoViewer(photosList, 5)">
+                                                                                    <span class="more-count">
+                                                                                        <i class="bi bi-plus"></i>@(photoCount - 5)
+                                                                                    </span>
+                                                                                </div>
+                                                                            }
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            }
+                                                            else if (photoCount == 4)
+                                                            {
+                                                                <!-- Four images - 2x2 grid -->
+                                                                <div class="four-photos-container">
+                                                                    @for (int i = 0; i < Math.Min(4, photosList.Count); i++)
+                                                                    {
+                                                                        <div class="photo-item">
+                                                                            <img src="@GetSafePhotoUrl(photosList[i].Url)" 
+                                                                                 class="grid-photo cursor-pointer" 
+                                                                                 alt="@(photosList[i].Caption ?? "Announcement image")"
+                                                                                 @onclick="() => OpenPhotoViewer(photosList, i)"
+                                                                                 loading="lazy" />
+                                                                        </div>
+                                                                    }
+                                                                </div>
+                                                            }
+                                                            else if (photoCount == 3)
+                                                            {
+                                                                <!-- Three images - 1 large left, 2 stacked right -->
+                                                                <div class="three-photos-container">
+                                                                    <div class="main-photo">
+                                                                        <img src="@GetSafePhotoUrl(photosList[0].Url)" 
+                                                                             class="grid-photo cursor-pointer" 
+                                                                             alt="@(photosList[0].Caption ?? "Announcement image")"
+                                                                             @onclick="() => OpenPhotoViewer(photosList, 0)"
+                                                                             loading="lazy" />
+                                                                    </div>
+                                                                    <div class="side-photos">
+                                                                        @if (photosList.Count > 1)
+                                                                        {
+                                                                            <div class="photo-item">
+                                                                                <img src="@GetSafePhotoUrl(photosList[1].Url)" 
+                                                                                     class="grid-photo cursor-pointer" 
+                                                                                     alt="@(photosList[1].Caption ?? "Announcement image")"
+                                                                                     @onclick="() => OpenPhotoViewer(photosList, 1)"
+                                                                                     loading="lazy" />
+                                                                            </div>
+                                                                        }
+                                                                        @if (photosList.Count > 2)
+                                                                        {
+                                                                            <div class="photo-item">
+                                                                                <img src="@GetSafePhotoUrl(photosList[2].Url)" 
+                                                                                     class="grid-photo cursor-pointer" 
+                                                                                     alt="@(photosList[2].Caption ?? "Announcement image")"
+                                                                                     @onclick="() => OpenPhotoViewer(photosList, 2)"
+                                                                                     loading="lazy" />
+                                                                            </div>
+                                                                        }
+                                                                    </div>
+                                                                </div>
+                                                            }
+                                                            else if (photoCount == 2)
+                                                            {
+                                                                <!-- Two images - side by side, 1:1 aspect ratio -->
+                                                                <div class="two-photos-container">
+                                                                    @for (int i = 0; i < Math.Min(2, photosList.Count); i++)
+                                                                    {
+                                                                        <div class="photo-item">
+                                                                            <img src="@GetSafePhotoUrl(photosList[i].Url)" 
+                                                                                 class="grid-photo cursor-pointer" 
+                                                                                 alt="@(photosList[i].Caption ?? "Announcement image")"
+                                                                                 @onclick="() => OpenPhotoViewer(photosList, i)"
+                                                                                 loading="lazy" />
+                                                                        </div>
+                                                                    }
+                                                                </div>
+                                                            }
+                                                            else if (photoCount == 1 && photosList.Count > 0)
+                                                            {
+                                                                <!-- Single image - flexible aspect ratio -->
+                                                                <div class="single-photo-container">
+                                                                    <img src="@GetSafePhotoUrl(photosList[0].Url)" 
+                                                                         class="single-photo cursor-pointer" 
+                                                                         alt="@(photosList[0].Caption ?? "Announcement image")"
+                                                                         @onclick="() => OpenPhotoViewer(photosList, 0)"
+                                                                         title="@(string.IsNullOrEmpty(photosList[0].Caption) ? "Click to view full size" : photosList[0].Caption)"
+                                                                         loading="lazy"
+                                                                         onload="this.parentElement.style.setProperty('--aspect-ratio', this.naturalWidth / this.naturalHeight)" />
+                                                                    
+                                                                    <!-- Image overlay with expand hint -->
+                                                                    <div class="photo-overlay">
+                                                                        <span class="expand-badge">
+                                                                            <i class="bi bi-arrows-fullscreen me-1"></i>
+                                                                            <small>Click to expand</small>
+                                                                        </span>
+                                                                    </div>
+                                                                    
+                                                                    @if (photosList.Count > 0 && !string.IsNullOrEmpty(photosList[0].Caption))
+                                                                    {
+                                                                        <!-- Image caption overlay -->
+                                                                        <div class="photo-caption">
+                                                                            <i class="bi bi-chat-left-text me-1"></i>
+                                                                            @photosList[0].Caption
+                                                                        </div>
+                                                                    }
+                                                                </div>
+                                                            }
+                                                        </div>
                                                     </div>
                                                 }
 
-                                                <!-- Additional Details -->
-                                                <div class="row">
-                                                    @if (!string.IsNullOrEmpty(announcement.OrganizationName))
-                                                    {
-                                                        <div class="col-md-6 mb-2">
-                                                            <small class="text-muted">Organization:</small>
-                                                            <div class="fw-semibold">@announcement.OrganizationName</div>
+                                                <!-- Collapsible Details -->
+                                                @if (IsAnnouncementExpanded(announcement.AnnouncementId))
+                                                {
+                                                    <div class="announcement-details border-top pt-3 mt-2">
+                                                        <!-- Full Content -->
+                                                        @if (!string.IsNullOrEmpty(announcement.Content))
+                                                        {
+                                                            <div class="mb-3">
+                                                                <h6 class="fw-bold">Full Description:</h6>
+                                                                <div class="text-secondary">@announcement.Content</div>
+                                                            </div>
+                                                        }
+
+                                                        <!-- All Photos Gallery in Expanded View -->
+                                                        @if (announcement.Photos?.Any() == true)
+                                                        {
+                                                            <div class="mb-3">
+                                                                <h6 class="fw-bold">Photos (@announcement.Photos.Count)</h6>
+                                                                <div class="row g-2">
+                                                                    @foreach (var photo in announcement.Photos)
+                                                                    {
+                                                                        <div class="col-md-4 col-sm-6">
+                                                                            <div class="position-relative">
+                                                                                <img src="@GetSafePhotoUrl(photo.Url)" 
+                                                                                     class="img-fluid rounded w-100" 
+                                                                                     style="height: 200px; object-fit: cover; box-shadow: 0 2px 8px rgba(0,0,0,0.1); transition: all 0.3s ease; cursor: pointer;"
+                                                                                     alt="@(photo.Caption ?? "Announcement image")"
+                                                                                     loading="lazy" />
+                                                                                
+                                                                                @if (!string.IsNullOrEmpty(photo.Caption))
+                                                                                {
+                                                                                    <div class="position-absolute bottom-0 start-0 end-0 p-2 text-white text-center small"
+                                                                                         style="background: linear-gradient(transparent, rgba(0,0,0,0.8)); border-radius: 0 0 8px 8px;">
+                                                                                        @photo.Caption
+                                                                                    </div>
+                                                                                }
+                                                                            </div>
+                                                                        </div>
+                                                                    }
+                                                                </div>
+                                                            </div>
+                                                        }
+
+                                                        <!-- Additional Details -->
+                                                        <div class="row">
+                                                            @if (!string.IsNullOrEmpty(announcement.OrganizationName))
+                                                            {
+                                                                <div class="col-md-6 mb-2">
+                                                                    <small class="text-muted">Organization:</small>
+                                                                    <div class="fw-semibold">@announcement.OrganizationName</div>
+                                                                </div>
+                                                            }
+                                                            @if (announcement.ExpiryDate.HasValue)
+                                                            {
+                                                                <div class="col-md-6 mb-2">
+                                                                    <small class="text-muted">Deadline:</small>
+                                                                    <div class="fw-semibold">@announcement.ExpiryDate.Value.ToString("MMM dd, yyyy")</div>
+                                                                </div>
+                                                            }
+                                                            <div class="col-md-6 mb-2">
+                                                                <small class="text-muted">Visibility:</small>
+                                                                <div class="fw-semibold">@(announcement.IsPublic ? "Public" : "Private")</div>
+                                                            </div>
+                                                            <div class="col-md-6 mb-2">
+                                                                <small class="text-muted">Status:</small>
+                                                                <div class="fw-semibold">@(announcement.IsActive ? "Active" : "Inactive")</div>
+                                                            </div>
                                                         </div>
-                                                    }
-                                                    @if (announcement.ExpiryDate.HasValue)
-                                                    {
-                                                        <div class="col-md-6 mb-2">
-                                                            <small class="text-muted">Deadline:</small>
-                                                            <div class="fw-semibold">@announcement.ExpiryDate.Value.ToString("MMM dd, yyyy")</div>
-                                                        </div>
-                                                    }
-                                                    <div class="col-md-6 mb-2">
-                                                        <small class="text-muted">Visibility:</small>
-                                                        <div class="fw-semibold">@(announcement.IsPublic ? "Public" : "Private")</div>
                                                     </div>
-                                                    <div class="col-md-6 mb-2">
-                                                        <small class="text-muted">Status:</small>
-                                                        <div class="fw-semibold">@(announcement.IsActive ? "Active" : "Inactive")</div>
+                                                }
+                                                
+                                                <!-- Footer with views + management actions -->
+                                                <div class="mt-2 d-flex justify-content-between align-items-center">
+                                                    <small class="text-muted">
+                                                        <i class="bi bi-eye"></i> @announcement.ViewCount views
+                                                        • By @announcement.AuthorName
+                                                    </small>
+                                                    
+                                                     <!-- Edit/Delete/Pin buttons for SuperAdmin -->
+                                                    <div class="modern-action-buttons">
+                                                        <button class="modern-action-btn edit" 
+                                                                @onclick="() => EditAnnouncement(announcement)" 
+                                                                @onclick:stopPropagation="true" 
+                                                                title="Edit announcement">
+                                                            <i class="bi bi-pencil"></i>
+                                                        </button>
+                                                        <button class="modern-action-btn pin @(announcement.IsPinned ? "pinned" : "")" 
+                                                                @onclick="() => TogglePin(announcement.AnnouncementId)" 
+                                                                @onclick:stopPropagation="true" 
+                                                                title="@(announcement.IsPinned ? "Unpin announcement" : "Pin announcement")">
+                                                            <i class="bi bi-pin@(announcement.IsPinned ? "-fill" : "")"></i>
+                                                        </button>
+                                                        <button class="modern-action-btn delete" 
+                                                                @onclick="() => DeleteAnnouncement(announcement.AnnouncementId)" 
+                                                                @onclick:stopPropagation="true" 
+                                                                title="Delete announcement">
+                                                            <i class="bi bi-trash"></i>
+                                                        </button>
                                                     </div>
                                                 </div>
-                                            </div>
-                                        }
-                                        
-                                        <div class="mt-2 d-flex justify-content-between align-items-center">
-                                            <small class="text-muted">
-                                                <i class="bi bi-eye"></i> @announcement.ViewCount views
-                                                • By @announcement.AuthorName
-                                            </small>
-                                            
-                                            <!-- Management Buttons (SuperAdmin can manage all) -->
-                                            <div class="btn-group btn-group-sm">
-                                                <button class="btn btn-outline-primary" @onclick="() => EditAnnouncement(announcement)" 
-                                                        @onclick:stopPropagation="true" title="Edit">
-                                                    <i class="bi bi-pencil"></i>
-                                                </button>
-                                                <button class="btn btn-outline-danger" @onclick="() => DeleteAnnouncement(announcement.AnnouncementId)" 
-                                                        @onclick:stopPropagation="true" title="Delete">
-                                                    <i class="bi bi-trash"></i>
-                                                </button>
-                                                <button class="btn btn-outline-warning" @onclick="() => TogglePin(announcement)" 
-                                                        @onclick:stopPropagation="true" title="@(announcement.IsPinned ? "Unpin" : "Pin")">
-                                                    <i class="bi bi-pin@(announcement.IsPinned ? "-fill" : "")"></i>
-                                                </button>
-                                                <button class="btn btn-outline-@(announcement.IsActive ? "secondary" : "success")" 
-                                                        @onclick="() => ToggleStatus(announcement)" 
-                                                        @onclick:stopPropagation="true" title="@(announcement.IsActive ? "Deactivate" : "Activate")">
-                                                    <i class="bi bi-@(announcement.IsActive ? "pause" : "play")-circle"></i>
-                                                </button>
                                             </div>
                                         </div>
                                     </div>
@@ -203,7 +422,7 @@
                     }
                     else
                     {
-                        <!-- Empty State -->
+                        <!-- EMPTY STATE -->
                         <div class="empty-state">
                             <i class="bi bi-megaphone empty-icon"></i>
                             <h5>@GetEmptyStateTitle()</h5>
@@ -214,10 +433,10 @@
                                     Clear Filters
                                 </button>
                             }
-                            @if (activeTab == "system" || activeTab == "all")
+                            @if (activeTab == "mine" || activeTab == "all")
                             {
                                 <button class="btn btn-custom-primary mt-2" @onclick="ShowCreateForm">
-                                    <i class="bi bi-plus-circle"></i> Create System Announcement
+                                    <i class="bi bi-plus-circle"></i> Create Your First Announcement
                                 </button>
                             }
                         </div>
@@ -225,14 +444,16 @@
                 </div>
 
                 <!-- STATISTICS SIDEBAR -->
-                <div class="col-lg-4 mt-4 mt-lg-0">
+                <div class="col-lg-3 mt-4 mt-lg-0">
                     <div class="card shadow-sm border-0">
                         <div class="card-body">
-                            <div class="fw-bold mb-3">System Statistics</div>
+                            <div class="fw-bold mb-3">Statistics</div>
                             <div class="list-group list-group-flush">
+
+                                <!-- Totals by category -->
                                 <div class="list-group-item d-flex justify-content-between align-items-center border-0 px-0">
                                     <span>Total Announcements</span>
-                                    <span class="badge badge-normal">@GetTabCount()</span>
+                                    <span class="badge badge-normal">@(announcements?.Count ?? 0)</span>
                                 </div>
                                 <div class="list-group-item d-flex justify-content-between align-items-center border-0 px-0">
                                     <span>From Institutions</span>
@@ -243,8 +464,12 @@
                                     <span class="badge badge-benefactor">@benefactorCount</span>
                                 </div>
                                 <div class="list-group-item d-flex justify-content-between align-items-center border-0 px-0">
-                                    <span>System Announcements</span>
-                                    <span class="badge badge-pinned">@systemCount</span>
+                                    <span>System Posts</span>
+                                    <span class="badge badge-custom-gradient">@systemCount</span>
+                                </div>
+                                <div class="list-group-item d-flex justify-content-between align-items-center border-0 px-0">
+                                    <span>Pinned</span>
+                                    <span class="badge badge-pinned">@pinnedCount</span>
                                 </div>
                             </div>
                         </div>
@@ -258,13 +483,15 @@
 <!-- CREATE/EDIT MODAL -->
 @if (showModal)
 {
-    <div class="modal fade show d-block superadmin-modal" tabindex="-1" style="background-color: rgba(0,0,0,0.5);">
-        <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal fade show d-block" tabindex="-1" style="background-color: rgba(0,0,0,0.5);" @onclick="CloseCalendarIfOpen">
+        <div class="modal-dialog modal-xl modal-dialog-centered" @onclick:stopPropagation="true">
             <div class="modal-content modern-modal">
                 <!-- Modal header -->
-                <div class="modal-header modern-modal-header">
-                    <h5 class="modal-title">@(editingAnnouncement?.AnnouncementId != Guid.Empty ? "Edit" : "Create") System Announcement</h5>
-                    <button type="button" class="btn-close modern-btn-close" @onclick="HideModal"></button>
+                <div class="modal-header modern-modal-header" style="position: relative;">
+                    <h5 class="modal-title">@(editingAnnouncement?.AnnouncementId != Guid.Empty ? "Edit" : "Create") Announcement</h5>
+                    <button type="button" class="modern-modal-x" @onclick="HideModal" aria-label="Close" style="position: absolute; top: 18px; right: 24px; background: none; border: none; font-size: 2rem; color: #fff; z-index: 10; cursor: pointer;">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
                 </div>
                 <div class="modal-body modern-modal-body">
                     <!-- EditForm for creating/updating announcements -->
@@ -274,44 +501,239 @@
                         <!-- Title -->
                         <div class="modern-form-group">
                             <label class="modern-form-label">Title</label>
-                            <InputText @bind-Value="editingAnnouncement!.Title" class="modern-input" placeholder="Enter announcement title..." />
+                                <InputText @bind-Value="editingAnnouncement!.Title" class="force-premium-input modern-input" placeholder="Enter announcement title..." />
                             <ValidationMessage For="@(() => editingAnnouncement!.Title)" />
                         </div>
 
                         <!-- Organization -->
                         <div class="modern-form-group">
-                            <label class="modern-form-label">Organization</label>
-                            <InputText @bind-Value="editingAnnouncement.OrganizationName" class="modern-input"
-                                      placeholder="e.g., System Administration" />
-                            <small class="modern-form-text">Name of your organization or department</small>
+                            <label class="modern-form-label">Institution/Organization</label>
+                                <InputText @bind-Value="editingAnnouncement.OrganizationName" class="force-premium-input modern-input" placeholder="e.g., ABC Foundation" />
+                            <small class="text-muted">Name of your institution or organization</small>
                         </div>
 
-                        <!-- Category -->
+                        <!-- Category & Priority (Side by Side) -->
+                        <div class="row modern-form-group">
+                            <div class="col-md-6">
+                                <label class="modern-form-label">Category</label>
+                                <InputSelect @bind-Value="editingAnnouncement.Category" class="force-premium-input modern-input">
+                                    <option value="">Select Category</option>
+                                    <option value="Requirements">Requirements</option>
+                                    <option value="Results">Results</option>
+                                    <option value="Events">Events</option>
+                                    <option value="General">General</option>
+                                </InputSelect>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="modern-form-label">Priority</label>
+                                <InputSelect @bind-Value="editingAnnouncement.Priority" class="force-premium-input modern-input">
+                                    <option value="@AnnouncementPriority.Low">Low</option>
+                                    <option value="@AnnouncementPriority.Normal">Normal</option>
+                                    <option value="@AnnouncementPriority.High">High</option>
+                                    <option value="@AnnouncementPriority.Urgent">Urgent</option>
+                                </InputSelect>
+                            </div>
+                        </div>
+
+                        <!-- Tagline -->
                         <div class="modern-form-group">
-                            <label class="modern-form-label">Category</label>
-                            <InputSelect @bind-Value="editingAnnouncement.Category" class="modern-input">
-                                <option value="">Select Category</option>
-                                <option value="Requirements">Requirements</option>
-                                <option value="Results">Results</option>
-                                <option value="Events">Events</option>
-                                <option value="General">General</option>
-                                <option value="System">System</option>
-                                <option value="Maintenance">Maintenance</option>
-                            </InputSelect>
+                            <label class="modern-form-label">Tagline</label>
+                            <InputText @bind-Value="editingAnnouncement.Summary" class="force-premium-input modern-input" placeholder="A catchy tagline for your announcement..." />
+                            <small class="modern-form-text">A short, engaging phrase that captures the essence of your announcement</small>
+                        </div>
+
+                        <!-- Image Upload -->
+                        <div class="modern-form-group">
+                            <label class="modern-form-label">
+                                <i class="bi bi-image"></i>
+                                Images (Optional)
+                            </label>
+                            
+                            <!-- Upload Area -->
+                            <div class="modern-upload-area @(isUploadingImages ? "uploading" : "")">
+                                <InputFile OnChange="OnImageSelected" multiple accept="image/*" style="display: none;" id="imageUpload" disabled="@isUploadingImages" />
+                                <label for="imageUpload" class="modern-upload-label">
+                                    <div class="text-center">
+                                        <i class="bi bi-cloud-upload fs-1 text-primary mb-3"></i>
+                                        <h6>Drag & Drop Images or Click to Browse</h6>
+                                        <p class="text-muted small mb-0">
+                                            Support: JPG, JPEG, PNG, GIF, WEBP (Max 10MB each, 5 images total)
+                                        </p>
+                                    </div>
+                                </label>
+                            </div>
+
+                            <!-- Upload Progress -->
+                            @if (uploadProgress.Any())
+                            {
+                                <div class="modern-upload-progress mt-3">
+                                    <h6 class="mb-2">
+                                        <i class="bi bi-upload"></i>
+                                        Uploading Images...
+                                    </h6>
+                                    @foreach (var progress in uploadProgress)
+                                    {
+                                        <div class="mb-2">
+                                            <div class="d-flex justify-content-between small">
+                                                <span>@progress.Key</span>
+                                                <span>@progress.Value%</span>
+                                            </div>
+                                            <div class="progress" style="height: 6px;">
+                                                <div class="progress-bar bg-primary" role="progressbar" 
+                                                     style="width: @(progress.Value)%; transition: width 0.3s ease;"></div>
+                                            </div>
+                                        </div>
+                                    }
+                                    <div class="alert alert-info mt-2">
+                                        <i class="bi bi-info-circle me-2"></i>
+                                        <strong>Please wait:</strong> Do not submit the form until all images finish uploading.
+                                    </div>
+                                </div>
+                            }
+
+                            <!-- Selected Images Preview -->
+                            @if (processedImages.Any())
+                            {
+                                <div class="modern-image-previews mt-3">
+                                    <h6 class="mb-2">
+                                        <i class="bi bi-images"></i>
+                                        Selected Images (@processedImages.Count)
+                                    </h6>
+                                    <div class="row g-2">
+                                        @for (int i = 0; i < processedImages.Count; i++)
+                                        {
+                                            var index = i; // Capture for closure
+                                            var image = processedImages[index];
+                                            <div class="col-6 col-md-4 col-lg-3">
+                                                <div class="modern-image-preview-item position-relative" draggable="true"
+                                                     @ondragstart="() => StartDrag(index)"
+                                                     @ondragover:preventDefault
+                                                     @ondrop="() => DropDrag(index)">
+                                                    <div class="ratio ratio-1x1">
+                                                        <img src="data:@(image.contentType);base64,@(Convert.ToBase64String(image.data))" 
+                                                             class="object-fit-cover rounded w-100 h-100" 
+                                                             alt="@image.fileName" />
+                                                    </div>
+                                                    <div class="position-absolute top-0 end-0 m-1">
+                                                        <button type="button" class="btn btn-danger btn-sm rounded-circle p-1" 
+                                                                @onclick="() => RemoveProcessedImage(index)" 
+                                                                title="Remove image">
+                                                            <i class="bi bi-x" style="font-size: 0.8rem;"></i>
+                                                        </button>
+                                                    </div>
+                                                    <div class="position-absolute bottom-0 start-0 end-0 p-1">
+                                                        <small class="text-white bg-dark bg-opacity-75 px-2 py-1 rounded">
+                                                            @image.fileName
+                                                        </small>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+                            }
+
+                            <!-- Existing Photos (for editing) -->
+                            @if (existingPhotos.Any())
+                            {
+                                <div class="modern-existing-photos mt-3">
+                                    <h6 class="mb-2">
+                                        <i class="bi bi-folder2-open"></i>
+                                        Current Images (@existingPhotos.Count)
+                                    </h6>
+                                    <div class="row g-2">
+                                        @foreach (var photo in existingPhotos)
+                                        {
+                                            <div class="col-6 col-md-4 col-lg-3">
+                                                <div class="modern-image-preview-item position-relative">
+                                                    <div class="ratio ratio-1x1">
+                                                        <img src="@GetSafePhotoUrl(photo.Url)" alt="@(photo.Caption ?? "Announcement image")" 
+                                                             class="object-fit-cover rounded" 
+                                                             loading="lazy" />
+                                                    </div>
+                                                    <div class="position-absolute top-0 end-0 m-1">
+                                                        <button type="button" class="btn btn-danger btn-sm rounded-circle p-1" 
+                                                                @onclick="() => RemoveExistingPhoto(photo.PhotoId)" 
+                                                                title="Remove image">
+                                                            <i class="bi bi-x" style="font-size: 0.8rem;"></i>
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+                            }
                         </div>
 
                         <!-- Description -->
                         <div class="modern-form-group">
                             <label class="modern-form-label">Description</label>
-                            <InputTextArea @bind-Value="editingAnnouncement.Content" class="modern-input" rows="6" placeholder="Enter detailed description..." />
+                                <InputTextArea @bind-Value="editingAnnouncement.Content" class="force-premium-input modern-input" rows="6" placeholder="Enter detailed description..." />
                             <ValidationMessage For="@(() => editingAnnouncement.Content)" />
                         </div>
 
-                        <!-- Deadline -->
+                        <!-- Deadline with Custom Calendar -->
                         <div class="modern-form-group">
                             <label class="modern-form-label">Deadline (Optional)</label>
-                            <InputDate @bind-Value="editingAnnouncement.ExpiryDate" class="modern-input" />
-                            <small class="modern-form-text">When this announcement expires or when the deadline is</small>
+                            <div class="custom-date-input-container">
+                                <InputText @bind-Value="deadlineText" class="force-premium-input modern-input deadline-input" placeholder="mm/dd/yyyy" />
+                                <button type="button" class="calendar-trigger-btn" @onclick="ToggleCalendar" @onclick:stopPropagation="true">
+                                    <i class="bi bi-calendar3"></i>
+                                </button>
+                                
+                                @if (showCalendarDropdown)
+                                {
+                                    <div class="custom-calendar-dropdown" @onclick:stopPropagation="true">
+                                        <div class="calendar-header">
+                                            <button type="button" class="calendar-nav-btn" @onclick="PreviousMonth">
+                                                <i class="bi bi-chevron-left"></i>
+                                            </button>
+                                            <div class="calendar-controls">
+                                                <select class="calendar-month-select" @onchange="OnMonthChanged" value="@calendarDisplayDate.Month">
+                                                    @for (int month = 1; month <= 12; month++)
+                                                    {
+                                                        <option value="@month">@(new DateTime(2000, month, 1).ToString("MMM"))</option>
+                                                    }
+                                                </select>
+                                                <select class="calendar-year-select" @onchange="OnYearChanged" value="@calendarDisplayDate.Year">
+                                                    @for (int year = DateTime.Now.Year - 10; year <= DateTime.Now.Year + 10; year++)
+                                                    {
+                                                        <option value="@year">@year</option>
+                                                    }
+                                                </select>
+                                            </div>
+                                            <button type="button" class="calendar-nav-btn" @onclick="NextMonth">
+                                                <i class="bi bi-chevron-right"></i>
+                                            </button>
+                                        </div>
+                                        
+                                        <div class="calendar-grid">
+                                            <div class="calendar-weekdays">
+                                                <span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span>
+                                            </div>
+                                            
+                                            <div class="calendar-days">
+                                                @foreach (var day in GetCalendarDays())
+                                                {
+                                                    <button type="button" 
+                                                            class="calendar-day @(day.IsCurrentMonth ? "" : "other-month") @(day.IsToday ? "today" : "") @(day.IsSelected ? "selected" : "")"
+                                                            @onclick="() => SelectDate(day.Date)"
+                                                            disabled="@(!day.IsCurrentMonth)">
+                                                        @day.Day
+                                                    </button>
+                                                }
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="calendar-footer">
+                                            <button type="button" class="calendar-clear-btn" @onclick="ClearDate">Clear</button>
+                                            <button type="button" class="calendar-today-btn" @onclick="SelectToday">Today</button>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                            <small class="modern-form-text">Enter deadline date (e.g., 12/31/2024) or click calendar to select</small>
                         </div>
 
                         <!-- Visibility -->
@@ -319,7 +741,7 @@
                             <label class="modern-form-label">Visibility</label>
                             <div class="modern-radio-group">
                                 <InputRadioGroup @bind-Value="editingAnnouncement.IsPublic" Name="visibility">
-                                    <div class="modern-radio-item">
+                                    <div class="modern-radio-item @(editingAnnouncement.IsPublic == true ? "selected" : "")" @onclick="() => { editingAnnouncement.IsPublic = true; StateHasChanged(); }">
                                         <InputRadio Value="true" class="modern-radio-input" id="public-radio" />
                                         <label class="modern-radio-label" for="public-radio">
                                             <i class="bi bi-globe"></i>
@@ -329,7 +751,7 @@
                                             </div>
                                         </label>
                                     </div>
-                                    <div class="modern-radio-item">
+                                    <div class="modern-radio-item @(editingAnnouncement.IsPublic == false ? "selected" : "")" @onclick="() => { editingAnnouncement.IsPublic = false; StateHasChanged(); }">
                                         <InputRadio Value="false" class="modern-radio-input" id="private-radio" />
                                         <label class="modern-radio-label" for="private-radio">
                                             <i class="bi bi-lock"></i>
@@ -345,7 +767,7 @@
 
                         <!-- Pin option -->
                         <div class="modern-form-group">
-                            <div class="modern-checkbox-item">
+                            <div class="modern-checkbox-item @(editingAnnouncement.IsPinned ? "selected" : "")" @onclick="() => { editingAnnouncement.IsPinned = !editingAnnouncement.IsPinned; StateHasChanged(); }">
                                 <InputCheckbox @bind-Value="editingAnnouncement.IsPinned" class="modern-checkbox-input" id="pin-checkbox" />
                                 <label class="modern-checkbox-label" for="pin-checkbox">
                                     <i class="bi bi-pin-fill"></i>
@@ -363,8 +785,8 @@
                                 <i class="bi bi-x-circle"></i>
                                 Cancel
                             </button>
-                            <button type="submit" class="btn-modern-primary" disabled="@isLoadingModal">
-                                @if (isLoadingModal)
+                            <button type="submit" class="btn-modern-primary" disabled="@(isLoadingModal || isUploadingImages || uploadProgress.Any())">
+                                @if (isLoadingModal || isUploadingImages)
                                 {
                                     <div class="modern-spinner"></div>
                                 }
@@ -372,7 +794,14 @@
                                 {
                                     <i class="bi bi-@(editingAnnouncement?.AnnouncementId != Guid.Empty ? "pencil" : "plus-circle")"></i>
                                 }
-                                @(editingAnnouncement?.AnnouncementId != Guid.Empty ? "Update" : "Create")
+                                @if (isUploadingImages)
+                                {
+                                    <span>Uploading Images...</span>
+                                }
+                                else
+                                {
+                                    <span>@(editingAnnouncement?.AnnouncementId != Guid.Empty ? "Update" : "Create")</span>
+                                }
                             </button>
                         </div>
                     </EditForm>
@@ -382,8 +811,181 @@
     </div>
 }
 
+<!-- BACKEND LOGIC -->
+<!-- Photo measurer script: sets CSS vars (--aspect, --bg) for single-photo containers. Added safely once here. -->
+<script defer src="/js/photo-measurer.js"></script>
+
+<!-- Photo viewer modal -->
+@if (_photoViewerOpen)
+{
+    <div class="photo-viewer-backdrop @( _viewerClosing ? "closing" : "")" tabindex="0" @onkeydown="OnViewerKeyDown" @onclick="ClosePhotoViewerAsync" @ref="_viewerBackdropRef">
+        <div class="photo-viewer-content" role="dialog" aria-modal="true" @onclick:stopPropagation="true">
+            <button class="viewer-close" data-autofocus @onclick="ClosePhotoViewerAsync" aria-label="Close viewer">✕</button>
+
+            <div class="viewer-index">@((_viewerIndex + 1)) / @(_viewerPhotos?.Count ?? 0)</div>
+
+            <button class="viewer-nav left" @onclick="PrevPhoto" aria-label="Previous photo">‹</button>
+
+            <div class="viewer-image-wrap">
+                <div class="viewer-spinner" aria-hidden="true"></div>
+                @if (_viewerPhotos != null && _viewerPhotos.Count > 0)
+                {
+                    var current = _viewerPhotos[_viewerIndex];
+                    <img src="@GetSafePhotoUrl(current.Url)" alt="@(current.Caption ?? "Photo")" class="viewer-image" onload="(function(img){try{var el=img.closest('.photo-viewer-content'); if(el){el.classList.add('loaded'); el.style.setProperty('--img-natural-width', img.naturalWidth); el.style.setProperty('--img-natural-height', img.naturalHeight); el.style.setProperty('--img-aspect', (img.naturalWidth / img.naturalHeight));}}catch(e){} })(this)" onerror="(function(img){try{var el=img.closest('.photo-viewer-content'); if(el){el.classList.add('loaded');}}catch(e){} })(this)" />
+                    <div class="viewer-caption">@current.Caption</div>
+                }
+            </div>
+
+            <button class="viewer-nav right" @onclick="NextPhoto" aria-label="Next photo">›</button>
+        </div>
+    </div>
+}
+
 @code {
-    // Main data and state variables
+        // Photo viewer modal state
+        private bool _photoViewerOpen = false;
+        private bool _viewerClosing = false;
+        private List<Models.Photo> _viewerPhotos = new List<Models.Photo>();
+        private int _viewerIndex = 0;
+        private ElementReference _viewerBackdropRef;
+        private ElementReference _viewerContentRef;
+        private bool _focusRequested = false;
+        private IJSObjectReference? _focusTrapModule;
+        private IJSObjectReference? _focusTrapHandle;
+        private IJSObjectReference? _viewerSizerModule;
+
+        // Keep a shim for existing sync callers
+        private void OpenPhotoViewer(List<Models.Photo> photos, int startIndex)
+        {
+            _ = OpenPhotoViewerAsync(photos, startIndex);
+        }
+
+        private async Task OpenPhotoViewerAsync(List<Models.Photo> photos, int startIndex)
+        {
+            if (photos == null || photos.Count == 0) return;
+            _viewerPhotos = photos.ToList();
+            _viewerIndex = Math.Max(0, Math.Min(startIndex, _viewerPhotos.Count - 1));
+            _photoViewerOpen = true;
+            _focusRequested = true;
+            StateHasChanged();
+
+            // Allow render
+            await Task.Yield();
+
+            // Activate focus trap
+            try
+            {
+                if (_focusTrapModule == null)
+                {
+                    _focusTrapModule = await JS.InvokeAsync<IJSObjectReference>("import", "/js/focusTrap.js");
+                }
+                if (_focusTrapModule != null)
+                {
+                    _focusTrapHandle = await _focusTrapModule.InvokeAsync<IJSObjectReference>("activate", _viewerContentRef);
+                }
+            }
+            catch { /* best-effort */ }
+
+            // Activate sizer
+            try
+            {
+                if (_viewerSizerModule == null)
+                {
+                    _viewerSizerModule = await JS.InvokeAsync<IJSObjectReference>("import", "/js/viewerSizer.js");
+                }
+                if (_viewerSizerModule != null)
+                {
+                    await _viewerSizerModule.InvokeVoidAsync("attach", _viewerContentRef);
+                }
+            }
+            catch { /* best-effort */ }
+        }
+
+        private void ClosePhotoViewer()
+        {
+            _ = ClosePhotoViewerAsync();
+        }
+
+        private async Task ClosePhotoViewerAsync()
+        {
+            if (!_photoViewerOpen) return;
+            _viewerClosing = true;
+            StateHasChanged();
+            // short delay for closing animation
+            await Task.Delay(180);
+
+            try
+            {
+                if (_focusTrapHandle != null)
+                {
+                    await _focusTrapHandle.InvokeVoidAsync("deactivate");
+                    await _focusTrapHandle.DisposeAsync();
+                    _focusTrapHandle = null;
+                }
+                if (_focusTrapModule != null)
+                {
+                    await _focusTrapModule.DisposeAsync();
+                    _focusTrapModule = null;
+                }
+            }
+            catch { /* best-effort */ }
+
+            try
+            {
+                if (_viewerSizerModule != null)
+                {
+                    await _viewerSizerModule.InvokeVoidAsync("detach", _viewerContentRef);
+                    await _viewerSizerModule.DisposeAsync();
+                    _viewerSizerModule = null;
+                }
+            }
+            catch { }
+
+            _photoViewerOpen = false;
+            _viewerClosing = false;
+            _viewerPhotos = new List<Models.Photo>();
+            _viewerIndex = 0;
+            StateHasChanged();
+        }
+
+        private void NextPhoto()
+        {
+            if (_viewerPhotos == null || _viewerPhotos.Count == 0) return;
+            _viewerIndex = (_viewerIndex + 1) % _viewerPhotos.Count;
+            StateHasChanged();
+        }
+
+        private void PrevPhoto()
+        {
+            if (_viewerPhotos == null || _viewerPhotos.Count == 0) return;
+            _viewerIndex = (_viewerIndex - 1 + _viewerPhotos.Count) % _viewerPhotos.Count;
+            StateHasChanged();
+        }
+
+        // Keyboard handling: attach to window via JS interop-less approach using onkeydown on body element in markup
+        private void OnViewerKeyDown(KeyboardEventArgs e)
+        {
+            if (!_photoViewerOpen) return;
+            if (e.Key == "ArrowRight") NextPhoto();
+            else if (e.Key == "ArrowLeft") PrevPhoto();
+            else if (e.Key == "Escape") ClosePhotoViewer();
+        }
+
+        protected override async Task OnAfterRenderAsync(bool firstRender)
+        {
+            if (_photoViewerOpen && _focusRequested)
+            {
+                try
+                {
+                    await _viewerBackdropRef.FocusAsync();
+                }
+                catch { /* best-effort */ }
+                _focusRequested = false;
+            }
+            await base.OnAfterRenderAsync(firstRender);
+        }
+
+        // Main data and state variables
     private List<Announcement>? announcements;
     private List<Announcement>? filteredAnnouncements;
     private string searchTerm = "";
@@ -398,59 +1000,73 @@
     private int institutionCount = 0;
     private int benefactorCount = 0;
     private int systemCount = 0;
+    private int pinnedCount = 0;
     
-    // User info
-    private string currentUserId = "";
-    private string currentUserName = "";
+    // Image upload properties
+    private List<IBrowserFile> selectedImages = new();
+    // keep an explicit order so we preserve the user upload sequence
+    private List<(int order, string fileName, string contentType, byte[] data)> processedImages = new();
+    private List<Photo> existingPhotos = new();
+    private Dictionary<string, int> uploadProgress = new();
+    private bool isUploadingImages = false;
+    private List<Guid> photosToRemove = new();
+    private string deadlineText = "";
+    // index of the dragged item during client-side reorder
+    private int? dragSourceIndex = null;
     
-    // Model for editing
+     // Model for editing
     private Announcement editingAnnouncement = new() 
     { 
         Title = "",
         Content = "",
         AuthorId = "",
         AuthorName = "",
-        AuthorType = UserRole.SuperAdmin,
-        Priority = AnnouncementPriority.Normal,
-        IsPublic = true,
-        IsActive = true
+        AuthorType = UserRole.SuperAdmin
     };
+    
+    private string currentUserId = "";
+    private string currentUserName = "";
 
+    // Load current user + announcements on init
     protected override async Task OnInitializedAsync()
     {
         await LoadCurrentUser();
         await LoadAnnouncements();
     }
 
+    // Load user details from authentication
     private async Task LoadCurrentUser()
     {
         try
         {
             var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
-            var user = authState.User;
-
-            if (user.Identity?.IsAuthenticated == true)
+            if (authState.User.Identity?.IsAuthenticated == true)
             {
-                var identityUser = await UserManager.GetUserAsync(user);
-                if (identityUser != null)
+                var user = await UserManager.GetUserAsync(authState.User);
+                if (user != null)
                 {
-                    currentUserId = identityUser.Id;
-                    currentUserName = identityUser.Email?.Split('@')[0] ?? "SuperAdmin";
+                    currentUserId = user.Id;
+                    currentUserName = user.Email ?? "Benefactor Admin";
                 }
             }
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error loading user: {ex.Message}");
+            Console.WriteLine($"Error loading current user: {ex.Message}");
+            // Continue with default values if user loading fails
+            currentUserId = "";
+            currentUserName = "Benefactor Admin";
         }
     }
 
+    // Fetch announcements from service
     private async Task LoadAnnouncements()
     {
+        isLoading = true;
         try
         {
-            isLoading = true;
-            announcements = await AnnouncementService.GetAllAnnouncementsAsync();
+            // Load ALL announcements with photos (for shared viewing)
+            announcements = await AnnouncementService.GetAllAnnouncementsWithPhotosAsync();
             UpdateStatistics();
             FilterAnnouncements();
         }
@@ -462,80 +1078,75 @@
         finally
         {
             isLoading = false;
+            // Delay StateHasChanged to allow CSS to be fully applied
+            await Task.Delay(100);
+            StateHasChanged();
         }
     }
 
+    // Update statistics counters
     private void UpdateStatistics()
     {
         if (announcements == null) return;
-
+        
         institutionCount = announcements.Count(a => a.AuthorType == UserRole.Institution);
         benefactorCount = announcements.Count(a => a.AuthorType == UserRole.Benefactor);
         systemCount = announcements.Count(a => a.AuthorType == UserRole.SuperAdmin);
+        pinnedCount = announcements.Count(a => a.IsPinned);
     }
 
+    // Change active tab
+    private void SetActiveTab(string tab)
+    {
+        activeTab = tab;
+        FilterAnnouncements();
+    }
+
+// FILTER MANAGEMENT
+
+    // Trigger filter on search
+    private void OnSearchChanged(ChangeEventArgs e)
+    {
+        searchTerm = e.Value?.ToString() ?? "";
+        FilterAnnouncements();
+    }
+
+    // Apply filtering logic
     private void FilterAnnouncements()
     {
-        if (announcements == null)
-        {
-            filteredAnnouncements = new List<Announcement>();
-            return;
-        }
+        if (announcements == null) return;
 
-        var query = announcements.AsEnumerable();
+        var filtered = announcements.AsEnumerable();
 
         // Filter by tab
-        query = activeTab switch
+        filtered = activeTab switch
         {
-            "system" => query.Where(a => a.AuthorType == UserRole.SuperAdmin),
-            "institution" => query.Where(a => a.AuthorType == UserRole.Institution),
-            "benefactor" => query.Where(a => a.AuthorType == UserRole.Benefactor),
-            _ => query // "all"
+            "institution" => filtered.Where(a => a.AuthorType == UserRole.Institution),
+            "benefactor" => filtered.Where(a => a.AuthorType == UserRole.Benefactor),
+            "system" => filtered.Where(a => a.AuthorType == UserRole.SuperAdmin),
+            _ => filtered // "all"
         };
-
-        // Filter by search term
-        if (!string.IsNullOrEmpty(searchTerm))
-        {
-            query = query.Where(a => 
-                (a.Title?.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ?? false) ||
-                (a.Content?.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ?? false) ||
-                (a.Summary?.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ?? false) ||
-                (a.AuthorName?.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ?? false));
-        }
 
         // Filter by category
         if (!string.IsNullOrEmpty(selectedCategory))
         {
-            query = query.Where(a => a.Category == selectedCategory);
+            filtered = filtered.Where(a => a.Category?.Contains(selectedCategory) == true);
         }
 
-        filteredAnnouncements = query.ToList();
-    }
-
-    private void SetActiveTab(string tab)
-    {
-        if (activeTab != tab)
+        // Filter by search term
+        if (!string.IsNullOrWhiteSpace(searchTerm))
         {
-            activeTab = tab;
-            FilterAnnouncements();
+            filtered = filtered.Where(a => 
+                a.Title.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
+                a.Content.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ||
+                (a.AuthorName?.Contains(searchTerm, StringComparison.OrdinalIgnoreCase) ?? false));
         }
+
+        filteredAnnouncements = filtered.ToList();
+        StateHasChanged();
     }
 
-    private async Task OnSearchChanged(ChangeEventArgs e)
-    {
-        searchTerm = e.Value?.ToString() ?? "";
-        FilterAnnouncements();
-        await Task.Delay(1);
-    }
-
-    private void ToggleAnnouncementExpansion(Guid announcementId)
-    {
-        if (expandedAnnouncements.Contains(announcementId))
-            expandedAnnouncements.Remove(announcementId);
-        else
-            expandedAnnouncements.Add(announcementId);
-    }
-
+    // Reset filters and reload announcements
     private void ClearFilters()
     {
         searchTerm = "";
@@ -543,9 +1154,8 @@
         FilterAnnouncements();
     }
 
-    private async Task RefreshAnnouncements() => await LoadAnnouncements();
-
-    // CREATE ANNOUNCEMENT FORM
+// CREATE ANNOUNCEMENT FORM
+    // Initialize a new announcement draft for creation
     private void ShowCreateForm()
     {
         editingAnnouncement = new Announcement
@@ -559,11 +1169,17 @@
             IsPublic = true,
             IsActive = true
         };
+        deadlineText = "";
+        selectedImages.Clear();
+        processedImages.Clear();
+        existingPhotos.Clear();
+        photosToRemove.Clear();
         showModal = true;
     }
 
     // EDIT ANNOUNCEMENT FORM
-    private void EditAnnouncement(Announcement announcement)
+    // Load an existing announcement into edit form
+    private async Task EditAnnouncement(Announcement announcement)
     {
         editingAnnouncement = new Announcement
         {
@@ -576,33 +1192,430 @@
             IsPublic = announcement.IsPublic,
             IsPinned = announcement.IsPinned,
             IsActive = announcement.IsActive,
+            PublishDate = announcement.PublishDate,
             ExpiryDate = announcement.ExpiryDate,
-            AuthorId = currentUserId,
-            AuthorName = currentUserName,
-            AuthorType = UserRole.SuperAdmin
+            AuthorId = announcement.AuthorId,
+            AuthorName = announcement.AuthorName,
+            AuthorType = announcement.AuthorType,
+            OrganizationName = announcement.OrganizationName
         };
-        showModal = true;
-    }
-
-    private async Task DeleteAnnouncement(Guid announcementId)
-    {
+        
+        // Convert DateTime to text for deadline field
+        deadlineText = announcement.ExpiryDate?.ToString("MM/dd/yyyy") ?? "";
+        
+        // Clear image selections
+        selectedImages.Clear();
+        processedImages.Clear();
+        photosToRemove.Clear();
+        
+        // Load existing photos for editing
         try
         {
-            await AnnouncementService.DeleteAnnouncementAsync(announcementId);
-            await LoadAnnouncements();
+            existingPhotos = await AnnouncementService.GetAnnouncementPhotosAsync(announcement.AnnouncementId);
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error deleting announcement: {ex.Message}");
+            Console.WriteLine($"Error loading existing photos: {ex.Message}");
+            existingPhotos = new List<Photo>();
+        }
+        
+        showModal = true;
+        StateHasChanged();
+    }
+
+// SAVE ANNOUNCEMENT (CREATE OR UPDATE)
+    private async Task SaveAnnouncement()
+    {
+        isLoadingModal = true;
+        try
+        {
+            // Parse deadline text to DateTime if provided
+            if (!string.IsNullOrWhiteSpace(deadlineText))
+            {
+                if (DateTime.TryParse(deadlineText, out var parsedDate))
+                {
+                    editingAnnouncement.ExpiryDate = parsedDate;
+                }
+                else
+                {
+                    editingAnnouncement.ExpiryDate = null; // Invalid date format
+                }
+            }
+            else
+            {
+                editingAnnouncement.ExpiryDate = null;
+            }
+
+            // Upload new images if any
+            var uploadedImageUrls = await UploadSelectedImages();
+            Console.WriteLine($"📸 SaveAnnouncement: Received {uploadedImageUrls.Count} uploaded URLs");
+
+            // Ensure announcements created from this admin page are tagged as System (SuperAdmin)
+            editingAnnouncement.AuthorId = currentUserId;
+            editingAnnouncement.AuthorName = currentUserName;
+            editingAnnouncement.AuthorType = UserRole.SuperAdmin;
+
+            Announcement savedAnnouncement;
+            if (editingAnnouncement.AnnouncementId != Guid.Empty)
+            {
+                // Update existing announcement
+                savedAnnouncement = await AnnouncementService.UpdateAnnouncementAsync(editingAnnouncement.AnnouncementId, editingAnnouncement) ?? editingAnnouncement;
+            }
+            else
+            {
+                // Create new announcement
+                savedAnnouncement = await AnnouncementService.CreateAnnouncementAsync(editingAnnouncement);
+            }
+
+            // Add new photos to the announcement
+            if (uploadedImageUrls.Any())
+            {
+                Console.WriteLine($"📸 Adding {uploadedImageUrls.Count} photos to announcement {savedAnnouncement.AnnouncementId}");
+                foreach (var url in uploadedImageUrls)
+                {
+                    Console.WriteLine($"📸 Photo URL: {url}");
+                }
+                await AnnouncementService.AddPhotosToAnnouncementAsync(savedAnnouncement.AnnouncementId, uploadedImageUrls);
+                Console.WriteLine($"✅ Photos added successfully to database");
+            }
+
+            // Remove deleted existing photos (photos that were removed during editing)
+            if (photosToRemove.Any())
+            {
+                foreach (var photoId in photosToRemove)
+                {
+                    await AnnouncementService.RemovePhotoFromAnnouncementAsync(photoId);
+                }
+            }
+            
+            // Wait a bit to ensure database changes are committed
+            await Task.Delay(200);
+            
+            await LoadAnnouncements();
+            HideModal();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error saving announcement: {ex.Message}");
+        }
+        finally
+        {
+            isLoadingModal = false;
         }
     }
 
-    private async Task TogglePin(Announcement announcement)
+    // IMAGE UPLOAD METHODS
+    private async Task OnImageSelected(InputFileChangeEventArgs e)
+    {
+        var files = e.GetMultipleFiles(); // Get selected files
+
+        // baseIndex ensures files from earlier selections keep lower order values
+        int baseIndex = processedImages.Count;
+        int fileIndex = 0;
+
+        foreach (var file in files)
+        {
+            // Validate file type and size
+            if (IsValidImageFile(file))
+            {
+                try
+                {
+                    // Immediately process the file to avoid Blazor InputFile limitations
+                    using var stream = file.OpenReadStream(maxAllowedSize: 10 * 1024 * 1024);
+                    var bytes = new byte[stream.Length];
+                    var totalBytesRead = 0;
+
+                    // Read the entire stream into the byte array
+                    while (totalBytesRead < bytes.Length)
+                    {
+                        var bytesRead = await stream.ReadAsync(bytes, totalBytesRead, bytes.Length - totalBytesRead);
+                        if (bytesRead == 0)
+                            break; // End of stream
+                        totalBytesRead += bytesRead;
+                    }
+
+                    Console.WriteLine($"✅ Successfully processed {file.Name}: {totalBytesRead} bytes");
+                    processedImages.Add((baseIndex + fileIndex, file.Name, file.ContentType, bytes));
+                    fileIndex++;
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"❌ Error processing {file.Name}: {ex.Message}");
+                }
+            }
+        }
+        StateHasChanged();
+    }
+
+    private bool IsValidImageFile(IBrowserFile file)
+    {
+        // Check file type
+        var allowedTypes = new[] { "image/jpeg", "image/jpg", "image/png", "image/gif", "image/webp" };
+        if (!allowedTypes.Contains(file.ContentType.ToLower()))
+        {
+            return false;
+        }
+
+        // Check file size (max 10MB)
+        if (file.Size > 10 * 1024 * 1024)
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    // UPLOAD SELECTED IMAGES TO BLOB STORAGE
+    private async Task<List<string>> UploadSelectedImages()
+    {
+        var uploaded = new List<(int order, string url)>();
+
+        if (!processedImages.Any())
+        {
+            return new List<string>();
+        }
+
+        foreach (var (order, fileName, contentType, data) in processedImages)
+        {
+            try
+            {
+                Console.WriteLine($"📤 Uploading {fileName}: {data.Length} bytes, content type: {contentType}");
+
+                // Validate the byte array is not empty or corrupted
+                if (data == null || data.Length == 0)
+                {
+                    Console.WriteLine($"❌ Empty or null data for {fileName}");
+                    continue;
+                }
+
+                using var stream = new MemoryStream(data);
+                var uniqueFileName = Guid.NewGuid().ToString() + Path.GetExtension(fileName);
+
+                Console.WriteLine($"📁 Generated unique filename: {uniqueFileName}");
+
+                var imageUrl = await BlobStorageService.UploadPhotoAsync(stream, uniqueFileName, contentType);
+                if (!string.IsNullOrEmpty(imageUrl))
+                {
+                    Console.WriteLine($"✅ Successfully uploaded {fileName} -> {imageUrl}");
+                    uploaded.Add((order, imageUrl));
+                }
+                else
+                {
+                    Console.WriteLine($"❌ Failed to upload {fileName} - BlobStorageService returned empty URL");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ Error uploading image {fileName}: {ex.Message}");
+            }
+        }
+
+        // Return URLs sorted by the original order value
+        return uploaded.OrderBy(x => x.order).Select(x => x.url).ToList();
+    }
+
+    private async Task UploadImages(Guid announcementId)
+    {
+        if (!processedImages.Any()) return;
+
+        isUploadingImages = true;
+        uploadProgress.Clear();
+        var uploadedUrls = new List<string>();
+
+        try
+        {
+            foreach (var (order, fileName, contentType, data) in processedImages)
+            {
+                uploadProgress[fileName] = 0;
+                StateHasChanged();
+
+                // Generate unique filename
+                var fileExtension = Path.GetExtension(fileName);
+                var uniqueFileName = $"{Guid.NewGuid()}{fileExtension}";
+                
+                // Simulate progress updates
+                var progressTask = Task.Run(async () =>
+                {
+                    try
+                    {
+                        for (int i = 0; i <= 90; i += 10)
+                        {
+                            uploadProgress[fileName] = i;
+                            await InvokeAsync(StateHasChanged);
+                            await Task.Delay(100);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        // Log and swallow to ensure background task doesn't crash the app
+                        try { Console.WriteLine($"Upload progress background task failed: {ex}"); } catch { }
+                    }
+                });
+                _ = progressTask.ContinueWith(t => { if (t.Exception != null) { try { Console.WriteLine($"Unobserved upload progress task exception: {t.Exception}"); } catch { } } }, TaskScheduler.Current);
+
+                // Actual upload
+                using var stream = new MemoryStream(data);
+                var photoUrl = await BlobStorageService.UploadPhotoAsync(stream, uniqueFileName, contentType);
+                Console.WriteLine($"📸 Uploaded photo: {uniqueFileName} -> URL: {photoUrl}");
+                // preserve original order by pairing it with returned URL
+                uploadedUrls.Add(photoUrl);
+
+                // Complete progress
+                uploadProgress[fileName] = 100;
+                StateHasChanged();
+            }
+
+            // Add photos to announcement in database
+            if (uploadedUrls.Any())
+            {
+                await AnnouncementService.AddPhotosToAnnouncementAsync(announcementId, uploadedUrls);
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error uploading images: {ex.Message}");
+        }
+        finally
+        {
+            isUploadingImages = false;
+            selectedImages.Clear();
+            processedImages.Clear();
+            uploadProgress.Clear();
+            StateHasChanged();
+        }
+    }
+
+    private async Task HandleImageUpdates(Guid announcementId)
     {
         try
         {
-            announcement.IsPinned = !announcement.IsPinned;
-            await AnnouncementService.UpdateAnnouncementAsync(announcement);
+            // Remove deleted photos
+            foreach (var photoId in photosToRemove)
+            {
+                await AnnouncementService.RemovePhotoFromAnnouncementAsync(photoId);
+            }
+
+            // Upload new photos
+            await UploadImages(announcementId);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error handling image updates: {ex.Message}");
+        }
+        finally
+        {
+            photosToRemove.Clear();
+        }
+    }
+
+    // HELPER METHODS FOR PHOTO DISPLAY
+    private string GetSafePhotoUrl(string photoUrl)
+    {
+        try
+        {
+            // If it's already a safe URL (like base64 data), return as is
+            if (string.IsNullOrEmpty(photoUrl) || photoUrl.StartsWith("data:"))
+            {
+                return photoUrl;
+            }
+            
+            // If it's already a relative URL (controller path), return as is
+            if (photoUrl.StartsWith("/api/photo/stream/"))
+            {
+                return photoUrl;
+            }
+            
+            // Extract filename from Azure blob URL or path
+            string fileName;
+            if (Uri.TryCreate(photoUrl, UriKind.Absolute, out var uri))
+            {
+                // It's an absolute URL (like Azure blob URL)
+                fileName = Path.GetFileName(uri.LocalPath);
+            }
+            else
+            {
+                // It's likely just a filename or relative path
+                fileName = Path.GetFileName(photoUrl);
+            }
+            
+            // Always use controller URL for stability - avoid SAS URL generation during renders
+            var controllerUrl = $"/api/photo/stream/{Uri.EscapeDataString(fileName)}";
+            return controllerUrl;
+        }
+        catch (Exception)
+        {
+            // Fallback to original URL if parsing fails
+            return photoUrl;
+        }
+    }
+
+    private void RemoveImage(IBrowserFile file)
+    {
+        selectedImages.Remove(file);
+        StateHasChanged();
+    }
+
+    private void RemoveProcessedImage(int index)
+    {
+        if (index >= 0 && index < processedImages.Count)
+        {
+            processedImages.RemoveAt(index);
+            ReindexProcessedImages();
+            StateHasChanged();
+        }
+    }
+
+    // Drag handling for reordering selected images
+    private void StartDrag(int index)
+    {
+        dragSourceIndex = index;
+    }
+
+    private void DropDrag(int targetIndex)
+    {
+        if (dragSourceIndex == null) return;
+        var source = dragSourceIndex.Value;
+        var dest = targetIndex;
+        if (source == dest) { dragSourceIndex = null; return; }
+
+        // Move item from source to dest
+        var item = processedImages[source];
+        processedImages.RemoveAt(source);
+        if (dest > processedImages.Count) dest = processedImages.Count;
+        processedImages.Insert(dest, item);
+
+        // Reindex orders to keep them sequential and deterministic
+        ReindexProcessedImages();
+        dragSourceIndex = null;
+        StateHasChanged();
+    }
+
+    private void ReindexProcessedImages()
+    {
+        for (int i = 0; i < processedImages.Count; i++)
+        {
+            var t = processedImages[i];
+            processedImages[i] = (i, t.fileName, t.contentType, t.data);
+        }
+    }
+
+    private void RemoveExistingPhoto(Guid photoId)
+    {
+        photosToRemove.Add(photoId);
+        var photo = existingPhotos.FirstOrDefault(p => p.PhotoId == photoId);
+        if (photo != null)
+        {
+            existingPhotos.Remove(photo);
+        }
+        StateHasChanged();
+    }
+
+    // TOGGLE PIN ON ANNOUNCEMENT
+    private async Task TogglePin(Guid announcementId)
+    {
+        try
+        {
+            await AnnouncementService.TogglePinAsync(announcementId, currentUserId);
             await LoadAnnouncements();
         }
         catch (Exception ex)
@@ -611,81 +1624,153 @@
         }
     }
 
-    private async Task ToggleStatus(Announcement announcement)
+    // DELETE ANNOUNCEMENT
+    private async Task DeleteAnnouncement(Guid announcementId)
     {
         try
         {
-            announcement.IsActive = !announcement.IsActive;
-            await AnnouncementService.UpdateAnnouncementAsync(announcement);
-            await LoadAnnouncements();
+            if (await AnnouncementService.DeleteAnnouncementAsync(announcementId, currentUserId))
+            {
+                await LoadAnnouncements();
+            }
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error toggling status: {ex.Message}");
+            Console.WriteLine($"Error deleting announcement: {ex.Message}");
         }
     }
 
-    // UI HELPER METHODS
+    // INCREMENT VIEW COUNT
+    private async Task IncrementView(Guid announcementId)
+    {
+        try
+        {
+            await AnnouncementService.IncrementViewCountAsync(announcementId);
+            // Update local view count without reloading everything
+            var announcement = announcements?.FirstOrDefault(a => a.AnnouncementId == announcementId);
+            if (announcement != null)
+            {
+                announcement.ViewCount++;
+                StateHasChanged();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error incrementing view count: {ex.Message}");
+        }
+    }
+
+// MODAL HANDLING
+    // Close modal and reset editing announcement
+    private void HideModal()
+    {
+        showModal = false;
+        editingAnnouncement = new() 
+        { 
+            Title = "",
+            Content = "",
+            AuthorId = "",
+            AuthorName = "",
+            AuthorType = UserRole.SuperAdmin
+        };
+        
+        // Clear image-related data
+        selectedImages.Clear();
+        processedImages.Clear();
+        existingPhotos.Clear();
+        uploadProgress.Clear();
+        photosToRemove.Clear();
+        isUploadingImages = false;
+    }
+
+// ANNOUNCEMENT EXPANSION (SHOW MORE/LESS)
+    // Check if announcement is expanded
+    private bool IsAnnouncementExpanded(Guid announcementId)
+    {
+    return expandedAnnouncements.Contains(announcementId);
+    }
+
+    // Expand or collapse announcement details
+    private void ToggleAnnouncementExpansion(Guid announcementId)
+    {
+        if (expandedAnnouncements.Contains(announcementId))
+        {
+            expandedAnnouncements.Remove(announcementId);
+        }
+        else
+        {
+            expandedAnnouncements.Add(announcementId);
+        }
+        StateHasChanged();
+    }
+
+// UI HELPERS
+    // Provide tab-specific description
     private string GetTabDescription()
     {
         return activeTab switch
         {
-            "all" => "Comprehensive view of all announcements across the platform",
-            "system" => "System-wide announcements and maintenance notifications",
-            "institution" => "Announcements from educational institutions",
-            "benefactor" => "Announcements from scholarship benefactors and sponsors",
-            _ => "Platform announcements and updates"
+            "all" => "All Announcements",
+            "institution" => "Institution Announcements",
+            "benefactor" => "Benefactor Announcements",
+            "system" => "System Announcements",
+            _ => "Announcements"
         };
     }
 
+    // Provide empty state title based on tab
     private string GetEmptyStateTitle()
     {
         return activeTab switch
         {
             "all" => "No announcements found",
-            "system" => "No system announcements",
             "institution" => "No institution announcements",
-            "benefactor" => "No benefactor announcements",
+            "benefactor" => "No benefactor announcements", 
+            "system" => "No system announcements",
             _ => "No announcements found"
         };
     }
 
     private string GetEmptyStateMessage()
     {
+        // Suggest adjustments if filters/search applied
         if (!string.IsNullOrEmpty(searchTerm) || !string.IsNullOrEmpty(selectedCategory))
         {
             return "Try adjusting your search terms or filters.";
         }
         
+        // Provide tab-specific empty state message
         return activeTab switch
         {
-            "all" => "No announcements have been posted yet.",
-            "system" => "No system announcements have been created yet.",
+            "all" => "There are no announcements to display at this time.",
             "institution" => "No institutions have posted announcements yet.",
             "benefactor" => "No benefactors have posted announcements yet.",
+            "system" => "No system announcements have been posted yet.",
             _ => "No announcements available."
         };
     }
 
+    // Return count of announcements based on tab
     private int GetTabCount()
     {
         return activeTab switch
         {
             "all" => announcements?.Count ?? 0,
-            "system" => systemCount,
             "institution" => institutionCount,
             "benefactor" => benefactorCount,
+            "system" => systemCount,
             _ => 0
         };
     }
 
+    // Return badge style based on author type
     private string GetAuthorBadgeClass(UserRole authorType)
     {
         return authorType switch
         {
             UserRole.Institution => "badge-institution",
             UserRole.Benefactor => "badge-benefactor",
-            UserRole.SuperAdmin => "badge-pinned",
+            UserRole.SuperAdmin => "badge-custom-gradient", // System posts use the custom gradient
             _ => "badge-normal"
         };
     }
@@ -714,61 +1799,158 @@
         };
     }
 
+    // Return icon class based on author type
+    private string GetAuthorIcon(UserRole authorType)
+    {
+        return authorType switch
+        {
+            UserRole.Institution => "bi bi-building",
+            UserRole.Benefactor => "bi bi-hand-thumbs-up",
+            UserRole.SuperAdmin => "bi bi-shield-check",
+            _ => "bi bi-person"
+        };
+    }
+
+    // Return color based on announcement priority
     private string GetPriorityColor(AnnouncementPriority priority)
     {
         return priority switch
         {
-            AnnouncementPriority.High => "danger",
+            AnnouncementPriority.Low => "secondary",
             AnnouncementPriority.Normal => "primary",
-            AnnouncementPriority.Low => "success",
-            _ => "secondary"
+            AnnouncementPriority.High => "warning",
+            AnnouncementPriority.Urgent => "danger",
+            _ => "primary"
         };
     }
 
-    // SAVE ANNOUNCEMENT (CREATE OR UPDATE)
-    private async Task SaveAnnouncement()
+// CUSTOM CALENDAR FUNCTIONALITY
+    private bool showCalendarDropdown = false;
+    private DateTime calendarDisplayDate = DateTime.Now;
+
+    // Calendar day model for grid display
+    public class CalendarDay
     {
-        isLoadingModal = true;
-        try
+        public DateTime Date { get; set; }
+        public int Day { get; set; }
+        public bool IsCurrentMonth { get; set; }
+        public bool IsToday { get; set; }
+        public bool IsSelected { get; set; }
+    }
+
+    // Toggle calendar dropdown visibility
+    private void ToggleCalendar()
+    {
+        showCalendarDropdown = !showCalendarDropdown;
+        if (showCalendarDropdown)
         {
-            if (editingAnnouncement.AnnouncementId != Guid.Empty)
+            // Set calendar display date based on current deadline text
+            if (DateTime.TryParse(deadlineText, out DateTime parsedDate))
             {
-                // Update existing announcement
-                await AnnouncementService.UpdateAnnouncementAsync(editingAnnouncement.AnnouncementId, editingAnnouncement);
+                calendarDisplayDate = parsedDate;
             }
             else
             {
-                // Create new announcement
-                await AnnouncementService.CreateAnnouncementAsync(editingAnnouncement);
+                calendarDisplayDate = DateTime.Now;
             }
-            
-            await LoadAnnouncements();
-            HideModal();
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error saving announcement: {ex.Message}");
-        }
-        finally
-        {
-            isLoadingModal = false;
         }
     }
 
-    // MODAL HANDLING
-    private void HideModal()
+    // Navigate to previous month
+    private void PreviousMonth()
     {
-        showModal = false;
-        editingAnnouncement = new() 
-        { 
-            Title = "",
-            Content = "",
-            AuthorId = "",
-            AuthorName = "",
-            AuthorType = UserRole.SuperAdmin,
-            Priority = AnnouncementPriority.Normal,
-            IsPublic = true,
-            IsActive = true
-        };
+        calendarDisplayDate = calendarDisplayDate.AddMonths(-1);
+    }
+
+    // Navigate to next month
+    private void NextMonth()
+    {
+        calendarDisplayDate = calendarDisplayDate.AddMonths(1);
+    }
+
+    // Generate calendar days for current month view
+    private List<CalendarDay> GetCalendarDays()
+    {
+        var days = new List<CalendarDay>();
+        var firstDayOfMonth = new DateTime(calendarDisplayDate.Year, calendarDisplayDate.Month, 1);
+        var lastDayOfMonth = firstDayOfMonth.AddMonths(1).AddDays(-1);
+        var startDate = firstDayOfMonth.AddDays(-(int)firstDayOfMonth.DayOfWeek);
+        
+        DateTime? selectedDate = null;
+        if (DateTime.TryParse(deadlineText, out DateTime parsedDate))
+        {
+            selectedDate = parsedDate.Date;
+        }
+
+        for (int i = 0; i < 42; i++) // 6 weeks * 7 days
+        {
+            var date = startDate.AddDays(i);
+            days.Add(new CalendarDay
+            {
+                Date = date,
+                Day = date.Day,
+                IsCurrentMonth = date.Month == calendarDisplayDate.Month,
+                IsToday = date.Date == DateTime.Today,
+                IsSelected = selectedDate.HasValue && date.Date == selectedDate.Value
+            });
+        }
+
+        return days;
+    }
+
+    // Select a date from calendar
+    private void SelectDate(DateTime date)
+    {
+        deadlineText = date.ToString("MM/dd/yyyy");
+        showCalendarDropdown = false;
+        StateHasChanged();
+    }
+
+    // Clear the deadline date
+    private void ClearDate()
+    {
+        deadlineText = "";
+        showCalendarDropdown = false;
+        StateHasChanged();
+    }
+
+    // Select today's date
+    private void SelectToday()
+    {
+        deadlineText = DateTime.Today.ToString("MM/dd/yyyy");
+        showCalendarDropdown = false;
+        StateHasChanged();
+    }
+
+    // Close calendar dropdown when clicking outside
+    private void CloseCalendarIfOpen()
+    {
+        if (showCalendarDropdown)
+        {
+            showCalendarDropdown = false;
+            StateHasChanged();
+        }
+    }
+
+    // Handle month selection change
+    private void OnMonthChanged(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out int month))
+        {
+            calendarDisplayDate = new DateTime(calendarDisplayDate.Year, month, 1);
+            StateHasChanged();
+        }
+    }
+
+    // Handle year selection change
+    private void OnYearChanged(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out int year))
+        {
+            var daysInMonth = DateTime.DaysInMonth(year, calendarDisplayDate.Month);
+            var day = Math.Min(calendarDisplayDate.Day, daysInMonth);
+            calendarDisplayDate = new DateTime(year, calendarDisplayDate.Month, day);
+            StateHasChanged();
+        }
     }
 }

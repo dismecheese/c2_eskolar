@@ -516,7 +516,7 @@
     private void SkipVerification()
     {
         showVerificationModal = false;
-        Navigation.NavigateTo("/dashboard/unverified");
+        Navigation.NavigateTo("/dashboard//studentunverified");
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -542,7 +542,7 @@
         FilterScholarshipBarResults();
     }
 
-    private async void HideScholarshipDropdownWithDelay()
+    private async Task HideScholarshipDropdownWithDelay()
     {
         // Delay to allow click event to register
         await Task.Delay(150);

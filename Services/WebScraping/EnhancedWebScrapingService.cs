@@ -50,11 +50,17 @@ namespace c2_eskolar.Services.WebScraping
 
         public async Task<List<EnhancedScrapedScholarship>> ScrapeAndParseScholarshipsAsync(string sourceUrl)
         {
+            return await ScrapeAndParseScholarshipsAsync(sourceUrl, null);
+        }
+
+        public async Task<List<EnhancedScrapedScholarship>> ScrapeAndParseScholarshipsAsync(string sourceUrl, Action<int, string>? progressCallback = null)
+        {
             var scholarships = new List<EnhancedScrapedScholarship>();
             
             try
             {
                 _logger.LogInformation($"Starting enhanced scraping from: {sourceUrl}");
+                progressCallback?.Invoke(5, "Starting enhanced scraping...");
                 
                 // Validate URL format first
                 if (!Uri.TryCreate(sourceUrl, UriKind.Absolute, out var validUri))
@@ -64,6 +70,7 @@ namespace c2_eskolar.Services.WebScraping
                 
                 // Test connectivity first
                 _logger.LogInformation($"Testing connectivity to: {sourceUrl}");
+                progressCallback?.Invoke(10, "Testing website connectivity...");
                 
                 HttpResponseMessage response;
                 try 
@@ -92,6 +99,7 @@ namespace c2_eskolar.Services.WebScraping
                     var html = await response.Content.ReadAsStringAsync();
                     
                     _logger.LogInformation($"Successfully retrieved {html.Length} characters from {sourceUrl}");
+                    progressCallback?.Invoke(20, $"Retrieved {html.Length} characters from website...");
                     
                     // Check if content looks corrupted (too many control characters)
                     if (html.Length > 100)
@@ -141,8 +149,10 @@ namespace c2_eskolar.Services.WebScraping
                     var scholarshipTexts = ExtractScholarshipTexts(doc, sourceUrl);
                     
                     _logger.LogInformation($"Found {scholarshipTexts.Count} potential scholarship texts");
+                    progressCallback?.Invoke(30, $"Found {scholarshipTexts.Count} potential scholarship texts...");
 
                     // Process each text block with AI
+                    progressCallback?.Invoke(40, "Processing scholarships with AI...");
                     var tasks = scholarshipTexts.Select(text => 
                         ParseScholarshipWithAIAsync(text, sourceUrl)).ToList();
                     
@@ -150,9 +160,11 @@ namespace c2_eskolar.Services.WebScraping
                     var baseScholarships = results.Where(s => !string.IsNullOrWhiteSpace(s.Title)).ToList();
                     
                     _logger.LogInformation($"Successfully parsed {baseScholarships.Count} base scholarships with AI");
+                    progressCallback?.Invoke(60, $"Successfully parsed {baseScholarships.Count} scholarships with AI...");
                     
                     // Enhanced: Check for external URLs and scrape additional details
                     var enhancedScholarships = new List<EnhancedScrapedScholarship>();
+                    progressCallback?.Invoke(70, "Enhancing scholarships with external data...");
                     
                     foreach (var scholarship in baseScholarships)
                     {
@@ -189,6 +201,7 @@ namespace c2_eskolar.Services.WebScraping
                     scholarships.AddRange(enhancedScholarships);
                     
                     _logger.LogInformation($"Final result: {scholarships.Count} scholarships (enhanced: {enhancedScholarships.Count(s => s.ParsingNotes.Any(n => n.Contains("Enhanced with external")))})");
+                    progressCallback?.Invoke(90, $"Completed scraping: {scholarships.Count} scholarships ready...");
                 }
                 catch (TaskCanceledException ex) when (ex.InnerException is TimeoutException)
                 {

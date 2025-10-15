@@ -100,7 +100,7 @@
                                                     </span>
                                                 }
                                                 <span class="badge @(announcement.AuthorType == UserRole.Institution ? "badge-institution" : announcement.AuthorType == UserRole.Benefactor ? "badge-benefactor" : "badge-normal")">
-                                                    @announcement.AuthorType
+                                                    @(announcement.AuthorType == UserRole.SuperAdmin ? "System" : announcement.AuthorType.ToString())
                                                 </span>
                                                 @if (!string.IsNullOrEmpty(announcement.Category))
                                                 {
@@ -1178,9 +1178,9 @@
         showModal = true;
     }
 
-// EDIT ANNOUNCEMENT FORM
+    // EDIT ANNOUNCEMENT FORM
     // Load an existing announcement into edit form
-    private async void EditAnnouncement(Announcement announcement)
+    private async Task EditAnnouncement(Announcement announcement)
     {
         editingAnnouncement = new Announcement
         {
@@ -1432,13 +1432,21 @@
                 // Simulate progress updates
                 var progressTask = Task.Run(async () =>
                 {
-                    for (int i = 0; i <= 90; i += 10)
+                    try
                     {
-                        uploadProgress[fileName] = i;
-                        await InvokeAsync(StateHasChanged);
-                        await Task.Delay(100);
+                        for (int i = 0; i <= 90; i += 10)
+                        {
+                            uploadProgress[fileName] = i;
+                            await InvokeAsync(StateHasChanged);
+                            await Task.Delay(100);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        try { Console.WriteLine($"Benefactor upload progress background task failed: {ex}"); } catch { }
                     }
                 });
+                _ = progressTask.ContinueWith(t => { if (t.Exception != null) { try { Console.WriteLine($"Unobserved benefactor upload progress task exception: {t.Exception}"); } catch { } } }, TaskScheduler.Current);
 
                 // Actual upload
                 using var stream = new MemoryStream(data);

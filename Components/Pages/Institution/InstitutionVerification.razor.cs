@@ -88,6 +88,9 @@ namespace c2_eskolar.Components.Pages.Institution
     private bool IsSubmitting = false;
     private string ProfileErrorMessage = "";
     protected bool ShowSuccessModal = false;
+    protected bool ShowAlreadySubmittedModal = false;
+    protected bool HasAlreadySubmitted = false;
+    protected string CurrentAccountStatus = "";
 
         // Sex Dropdown logic for custom select (component-level)
         private bool ShowSexDropdown = false;
@@ -103,6 +106,22 @@ namespace c2_eskolar.Components.Pages.Institution
         {
             SelectedSex = value;
             ShowSexDropdown = false;
+        }
+
+        // Institution Type Dropdown logic for custom select (component-level)
+        private bool ShowInstitutionTypeDropdown = false;
+        private string SelectedInstitutionType
+        {
+            get => verificationModel.InstitutionType ?? "";
+            set => verificationModel.InstitutionType = value;
+        }
+        private string SelectedInstitutionTypeText => string.IsNullOrEmpty(SelectedInstitutionType) ? "Select type" : SelectedInstitutionType;
+        private void ToggleInstitutionTypeDropdown() => ShowInstitutionTypeDropdown = !ShowInstitutionTypeDropdown;
+        private void CloseInstitutionTypeDropdown() => ShowInstitutionTypeDropdown = false;
+        private void SelectInstitutionType(string value)
+        {
+            SelectedInstitutionType = value;
+            ShowInstitutionTypeDropdown = false;
         }
 
         [Inject] private HttpClient Http { get; set; } = default!;
@@ -429,6 +448,16 @@ namespace c2_eskolar.Components.Pages.Institution
                 var profile = await InstitutionProfileService.GetProfileByUserIdAsync(userId);
                 if (profile != null)
                 {
+                    // Check account status to determine if user has already submitted
+                    CurrentAccountStatus = profile.AccountStatus ?? "";
+                    
+                    // Check if user has already submitted (any status except null/empty)
+                    if (!string.IsNullOrEmpty(profile.AccountStatus))
+                    {
+                        HasAlreadySubmitted = true;
+                        ShowAlreadySubmittedModal = true;
+                    }
+                    
                     // Pre-populate form with existing data
                     verificationModel.InstitutionName = profile.InstitutionName ?? string.Empty;
                     verificationModel.InstitutionType = profile.InstitutionType ?? string.Empty;
@@ -460,16 +489,36 @@ namespace c2_eskolar.Components.Pages.Institution
             }
         }
 
-        // Handler for closing the success modal
-        private void CloseSuccessModal()
+        // Modal logic for success modal
+        public void CloseSuccessModal()
         {
             ShowSuccessModal = false;
+            InvokeAsync(StateHasChanged);
+        }
+        
+        public void ViewProfile()
+        {
+            ShowSuccessModal = false;
+            NavigationManager.NavigateTo("/dashboard/institution/unverified");
         }
 
-        // Handler for View Profile button (navigate to profile page)
-        private void ViewProfile()
+        // Modal logic for already submitted modal
+        public void CloseAlreadySubmittedModal()
         {
-            NavigationManager.NavigateTo("/institution/profile");
+            ShowAlreadySubmittedModal = false;
+            InvokeAsync(StateHasChanged);
+        }
+        
+        public void GoToDashboard()
+        {
+            ShowAlreadySubmittedModal = false;
+            NavigationManager.NavigateTo("/dashboard/institution/unverified");
+        }
+        
+        public void ViewInstitutionProfile()
+        {
+            ShowAlreadySubmittedModal = false;
+            NavigationManager.NavigateTo("/institution/profile/unverified");
         }
 
         [Inject] private NavigationManager NavigationManager { get; set; } = default!;

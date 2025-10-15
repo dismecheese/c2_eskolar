@@ -1,3 +1,83 @@
+/* Modern button and modal styles for Scholarship Management (matches SuperAdminAnnouncements gradients) */
+.btn-modern-primary {
+    background: linear-gradient(135deg, #1560d4, #0d387e);
+    color: white;
+    border: none;
+    box-shadow: 0 6px 18px rgba(21,96,212,0.18);
+    padding: 0.5rem 0.9rem;
+    border-radius: 10px;
+    font-weight: 600;
+}
+.btn-modern-primary:hover { transform: translateY(-2px); }
+
+.btn-modern-secondary {
+    background: linear-gradient(135deg, #fff 0%, #f8fafc 100%);
+    color: #2d3748;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+    padding: 0.45rem 0.8rem;
+    border-radius: 10px;
+    font-weight: 600;
+}
+.btn-modern-success {
+    background: linear-gradient(135deg, #43e97b, #38f9d7);
+    color: white;
+    border: none;
+    box-shadow: 0 6px 18px rgba(67,233,123,0.18);
+    padding: 0.45rem 0.8rem;
+    border-radius: 10px;
+    font-weight: 600;
+}
+.btn-modern-warning {
+    background: linear-gradient(135deg, #f093fb, #f5576c);
+    color: white;
+    border: none;
+    box-shadow: 0 6px 18px rgba(240,147,251,0.12);
+    padding: 0.45rem 0.8rem;
+    border-radius: 10px;
+    font-weight: 600;
+}
+.btn-modern-danger {
+    background: linear-gradient(135deg, #f56565, #c53030);
+    color: white;
+    border: none;
+    box-shadow: 0 6px 18px rgba(245,101,101,0.14);
+    padding: 0.45rem 0.8rem;
+    border-radius: 10px;
+    font-weight: 600;
+}
+
+/* Table action cell layout */
+.action-buttons-modern {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+/* Modal overrides to match site look */
+.scholarship-edit-modal .modal-content {
+    border-radius: 12px;
+    box-shadow: 0 12px 40px rgba(13,56,126,0.15);
+    border: none;
+}
+.scholarship-edit-modal .modal-header {
+    background: linear-gradient(135deg, #1560d4, #0d387e);
+    color: white;
+    border-top-left-radius: 12px;
+    border-top-right-radius: 12px;
+}
+.scholarship-edit-modal .modal-body {
+    background: white;
+}
+.scholarship-edit-modal .modal-footer {
+    border-top: none;
+    background: linear-gradient(180deg, rgba(248,250,252,0.6), rgba(255,255,255,0.6));
+}
+
+/* Small responsive tweaks */
+@media (max-width: 768px) {
+    .action-buttons-modern { flex-direction: column; }
+}
 .scholarship-management-container {
     padding: 20px;
     max-width: 100%;

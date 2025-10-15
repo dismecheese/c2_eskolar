@@ -11,6 +11,7 @@
 @using Microsoft.EntityFrameworkCore
 @using Microsoft.JSInterop
 @implements IDisposable
+@implements IAsyncDisposable
 
 <div class="container-fluid p-5 benefactor-profile-bg">
     <!-- Error/Success Messages -->
@@ -420,8 +421,9 @@
 
     private async Task SaveBenefactorInfo()
     {
+        var ct = _cts.Token;
         // Prevent concurrent saves using semaphore with timeout
-        if (!await _benefactorSavingSemaphore.WaitAsync(TimeSpan.FromSeconds(10)))
+        if (!await _benefactorSavingSemaphore.WaitAsync(TimeSpan.FromSeconds(10), ct))
         {
             SetBenefactorErrorMessageWithTimer("Another save operation is in progress. Please wait and try again.");
             return;
@@ -452,6 +454,7 @@
             try
             {
                 profile = await BenefactorProfileService.GetProfileByUserIdAsync(user.Id);
+                ct.ThrowIfCancellationRequested();
             }
             catch (Exception ex)
             {
@@ -476,6 +479,7 @@
             try
             {
                 await BenefactorProfileService.SaveProfileAsync(profile);
+                ct.ThrowIfCancellationRequested();
                 Console.WriteLine("Benefactor profile saved successfully!");
                 
                 // Clear cache to force refresh
@@ -518,7 +522,14 @@
         }
         finally
         {
-            _benefactorSavingSemaphore.Release();
+            try
+            {
+                _benefactorSavingSemaphore.Release();
+            }
+            catch (ObjectDisposedException)
+            {
+                // Semaphore was disposed while operation was in-flight; ignore to avoid crash
+            }
         }
     }
 
@@ -597,6 +608,10 @@
     private IJSRuntime? _jsRuntime;
     [Inject] private IJSRuntime JSRuntime { get; set; } = default!;
 
+    // Cancellation & in-flight task tracking for graceful teardown
+    private readonly CancellationTokenSource _cts = new();
+    private Task? _loadTask;
+
     protected override async Task OnInitializedAsync()
     {
         try
@@ -628,25 +643,28 @@
         _jsRuntime = JSRuntime;
     }
 
-    protected override async Task OnAfterRenderAsync(bool firstRender)
+    protected override Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender && !_profileLoaded)
         {
-            // Use a timer to delay the profile loading and avoid concurrent access
-            _ = Task.Run(async () =>
-            {
-                await Task.Delay(500); // Wait for layout to finish loading
-                await LoadProfileDataAsync();
-            });
+            // Start background load and track the task so DisposeAsync can await it
+            _loadTask = LoadProfileDataAsync(_cts.Token);
         }
+        return Task.CompletedTask;
     }
 
-    private async Task LoadProfileDataAsync()
+    private async Task LoadProfileDataAsync(CancellationToken ct = default)
     {
-        await _loadingSemaphore.WaitAsync();
-        
+        // Small startup delay to mimic previous behavior
+        try { await Task.Delay(500, ct); } catch (OperationCanceledException) { return; }
+
+        bool entered = false;
         try
         {
+            ct.ThrowIfCancellationRequested();
+            await _loadingSemaphore.WaitAsync(ct);
+            entered = true;
+
             if (_profileLoaded) return; // Already loaded
 
             var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
@@ -660,13 +678,17 @@
                     EmailVerified = await UserManager.IsEmailConfirmedAsync(user);
                     CreatedDate = user.LockoutEnd?.DateTime ?? DateTime.Now;
                     LastLogin = DateTime.Now.AddHours(-1);
-                    
+
                     // Load extended profile data
-                    await LoadExtendedProfileDataInternal(user.Id);
+                    await LoadExtendedProfileDataInternal(user.Id, ct);
                     _profileLoaded = true;
                     await InvokeAsync(StateHasChanged);
                 }
             }
+        }
+        catch (OperationCanceledException)
+        {
+            return;
         }
         catch (Exception ex)
         {
@@ -676,7 +698,10 @@
         }
         finally
         {
-            _loadingSemaphore.Release();
+            if (entered)
+            {
+                try { _loadingSemaphore.Release(); } catch (ObjectDisposedException) { }
+            }
         }
     }
 
@@ -686,12 +711,15 @@
 
     private readonly SemaphoreSlim _loadingSemaphore = new(1, 1);
 
-    private async Task LoadExtendedProfileDataInternal(string userId)
+    private async Task LoadExtendedProfileDataInternal(string userId, CancellationToken ct = default)
     {
-        await _globalProfileLoadingSemaphore.WaitAsync();
-        
+        bool entered = false;
         try
         {
+            ct.ThrowIfCancellationRequested();
+            await _globalProfileLoadingSemaphore.WaitAsync(ct);
+            entered = true;
+
             if (_profileLoaded) return; // Already loaded, skip
 
             // Check cache first (valid for 30 seconds)
@@ -708,6 +736,7 @@
             // Load from database
             Console.WriteLine($"[BenefactorProfile] Loading profile from database for userId {userId}");
             var profile = await BenefactorProfileService.GetProfileByUserIdAsync(userId);
+            ct.ThrowIfCancellationRequested();
             
             // Update cache
             _profileCache[userId] = profile;
@@ -715,6 +744,10 @@
             
             Console.WriteLine($"[BenefactorProfile] Profile loaded for userId {userId}: {(profile != null ? "found" : "null")}");
             LoadProfileFromData(profile);
+        }
+        catch (OperationCanceledException)
+        {
+            return;
         }
         catch (Exception ex)
         {
@@ -724,7 +757,10 @@
         }
         finally
         {
-            _globalProfileLoadingSemaphore.Release();
+            if (entered)
+            {
+                try { _globalProfileLoadingSemaphore.Release(); } catch (ObjectDisposedException) { }
+            }
         }
     }
 
@@ -1081,9 +1117,27 @@
         _successTimer?.Dispose();
         _benefactorErrorTimer?.Dispose();
         _benefactorSuccessTimer?.Dispose();
-        _loadingSemaphore?.Dispose();
-        _savingSemaphore?.Dispose();
-        _benefactorSavingSemaphore?.Dispose();
+        // Do not dispose semaphores here. Disposing a SemaphoreSlim while there are
+        // in-flight async operations that will call Release() can cause
+        // ObjectDisposedException. SemaphoreSlim is a managed resource and can
+        // safely be left for the GC to clean up.
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        try
+        {
+            _cts.Cancel();
+            if (_loadTask != null)
+            {
+                try { await _loadTask; } catch (OperationCanceledException) { }
+                catch (Exception ex) { Console.WriteLine($"Exception while awaiting load task during DisposeAsync: {ex.Message}"); }
+            }
+        }
+        finally
+        {
+            _cts.Dispose();
+        }
     }
 
     // Methods
@@ -1101,8 +1155,9 @@
 
     private async Task SaveProfile()
     {
+        var ct = _cts.Token;
         // Prevent concurrent saves using semaphore with timeout
-        if (!await _savingSemaphore.WaitAsync(TimeSpan.FromSeconds(10)))
+        if (!await _savingSemaphore.WaitAsync(TimeSpan.FromSeconds(10), ct))
         {
             SetErrorMessageWithTimer("Another save operation is in progress. Please wait and try again.");
             return;
@@ -1138,6 +1193,11 @@
             try
             {
                 profile = await BenefactorProfileService.GetProfileByUserIdAsync(user.Id);
+                ct.ThrowIfCancellationRequested();
+            }
+            catch (OperationCanceledException)
+            {
+                return;
             }
             catch (Exception ex)
             {
@@ -1230,6 +1290,10 @@
                     profile.Logo = blobUrl;
                     ProfilePicture = profile.Logo;
                 }
+                catch (OperationCanceledException)
+                {
+                    return;
+                }
                 catch (Exception ex)
                 {
                     SetErrorMessageWithTimer($"Error uploading profile picture: {ex.Message}");
@@ -1245,11 +1309,16 @@
             try
             {
                 await BenefactorProfileService.SaveProfileAsync(profile);
+                ct.ThrowIfCancellationRequested();
                 Console.WriteLine("Profile saved successfully!");
                 
                 // Clear cache to force refresh
                 _profileCache.Remove(user.Id);
                 _cacheTimestamps.Remove(user.Id);
+            }
+            catch (OperationCanceledException)
+            {
+                return;
             }
             catch (Exception ex)
             {
@@ -1288,6 +1357,11 @@
             Console.WriteLine($"Validation error: {argEx.Message}");
             SetErrorMessageWithTimer(argEx.Message);
         }
+        catch (OperationCanceledException)
+        {
+            // Operation was cancelled due to component disposal; nothing to do
+            return;
+        }
         catch (Exception ex)
         {
             Console.WriteLine($"Error saving profile: {ex.Message}");
@@ -1296,7 +1370,7 @@
         }
         finally
         {
-            _savingSemaphore.Release();
+            try { _savingSemaphore.Release(); } catch (ObjectDisposedException) { }
         }
     }
 

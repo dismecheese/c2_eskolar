@@ -8,6 +8,7 @@ namespace c2_eskolar.Services.WebScraping
     public interface IEnhancedWebScrapingService
     {
         Task<List<EnhancedScrapedScholarship>> ScrapeAndParseScholarshipsAsync(string sourceUrl);
+        Task<List<EnhancedScrapedScholarship>> ScrapeAndParseScholarshipsAsync(string sourceUrl, Action<int, string>? progressCallback = null);
         Task<string> GenerateScholarshipCsvAsync(List<EnhancedScrapedScholarship> scholarships);
         Task<EnhancedScrapedScholarship> ParseScholarshipWithAIAsync(string rawText, string sourceUrl);
     }

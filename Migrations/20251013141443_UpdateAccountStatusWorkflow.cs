@@ -11,45 +11,84 @@ namespace c2_eskolar.Migrations
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             // Update existing records to use the new AccountStatus workflow
-            // Users with VerificationStatus "Verified" -> AccountStatus "Verified"
-            // Users with VerificationStatus "Pending" -> AccountStatus "Pending"  
-            // Users with VerificationStatus "Rejected" -> AccountStatus "Archived"
-            // Users with AccountStatus "Deleted" -> AccountStatus "Archived"
+            // Check if VerificationStatus columns exist before trying to use them
             
             // Update StudentProfiles
             migrationBuilder.Sql(@"
-                UPDATE StudentProfiles 
-                SET AccountStatus = 
-                    CASE 
-                        WHEN VerificationStatus = 'Verified' THEN 'Verified'
-                        WHEN VerificationStatus = 'Pending' THEN 'Pending'
-                        WHEN VerificationStatus = 'Rejected' OR AccountStatus = 'Deleted' THEN 'Archived'
-                        ELSE 'Unverified'
-                    END
+                IF COL_LENGTH('StudentProfiles', 'VerificationStatus') IS NOT NULL
+                BEGIN
+                    UPDATE StudentProfiles 
+                    SET AccountStatus = 
+                        CASE 
+                            WHEN VerificationStatus = 'Verified' THEN 'Verified'
+                            WHEN VerificationStatus = 'Pending' THEN 'Pending'
+                            WHEN VerificationStatus = 'Rejected' OR AccountStatus = 'Deleted' THEN 'Archived'
+                            ELSE 'Unverified'
+                        END
+                END
+                ELSE
+                BEGIN
+                    UPDATE StudentProfiles 
+                    SET AccountStatus = 
+                        CASE 
+                            WHEN AccountStatus = 'Deleted' THEN 'Archived'
+                            WHEN AccountStatus = 'Active' AND IsVerified = 1 THEN 'Verified'
+                            WHEN AccountStatus = 'Active' AND IsVerified = 0 THEN 'Unverified'
+                            ELSE AccountStatus
+                        END
+                END
             ");
             
             // Update InstitutionProfiles
             migrationBuilder.Sql(@"
-                UPDATE InstitutionProfiles 
-                SET AccountStatus = 
-                    CASE 
-                        WHEN VerificationStatus = 'Verified' THEN 'Verified'
-                        WHEN VerificationStatus = 'Pending' THEN 'Pending'
-                        WHEN VerificationStatus = 'Rejected' OR AccountStatus = 'Deleted' THEN 'Archived'
-                        ELSE 'Unverified'
-                    END
+                IF COL_LENGTH('InstitutionProfiles', 'VerificationStatus') IS NOT NULL
+                BEGIN
+                    UPDATE InstitutionProfiles 
+                    SET AccountStatus = 
+                        CASE 
+                            WHEN VerificationStatus = 'Verified' THEN 'Verified'
+                            WHEN VerificationStatus = 'Pending' THEN 'Pending'
+                            WHEN VerificationStatus = 'Rejected' OR AccountStatus = 'Deleted' THEN 'Archived'
+                            ELSE 'Unverified'
+                        END
+                END
+                ELSE
+                BEGIN
+                    UPDATE InstitutionProfiles 
+                    SET AccountStatus = 
+                        CASE 
+                            WHEN AccountStatus = 'Deleted' THEN 'Archived'
+                            WHEN AccountStatus = 'Active' AND IsVerified = 1 THEN 'Verified'
+                            WHEN AccountStatus = 'Active' AND IsVerified = 0 THEN 'Unverified'
+                            ELSE AccountStatus
+                        END
+                END
             ");
             
             // Update BenefactorProfiles
             migrationBuilder.Sql(@"
-                UPDATE BenefactorProfiles 
-                SET AccountStatus = 
-                    CASE 
-                        WHEN VerificationStatus = 'Verified' THEN 'Verified'
-                        WHEN VerificationStatus = 'Pending' THEN 'Pending'
-                        WHEN VerificationStatus = 'Rejected' OR AccountStatus = 'Deleted' THEN 'Archived'
-                        ELSE 'Unverified'
-                    END
+                IF COL_LENGTH('BenefactorProfiles', 'VerificationStatus') IS NOT NULL
+                BEGIN
+                    UPDATE BenefactorProfiles 
+                    SET AccountStatus = 
+                        CASE 
+                            WHEN VerificationStatus = 'Verified' THEN 'Verified'
+                            WHEN VerificationStatus = 'Pending' THEN 'Pending'
+                            WHEN VerificationStatus = 'Rejected' OR AccountStatus = 'Deleted' THEN 'Archived'
+                            ELSE 'Unverified'
+                        END
+                END
+                ELSE
+                BEGIN
+                    UPDATE BenefactorProfiles 
+                    SET AccountStatus = 
+                        CASE 
+                            WHEN AccountStatus = 'Deleted' THEN 'Archived'
+                            WHEN AccountStatus = 'Active' AND IsVerified = 1 THEN 'Verified'
+                            WHEN AccountStatus = 'Active' AND IsVerified = 0 THEN 'Unverified'
+                            ELSE AccountStatus
+                        END
+                END
             ");
         }
 
