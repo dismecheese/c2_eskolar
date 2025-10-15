@@ -37,31 +37,31 @@
     private List<NotificationItem> notifications = new();
     private bool isLoadingNotifications = false;
 
-        // --- VERIFICATION MODAL STATE ---
-        private bool showVerificationModal = false;
-        private bool? isVerified = null;
-        private string? accountStatus = null;
-        private string? userId;
+    // --- VERIFICATION MODAL STATE ---
+    private bool showVerificationModal = false;
+    private bool? isVerified = null;
+    private string? accountStatus = null;
+    private string? userId;
 
-        // --- LOGOUT MODAL STATE ---
-        private bool showLogoutModal = false;
+    // --- LOGOUT MODAL STATE ---
+    private bool showLogoutModal = false;
 
-        // --- LOGOUT MODAL LOGIC ---
-        private void ShowLogoutModal()
-        {
-            showLogoutModal = true;
-        }
+    // --- LOGOUT MODAL LOGIC ---
+    private void ShowLogoutModal()
+    {
+        showLogoutModal = true;
+    }
 
-        private void CancelLogout()
-        {
-            showLogoutModal = false;
-        }
+    private void CancelLogout()
+    {
+        showLogoutModal = false;
+    }
 
-        private void ConfirmLogout()
-        {
-            showLogoutModal = false;
-            LogOut();
-        }
+    private void ConfirmLogout()
+    {
+        showLogoutModal = false;
+        LogOut();
+    }
     
     // --- LIFECYCLE METHODS ---
 
@@ -74,25 +74,25 @@
         await LoadNotifications();
     }
 
-        private async Task LoadStudentProfile()
+    private async Task LoadStudentProfile()
+    {
+        try
         {
-            try
+            var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+            var userId = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (!string.IsNullOrEmpty(userId))
             {
-                var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
-                var userId = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-                if (!string.IsNullOrEmpty(userId))
-                {
-                    var profile = await StudentProfileService.GetProfileByUserIdAsync(userId);
-                    studentFirstName = profile?.FirstName;
-                    studentLastName = profile?.LastName;
-                }
+                var profile = await StudentProfileService.GetProfileByUserIdAsync(userId);
+                studentFirstName = profile?.FirstName;
+                studentLastName = profile?.LastName;
             }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"Error loading student profile: {ex.Message}");
-            }
-            StateHasChanged();
         }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading student profile: {ex.Message}");
+        }
+        StateHasChanged();
+    }
 
     // Loads notifications for the current student
     private async Task LoadNotifications()

@@ -590,6 +590,7 @@ namespace c2_eskolar.Services
                 
                 return await context.BookmarkedAnnouncements
                     .Include(b => b.Announcement)
+                    .ThenInclude(a => a.Photos) // Include photos for announcements
                     .Where(b => b.UserId == userId)
                     .OrderByDescending(b => b.CreatedAt)
                     .ToListAsync();
@@ -614,6 +615,24 @@ namespace c2_eskolar.Services
             {
                 _logger.LogError(ex, "Error checking announcement bookmark status for user {UserId}, announcement {AnnouncementId}", userId, announcementId);
                 return false;
+            }
+        }
+
+        public async Task<List<Guid>> GetBookmarkedAnnouncementIdsAsync(string userId)
+        {
+            try
+            {
+                using var context = _contextFactory.CreateDbContext();
+                
+                return await context.BookmarkedAnnouncements
+                    .Where(b => b.UserId == userId)
+                    .Select(b => b.AnnouncementId)
+                    .ToListAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting bookmarked announcement IDs for user {UserId}", userId);
+                return new List<Guid>();
             }
         }
 
