@@ -141,6 +141,10 @@ builder.Services.AddScoped<ChatbotMessageFormattingService>();
 builder.Services.AddScoped<OpenAIService>();
 builder.Services.AddScoped<AITokenTrackingService>();
 builder.Services.AddScoped<SuperAdminAnalyticsService>();
+builder.Services.AddScoped<MonthlyStatisticsService>();
+
+// Register background services
+builder.Services.AddHostedService<c2_eskolar.BackgroundServices.MonthlyAggregationBackgroundService>();
 
     var app = builder.Build();
 
