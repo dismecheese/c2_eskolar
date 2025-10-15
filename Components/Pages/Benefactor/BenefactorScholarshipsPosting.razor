@@ -492,7 +492,7 @@
                     <div class="col-md-4">
                         <label for="logoUploadInput" class="form-label fw-semibold">Logo</label>
                         <InputFile id="logoUploadInput" style="display:none" accept="image/png,image/jpeg,image/svg+xml" OnChange="HandleIconUpload" disabled="@(isUploadingIcon || isSubmitted)" />
-                        <label for="logoUploadInput" class="sv-upload-placeholder scholarship-logo-upload" style="cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:180px;padding:1rem;border:2px dashed #e2e8f0;border-radius:16px;background:#f8fafc;transition:all 0.3s;">
+                        <label for="logoUploadInput" class="sv-upload-placeholder scholarship-logo-upload" style="cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;height:240px;padding:1rem;border:2px dashed #e2e8f0;border-radius:16px;background:#f8fafc;transition:all 0.3s;">
                             @if (!string.IsNullOrEmpty(iconPreviewUrl))
                             {
                                 <img src="@iconPreviewUrl" alt="Logo Preview" style="max-width:100%;max-height:120px;border-radius:8px;margin-bottom:0.5rem;" />
@@ -519,21 +519,23 @@
                     
                     <!-- Title and Deadline Column (Right Side) -->
                     <div class="col-md-8">
+                        <!-- Title Field (Full Width) -->
                         <div class="mb-3">
                             <label for="title" class="form-label fw-semibold">Title <span class="text-danger">*</span></label>
-                            <InputText id="title" class="form-control form-control-lg" @bind-Value="scholarship.Title" aria-required="true" required aria-label="Scholarship Title" placeholder="e.g. Academic Excellence Scholarship" />
+                            <InputText id="title" class="form-control" @bind-Value="scholarship.Title" aria-required="true" required aria-label="Scholarship Title" placeholder="e.g. Academic Excellence Scholarship" style="height: 45px;" />
                             <ValidationMessage For="@(() => scholarship.Title)" class="text-danger small mt-1" />
                         </div>
                         
-                        <div class="row g-3 mb-3">
-                            <div class="col-md-7">
+                        <!-- Application Deadline and Slots Available (Side by Side) -->
+                        <div class="row g-3">
+                            <div class="col-md-6">
                                 <label for="deadline" class="form-label fw-semibold">Application Deadline <span class="text-danger">*</span></label>
-                                <InputDate id="deadline" class="form-control" @bind-Value="scholarship.ApplicationDeadline" aria-required="true" required aria-label="Application Deadline" />
+                                <InputDate id="deadline" class="form-control" @bind-Value="scholarship.ApplicationDeadline" aria-required="true" required aria-label="Application Deadline" style="height: 45px;" />
                                 <ValidationMessage For="@(() => scholarship.ApplicationDeadline)" class="text-danger small mt-1" />
                             </div>
-                            <div class="col-md-5">
+                            <div class="col-md-6">
                                 <label for="slots" class="form-label fw-semibold">Slots Available</label>
-                                <InputNumber id="slots" class="form-control" @bind-Value="scholarship.SlotsAvailable" aria-label="Slots Available" placeholder="e.g. 10" />
+                                <InputNumber id="slots" class="form-control" @bind-Value="scholarship.SlotsAvailable" aria-label="Slots Available" placeholder="e.g. 10" style="height: 45px;" />
                                 <ValidationMessage For="@(() => scholarship.SlotsAvailable)" class="text-danger small mt-1" />
                             </div>
                         </div>
