@@ -44,7 +44,7 @@
             {
                 var profile = await InstitutionProfileService.GetProfileByUserIdAsync(userId);
                 isVerified = profile?.IsVerified;
-                verificationStatus = profile?.VerificationStatus;
+                verificationStatus = profile?.AccountStatus;
                 // Show modal if not verified (null or false) or status is not "Verified"
                 if (isVerified != true && (string.IsNullOrEmpty(verificationStatus) || verificationStatus != "Verified"))
                 {
@@ -240,7 +240,6 @@
     <div class="sidebar-profile-name">@((adminFirstName ?? "Institution") + (string.IsNullOrWhiteSpace(adminLastName) ? "" : $" {adminLastName}"))</div>
     <div class="sidebar-profile-role">Institution Admin</div>
     <button class="sidebar-profile-btn" @onclick="NavigateToInstitutionProfile" data-bs-dismiss="offcanvas">Profile</button>
-    <button class="sidebar-profile-btn logout-btn" @onclick="ShowLogoutModal" data-bs-dismiss="offcanvas">Log Out</button>
     </div>
     
     <!-- Sidebar Calendar -->

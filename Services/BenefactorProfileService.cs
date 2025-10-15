@@ -40,7 +40,6 @@ namespace c2_eskolar.Services
                 profile.CreatedAt = DateTime.Now;
                 profile.UpdatedAt = DateTime.Now;
                 profile.IsVerified = false;
-                profile.VerificationStatus = "Pending";
                 profile.AccountStatus = "Pending";
                 
                 context.BenefactorProfiles.Add(profile);

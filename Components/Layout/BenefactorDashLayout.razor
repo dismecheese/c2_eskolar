@@ -108,7 +108,7 @@
             {
                 var profile = await BenefactorProfileService.GetProfileByUserIdAsync(userId);
                 var isVerified = profile?.IsVerified;
-                verificationStatus = profile?.VerificationStatus;
+                verificationStatus = profile?.AccountStatus;
 
                 if (isVerified != true && (string.IsNullOrEmpty(verificationStatus) || verificationStatus != "Verified"))
                 {
@@ -425,7 +425,6 @@
                 <div class="sidebar-profile-name">@((adminFirstName ?? "Benefactor") + (string.IsNullOrWhiteSpace(adminLastName) ? "" : $" {adminLastName}"))</div>
                 <div class="sidebar-profile-role">Benefactor</div>
                 <button class="sidebar-profile-btn" @onclick="NavigateToBenefactorProfile" data-bs-dismiss="offcanvas">Profile</button>
-                <button class="sidebar-profile-btn logout-btn" @onclick="ShowLogoutModal" data-bs-dismiss="offcanvas">Log Out</button>
             </div>
 
             <!-- Calendar Section -->
@@ -455,6 +454,7 @@
     <main class="main-content" style="flex:1; min-width:0; background: #f5f6fa;">
         @Body
     </main>
+        <script src="/js/site.js"></script>
 </div>
 
 

@@ -48,7 +48,7 @@ namespace c2_eskolar.Services.AI
                     $"Year Level: {profile.YearLevel?.ToString() ?? "Not provided"}\n" +
                     $"Student Number: {profile.StudentNumber ?? "Not provided"}\n" +
                     $"GPA: {profile.GPA?.ToString("F2") ?? "Not provided"}\n" +
-                    $"Verification Status: {profile.VerificationStatus ?? "Not provided"}\n" +
+                    $"Account Status: {profile.AccountStatus ?? "Not provided"}\n" +
                     $"Verified: {profile.IsVerified}");
             }
             else if (role == "Benefactor")

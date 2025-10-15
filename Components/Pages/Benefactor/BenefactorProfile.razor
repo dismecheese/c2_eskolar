@@ -9,6 +9,7 @@
 @using Microsoft.AspNetCore.Identity
 @using Microsoft.AspNetCore.Components.Forms
 @using Microsoft.EntityFrameworkCore
+@using Microsoft.JSInterop
 @implements IDisposable
 
 <div class="container-fluid p-5 benefactor-profile-bg">
@@ -395,6 +396,15 @@
     private System.Threading.Timer? _successTimer;
     private System.Threading.Timer? _benefactorErrorTimer;
     private System.Threading.Timer? _benefactorSuccessTimer;
+    
+    // Thread safety variables
+    private readonly SemaphoreSlim _savingSemaphore = new(1, 1);
+    private readonly SemaphoreSlim _benefactorSavingSemaphore = new(1, 1);
+    
+    // Static semaphore to prevent concurrent profile loading across all instances
+    private static readonly SemaphoreSlim _globalProfileLoadingSemaphore = new(1, 1);
+    private static readonly Dictionary<string, Models.BenefactorProfile?> _profileCache = new();
+    private static readonly Dictionary<string, DateTime> _cacheTimestamps = new();
 
     private void ToggleBenefactorEditMode()
     {
@@ -410,62 +420,90 @@
 
     private async Task SaveBenefactorInfo()
     {
-        // Clear previous messages
-        _benefactorErrorMessage = string.Empty;
-        _benefactorSuccessMessage = string.Empty;
-        
-        // Step 1: Validate all benefactor fields before proceeding
-        if (!ValidateAllBenefactorFields())
+        // Prevent concurrent saves using semaphore with timeout
+        if (!await _benefactorSavingSemaphore.WaitAsync(TimeSpan.FromSeconds(10)))
         {
-            SetBenefactorErrorMessageWithTimer("Please correct the validation errors before saving.");
-            StateHasChanged();
+            SetBenefactorErrorMessageWithTimer("Another save operation is in progress. Please wait and try again.");
             return;
         }
         
         try
         {
+            // Clear previous messages
+            _benefactorErrorMessage = string.Empty;
+            _benefactorSuccessMessage = string.Empty;
+            
+            // Step 1: Validate all benefactor fields before proceeding
+            if (!ValidateAllBenefactorFields())
+            {
+                SetBenefactorErrorMessageWithTimer("Please correct the validation errors before saving.");
+                return;
+            }
+            
             var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
             var user = await UserManager.GetUserAsync(authState.User);
-            if (user != null)
-            {
-                var profile = await BenefactorProfileService.GetProfileByUserIdAsync(user.Id);
-                if (profile != null)
-                {
-                    // Update organization information with trimmed and sanitized values
-                    profile.OrganizationName = BenefactorOrganizationName?.Trim() ?? "";
-                    profile.Address = string.IsNullOrWhiteSpace(BenefactorOrganizationAddress) ? null : BenefactorOrganizationAddress.Trim();
-                    profile.ContactNumber = string.IsNullOrWhiteSpace(BenefactorContactNumber) ? null : System.Text.RegularExpressions.Regex.Replace(BenefactorContactNumber.Trim(), @"[\s\-\(\)]", "");
-                    profile.ContactEmail = string.IsNullOrWhiteSpace(BenefactorEmail) ? null : BenefactorEmail.Trim();
-                    
-                    Console.WriteLine("Saving benefactor information...");
-                    await BenefactorProfileService.SaveProfileAsync(profile);
-                    Console.WriteLine("Benefactor profile saved successfully!");
-                    
-                    // Clear validation errors
-                    BenefactorValidationErrors.Clear();
-                    
-                    // Reload data to reflect changes in sidebar
-                    await LoadExtendedProfileData(user.Id);
-                    
-                    IsBenefactorEditMode = false;
-                    
-                    // Show success message
-                    SetBenefactorSuccessMessageWithTimer("Benefactor information updated successfully!");
-                    
-                    // Force UI update
-                    StateHasChanged();
-                    
-                    Console.WriteLine("Benefactor information updated successfully!");
-                }
-                else
-                {
-                    SetBenefactorErrorMessageWithTimer("Profile not found. Please refresh the page and try again.");
-                }
-            }
-            else
+            if (user == null)
             {
                 SetBenefactorErrorMessageWithTimer("User session expired. Please login again.");
+                return;
             }
+
+            Models.BenefactorProfile? profile;
+            try
+            {
+                profile = await BenefactorProfileService.GetProfileByUserIdAsync(user.Id);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error getting profile: {ex.Message}");
+                SetBenefactorErrorMessageWithTimer("Error accessing profile data. Please try again.");
+                return;
+            }
+
+            if (profile == null)
+            {
+                SetBenefactorErrorMessageWithTimer("Profile not found. Please refresh the page and try again.");
+                return;
+            }
+
+            // Update organization information with trimmed and sanitized values
+            profile.OrganizationName = BenefactorOrganizationName?.Trim() ?? "";
+            profile.Address = string.IsNullOrWhiteSpace(BenefactorOrganizationAddress) ? null : BenefactorOrganizationAddress.Trim();
+            profile.ContactNumber = string.IsNullOrWhiteSpace(BenefactorContactNumber) ? null : System.Text.RegularExpressions.Regex.Replace(BenefactorContactNumber.Trim(), @"[\s\-\(\)]", "");
+            profile.ContactEmail = string.IsNullOrWhiteSpace(BenefactorEmail) ? null : BenefactorEmail.Trim();
+            
+            Console.WriteLine("Saving benefactor information...");
+            try
+            {
+                await BenefactorProfileService.SaveProfileAsync(profile);
+                Console.WriteLine("Benefactor profile saved successfully!");
+                
+                // Clear cache to force refresh
+                _profileCache.Remove(user.Id);
+                _cacheTimestamps.Remove(user.Id);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error saving benefactor profile to database: {ex.Message}");
+                SetBenefactorErrorMessageWithTimer("Error saving benefactor information. Please try again.");
+                return;
+            }
+            
+            // Clear validation errors
+            BenefactorValidationErrors.Clear();
+            
+            // Update UI properties directly to avoid concurrent DB calls
+            BenefactorOrganizationName = profile.OrganizationName ?? "";
+            BenefactorOrganizationAddress = profile.Address ?? "";
+            BenefactorContactNumber = profile.ContactNumber ?? "";
+            BenefactorEmail = profile.ContactEmail ?? "";
+            
+            IsBenefactorEditMode = false;
+            
+            // Show success message
+            SetBenefactorSuccessMessageWithTimer("Benefactor information updated successfully!");
+            
+            Console.WriteLine("Benefactor information updated successfully!");
         }
         catch (ArgumentException argEx)
         {
@@ -477,6 +515,10 @@
             Console.WriteLine($"Error saving benefactor info: {ex.Message}");
             Console.WriteLine($"Stack trace: {ex.StackTrace}");
             SetBenefactorErrorMessageWithTimer("An unexpected error occurred while saving benefactor information. Please try again.");
+        }
+        finally
+        {
+            _benefactorSavingSemaphore.Release();
         }
     }
 
@@ -549,78 +591,191 @@
     private int Applications = 0;
     private string GPA = "0.00";
 
-    protected override async Task OnInitializedAsync()
-    {
-        await LoadUserData();
-        StateHasChanged();
-    }
 
-    private async Task LoadUserData()
+    private bool _profileLoaded = false;
+    private bool _isInitialized = false;
+    private IJSRuntime? _jsRuntime;
+    [Inject] private IJSRuntime JSRuntime { get; set; } = default!;
+
+    protected override async Task OnInitializedAsync()
     {
         try
         {
+            // Minimal initialization without any DB access
+            var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+            if (authState.User.Identity?.IsAuthenticated == true)
+            {
+                // Get basic info from claims without DB access
+                ContactEmail = authState.User.Identity.Name ?? "";
+                FullName = authState.User.FindFirst("Name")?.Value ?? "Benefactor User";
+                
+                // Set default values first
+                SetDefaultProfileValues();
+            }
+            else
+            {
+                SetDefaultProfileValues();
+                _errorMessage = "User is not authenticated. Please login again.";
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error during initialization: {ex.Message}");
+            SetDefaultProfileValues();
+            _errorMessage = $"Error loading profile data: {ex.Message}";
+        }
+        
+        _jsRuntime = JSRuntime;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && !_profileLoaded)
+        {
+            // Use a timer to delay the profile loading and avoid concurrent access
+            _ = Task.Run(async () =>
+            {
+                await Task.Delay(500); // Wait for layout to finish loading
+                await LoadProfileDataAsync();
+            });
+        }
+    }
+
+    private async Task LoadProfileDataAsync()
+    {
+        await _loadingSemaphore.WaitAsync();
+        
+        try
+        {
+            if (_profileLoaded) return; // Already loaded
+
             var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
             if (authState.User.Identity?.IsAuthenticated == true)
             {
                 var user = await UserManager.GetUserAsync(authState.User);
                 if (user != null)
                 {
-                    // Load basic Identity data
+                    // Load user-specific info from Identity
                     ContactEmail = user.Email ?? "";
-                    FullName = user.UserName ?? "Benefactor User";
-                    
-                    // Check email confirmation status
                     EmailVerified = await UserManager.IsEmailConfirmedAsync(user);
-                    
-                    // Set creation date from user registration
                     CreatedDate = user.LockoutEnd?.DateTime ?? DateTime.Now;
-                    
-                    // Set last login (placeholder)
                     LastLogin = DateTime.Now.AddHours(-1);
                     
-                    // Load extended profile data from custom tables
-                    await LoadExtendedProfileData(user.Id);
+                    // Load extended profile data
+                    await LoadExtendedProfileDataInternal(user.Id);
+                    _profileLoaded = true;
+                    await InvokeAsync(StateHasChanged);
                 }
             }
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error loading user data: {ex.Message}");
-            // Only set default values if we don't already have data
-            if (string.IsNullOrWhiteSpace(FullName))
-                FullName = "Benefactor User";
+            Console.WriteLine($"Error loading profile data: {ex.Message}");
+            _errorMessage = "Error loading profile data. Please try again.";
+            await InvokeAsync(StateHasChanged);
+        }
+        finally
+        {
+            _loadingSemaphore.Release();
         }
     }
 
-    private async Task LoadExtendedProfileData(string userId)
+    // Removed redundant profile loading methods to prevent concurrent access
+
+
+
+    private readonly SemaphoreSlim _loadingSemaphore = new(1, 1);
+
+    private async Task LoadExtendedProfileDataInternal(string userId)
     {
+        await _globalProfileLoadingSemaphore.WaitAsync();
+        
         try
         {
-            var profile = await BenefactorProfileService.GetProfileByUserIdAsync(userId);
-            if (profile != null)
+            if (_profileLoaded) return; // Already loaded, skip
+
+            // Check cache first (valid for 30 seconds)
+            if (_profileCache.ContainsKey(userId) && 
+                _cacheTimestamps.ContainsKey(userId) && 
+                DateTime.Now - _cacheTimestamps[userId] < TimeSpan.FromSeconds(30))
             {
-                AdminFirstName = profile.AdminFirstName ?? "";
-                AdminMiddleName = profile.AdminMiddleName ?? "";
-                AdminLastName = profile.AdminLastName ?? "";
-                FullName = profile.AdminFullName ?? FullName;
-                Sex = profile.Sex ?? "Male";
-                Nationality = profile.Nationality ?? "";
-                BirthDate = profile.BirthDate ?? DateTime.Now;
-                ContactNumber = profile.ContactNumber ?? "";
-                Address = profile.Address ?? "";
-                ProfilePicture = !string.IsNullOrWhiteSpace(profile.Logo) ? profile.Logo : "https://via.placeholder.com/120";
-                
-                // Load benefactor-specific organization data (separate from personal data)
-                BenefactorOrganizationName = profile.OrganizationName ?? "";
-                BenefactorOrganizationAddress = profile.Address ?? "";
-                BenefactorContactNumber = profile.ContactNumber ?? "";
-                BenefactorEmail = profile.ContactEmail ?? "";
+                var cachedProfile = _profileCache[userId];
+                Console.WriteLine($"[BenefactorProfile] Using cached profile for userId {userId}");
+                LoadProfileFromData(cachedProfile);
+                return;
             }
+
+            // Load from database
+            Console.WriteLine($"[BenefactorProfile] Loading profile from database for userId {userId}");
+            var profile = await BenefactorProfileService.GetProfileByUserIdAsync(userId);
+            
+            // Update cache
+            _profileCache[userId] = profile;
+            _cacheTimestamps[userId] = DateTime.Now;
+            
+            Console.WriteLine($"[BenefactorProfile] Profile loaded for userId {userId}: {(profile != null ? "found" : "null")}");
+            LoadProfileFromData(profile);
         }
         catch (Exception ex)
         {
             Console.WriteLine($"Error loading extended profile data: {ex.Message}");
+            SetDefaultProfileValues();
+            throw new InvalidOperationException($"Error loading profile data: {ex.Message}", ex);
         }
+        finally
+        {
+            _globalProfileLoadingSemaphore.Release();
+        }
+    }
+
+    private void LoadProfileFromData(Models.BenefactorProfile? profile)
+    {
+        if (profile != null)
+        {
+            // Personal Info
+            AdminFirstName = profile.AdminFirstName ?? "";
+            AdminMiddleName = profile.AdminMiddleName ?? "";
+            AdminLastName = profile.AdminLastName ?? "";
+            FullName = !string.IsNullOrWhiteSpace(profile.AdminFullName) ? profile.AdminFullName : $"{profile.AdminFirstName} {profile.AdminMiddleName} {profile.AdminLastName}".Trim();
+            Sex = profile.Sex ?? "Male";
+            Nationality = profile.Nationality ?? "";
+            BirthDate = profile.BirthDate ?? DateTime.Now;
+            ContactNumber = profile.ContactNumber ?? "";
+            Address = profile.Address ?? "";
+            ProfilePicture = !string.IsNullOrWhiteSpace(profile.Logo) ? profile.Logo : "https://via.placeholder.com/120";
+
+            // Benefactor Info
+            BenefactorOrganizationName = profile.OrganizationName ?? "";
+            BenefactorOrganizationAddress = profile.Address ?? "";
+            BenefactorContactNumber = profile.ContactNumber ?? "";
+            BenefactorEmail = profile.ContactEmail ?? "";
+
+            Console.WriteLine($"[BenefactorProfile] Profile data loaded successfully for {AdminFirstName} {AdminLastName}");
+        }
+        else
+        {
+            // If profile is null, log and set fields to blank/default
+            Console.WriteLine($"[BenefactorProfile] No profile found, using defaults");
+            SetDefaultProfileValues();
+        }
+    }
+
+    private void SetDefaultProfileValues()
+    {
+        AdminFirstName = "";
+        AdminMiddleName = "";
+        AdminLastName = "";
+        FullName = "Benefactor User";
+        Sex = "Male";
+        Nationality = "";
+        BirthDate = DateTime.Now;
+        ContactNumber = "";
+        Address = "";
+        ProfilePicture = "https://via.placeholder.com/120";
+        BenefactorOrganizationName = "";
+        BenefactorOrganizationAddress = "";
+        BenefactorContactNumber = "";
+        BenefactorEmail = "";
     }
 
     // Validation methods (similar to Institution profile)
@@ -926,6 +1081,9 @@
         _successTimer?.Dispose();
         _benefactorErrorTimer?.Dispose();
         _benefactorSuccessTimer?.Dispose();
+        _loadingSemaphore?.Dispose();
+        _savingSemaphore?.Dispose();
+        _benefactorSavingSemaphore?.Dispose();
     }
 
     // Methods
@@ -943,152 +1101,187 @@
 
     private async Task SaveProfile()
     {
-        // Clear previous messages
-        _errorMessage = string.Empty;
-        _successMessage = string.Empty;
-        
-        // Step 1: Validate all fields before proceeding
-        if (!ValidateAllPersonalFields())
+        // Prevent concurrent saves using semaphore with timeout
+        if (!await _savingSemaphore.WaitAsync(TimeSpan.FromSeconds(10)))
         {
-            SetErrorMessageWithTimer("Please correct the validation errors before saving.");
-            StateHasChanged();
+            SetErrorMessageWithTimer("Another save operation is in progress. Please wait and try again.");
             return;
         }
         
         try
         {
+            // Clear previous messages
+            _errorMessage = string.Empty;
+            _successMessage = string.Empty;
+            
+            // Step 1: Validate all fields before proceeding
+            if (!ValidateAllPersonalFields())
+            {
+                SetErrorMessageWithTimer("Please correct the validation errors before saving.");
+                StateHasChanged();
+                return;
+            }
+            
             Console.WriteLine("Starting SaveProfile...");
             var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
             var user = await UserManager.GetUserAsync(authState.User);
-            if (user != null)
+            if (user == null)
             {
-                Console.WriteLine($"User found: {user.Id}");
-                var profile = await BenefactorProfileService.GetProfileByUserIdAsync(user.Id);
-                if (profile == null)
+                SetErrorMessageWithTimer("User session expired. Please login again.");
+                return;
+            }
+
+            Console.WriteLine($"User found: {user.Id}");
+            
+            // Create a separate context for this operation
+            Models.BenefactorProfile? profile;
+            try
+            {
+                profile = await BenefactorProfileService.GetProfileByUserIdAsync(user.Id);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error getting profile: {ex.Message}");
+                SetErrorMessageWithTimer("Error accessing profile data. Please try again.");
+                return;
+            }
+
+            if (profile == null)
+            {
+                Console.WriteLine("Creating new profile...");
+                profile = new Models.BenefactorProfile
                 {
-                    Console.WriteLine("Creating new profile...");
-                    profile = new Models.BenefactorProfile
-                    {
-                        UserId = user.Id,
-                        AdminFirstName = AdminFirstName.Trim(),
-                        AdminMiddleName = string.IsNullOrWhiteSpace(AdminMiddleName) ? null : AdminMiddleName.Trim(),
-                        AdminLastName = AdminLastName.Trim(),
-                        OrganizationName = BenefactorOrganizationName ?? "Default Organization"
-                    };
-                }
-                else
-                {
-                    Console.WriteLine("Updating existing profile...");
-                }
-
-                // Update profile fields with trimmed and sanitized values
-                profile.AdminFirstName = AdminFirstName?.Trim() ?? "";
-                profile.AdminMiddleName = string.IsNullOrWhiteSpace(AdminMiddleName) ? null : AdminMiddleName.Trim();
-                profile.AdminLastName = AdminLastName?.Trim() ?? "";
-                profile.Sex = Sex;
-                profile.Nationality = string.IsNullOrWhiteSpace(Nationality) ? null : Nationality.Trim();
-                profile.BirthDate = BirthDate;
-                profile.ContactNumber = string.IsNullOrWhiteSpace(ContactNumber) ? null : System.Text.RegularExpressions.Regex.Replace(ContactNumber.Trim(), @"[\s\-\(\)]", "");
-                profile.Address = string.IsNullOrWhiteSpace(Address) ? null : Address.Trim();
-                profile.OrganizationName = BenefactorOrganizationName ?? "Default Organization";
-
-                // Handle file upload with additional validation
-                if (UploadedProfileImage != null)
-                {
-                    // Validate file type
-                    var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif" };
-                    var fileExtension = Path.GetExtension(UploadedProfileImage.Name).ToLower();
-                    
-                    if (!allowedExtensions.Contains(fileExtension))
-                    {
-                        SetErrorMessageWithTimer("Profile image must be a JPG, PNG, or GIF file.");
-                        StateHasChanged();
-                        return;
-                    }
-                    
-                    if (UploadedProfileImage.Size > 10 * 1024 * 1024)
-                    {
-                        SetErrorMessageWithTimer("Profile image exceeds the 10MB size limit. Please choose a smaller file.");
-                        StateHasChanged();
-                        return;
-                    }
-
-                    try
-                    {
-                        // Try to delete old profile picture from Azure Blob Storage if it exists
-                        if (!string.IsNullOrWhiteSpace(ProfilePicture) && 
-                            ProfilePicture != "https://via.placeholder.com/120" && 
-                            ProfilePicture.Contains("blob.core.windows.net"))
-                        {
-                            var oldBlobFileName = BlobStorageService.ExtractBlobFileName(ProfilePicture);
-                            if (!string.IsNullOrWhiteSpace(oldBlobFileName))
-                            {
-                                try
-                                {
-                                    var deleted = await BlobStorageService.DeletePhotoAsync(oldBlobFileName);
-                                    Console.WriteLine($"Old profile picture deletion result: {deleted}");
-                                }
-                                catch (Exception deleteEx)
-                                {
-                                    Console.WriteLine($"Warning: Could not delete old profile picture '{oldBlobFileName}': {deleteEx.Message}");
-                                    // Continue with upload even if deletion fails
-                                }
-                            }
-                        }
-
-                        // Upload new profile picture to Azure Blob Storage
-                        var contentType = fileExtension switch
-                        {
-                            ".png" => "image/png",
-                            ".gif" => "image/gif",
-                            _ => "image/jpeg"
-                        };
-
-                        using var stream = UploadedProfileImage.OpenReadStream(10 * 1024 * 1024);
-                        var blobUrl = await BlobStorageService.UploadProfilePictureAsync(stream, user.Id, "benefactor", fileExtension, contentType);
-                        
-                        profile.Logo = blobUrl;
-                        ProfilePicture = profile.Logo;
-                    }
-                    catch (Exception ex)
-                    {
-                        SetErrorMessageWithTimer($"Error uploading profile picture: {ex.Message}");
-                        StateHasChanged();
-                        return;
-                    }
-                }
-                else if (!string.IsNullOrWhiteSpace(ProfilePicture) && ProfilePicture != "https://via.placeholder.com/120")
-                {
-                    profile.Logo = ProfilePicture;
-                }
-
-                Console.WriteLine("Calling SaveProfileAsync...");
-                await BenefactorProfileService.SaveProfileAsync(profile);
-                Console.WriteLine("Profile saved successfully!");
-                
-                // Clear upload state and validation errors
-                _previewProfilePicture = null;
-                UploadedProfileImage = null;
-                ValidationErrors.Clear();
-                
-                // Reload profile data to update ProfilePicture and other fields
-                await LoadExtendedProfileData(user.Id);
-                
-                IsEditMode = false;
-                
-                // Show success message
-                SetSuccessMessageWithTimer("Personal profile updated successfully!");
-                
-                // Force UI update
-                StateHasChanged();
-                
-                Console.WriteLine("Benefactor profile updated successfully!");
+                    UserId = user.Id,
+                    AdminFirstName = AdminFirstName.Trim(),
+                    AdminMiddleName = string.IsNullOrWhiteSpace(AdminMiddleName) ? null : AdminMiddleName.Trim(),
+                    AdminLastName = AdminLastName.Trim(),
+                    OrganizationName = BenefactorOrganizationName ?? "Default Organization"
+                };
             }
             else
             {
-                Console.WriteLine("No user found!");
-                SetErrorMessageWithTimer("User session expired. Please login again.");
+                Console.WriteLine("Updating existing profile...");
             }
+
+            // Update profile fields with trimmed and sanitized values
+            profile.AdminFirstName = AdminFirstName?.Trim() ?? "";
+            profile.AdminMiddleName = string.IsNullOrWhiteSpace(AdminMiddleName) ? null : AdminMiddleName.Trim();
+            profile.AdminLastName = AdminLastName?.Trim() ?? "";
+            profile.Sex = Sex;
+            profile.Nationality = string.IsNullOrWhiteSpace(Nationality) ? null : Nationality.Trim();
+            profile.BirthDate = BirthDate;
+            profile.ContactNumber = string.IsNullOrWhiteSpace(ContactNumber) ? null : System.Text.RegularExpressions.Regex.Replace(ContactNumber.Trim(), @"[\s\-\(\)]", "");
+            profile.Address = string.IsNullOrWhiteSpace(Address) ? null : Address.Trim();
+            profile.OrganizationName = BenefactorOrganizationName ?? "Default Organization";
+
+            // Handle file upload with additional validation
+            if (UploadedProfileImage != null)
+            {
+                // Validate file type
+                var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif" };
+                var fileExtension = Path.GetExtension(UploadedProfileImage.Name).ToLower();
+                
+                if (!allowedExtensions.Contains(fileExtension))
+                {
+                    SetErrorMessageWithTimer("Profile image must be a JPG, PNG, or GIF file.");
+                    return;
+                }
+                
+                if (UploadedProfileImage.Size > 10 * 1024 * 1024)
+                {
+                    SetErrorMessageWithTimer("Profile image exceeds the 10MB size limit. Please choose a smaller file.");
+                    return;
+                }
+
+                try
+                {
+                    // Try to delete old profile picture from Azure Blob Storage if it exists
+                    if (!string.IsNullOrWhiteSpace(ProfilePicture) && 
+                        ProfilePicture != "https://via.placeholder.com/120" && 
+                        ProfilePicture.Contains("blob.core.windows.net"))
+                    {
+                        var oldBlobFileName = BlobStorageService.ExtractBlobFileName(ProfilePicture);
+                        if (!string.IsNullOrWhiteSpace(oldBlobFileName))
+                        {
+                            try
+                            {
+                                var deleted = await BlobStorageService.DeletePhotoAsync(oldBlobFileName);
+                                Console.WriteLine($"Old profile picture deletion result: {deleted}");
+                            }
+                            catch (Exception deleteEx)
+                            {
+                                Console.WriteLine($"Warning: Could not delete old profile picture '{oldBlobFileName}': {deleteEx.Message}");
+                                // Continue with upload even if deletion fails
+                            }
+                        }
+                    }
+
+                    // Upload new profile picture to Azure Blob Storage
+                    var contentType = fileExtension switch
+                    {
+                        ".png" => "image/png",
+                        ".gif" => "image/gif",
+                        _ => "image/jpeg"
+                    };
+
+                    using var stream = UploadedProfileImage.OpenReadStream(10 * 1024 * 1024);
+                    var blobUrl = await BlobStorageService.UploadProfilePictureAsync(stream, user.Id, "benefactor", fileExtension, contentType);
+                    
+                    profile.Logo = blobUrl;
+                    ProfilePicture = profile.Logo;
+                }
+                catch (Exception ex)
+                {
+                    SetErrorMessageWithTimer($"Error uploading profile picture: {ex.Message}");
+                    return;
+                }
+            }
+            else if (!string.IsNullOrWhiteSpace(ProfilePicture) && ProfilePicture != "https://via.placeholder.com/120")
+            {
+                profile.Logo = ProfilePicture;
+            }
+
+            Console.WriteLine("Calling SaveProfileAsync...");
+            try
+            {
+                await BenefactorProfileService.SaveProfileAsync(profile);
+                Console.WriteLine("Profile saved successfully!");
+                
+                // Clear cache to force refresh
+                _profileCache.Remove(user.Id);
+                _cacheTimestamps.Remove(user.Id);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error saving profile to database: {ex.Message}");
+                SetErrorMessageWithTimer("Error saving profile. Please try again.");
+                return;
+            }
+            
+            // Clear upload state and validation errors
+            _previewProfilePicture = null;
+            UploadedProfileImage = null;
+            ValidationErrors.Clear();
+            
+            // Update UI properties directly to avoid concurrent DB calls
+            AdminFirstName = profile.AdminFirstName ?? "";
+            AdminMiddleName = profile.AdminMiddleName ?? "";
+            AdminLastName = profile.AdminLastName ?? "";
+            FullName = !string.IsNullOrWhiteSpace(profile.AdminFullName) ? profile.AdminFullName : $"{profile.AdminFirstName} {profile.AdminMiddleName} {profile.AdminLastName}".Trim();
+            Sex = profile.Sex ?? "Male";
+            Nationality = profile.Nationality ?? "";
+            BirthDate = profile.BirthDate ?? DateTime.Now;
+            ContactNumber = profile.ContactNumber ?? "";
+            Address = profile.Address ?? "";
+            if (!string.IsNullOrWhiteSpace(profile.Logo))
+                ProfilePicture = profile.Logo;
+            
+            IsEditMode = false;
+            
+            // Show success message
+            SetSuccessMessageWithTimer("Personal profile updated successfully!");
+            
+            Console.WriteLine("Benefactor profile updated successfully!");
         }
         catch (ArgumentException argEx)
         {
@@ -1100,6 +1293,10 @@
             Console.WriteLine($"Error saving profile: {ex.Message}");
             Console.WriteLine($"Stack trace: {ex.StackTrace}");
             SetErrorMessageWithTimer("An unexpected error occurred while saving your profile. Please try again.");
+        }
+        finally
+        {
+            _savingSemaphore.Release();
         }
     }
 
@@ -1170,19 +1367,32 @@
             var user = await UserManager.GetUserAsync(authState.User);
             if (user != null)
             {
-                var profile = await BenefactorProfileService.GetProfileByUserIdAsync(user.Id);
-                if (profile != null)
+                try
                 {
-                    profile.Logo = ProfilePicture;
-                    await BenefactorProfileService.SaveProfileAsync(profile);
+                    var profile = await BenefactorProfileService.GetProfileByUserIdAsync(user.Id);
+                    if (profile != null)
+                    {
+                        profile.Logo = ProfilePicture;
+                        await BenefactorProfileService.SaveProfileAsync(profile);
+                        
+                        // Clear cache to force refresh
+                        _profileCache.Remove(user.Id);
+                        _cacheTimestamps.Remove(user.Id);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error updating profile in database: {ex.Message}");
+                    SetErrorMessageWithTimer("Error updating profile. Please try again.");
+                    return;
                 }
             }
             StateHasChanged();
         }
         catch (Exception ex)
         {
+            Console.WriteLine($"Error removing profile picture: {ex.Message}");
             SetErrorMessageWithTimer($"Error removing profile picture: {ex.Message}");
-            StateHasChanged();
         }
     }
 }

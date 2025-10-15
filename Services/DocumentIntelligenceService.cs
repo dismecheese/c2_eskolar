@@ -75,6 +75,20 @@ namespace c2_eskolar.Services
         public string? University { get; set; }
         public string? YearLevel { get; set; }
         public string? Address { get; set; }
+        public string? PhoneNumber { get; set; }
+        
+        // Enhanced fields for better COR extraction
+        public string? Semester { get; set; }
+        public string? AcademicYear { get; set; }
+        public string? SchoolYear { get; set; }
+        public string? College { get; set; }
+        public string? Campus { get; set; }
+        public string? EnrollmentStatus { get; set; }
+        public string? UnitsEnrolled { get; set; }
+        public string? DateIssued { get; set; }
+        public string? TotalFees { get; set; }
+        public string? GPA { get; set; }
+        public string? YearStanding { get; set; }
     }
 
     public class DocumentIntelligenceResponse
@@ -449,56 +463,58 @@ namespace c2_eskolar.Services
 
         public async Task<ExtractedIdData?> AnalyzeIdDocumentAsync(IBrowserFile file)
         {
-            try
+            for (int retry = 0; retry <= 3; retry++)
             {
-                if (string.IsNullOrEmpty(_endpoint) || string.IsNullOrEmpty(_apiKey))
+                try
                 {
-                    _logger.LogError("Document Intelligence endpoint or API key is not configured");
-                    return null;
-                }
+                    if (string.IsNullOrEmpty(_endpoint) || string.IsNullOrEmpty(_apiKey))
+                    {
+                        _logger.LogError("Document Intelligence endpoint or API key is not configured");
+                        return null;
+                    }
 
-                // Validate file type and size
-                var validExtensions = new[] { ".jpg", ".jpeg", ".png", ".pdf" };
-                var fileExt = Path.GetExtension(file.Name).ToLowerInvariant();
-                if (!validExtensions.Contains(fileExt))
-                {
-                    _logger.LogWarning($"Invalid file type: {file.Name}. Supported types: {string.Join(", ", validExtensions)}");
-                    return null;
-                }
+                    // Validate file type and size
+                    var validExtensions = new[] { ".jpg", ".jpeg", ".png", ".pdf" };
+                    var fileExt = Path.GetExtension(file.Name).ToLowerInvariant();
+                    if (!validExtensions.Contains(fileExt))
+                    {
+                        _logger.LogWarning($"Invalid file type: {file.Name}. Supported types: {string.Join(", ", validExtensions)}");
+                        return null;
+                    }
 
-                if (file.Size > 5 * 1024 * 1024) // 5MB limit
-                {
-                    _logger.LogWarning($"File too large: {file.Name} ({file.Size} bytes). Maximum size: 5MB");
-                    return null;
-                }
+                    if (file.Size > 5 * 1024 * 1024) // 5MB limit
+                    {
+                        _logger.LogWarning($"File too large: {file.Name} ({file.Size} bytes). Maximum size: 5MB");
+                        return null;
+                    }
 
-                // Read file content into a byte array and convert to base64
-                using var stream = file.OpenReadStream(5 * 1024 * 1024);
-                using var memoryStream = new MemoryStream();
-                await stream.CopyToAsync(memoryStream);
-                var fileBytes = memoryStream.ToArray();
-                var base64Content = Convert.ToBase64String(fileBytes);
+                    // Read file content into a byte array and convert to base64
+                    using var stream = file.OpenReadStream(5 * 1024 * 1024);
+                    using var memoryStream = new MemoryStream();
+                    await stream.CopyToAsync(memoryStream);
+                    var fileBytes = memoryStream.ToArray();
+                    var base64Content = Convert.ToBase64String(fileBytes);
 
-                // Create JSON request body with base64Source as required by the API
-                var requestBody = new
-                {
-                    base64Source = base64Content
-                };
-                var jsonContent = new StringContent(
-                    JsonSerializer.Serialize(requestBody), 
-                    System.Text.Encoding.UTF8, 
-                    "application/json"
-                );
+                    // Create JSON request body with base64Source as required by the API
+                    var requestBody = new
+                    {
+                        base64Source = base64Content
+                    };
+                    var jsonContent = new StringContent(
+                        JsonSerializer.Serialize(requestBody), 
+                        System.Text.Encoding.UTF8, 
+                        "application/json"
+                    );
 
-                _httpClient.DefaultRequestHeaders.Clear();
-                _httpClient.DefaultRequestHeaders.Add("Ocp-Apim-Subscription-Key", _apiKey);
+                    _httpClient.DefaultRequestHeaders.Clear();
+                    _httpClient.DefaultRequestHeaders.Add("Ocp-Apim-Subscription-Key", _apiKey);
 
-                // Fix the URL format - use proper endpoint structure with _overload parameter
-                var cleanEndpoint = _endpoint.TrimEnd('/');
-                var url = $"{cleanEndpoint}/documentintelligence/documentModels/prebuilt-idDocument:analyze?_overload=analyzeDocument&api-version=2024-11-30";
-                
-                _logger.LogInformation($"Analyzing ID document: {file.Name} ({file.Size} bytes) with endpoint: {url}");
-                var response = await _httpClient.PostAsync(url, jsonContent);
+                    // Fix the URL format - use proper endpoint structure with _overload parameter
+                    var cleanEndpoint = _endpoint.TrimEnd('/');
+                    var url = $"{cleanEndpoint}/documentintelligence/documentModels/prebuilt-idDocument:analyze?_overload=analyzeDocument&api-version=2024-11-30";
+                    
+                    _logger.LogInformation($"Analyzing ID document: {file.Name} ({file.Size} bytes) with endpoint: {url} (attempt {retry + 1})");
+                    var response = await _httpClient.PostAsync(url, jsonContent);
                 
                 if (response.StatusCode == System.Net.HttpStatusCode.Accepted)
                 {
@@ -606,8 +622,18 @@ namespace c2_eskolar.Services
                         var improvedData = await _openAIService.ImprovePhilippineIdExtractionAsync(docResponse.AnalyzeResult.Content, extractedData);
                         if (improvedData != null)
                         {
-                            _logger.LogInformation($"AI improved extraction: FirstName={improvedData.FirstName}, MiddleName={improvedData.MiddleName}, LastName={improvedData.LastName}");
-                            extractedData = improvedData;
+                            _logger.LogInformation($"AI improved extraction: FirstName={improvedData.FirstName}, MiddleName={improvedData.MiddleName}, LastName={improvedData.LastName}, Address={improvedData.Address}");
+                            // Only overwrite address if AI returns a non-empty value
+                            if (!string.IsNullOrWhiteSpace(improvedData.Address))
+                                extractedData.Address = improvedData.Address;
+                            // Overwrite other fields as usual
+                            extractedData.FirstName = improvedData.FirstName;
+                            extractedData.MiddleName = improvedData.MiddleName;
+                            extractedData.LastName = improvedData.LastName;
+                            extractedData.Sex = improvedData.Sex;
+                            extractedData.DateOfBirth = improvedData.DateOfBirth;
+                            extractedData.DocumentNumber = improvedData.DocumentNumber;
+                            extractedData.Nationality = improvedData.Nationality;
                         }
                     }
 
@@ -626,14 +652,34 @@ namespace c2_eskolar.Services
                 {
                     var errorContent = await response.Content.ReadAsStringAsync();
                     _logger.LogError($"Document Intelligence API error: {response.StatusCode}, Content: {errorContent}");
+                    if (retry < 3)
+                    {
+                        _logger.LogInformation($"Retrying in {Math.Pow(2, retry + 1)} seconds...");
+                        await Task.Delay(TimeSpan.FromSeconds(Math.Pow(2, retry + 1)));
+                        continue;
+                    }
+                    return null;
+                }
+                }
+                catch (HttpRequestException ex) when (retry < 3 && (ex.Message.Contains("Connection reset") || ex.Message.Contains("timeout")))
+                {
+                    _logger.LogWarning($"Network error analyzing ID document (attempt {retry + 1}): {ex.Message}. Retrying in {Math.Pow(2, retry + 1)} seconds...");
+                    await Task.Delay(TimeSpan.FromSeconds(Math.Pow(2, retry + 1)));
+                    continue;
+                }
+                catch (TaskCanceledException ex) when (retry < 3 && ex.Message.Contains("timeout"))
+                {
+                    _logger.LogWarning($"Timeout analyzing ID document (attempt {retry + 1}): {ex.Message}. Retrying in {Math.Pow(2, retry + 1)} seconds...");
+                    await Task.Delay(TimeSpan.FromSeconds(Math.Pow(2, retry + 1)));
+                    continue;
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, $"Error analyzing ID document: {file.Name}");
                     return null;
                 }
             }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, $"Error analyzing ID document: {file.Name}");
-                return null;
-            }
+            return null; // All retries failed
         }
 
         public async Task<ExtractedCorData?> AnalyzeCorDocumentAsync(IBrowserFile file)
@@ -687,7 +733,52 @@ namespace c2_eskolar.Services
                 var url = $"{cleanEndpoint}/documentintelligence/documentModels/prebuilt-layout:analyze?_overload=analyzeDocument&api-version=2024-11-30";
                 
                 _logger.LogInformation($"Analyzing COR document: {file.Name} ({file.Size} bytes) with endpoint: {url}");
-                var response = await _httpClient.PostAsync(url, jsonContent);
+                
+                // Add retry logic for network issues
+                HttpResponseMessage? response = null;
+                int retryCount = 0;
+                const int maxRetries = 3;
+                Exception? lastException = null;
+                
+                while (retryCount <= maxRetries)
+                {
+                    try
+                    {
+                        _logger.LogDebug($"Attempt {retryCount + 1} of {maxRetries + 1} for COR analysis request");
+                        response = await _httpClient.PostAsync(url, jsonContent);
+                        break; // Success - exit retry loop
+                    }
+                    catch (HttpRequestException ex) when (retryCount < maxRetries)
+                    {
+                        lastException = ex;
+                        retryCount++;
+                        var delay = TimeSpan.FromSeconds(Math.Pow(2, retryCount)); // Exponential backoff
+                        _logger.LogWarning($"Network error on attempt {retryCount}: {ex.Message}. Retrying in {delay.TotalSeconds} seconds...");
+                        await Task.Delay(delay);
+                        continue;
+                    }
+                    catch (TaskCanceledException ex) when (retryCount < maxRetries)
+                    {
+                        lastException = ex;
+                        retryCount++;
+                        var delay = TimeSpan.FromSeconds(Math.Pow(2, retryCount));
+                        _logger.LogWarning($"Request timeout on attempt {retryCount}: {ex.Message}. Retrying in {delay.TotalSeconds} seconds...");
+                        await Task.Delay(delay);
+                        continue;
+                    }
+                    catch (Exception ex)
+                    {
+                        lastException = ex;
+                        break; // Don't retry for other exceptions
+                    }
+                }
+                
+                // If all retries failed, throw the last exception
+                if (response == null)
+                {
+                    _logger.LogError($"Failed to analyze COR document after {maxRetries + 1} attempts. Last error: {lastException?.Message}");
+                    throw lastException ?? new InvalidOperationException("Failed to get response from Document Intelligence service");
+                }
                 
                 if (response.StatusCode == System.Net.HttpStatusCode.Accepted)
                 {
@@ -718,11 +809,37 @@ namespace c2_eskolar.Services
 
                     _logger.LogDebug($"Raw COR content extracted: {docResponse?.AnalyzeResult?.Content?.Substring(0, Math.Min(500, docResponse?.AnalyzeResult?.Content?.Length ?? 0))}...");
 
+                    // Step 1: Try basic regex extraction first (for quick results)
                     var extractedData = ExtractCorDataFromContent(docResponse?.AnalyzeResult?.Content);
+                    
+                    // Step 2: Enhance with AI extraction for better accuracy and completeness
+                    if (!string.IsNullOrEmpty(docResponse?.AnalyzeResult?.Content))
+                    {
+                        try
+                        {
+                            _logger.LogInformation($"Attempting AI-enhanced COR extraction for {file.Name}");
+                            var aiExtractedData = await _openAIService.ExtractCorFieldsAsync(docResponse.AnalyzeResult.Content);
+                            
+                            if (aiExtractedData != null)
+                            {
+                                // Merge AI results with basic results, preferring AI data when available
+                                extractedData = MergeCorExtractionResults(extractedData, aiExtractedData);
+                                _logger.LogInformation($"AI-enhanced COR extraction successful for {file.Name}");
+                            }
+                            else
+                            {
+                                _logger.LogWarning($"AI COR extraction returned null for {file.Name}, using basic extraction only");
+                            }
+                        }
+                        catch (Exception aiEx)
+                        {
+                            _logger.LogError(aiEx, $"AI COR extraction failed for {file.Name}, falling back to basic extraction");
+                        }
+                    }
                     
                     if (extractedData != null)
                     {
-                        _logger.LogInformation($"Successfully extracted COR data from {file.Name}: Student={extractedData.StudentNumber}, Program={extractedData.Program}");
+                        _logger.LogInformation($"Successfully extracted COR data from {file.Name}: Student={extractedData.StudentNumber}, Program={extractedData.Program}, University={extractedData.University}");
                     }
                     else
                     {
@@ -920,6 +1037,36 @@ namespace c2_eskolar.Services
             return null;
         }
 
+        private ExtractedCorData MergeCorExtractionResults(ExtractedCorData? basicData, ExtractedCorData aiData)
+        {
+            // Start with basic data or create new if null
+            var mergedData = basicData ?? new ExtractedCorData();
+            
+            // Prefer AI data when available, fallback to basic data
+            mergedData.StudentNumber = !string.IsNullOrEmpty(aiData.StudentNumber) ? aiData.StudentNumber : mergedData.StudentNumber;
+            mergedData.StudentName = !string.IsNullOrEmpty(aiData.StudentName) ? aiData.StudentName : mergedData.StudentName;
+            mergedData.Program = !string.IsNullOrEmpty(aiData.Program) ? aiData.Program : mergedData.Program;
+            mergedData.University = !string.IsNullOrEmpty(aiData.University) ? aiData.University : mergedData.University;
+            mergedData.YearLevel = !string.IsNullOrEmpty(aiData.YearLevel) ? aiData.YearLevel : mergedData.YearLevel;
+            mergedData.Address = !string.IsNullOrEmpty(aiData.Address) ? aiData.Address : mergedData.Address;
+            mergedData.PhoneNumber = !string.IsNullOrEmpty(aiData.PhoneNumber) ? aiData.PhoneNumber : mergedData.PhoneNumber;
+            
+            // AI-only fields (not available in basic extraction)
+            mergedData.Semester = aiData.Semester;
+            mergedData.AcademicYear = aiData.AcademicYear;
+            mergedData.SchoolYear = aiData.SchoolYear;
+            mergedData.College = aiData.College;
+            mergedData.Campus = aiData.Campus;
+            mergedData.EnrollmentStatus = aiData.EnrollmentStatus;
+            mergedData.UnitsEnrolled = aiData.UnitsEnrolled;
+            mergedData.DateIssued = aiData.DateIssued;
+            mergedData.TotalFees = aiData.TotalFees;
+            mergedData.GPA = aiData.GPA;
+            mergedData.YearStanding = aiData.YearStanding;
+            
+            return mergedData;
+        }
+
         private ExtractedCorData? ExtractCorDataFromContent(string? content)
         {
             if (string.IsNullOrEmpty(content))
@@ -978,6 +1125,32 @@ namespace c2_eskolar.Services
                     var yearMatch = System.Text.RegularExpressions.Regex.Match(normalizedLine, @"(\d)(ST|ND|RD|TH)\s*YEAR");
                     if (yearMatch.Success)
                         extractedData.YearLevel = $"{yearMatch.Groups[1].Value}{yearMatch.Groups[2].Value.ToLower()} Year";
+                }
+
+                // Look for phone numbers
+                if ((normalizedLine.Contains("CONTACT") && normalizedLine.Contains("NUMBER")) ||
+                    normalizedLine.Contains("MOBILE") || normalizedLine.Contains("PHONE") ||
+                    normalizedLine.Contains("TEL") || normalizedLine.Contains("CELLPHONE"))
+                {
+                    // Philippine phone number patterns
+                    var phonePatterns = new[]
+                    {
+                        @"\b09\d{9}\b",                    // 09xxxxxxxxx
+                        @"\+63\s*9\d{8}",                 // +63 9xxxxxxxx
+                        @"\(\d{2,3}\)\s*\d{3,4}[-\s]?\d{4}", // (02) xxxx-xxxx
+                        @"\d{4}[-\s]?\d{4}",              // xxxx-xxxx or xxxx xxxx
+                        @"\d{11}"                         // 11 digit numbers
+                    };
+
+                    foreach (var pattern in phonePatterns)
+                    {
+                        var phoneMatch = System.Text.RegularExpressions.Regex.Match(line, pattern);
+                        if (phoneMatch.Success && string.IsNullOrEmpty(extractedData.PhoneNumber))
+                        {
+                            extractedData.PhoneNumber = phoneMatch.Value.Trim();
+                            break;
+                        }
+                    }
                 }
             }
 

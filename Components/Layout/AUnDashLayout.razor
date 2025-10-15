@@ -23,17 +23,12 @@
     private string? adminLastName;
     private DateTime currentMonth = new(DateTime.Now.Year, DateTime.Now.Month, 1);
 
-    // --- VERIFICATION MODAL STATE ---
-    private bool showVerificationModal = false;
-    private bool? isVerified = null;
-    private string? verificationStatus = null;
-    private string? userId;
 
     protected override async Task OnInitializedAsync()
     {
         await DebugUserState();
         await LoadInstitutionProfile();
-        await CheckVerificationStatus();
+        // Verification modal removed
     }
 
     private async Task DebugUserState()
@@ -56,44 +51,7 @@
         }
     }
 
-    private async Task CheckVerificationStatus()
-    {
-        try
-        {
-            var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
-            userId = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-            if (!string.IsNullOrEmpty(userId))
-            {
-                // Try institution profile first
-                var institutionProfile = await InstitutionProfileService.GetProfileByUserIdAsync(userId);
-                if (institutionProfile != null)
-                {
-                    isVerified = institutionProfile?.IsVerified;
-                    verificationStatus = institutionProfile?.VerificationStatus;
-                }
-                else
-                {
-                    // Try benefactor profile
-                    var benefactorProfile = await BenefactorProfileService.GetProfileByUserIdAsync(userId);
-                    if (benefactorProfile != null)
-                    {
-                        isVerified = benefactorProfile?.IsVerified;
-                        verificationStatus = benefactorProfile?.VerificationStatus;
-                    }
-                }
-                
-                // Show modal if not verified (null or false) or status is not "Verified"
-                if (isVerified != true && (string.IsNullOrEmpty(verificationStatus) || verificationStatus != "Verified"))
-                {
-                    showVerificationModal = true;
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Error checking verification status: {ex.Message}");
-        }
-    }
+    // Verification modal logic removed
 
     private async Task LoadInstitutionProfile()
     {
@@ -258,22 +216,7 @@
     private void CloseChatbot() => ShowChatbot = false;
     private void MinimizeChatbot() => ShowChatbot = false;
     
-    // --- VERIFICATION MODAL ACTIONS ---
-    private void GoToVerification()
-    {
-        showVerificationModal = false;
-        var currentPath = Navigation.ToBaseRelativePath(Navigation.Uri);
-        var verificationUrl = currentPath.Contains("/institution/") 
-            ? "/institution/verification" 
-            : "/benefactor/verification";
-        Navigation.NavigateTo(verificationUrl);
-    }
-
-    private void SkipVerification()
-    {
-        showVerificationModal = false;
-        Navigation.NavigateTo(GetDashboardUrl());
-    }
+    // Verification modal actions removed
     
     public void Dispose() { }
 }
@@ -388,7 +331,6 @@
     <div class="sidebar-profile-name">@((adminFirstName ?? "Institution") + (string.IsNullOrWhiteSpace(adminLastName) ? "" : $" {adminLastName}"))</div>
     <div class="sidebar-profile-role">Account Pending Verification</div>
     <button class="sidebar-profile-btn" @onclick="NavigateToUnverifiedProfile" data-bs-dismiss="offcanvas">Profile</button>
-    <button class="sidebar-profile-btn logout-btn" @onclick="ShowLogoutModal" data-bs-dismiss="offcanvas">Log Out</button>
     </div>
     
     <!-- Sidebar Calendar -->
@@ -422,26 +364,6 @@
         <ChatBot CloseChatbot="CloseChatbot" MinimizeChatbot="MinimizeChatbot" />
     }
 
-}
-
-@if (showVerificationModal)
-{
-    <div class="sv-modal sv-modal-backdrop sv-modal-fixed">
-        <div class="sv-modal-content">
-            <div class="sv-modal-header">
-                <h2>Institution Verification Required</h2>
-            </div>
-            <div class="sv-modal-body">
-                <p class="sv-modal-justify">To maintain the integrity of eSkolar, all institutions must complete verification before gaining full access to platform features.
-                Please verify your institution by providing accurate details, administrator information, and the necessary supporting documents.</p>
-            </div>
-            <div class="sv-modal-footer" style="display:flex;gap:16px;justify-content:flex-end;">
-                <button class="sv-btn sv-btn-secondary" @onclick="SkipVerification">Skip for Now</button>
-                <button class="sv-btn sv-btn-primary" @onclick="GoToVerification">Verify Institution</button>
-            </div>
-        </div>
-    </div>
-}
 
 </div>
 

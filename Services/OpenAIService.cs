@@ -307,30 +307,30 @@ namespace c2_eskolar.Services
         {
             string prompt = $@"You are an expert at extracting structured data from institution authorization letters and official documents.
 
-Analyze the OCR text below from an institution authorization letter and extract the following information. Return ONLY a JSON object with these exact field names:
+            Analyze the OCR text below from an institution authorization letter and extract the following information. Return ONLY a JSON object with these exact field names:
 
-InstitutionName: The official name of the educational institution (university, college, school)
-InstitutionType: Type of institution (University, College, School, Institute, etc.)
-Address: Physical address of the institution
-ContactNumber: Phone number or contact number of the institution
-Website: Institution website URL (if mentioned)
-Description: Brief description of the institution or its mission
-DeanName: Name of the Dean, Director, President, or head of institution mentioned
-DeanEmail: Email address of the Dean or institutional head
-InstitutionalEmailDomain: The email domain used by the institution (like @university.edu.ph)
+            InstitutionName: The official name of the educational institution (university, college, school)
+            InstitutionType: Type of institution (University, College, School, Institute, etc.)
+            Address: Physical address of the institution
+            ContactNumber: Phone number or contact number of the institution
+            Website: Institution website URL (if mentioned)
+            Description: Brief description of the institution or its mission
+            DeanName: Name of the Dean, Director, President, or head of institution mentioned
+            DeanEmail: Email address of the Dean or institutional head
+            InstitutionalEmailDomain: The email domain used by the institution (like @university.edu.ph)
 
-Look for:
-- Institution headers, letterheads, official names
-- Contact information, addresses, phone numbers
-- Official signatures from deans, directors, presidents
-- Email addresses and domains
-- Institutional descriptions or mission statements
-- Website URLs or social media
+            Look for:
+            - Institution headers, letterheads, official names
+            - Contact information, addresses, phone numbers
+            - Official signatures from deans, directors, presidents
+            - Email addresses and domains
+            - Institutional descriptions or mission statements
+            - Website URLs or social media
 
-Raw OCR Text:
-{rawText}
+            Raw OCR Text:
+            {rawText}
 
-Return only valid JSON:";
+            Return only valid JSON:";
 
             var chatClient = _client.GetChatClient(_deploymentName);
             var messages = new OpenAI.Chat.ChatMessage[]
@@ -403,28 +403,28 @@ JSON:";
         public async Task<ExtractedBenefactorIdData?> ExtractBenefactorIdFieldsAsync(string rawText)
         {
             string prompt = $@"Extract the following fields from the Philippine ID document text below. Return only the fields in JSON format:
-AdminFirstName, AdminMiddleName, AdminLastName, AdminEmail, AdminContactNumber, AdminPosition, Sex, DateOfBirth (in YYYY-MM-DD format), Nationality.
+        AdminFirstName, AdminMiddleName, AdminLastName, AdminEmail, AdminContactNumber, AdminPosition, Sex, DateOfBirth (in YYYY-MM-DD format), Nationality.
 
-CRITICAL Philippine ID naming conventions - follow exactly:
-- Names are formatted as ""LAST NAME, GIVEN NAMES"" (e.g., ""ALONZO, ADRIAN FRANCIS TECSON"")
-- Everything BEFORE the comma = AdminLastName (e.g., ""ALONZO"")
-- Everything AFTER the comma = Given names that need to be split correctly
-- For given names like ""ADRIAN FRANCIS TECSON"":
-  * The LAST word is typically the middle name (""TECSON"")
-  * Everything BEFORE the last word is the first name (""ADRIAN FRANCIS"")
-- So ""ALONZO, ADRIAN FRANCIS TECSON"" should extract as:
-  * AdminLastName: ""ALONZO""
-  * AdminFirstName: ""ADRIAN FRANCIS""
-  * AdminMiddleName: ""TECSON""
-- Look for patterns like ""Last Name, First Name, Middle Name"" or similar
-- Sex: Look for ""M""/""MALE"" or ""F""/""FEMALE""
-- Dates: Convert formats like ""2003/05/15"" to ""2003-05-15""
-- Nationality: ""PHL"" or ""FILIPINO"" for Philippine documents
+        CRITICAL Philippine ID naming conventions - follow exactly:
+        - Names are formatted as ""LAST NAME, GIVEN NAMES"" (e.g., ""ALONZO, ADRIAN FRANCIS TECSON"")
+        - Everything BEFORE the comma = AdminLastName (e.g., ""ALONZO"")
+        - Everything AFTER the comma = Given names that need to be split correctly
+        - For given names like ""ADRIAN FRANCIS TECSON"":
+        * The LAST word is typically the middle name (""TECSON"")
+        * Everything BEFORE the last word is the first name (""ADRIAN FRANCIS"")
+        - So ""ALONZO, ADRIAN FRANCIS TECSON"" should extract as:
+        * AdminLastName: ""ALONZO""
+        * AdminFirstName: ""ADRIAN FRANCIS""
+        * AdminMiddleName: ""TECSON""
+        - Look for patterns like ""Last Name, First Name, Middle Name"" or similar
+        - Sex: Look for ""M""/""MALE"" or ""F""/""FEMALE""
+        - Dates: Convert formats like ""2003/05/15"" to ""2003-05-15""
+        - Nationality: ""PHL"" or ""FILIPINO"" for Philippine documents
 
-Text:
-{rawText}
+        Text:
+        {rawText}
 
-JSON:";
+        JSON:";
 
             var chatClient = _client.GetChatClient(_deploymentName);
             var messages = new OpenAI.Chat.ChatMessage[]
@@ -458,37 +458,176 @@ JSON:";
             }
         }
 
+        public async Task<ExtractedCorData?> ExtractCorFieldsAsync(string rawText)
+        {
+            string prompt = $@"You are an expert AI assistant specialized in extracting structured data from Philippine Certificate of Registration (COR) and academic enrollment documents. Your task is to carefully analyze OCR text and extract specific academic information.
+
+EXTRACT THE FOLLOWING FIELDS (return null for any field that cannot be found):
+
+StudentNumber: Student ID or registration number (examples: 2021-12345, IT-2023-001, 202112345, 21-1234, A21-0001)
+StudentName: Full student name exactly as written in document
+Program: Complete program/course name (examples: Bachelor of Science in Computer Science, BS Information Technology, Bachelor of Arts in Psychology)
+University: Full official institution name (examples: University of the Philippines Manila, Ateneo de Manila University)
+YearLevel: Student's year level (examples: 1st Year, 2nd Year, 3rd Year, 4th Year, 5th Year, First Year, Second Year)
+Address: Student's complete address if mentioned
+PhoneNumber: Contact number (Philippine format: 09xxxxxxxxx, +63-xxx-xxx-xxxx, (02) xxxx-xxxx)
+Semester: Current semester (examples: First Semester, Second Semester, Summer, 1st Semester, 2nd Semester)
+AcademicYear: Academic year (examples: 2023-2024, AY 2024-2025, School Year 2023-24, SY 2024-2025)
+SchoolYear: Alternative school year format if different from AcademicYear
+College: College/department (examples: College of Engineering, School of Computer Studies, College of Liberal Arts)
+Campus: Campus location if mentioned (examples: Manila Campus, Quezon City Campus, Main Campus)
+EnrollmentStatus: Student status (examples: Regular, Irregular, Scholar, Transferee, New Student)
+UnitsEnrolled: Total academic units/credits for the term (examples: 21 units, 18 credits, 24)
+DateIssued: Date when COR was issued (examples: January 15, 2024, 01/15/2024, Jan 15, 2024)
+TotalFees: Total fees or tuition amount (examples: ₱25,000, PHP 30,000, 25000.00)
+GPA: Grade Point Average (examples: 1.25, 3.75, 89.5%)
+YearStanding: Academic classification (examples: Freshman, Sophomore, Junior, Senior, 1st Year Standing)
+
+ADVANCED EXTRACTION TECHNIQUES:
+1. **Headers & Titles**: Look for 'CERTIFICATE OF REGISTRATION', 'ENROLLMENT FORM', 'STUDENT RECORD', 'COR'
+2. **Student Numbers**: Match patterns like xxxx-xxxxx, letters+numbers, or pure numeric IDs with 6+ digits
+3. **Names**: Handle formats like 'SURNAME, FIRSTNAME MIDDLENAME' or 'FIRSTNAME MIDDLENAME SURNAME'
+4. **Programs**: Extract complete degree names, not just abbreviations (expand BS to Bachelor of Science, etc.)
+5. **Institutions**: Use full official names, including University/College designation
+6. **Year Levels**: Convert numeric to ordinal (1 → 1st Year, 2 → 2nd Year, etc.)
+7. **Academic Years**: Recognize formats like AY 2023-24, SY 2023-2024, School Year 2023-2024
+8. **Semesters**: Identify First/1st, Second/2nd, Summer terms
+9. **Colleges**: Look for 'College of...', 'School of...', 'Department of...', 'Institute of...'
+10. **Phone Numbers**: Extract Philippine mobile (09xxxxxxxxx) and landline formats
+11. **Addresses**: Combine street, barangay, city, province information
+12. **Status**: Identify enrollment classifications and student types
+13. **Financial**: Extract peso amounts with various currency notations
+14. **Dates**: Parse multiple date formats including Filipino month names
+15. **Units**: Extract credit/unit counts, often near subject listings
+
+QUALITY CHECKS:
+- Ensure StudentNumber contains letters/numbers and is 5+ characters
+- Verify Program contains 'Bachelor', 'Master', 'BS', 'BA', 'MS', etc.
+- Check University contains 'University', 'College', 'Institute', or 'School'
+- Validate YearLevel follows Philippine format (1st Year, 2nd Year, etc.)
+- Ensure PhoneNumber starts with 09, +63, or has area code format
+- Verify AcademicYear contains year range (YYYY-YYYY format)
+
+Raw OCR Text:
+{rawText}
+
+Return ONLY a valid JSON object with the exact field names listed above. Use null for fields that cannot be confidently extracted:";
+
+            var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+            
+            try
+            {
+                var chatClient = _client.GetChatClient(_deploymentName);
+                var messages = new OpenAI.Chat.ChatMessage[]
+                {
+                    new OpenAI.Chat.SystemChatMessage("You are an expert AI assistant specialized in extracting structured data from Philippine Certificate of Registration (COR) documents. You have deep knowledge of Philippine academic document formats, naming conventions, and educational systems. Always return properly formatted JSON with accurate field extraction."),
+                    new OpenAI.Chat.UserChatMessage(prompt)
+                };
+                
+                Console.WriteLine($"[COR Extraction] Starting extraction for text length: {rawText.Length} characters");
+                Console.WriteLine($"[COR Extraction] Text preview: {rawText.Substring(0, Math.Min(200, rawText.Length))}...");
+                
+                var response = await chatClient.CompleteChatAsync(messages);
+                stopwatch.Stop();
+                
+                // Track token usage
+                await _tokenTrackingService.TrackChatCompletionUsageAsync(
+                    completion: response.Value,
+                    operation: "CorDocumentExtraction",
+                    userId: null,
+                    additionalDetails: $"COR text length: {rawText.Length}",
+                    requestDuration: stopwatch.Elapsed
+                );
+                
+                string json = response.Value.Content[0].Text.Trim();
+                Console.WriteLine($"[COR Extraction] Raw AI response: {json}");
+                
+                // Clean up the JSON response (remove markdown code block markers if present)
+                if (json.StartsWith("```json"))
+                    json = json.Substring(7);
+                if (json.StartsWith("```"))
+                    json = json.Substring(3);
+                if (json.EndsWith("```"))
+                    json = json.Substring(0, json.Length - 3);
+                json = json.Trim();
+                
+                Console.WriteLine($"[COR Extraction] Cleaned JSON: {json}");
+
+                var extracted = System.Text.Json.JsonSerializer.Deserialize<ExtractedCorData>(json, new System.Text.Json.JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                });
+                
+                if (extracted != null)
+                {
+                    Console.WriteLine($"[COR Extraction] Successfully extracted: StudentNumber={extracted.StudentNumber}, Program={extracted.Program}, University={extracted.University}");
+                }
+                else
+                {
+                    Console.WriteLine("[COR Extraction] Warning: Extraction returned null object");
+                }
+                
+                return extracted;
+            }
+            catch (Exception ex)
+            {
+                stopwatch.Stop();
+                
+                // Track failed request
+                await _tokenTrackingService.TrackFailedRequestAsync(
+                    operation: "CorDocumentExtraction",
+                    errorMessage: ex.Message,
+                    userId: null,
+                    requestDuration: stopwatch.Elapsed
+                );
+                
+                // Enhanced error logging
+                Console.WriteLine($"[COR Extraction] ERROR: {ex.Message}");
+                Console.WriteLine($"[COR Extraction] Stack trace: {ex.StackTrace}");
+                Console.WriteLine($"[COR Extraction] Input text length: {rawText?.Length ?? 0}");
+                
+                // Log specific JSON deserialization errors
+                if (ex is System.Text.Json.JsonException jsonEx)
+                {
+                    Console.WriteLine($"[COR Extraction] JSON Error: {jsonEx.Message}");
+                    Console.WriteLine($"[COR Extraction] Line: {jsonEx.LineNumber}, Position: {jsonEx.BytePositionInLine}");
+                }
+                
+                return null;
+            }
+        }
+
         public async Task<ExtractedBenefactorAuthLetterData?> ExtractBenefactorAuthLetterFieldsAsync(string rawText)
         {
             string prompt = $@"You are an expert at extracting structured data from benefactor/donor organization authorization letters and official documents.
 
-Analyze the OCR text below from a benefactor/donor organization authorization letter and extract the following information. Return ONLY a JSON object with these exact field names:
+        Analyze the OCR text below from a benefactor/donor organization authorization letter and extract the following information. Return ONLY a JSON object with these exact field names:
 
-OrganizationName: The official name of the organization, company, foundation, or donor entity
-OrganizationType: Type of organization (Corporation, Foundation, Non-Profit Organization, Government Agency, Educational Institution, Healthcare Organization, Religious Organization, Individual Donor, etc.)
-Address: Physical or official address of the organization
-ContactNumber: Phone number or contact number of the organization
-Website: Organization website URL (if mentioned)
-AuthorizedRepresentativeName: Name of the PERSON WHO SIGNED/AUTHORIZED the letter - the supervisor, director, head, or person with authority who is GRANTING permission. Look for:
-  - Person who signed at the bottom (e.g., 'Respectfully, Dr. John Smith, Director')
-  - Person mentioned as Director, Head, Supervisor, Manager
-  - The person GRANTING authorization (not the person receiving it)
-  - Names near titles like 'Director', 'President', 'Head', 'Supervisor'
-  - Person who appears in signature blocks or closing statements
-AuthorizedRepresentativeEmail: Email address mentioned anywhere in the document - contact info, letter body, or signatures
-OfficialEmailDomain: The email domain extracted from any email addresses found in the document
+        OrganizationName: The official name of the organization, company, foundation, or donor entity
+        OrganizationType: Type of organization (Corporation, Foundation, Non-Profit Organization, Government Agency, Educational Institution, Healthcare Organization, Religious Organization, Individual Donor, etc.)
+        Address: Physical or official address of the organization
+        ContactNumber: Phone number or contact number of the organization
+        Website: Organization website URL (if mentioned)
+        AuthorizedRepresentativeName: Name of the PERSON WHO SIGNED/AUTHORIZED the letter - the supervisor, director, head, or person with authority who is GRANTING permission. Look for:
+        - Person who signed at the bottom (e.g., 'Respectfully, Dr. John Smith, Director')
+        - Person mentioned as Director, Head, Supervisor, Manager
+        - The person GRANTING authorization (not the person receiving it)
+        - Names near titles like 'Director', 'President', 'Head', 'Supervisor'
+        - Person who appears in signature blocks or closing statements
+        AuthorizedRepresentativeEmail: Email address mentioned anywhere in the document - contact info, letter body, or signatures
+        OfficialEmailDomain: The email domain extracted from any email addresses found in the document
 
-CRITICAL EXTRACTION RULES:
-1. AuthorizedRepresentativeName: Find the person who SIGNED or AUTHORIZED the letter (the boss/supervisor), NOT the person being authorized
-2. Look for signature blocks, closing statements with titles (Director, Head, etc.)
-3. The authorizing person is usually at the end of the letter with their title
-4. AuthorizedRepresentativeEmail: Extract ANY email address found in the document
+        CRITICAL EXTRACTION RULES:
+        1. AuthorizedRepresentativeName: Find the person who SIGNED or AUTHORIZED the letter (the boss/supervisor), NOT the person being authorized
+        2. Look for signature blocks, closing statements with titles (Director, Head, etc.)
+        3. The authorizing person is usually at the end of the letter with their title
+        4. AuthorizedRepresentativeEmail: Extract ANY email address found in the document
 
-Example patterns to look for:
-- 'Respectfully, Dr. Jane Smith, Director'
-- 'Sincerely, John Doe, Head of Department'
-- Signature sections with names and titles
-- Email: contact@organization.com or admin@company.gov.ph
+        Example patterns to look for:
+        - 'Respectfully, Dr. Jane Smith, Director'
+        - 'Sincerely, John Doe, Head of Department'
+        - Signature sections with names and titles
+        - Email: contact@organization.com or admin@company.gov.ph
 
 Raw OCR Text:
 {rawText}

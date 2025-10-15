@@ -23,8 +23,12 @@ namespace c2_eskolar.Models
 
     public string AdminFullName => $"{AdminFirstName} {AdminMiddleName} {AdminLastName}";
 
-        [StringLength(100)]
-        public string? AdminPosition { get; set; } // "Dean of Student Affairs", "Registrar", etc.
+    [StringLength(100)]
+    public string? AdminPosition { get; set; } // "Dean of Student Affairs", "Registrar", etc.
+
+    [Phone]
+    [StringLength(15)]
+    public string? AdminContactNumber { get; set; } // Personal contact number of admin
 
         // Institution Information
         [Required]
@@ -81,11 +85,12 @@ namespace c2_eskolar.Models
 
         // Verification & Status
     public bool IsVerified { get; set; } = false;
-    public string? VerificationStatus { get; set; } = "Pending"; // Deprecated: Use AccountStatus instead
     public DateTime? VerificationDate { get; set; }
 
-    // Account lifecycle status: Unverified → Pending → Verified → Archived
-    public string AccountStatus { get; set; } = "Unverified"; // Unverified, Pending, Verified, Archived
+    // Account lifecycle status: Unverified → Pending → Verified → Rejected → Locked
+    [Required]
+    [StringLength(50)]
+    public string AccountStatus { get; set; } = "Unverified"; // Unverified, Pending, Verified, Rejected, Locked
 
         // Timestamps
         public DateTime CreatedAt { get; set; } = DateTime.Now;

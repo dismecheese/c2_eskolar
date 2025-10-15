@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using c2_eskolar.Data;
 
@@ -11,9 +12,11 @@ using c2_eskolar.Data;
 namespace c2_eskolar.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251014185906_AddBenefactorFieldsToStudentProfile")]
+    partial class AddBenefactorFieldsToStudentProfile
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -448,8 +451,7 @@ namespace c2_eskolar.Migrations
 
                     b.Property<string>("AccountStatus")
                         .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Address")
                         .HasMaxLength(255)
@@ -528,6 +530,9 @@ namespace c2_eskolar.Migrations
 
                     b.Property<DateTime?>("VerificationDate")
                         .HasColumnType("datetime2");
+
+                    b.Property<string>("VerificationStatus")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Website")
                         .HasMaxLength(100)
@@ -809,8 +814,7 @@ namespace c2_eskolar.Migrations
 
                     b.Property<string>("AccountStatus")
                         .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Accreditation")
                         .HasMaxLength(100)
@@ -819,10 +823,6 @@ namespace c2_eskolar.Migrations
                     b.Property<string>("Address")
                         .HasMaxLength(255)
                         .HasColumnType("nvarchar(255)");
-
-                    b.Property<string>("AdminContactNumber")
-                        .HasMaxLength(15)
-                        .HasColumnType("nvarchar(15)");
 
                     b.Property<string>("AdminFirstName")
                         .IsRequired()
@@ -908,6 +908,9 @@ namespace c2_eskolar.Migrations
 
                     b.Property<DateTime?>("VerificationDate")
                         .HasColumnType("datetime2");
+
+                    b.Property<string>("VerificationStatus")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Website")
                         .HasMaxLength(100)
@@ -1447,8 +1450,7 @@ namespace c2_eskolar.Migrations
 
                     b.Property<string>("AccountStatus")
                         .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime?>("BirthDate")
                         .HasColumnType("datetime2");
@@ -1552,6 +1554,9 @@ namespace c2_eskolar.Migrations
 
                     b.Property<DateTime?>("VerificationDate")
                         .HasColumnType("datetime2");
+
+                    b.Property<string>("VerificationStatus")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<int?>("YearLevel")
                         .HasColumnType("int");

@@ -85,8 +85,9 @@ namespace c2_eskolar.Components.Pages.Institution
         private bool IsFileUploadsValid => !string.IsNullOrEmpty(AdminValidationUploadUrl) && !string.IsNullOrEmpty(LogoUploadUrl);
 
         private InstitutionVerificationModel verificationModel = new InstitutionVerificationModel();
-        private bool IsSubmitting = false;
-        private string ProfileErrorMessage = "";
+    private bool IsSubmitting = false;
+    private string ProfileErrorMessage = "";
+    protected bool ShowSuccessModal = false;
 
         // Sex Dropdown logic for custom select (component-level)
         private bool ShowSexDropdown = false;
@@ -107,6 +108,7 @@ namespace c2_eskolar.Components.Pages.Institution
         [Inject] private HttpClient Http { get; set; } = default!;
         [Inject] private Services.InstitutionProfileService InstitutionProfileService { get; set; } = default!;
         [Inject] private AuthenticationStateProvider AuthenticationStateProvider { get; set; } = default!;
+        [Inject] private Microsoft.AspNetCore.Identity.UserManager<Microsoft.AspNetCore.Identity.IdentityUser> UserManager { get; set; } = default!;
 
         // File upload and removal methods for Document Upload section
         private async Task OnIdFileChange(InputFileChangeEventArgs e)
@@ -388,7 +390,7 @@ namespace c2_eskolar.Components.Pages.Institution
                 institutionProfile.InstitutionType = verificationModel.InstitutionType;
                 institutionProfile.Address = verificationModel.Address;
                 institutionProfile.ContactNumber = verificationModel.ContactNumber;
-                institutionProfile.ContactEmail = verificationModel.ContactEmail;
+                institutionProfile.ContactEmail = verificationModel.AdminEmail; // Save AdminEmail as ContactEmail since that's what the UI collects
                 institutionProfile.Website = verificationModel.Website;
                 institutionProfile.Description = verificationModel.Description;
                 institutionProfile.AdminFirstName = verificationModel.AdminFirstName;
@@ -399,11 +401,11 @@ namespace c2_eskolar.Components.Pages.Institution
                 institutionProfile.Logo = LogoUploadUrl;
                 institutionProfile.ProfilePicture = LogoUploadUrl;
                 institutionProfile.AdminValidationDocument = AdminValidationUploadUrl;
-                institutionProfile.VerificationStatus = "Pending";
                 institutionProfile.AccountStatus = "Pending";
 
                 await InstitutionProfileService.SaveProfileAsync(institutionProfile);
-                ProfileErrorMessage = "Verification submitted successfully!";
+                // Show the success modal (do not also set an inline ProfileErrorMessage)
+                ShowSuccessModal = true;
             }
             catch (Exception ex)
             {
@@ -417,8 +419,13 @@ namespace c2_eskolar.Components.Pages.Institution
             // Load existing institution profile data if available
             var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
             var userId = authState.User?.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            
             if (!string.IsNullOrWhiteSpace(userId))
             {
+                // Get the user from UserManager to access email
+                var user = await UserManager.FindByIdAsync(userId);
+                var userEmail = user?.Email;
+                
                 var profile = await InstitutionProfileService.GetProfileByUserIdAsync(userId);
                 if (profile != null)
                 {
@@ -434,14 +441,37 @@ namespace c2_eskolar.Components.Pages.Institution
                     verificationModel.AdminMiddleName = profile.AdminMiddleName ?? string.Empty;
                     verificationModel.AdminLastName = profile.AdminLastName ?? string.Empty;
                     verificationModel.AdminPosition = profile.AdminPosition ?? string.Empty;
-                    verificationModel.AdminEmail = profile.ContactEmail ?? string.Empty; // Use institution contact email as admin email default
+                    verificationModel.AdminEmail = profile.ContactEmail ?? string.Empty; // Load ContactEmail into AdminEmail since that's what the UI shows
                     verificationModel.Accreditation = profile.Accreditation ?? string.Empty;
                     
                     // Set upload URLs if documents exist
                     AdminValidationUploadUrl = profile.AdminValidationDocument;
                     LogoUploadUrl = profile.ProfilePicture;
                 }
+                else
+                {
+                    // No profile exists yet - pre-populate with user's registration email
+                    if (!string.IsNullOrWhiteSpace(userEmail))
+                    {
+                        verificationModel.AdminEmail = userEmail; // Pre-populate the field that's actually shown in the UI
+                        verificationModel.ContactEmail = userEmail; // Keep both in sync for consistency
+                    }
+                }
             }
         }
+
+        // Handler for closing the success modal
+        private void CloseSuccessModal()
+        {
+            ShowSuccessModal = false;
+        }
+
+        // Handler for View Profile button (navigate to profile page)
+        private void ViewProfile()
+        {
+            NavigationManager.NavigateTo("/institution/profile");
+        }
+
+        [Inject] private NavigationManager NavigationManager { get; set; } = default!;
     }
 }

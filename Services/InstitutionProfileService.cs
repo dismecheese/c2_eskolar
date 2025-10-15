@@ -35,7 +35,6 @@ namespace c2_eskolar.Services
                 profile.CreatedAt = DateTime.Now;
                 profile.UpdatedAt = DateTime.Now;
                 profile.IsVerified = false;
-                profile.VerificationStatus = "Pending";
                 profile.AccountStatus = "Pending";
                 
                 context.InstitutionProfiles.Add(profile);
@@ -47,6 +46,7 @@ namespace c2_eskolar.Services
                 existing.AdminMiddleName = profile.AdminMiddleName;
                 existing.AdminLastName = profile.AdminLastName;
                 existing.AdminPosition = profile.AdminPosition;
+                existing.AdminContactNumber = profile.AdminContactNumber;
                 
                 // Institution Information
                 existing.InstitutionName = profile.InstitutionName;
@@ -67,7 +67,7 @@ namespace c2_eskolar.Services
                 
                 // Verification & Status
                 existing.IsVerified = profile.IsVerified;
-                existing.VerificationStatus = profile.VerificationStatus;
+                existing.AccountStatus = profile.AccountStatus;
                 existing.VerificationDate = profile.VerificationDate;
                 
                 // Update timestamp
@@ -102,11 +102,9 @@ namespace c2_eskolar.Services
             if (!string.IsNullOrWhiteSpace(profile.InstitutionName) && !IsValidInstitutionName(profile.InstitutionName))
                 errors.Add("Institution name contains invalid characters.");
                 
-            // Phone number validation (stored in AdminPosition temporarily)
-            if (!string.IsNullOrWhiteSpace(profile.AdminPosition) && !IsValidPhoneNumber(profile.AdminPosition))
+            // Phone number validation
+            if (!string.IsNullOrWhiteSpace(profile.AdminContactNumber) && !IsValidPhoneNumber(profile.AdminContactNumber))
                 errors.Add("Personal contact number format is invalid.");
-            if (!string.IsNullOrWhiteSpace(profile.ContactNumber) && !IsValidPhoneNumber(profile.ContactNumber))
-                errors.Add("Institution contact number format is invalid.");
                 
             // Email validation
             if (!string.IsNullOrWhiteSpace(profile.ContactEmail) && !IsValidEmail(profile.ContactEmail))
