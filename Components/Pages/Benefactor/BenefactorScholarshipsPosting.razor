@@ -16,258 +16,759 @@
 
 <PageTitle>Post Scholarship</PageTitle>
 
-<div class="container my-5" style="max-width: 700px;">
+<style>
+    .stepper-wrapper {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 2rem;
+        position: relative;
+    }
     
-    <h2 class="fw-bold mb-4" style="font-size:2.2rem;">Post a New Scholarship</h2>
+    .stepper-item {
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        flex: 1;
+    }
+    
+    .stepper-item::before {
+        position: absolute;
+        content: "";
+        border-bottom: 2px solid #e0e0e0;
+        width: 100%;
+        top: 20px;
+        left: -50%;
+        z-index: 2;
+    }
+    
+    .stepper-item::after {
+        position: absolute;
+        content: "";
+        border-bottom: 2px solid #e0e0e0;
+        width: 100%;
+        top: 20px;
+        left: 50%;
+        z-index: 2;
+    }
+    
+    .stepper-item:first-child::before {
+        content: none;
+    }
+    
+    .stepper-item:last-child::after {
+        content: none;
+    }
+    
+    .step-counter {
+        position: relative;
+        z-index: 5;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: #e0e0e0;
+        color: #666;
+        font-weight: 600;
+        margin-bottom: 6px;
+        transition: all 0.3s ease;
+    }
+    
+    .stepper-item.completed .step-counter {
+        background-color: #28a745;
+        color: white;
+    }
+    
+    .stepper-item.active .step-counter {
+        background: linear-gradient(135deg, #1560d4, #0d387e);
+        color: white;
+        box-shadow: 0 0 0 4px rgba(21, 96, 212, 0.2);
+    }
+    
+    .stepper-item.completed::before,
+    .stepper-item.completed::after {
+        border-color: #28a745;
+    }
+    
+    .stepper-item.active::before {
+        border-color: #28a745;
+    }
+    
+    .step-name {
+        font-size: 0.85rem;
+        color: #666;
+        text-align: center;
+        font-weight: 500;
+    }
+    
+    .stepper-item.active .step-name {
+        color: #1560d4;
+        font-weight: 600;
+    }
+    
+    .stepper-item.completed .step-name {
+        color: #28a745;
+    }
+    
+    .step-content {
+        animation: fadeIn 0.3s ease-in;
+    }
+    
+    @@keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    .navigation-buttons {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 2rem;
+        gap: 1rem;
+    }
+    
+    .form-card {
+        background: white;
+        border-radius: 12px;
+        padding: 2rem;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        border: 1px solid #e9ecef;
+        min-height: 400px;
+    }
+    
+    .review-section {
+        padding: 1rem;
+        background: #f8f9fa;
+        border-radius: 8px;
+        margin-bottom: 1rem;
+    }
+    
+    .review-section h6 {
+        color: #1560d4;
+        font-weight: 600;
+        margin-bottom: 0.75rem;
+        font-size: 1rem;
+    }
+    
+    .review-item {
+        display: flex;
+        margin-bottom: 0.5rem;
+    }
+    
+    .review-label {
+        font-weight: 600;
+        min-width: 150px;
+        color: #495057;
+    }
+    
+    .review-value {
+        color: #212529;
+    }
+    
+    .edit-link {
+        font-size: 0.85rem;
+        margin-left: auto;
+        cursor: pointer;
+    }
+    
+    /* Visibility & Chip Styles - Premium Modern Design */
+    .visibility-option {
+        border: 2px solid #e2e8f0;
+        border-radius: 20px;
+        padding: 1.5rem;
+        cursor: pointer;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        margin-bottom: 1rem;
+        background: white;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .visibility-option::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, #1560d4, #0d387e);
+        transform: scaleX(0);
+        transition: transform 0.3s ease;
+    }
+    
+    .visibility-option:hover {
+        border-color: #1560d4;
+        background: linear-gradient(135deg, #f8faff 0%, #ffffff 100%);
+        transform: translateY(-3px);
+        box-shadow: 0 12px 30px rgba(21, 96, 212, 0.15);
+    }
+    
+    .visibility-option:hover::before {
+        transform: scaleX(1);
+    }
+    
+    .visibility-option.selected {
+        border-color: #1560d4;
+        background: linear-gradient(135deg, #f8faff 0%, #ffffff 100%);
+        box-shadow: 0 8px 20px rgba(21, 96, 212, 0.25);
+    }
+    
+    .visibility-option.selected::before {
+        transform: scaleX(1);
+    }
+    
+    .visibility-option input[type="radio"] {
+        width: 24px;
+        height: 24px;
+        margin-right: 1rem;
+        accent-color: #1560d4;
+        transform: scale(1.2);
+        cursor: pointer;
+    }
+    
+    .institution-chip {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.5rem 1rem;
+        background: linear-gradient(135deg, #1560d4, #0d387e);
+        color: white;
+        border-radius: 20px;
+        margin: 0.25rem;
+        font-size: 0.9rem;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        box-shadow: 0 2px 8px rgba(21, 96, 212, 0.3);
+    }
+    
+    .institution-chip:hover {
+        background: linear-gradient(135deg, #0d387e, #1560d4);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(21, 96, 212, 0.4);
+    }
+    
+    .institution-chip .remove-chip {
+        margin-left: 0.5rem;
+        cursor: pointer;
+        font-weight: bold;
+        opacity: 0.8;
+        transition: opacity 0.2s;
+    }
+    
+    .institution-chip .remove-chip:hover {
+        opacity: 1;
+    }
+    
+    .institution-selector {
+        max-height: 300px;
+        overflow-y: auto;
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        padding: 0.5rem;
+        background: white;
+    }
+    
+    .institution-item {
+        padding: 0.75rem;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: background 0.2s;
+        display: flex;
+        align-items: center;
+    }
+    
+    .institution-item:hover {
+        background: #f8f9fa;
+    }
+    
+    .institution-item input[type="checkbox"] {
+        margin-right: 0.75rem;
+        width: 18px;
+        height: 18px;
+    }
+    
+    .search-box {
+        position: sticky;
+        top: 0;
+        background: white;
+        padding: 0.5rem;
+        border-bottom: 1px solid #dee2e6;
+        margin: -0.5rem -0.5rem 0.5rem -0.5rem;
+        z-index: 10;
+    }
+</style>
 
-    <!-- External Scholarship Information -->
-    <div class="alert alert-info mb-4" role="alert">
-        <div class="d-flex align-items-center">
-            <span aria-hidden="true" class="me-2" style="font-size: 1.2rem;">🌐</span>
-            <div>
-                <strong>External Scholarship:</strong> As a benefactor, your scholarship will be posted as an <strong>external scholarship</strong>, making it open and accessible to all students across all institutions.
-                <br/><small class="mt-1 d-block"><strong>Partnership Option:</strong> You can optionally partner with an institution, allowing them to also manage your scholarship.</small>
+<div class="container my-5" style="max-width: 900px;">
+    
+    <h2 class="fw-bold mb-4 text-center" style="font-size:2.2rem;">Post a New Scholarship</h2>
+
+    <!-- Progress Stepper -->
+    <div class="stepper-wrapper mb-5">
+        @for (int i = 0; i < steps.Length; i++)
+        {
+            var index = i;
+            <div class="stepper-item @(currentStep == index ? "active" : "") @(currentStep > index ? "completed" : "")">
+                <div class="step-counter">
+                    @if (currentStep > index)
+                    {
+                        <span>✓</span>
+                    }
+                    else
+                    {
+                        <span>@(index + 1)</span>
+                    }
+                </div>
+                <div class="step-name">@steps[index]</div>
             </div>
-        </div>
+        }
     </div>
+
+    <!-- Info alerts removed - now integrated into step content -->
 
     @if (isSubmitted)
     {
         <div class="alert alert-success mb-4" role="alert" aria-live="polite">
-            <span aria-hidden="true">✅</span> Scholarship posted successfully! Redirecting...
+            Scholarship posted successfully! Redirecting...
         </div>
     }
 
     @if (!string.IsNullOrEmpty(errorMessage))
     {
-        <div class="alert alert-danger mb-4" role="alert" aria-live="assertive">
-            <span aria-hidden="true">❌</span> <span class="visually-hidden">Error:</span> @errorMessage
+        <div class="alert alert-danger mb-4" role="alert" aria-live="assertive" style="font-family: 'Segoe UI', Arial, sans-serif; font-size: 1.15rem; font-weight: 500; color: #842029; background: #f8d7da; border: 1px solid #f5c2c7; border-radius: 10px; padding: 1rem 1.5rem; display: flex; align-items: center;">
+            <span class="visually-hidden">Error:</span>
+            <span style="font-weight: 600; margin-right: 0.5rem;">Error:</span>
+            <span>@errorMessage</span>
         </div>
     }
 
     <EditForm Model="@scholarship" OnValidSubmit="HandleSubmit" OnInvalidSubmit="HandleInvalidSubmit">
         <DataAnnotationsValidator />
-        <ValidationSummary class="text-danger" />
 
-        <!-- Categorized Form Fields in Card Boxes -->
-        <div class="row g-4">
-                <!-- Scholarship Icon Upload -->
-                <div class="col-12">
-                    <div class="card shadow-sm border-0 mb-3">
-                        <div class="card-header-custom bg-secondary text-white fw-bold">Scholarship Icon</div>
-                        <div class="card-body">
-                            <div class="row g-3 align-items-center">
-                                <div class="col-12">
-                                    <label for="iconUpload" class="form-label fw-semibold">Upload Icon <span class="text-muted">(PNG, JPG, SVG, max 5MB)</span></label>
-                                    <InputFile id="iconUpload" OnChange="HandleIconUpload" accept="image/png,image/jpeg,image/svg+xml" class="form-control" aria-label="Upload Scholarship Icon" disabled="@(isUploadingIcon || isSubmitted)" />
-                                    
-                                    @if (isUploadingIcon)
-                                    {
-                                        <div class="mt-2 d-flex align-items-center">
-                                            <div class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></div>
-                                            <small class="text-muted">Processing image...</small>
+        <!-- Step Content -->
+        <div class="form-card step-content">
+            @if (currentStep == 0)
+            {
+                <!-- Step 0: Visibility & Targeting -->
+                <h4 class="mb-4">🌐 Who can see this scholarship?</h4>
+                <p class="text-muted mb-4">Choose who can discover and apply for your scholarship</p>
+
+                <!-- Visibility Options -->
+                    <div class="mb-4">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <div class="visibility-option @(visibilityType == "open" ? "selected" : "")" @onclick='@(() => visibilityType = "open")'>
+                                    <div class="d-flex align-items-start">
+                                        <input type="radio" name="visibility" value="open" checked="@(visibilityType == "open")" @onchange='@(() => visibilityType = "open")' />
+                                        <div class="flex-grow-1">
+                                            <h5 class="mb-2">Open to All Students</h5>
+                                            <p class="text-muted mb-0">Your scholarship will be visible to students from any institution. This maximizes reach and ensures equal opportunity for all qualified applicants.</p>
                                         </div>
-                                    }
-                                    else if (!string.IsNullOrEmpty(iconPreviewUrl))
-                                    {
-                                        <div class="mt-2">
-                                            <img src="@iconPreviewUrl" alt="Icon Preview" style="max-width:80px;max-height:80px;border-radius:8px;border:1px solid #ccc;" />
-                                            <small class="d-block text-muted">Preview - Icon will be uploaded to secure cloud storage when you submit</small>
-                                        </div>
-                                    }
-                                    
-                                    <ValidationMessage For="@(() => scholarship.IconUrl)" class="text-danger small ms-1" />
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            <!-- Basic Info -->
-            <div class="col-12">
-                <div class="card shadow-sm border-0 mb-3">
-                    <div class="card-header-custom bg-primary text-white fw-bold">Basic Information</div>
-                    <div class="card-body">
-                        <div class="row g-3">
-                            <div class="col-12">
-                                <label for="title" class="form-label fw-semibold" style="font-size:1.1rem;">Title</label>
-                                <InputText id="title" class="form-control" @bind-Value="scholarship.Title" aria-required="true" required aria-label="Scholarship Title" placeholder="e.g. Academic Excellence Scholarship" />
-                                <ValidationMessage For="@(() => scholarship.Title)" class="text-danger small ms-1" />
-                            </div>
-                            <div class="col-12 col-md-6">
-                                <label for="benefits" class="form-label fw-semibold">Benefits</label>
-                                <InputText id="benefits" class="form-control" @bind-Value="scholarship.Benefits" aria-required="true" required aria-label="Benefits" placeholder="e.g. Full tuition, stipend, books" />
-                                <ValidationMessage For="@(() => scholarship.Benefits)" class="text-danger small ms-1" />
-                            </div>
-                            <div class="col-12 col-md-6">
-                                <label for="deadline" class="form-label fw-semibold">Application Deadline</label>
-                                <InputDate id="deadline" class="form-control" @bind-Value="scholarship.ApplicationDeadline" aria-required="true" required aria-label="Application Deadline" placeholder="Select deadline" />
-                                <ValidationMessage For="@(() => scholarship.ApplicationDeadline)" class="text-danger small ms-1" />
-                            </div>
-                            <div class="col-12">
-                                <label for="description" class="form-label fw-semibold">Description <span class="text-muted">(optional)</span></label>
-                                <InputTextArea id="description" class="form-control" rows="3" @bind-Value="scholarship.Description" aria-label="Description" placeholder="Describe the scholarship, its purpose, and any special notes..." />
-                                <ValidationMessage For="@(() => scholarship.Description)" class="text-danger small ms-1" />
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Requirements -->
-            <div class="col-12">
-                <div class="card shadow-sm border-0 mb-3">
-                    <div class="card-header-custom bg-success text-white fw-bold">Requirements</div>
-                    <div class="card-body">
-                        <div class="row g-3">
-                            <div class="col-12">
-                                <label for="requirements" class="form-label fw-semibold">Requirements</label>
-                                <InputTextArea id="requirements" class="form-control" rows="2" @bind-Value="scholarship.Requirements" aria-label="Requirements" placeholder="e.g. Must be a full-time student, leadership experience, etc." />
-                                <ValidationMessage For="@(() => scholarship.Requirements)" class="text-danger small ms-1" />
-                            </div>
-                            <div class="col-12 col-md-4">
-                                <label for="slots" class="form-label fw-semibold">Slots Available</label>
-                                <InputNumber id="slots" class="form-control" @bind-Value="scholarship.SlotsAvailable" aria-label="Slots Available" placeholder="e.g. 10" />
-                                <ValidationMessage For="@(() => scholarship.SlotsAvailable)" class="text-danger small ms-1" />
-                            </div>
-                            <div class="col-12 col-md-4">
-                                <label for="gpa" class="form-label fw-semibold">Minimum GPA</label>
-                                <InputNumber id="gpa" class="form-control" @bind-Value="scholarship.MinimumGPA" step="0.01" aria-label="Minimum GPA" placeholder="e.g. 3.50" />
-                                <ValidationMessage For="@(() => scholarship.MinimumGPA)" class="text-danger small ms-1" />
-                            </div>
-                            <div class="col-12 col-md-4">
-                                <label for="yearlevel" class="form-label fw-semibold">Required Year Level</label>
-                                <InputNumber id="yearlevel" class="form-control" @bind-Value="scholarship.RequiredYearLevel" aria-label="Required Year Level" placeholder="e.g. 2 (for 2nd year)" />
-                                <ValidationMessage For="@(() => scholarship.RequiredYearLevel)" class="text-danger small ms-1" />
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Eligibility -->
-            <div class="col-12">
-                <div class="card shadow-sm border-0 mb-3">
-                    <div class="card-header-custom bg-info text-white fw-bold">Eligibility</div>
-                    <div class="card-body">
-                        <div class="row g-3">
-                            <div class="col-12 col-md-6">
-                                <label for="course" class="form-label fw-semibold">Required Course</label>
-                                <InputText id="course" class="form-control" @bind-Value="scholarship.RequiredCourse" aria-label="Required Course" placeholder="e.g. BS Computer Science" />
-                                <ValidationMessage For="@(() => scholarship.RequiredCourse)" class="text-danger small ms-1" />
-                            </div>
-                            <div class="col-12 col-md-6">
-                                <label for="university" class="form-label fw-semibold">Required University</label>
-                                <InputText id="university" class="form-control" @bind-Value="scholarship.RequiredUniversity" aria-label="Required University" placeholder="e.g. University of the Philippines" />
-                                <ValidationMessage For="@(() => scholarship.RequiredUniversity)" class="text-danger small ms-1" />
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Partnership (Optional) -->
-            <div class="col-12">
-                <div class="card shadow-sm border-0 mb-3">
-                    <div class="card-header-custom bg-purple text-white fw-bold" style="background-color: #6f42c1 !important;">Partnership (Optional)</div>
-                    <div class="card-body">
-                        <div class="row g-3">
-                            <div class="col-12">
-                                <div class="form-check mb-3">
-                                    <input class="form-check-input" type="checkbox" id="enablePartnership" @bind="enablePartnership" />
-                                    <label class="form-check-label fw-semibold" for="enablePartnership">
-                                        Partner with an Institution
-                                    </label>
-                                    <div class="form-text text-muted">
-                                        When you partner with an institution, they will also be able to manage this scholarship.
                                     </div>
                                 </div>
                             </div>
-                            @if (enablePartnership)
-                            {
-                                <div class="col-12">
-                                    <label for="institution" class="form-label fw-semibold">Select Institution Partner</label>
-                                    @if (availableInstitutions == null)
-                                    {
-                                        <div class="d-flex align-items-center">
-                                            <div class="spinner-border spinner-border-sm me-2" role="status">
-                                                <span class="visually-hidden">Loading...</span>
-                                            </div>
-                                            <span class="text-muted">Loading institutions...</span>
+                            <div class="col-md-6">
+                                <div class="visibility-option @(visibilityType == "targeted" ? "selected" : "")" @onclick='@(() => visibilityType = "targeted")'>
+                                    <div class="d-flex align-items-start">
+                                        <input type="radio" name="visibility" value="targeted" checked="@(visibilityType == "targeted")" @onchange='@(() => visibilityType = "targeted")' />
+                                        <div class="flex-grow-1">
+                                            <h5 class="mb-2">Targeted to Specific Institutions</h5>
+                                            <p class="text-muted mb-0">Only students from your selected institutions can see and apply. Perfect for supporting specific schools or communities.</p>
                                         </div>
-                                    }
-                                    else if (!availableInstitutions.Any())
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                <!-- Institution Selector (shown when Targeted is selected) -->
+                @if (visibilityType == "targeted")
+                {
+                    <div class="mt-4">
+                        <h5 class="mb-3">Select Target Institutions</h5>
+                        
+                        @if (selectedTargetInstitutionIds.Any())
+                        {
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold">Selected Verified Institutions (@selectedTargetInstitutionIds.Count):</label>
+                                <div class="d-flex flex-wrap gap-2">
+                                    @foreach (var institutionId in selectedTargetInstitutionIds)
                                     {
-                                        <div class="alert alert-warning mb-0">
-                                            <i class="bi bi-exclamation-triangle me-2"></i>
-                                            No institutions are currently registered in the system. Institutions need to register first before partnerships can be formed.
-                                        </div>
-                                    }
-                                    else
-                                    {
-                                        <InputSelect id="institution" class="form-select" @bind-Value="selectedInstitutionId" aria-label="Select Institution Partner">
-                                            <option value="">-- Select an Institution --</option>
-                                            @foreach (var institution in availableInstitutions)
-                                            {
-                                                <option value="@institution.InstitutionProfileId">
-                                                    @(string.IsNullOrEmpty(institution.InstitutionName) ? "Unnamed Institution" : institution.InstitutionName) @(!string.IsNullOrEmpty(institution.InstitutionType) ? $"({institution.InstitutionType})" : "") @(institution.IsVerified ? "✓" : "")
-                                                </option>
-                                            }
-                                        </InputSelect>
-                                        <small class="text-muted mt-1">Found @availableInstitutions.Count institutions available for partnership</small>
-                                        @if (!string.IsNullOrEmpty(selectedInstitutionId) && availableInstitutions.Any())
+                                        var institution = verifiedInstitutions?.FirstOrDefault(i => i.InstitutionProfileId == institutionId);
+                                        if (institution != null)
                                         {
-                                            var selectedInst = availableInstitutions.FirstOrDefault(i => i.InstitutionProfileId.ToString() == selectedInstitutionId);
-                                            if (selectedInst != null)
-                                            {
-                                                <div class="mt-2 p-2 bg-light rounded">
-                                                    <small class="text-muted">
-                                                        <strong>Selected:</strong> @(string.IsNullOrEmpty(selectedInst.InstitutionName) ? "Unnamed Institution" : selectedInst.InstitutionName)<br/>
-                                                        <strong>Type:</strong> @(selectedInst.InstitutionType ?? "Not specified")<br/>
-                                                        <strong>Status:</strong> <span class="@(selectedInst.IsVerified ? "text-success" : "text-warning")">
-                                                            @(selectedInst.IsVerified ? "Verified ✓" : "Unverified")
-                                                        </span>
-                                                    </small>
-                                                </div>
-                                            }
+                                            <span class="institution-chip">
+                                                @institution.InstitutionName
+                                                <span class="remove-chip" @onclick="@(() => RemoveTargetInstitution(institutionId))">×</span>
+                                            </span>
                                         }
                                     }
                                 </div>
-                            }
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Settings -->
-            <div class="col-12">
-                <div class="card shadow-sm border-0 mb-3">
-                    <div class="card-header-custom bg-warning text-dark fw-bold">Settings</div>
-                    <div class="card-body">
-                        <div class="row g-3 align-items-center">
-                            <div class="col-12">
-                                <label for="externalurl" class="form-label fw-semibold">External Application URL <span class="text-muted">(optional)</span></label>
-                                <InputText id="externalurl" class="form-control" @bind-Value="scholarship.ExternalApplicationUrl" aria-label="External Application URL" placeholder="e.g. https://apply.example.com" />
-                                <ValidationMessage For="@(() => scholarship.ExternalApplicationUrl)" class="text-danger small ms-1" />
                             </div>
-                            <!-- Removed Active and Internal Scholarship checkboxes as requested -->
+                        }
+
+                        @if (verifiedInstitutions == null)
+                        {
+                            <div class="d-flex align-items-center">
+                                <div class="spinner-border spinner-border-sm me-2" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                                <span class="text-muted">Loading verified institutions...</span>
+                            </div>
+                        }
+                        else if (!verifiedInstitutions.Any())
+                        {
+                            <div class="alert alert-warning mb-0">
+                                <i class="bi bi-exclamation-triangle me-2"></i>
+                                No verified institutions are currently available for targeting. Only verified institutions can be selected to ensure quality and trust.
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="institution-selector">
+                                <div class="search-box">
+                                    <input type="text" 
+                                           class="form-control" 
+                                           placeholder="🔍 Search" 
+                                           @bind="institutionSearchQuery" 
+                                           @bind:event="oninput" />
+                                </div>
+                                
+                                @{
+                                    var filteredInstitutions = verifiedInstitutions
+                                        .Where(i => string.IsNullOrEmpty(institutionSearchQuery) || 
+                                                   (i.InstitutionName?.Contains(institutionSearchQuery, StringComparison.OrdinalIgnoreCase) ?? false))
+                                        .ToList();
+                                }
+
+                                @if (!filteredInstitutions.Any())
+                                {
+                                    <div class="p-3 text-center text-muted">
+                                        No institutions found matching "@institutionSearchQuery"
+                                    </div>
+                                }
+                                else
+                                {
+                                    @foreach (var institution in filteredInstitutions)
+                                    {
+                                        var isSelected = selectedTargetInstitutionIds.Contains(institution.InstitutionProfileId);
+                                        <div class="institution-item" @onclick="@(() => ToggleInstitutionSelection(institution.InstitutionProfileId))">
+                                            <input type="checkbox" 
+                                                   checked="@isSelected" 
+                                                   @onchange="@(() => ToggleInstitutionSelection(institution.InstitutionProfileId))" />
+                                            <div class="flex-grow-1">
+                                                <strong>@institution.InstitutionName</strong>
+                                                @if (!string.IsNullOrEmpty(institution.InstitutionType))
+                                                {
+                                                    <span class="text-muted ms-2">(@institution.InstitutionType)</span>
+                                                }
+                                            </div>
+                                        </div>
+                                    }
+                                }
+                            </div>
+                            
+                            <small class="form-text text-success d-block mt-2">
+                                <strong>@filteredInstitutions.Count verified institution(s)</strong> available for targeting
+                            </small>
+                        }
+                    </div>
+                }
+            }
+            else if (currentStep == 1)
+            {
+                <!-- Step 1: Icon & Basic Info -->
+                <h4 class="mb-4">📋 Basic Information</h4>
+                
+                <!-- Logo and Title/Deadline in a row -->
+                <div class="row g-3 mb-4">
+                    <!-- Logo Column (Left Side) -->
+                    <div class="col-md-4">
+                        <label for="logoUploadInput" class="form-label fw-semibold">Logo</label>
+                        <InputFile id="logoUploadInput" style="display:none" accept="image/png,image/jpeg,image/svg+xml" OnChange="HandleIconUpload" disabled="@(isUploadingIcon || isSubmitted)" />
+                        <label for="logoUploadInput" class="sv-upload-placeholder scholarship-logo-upload" style="cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:180px;padding:1rem;border:2px dashed #e2e8f0;border-radius:16px;background:#f8fafc;transition:all 0.3s;">
+                            @if (!string.IsNullOrEmpty(iconPreviewUrl))
+                            {
+                                <img src="@iconPreviewUrl" alt="Logo Preview" style="max-width:100%;max-height:120px;border-radius:8px;margin-bottom:0.5rem;" />
+                                <small class="text-muted">Click to change</small>
+                            }
+                            else
+                            {
+                                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="margin-bottom:0.5rem;color:#1560d4;">
+                                    <path d="M12 16L16 12H13V8H11V12H8L12 16Z" fill="currentColor"/>
+                                    <path d="M20 6H16L14 4H10L8 6H4C2.9 6 2 6.9 2 8V18C2 19.1 2.9 20 4 20H20C21.1 20 22 19.1 22 18V8C22 6.9 21.1 6 20 6Z" fill="currentColor"/>
+                                </svg>
+                                <span style="font-size:0.9rem;text-align:center;">@(isUploadingIcon ? "Processing..." : "Upload logo")</span>
+                                <small class="d-block text-muted mt-1">PNG, JPG, SVG</small>
+                            }
+                            @if (isUploadingIcon)
+                            {
+                                <div style="color:orange;font-size:0.85em;margin-top:0.5em;">
+                                    <i class="fas fa-spinner fa-spin"></i> Processing...
+                                </div>
+                            }
+                        </label>
+                        <ValidationMessage For="@(() => scholarship.IconUrl)" class="text-danger small mt-1" />
+                    </div>
+                    
+                    <!-- Title and Deadline Column (Right Side) -->
+                    <div class="col-md-8">
+                        <div class="mb-3">
+                            <label for="title" class="form-label fw-semibold">Title <span class="text-danger">*</span></label>
+                            <InputText id="title" class="form-control form-control-lg" @bind-Value="scholarship.Title" aria-required="true" required aria-label="Scholarship Title" placeholder="e.g. Academic Excellence Scholarship" />
+                            <ValidationMessage For="@(() => scholarship.Title)" class="text-danger small mt-1" />
+                        </div>
+                        
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-7">
+                                <label for="deadline" class="form-label fw-semibold">Application Deadline <span class="text-danger">*</span></label>
+                                <InputDate id="deadline" class="form-control" @bind-Value="scholarship.ApplicationDeadline" aria-required="true" required aria-label="Application Deadline" />
+                                <ValidationMessage For="@(() => scholarship.ApplicationDeadline)" class="text-danger small mt-1" />
+                            </div>
+                            <div class="col-md-5">
+                                <label for="slots" class="form-label fw-semibold">Slots Available</label>
+                                <InputNumber id="slots" class="form-control" @bind-Value="scholarship.SlotsAvailable" aria-label="Slots Available" placeholder="e.g. 10" />
+                                <ValidationMessage For="@(() => scholarship.SlotsAvailable)" class="text-danger small mt-1" />
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
+
+                <!-- Benefits (Full Width Textarea) -->
+                <div class="mb-3">
+                    <label for="benefits" class="form-label fw-semibold">Benefits <span class="text-danger">*</span></label>
+                    <InputTextArea id="benefits" class="form-control" rows="4" @bind-Value="scholarship.Benefits" aria-required="true" required aria-label="Benefits" placeholder="Describe the benefits offered by this scholarship (e.g., full tuition coverage, monthly stipend, book allowance, etc.)" />
+                    <ValidationMessage For="@(() => scholarship.Benefits)" class="text-danger small mt-1" />
+                </div>
+
+                <!-- Description (Full Width Textarea) -->
+                <div class="mb-3">
+                    <label for="description" class="form-label fw-semibold">Description</label>
+                    <InputTextArea id="description" class="form-control" rows="4" @bind-Value="scholarship.Description" aria-label="Description" placeholder="Describe the scholarship, its purpose, and any special notes..." />
+                    <ValidationMessage For="@(() => scholarship.Description)" class="text-danger small mt-1" />
+                </div>
+            }
+            else if (currentStep == 2)
+            {
+                <!-- Step 2: Eligibility & Requirements -->
+                <h4 class="mb-4">📝 Eligibility & Requirements</h4>
+                <p class="text-muted mb-4">Clearly define the eligibility criteria and requirements</p>
+
+                <!-- Required Course (Full Width) -->
+                <div class="mb-4">
+                    <label for="course" class="form-label fw-semibold">Required Course</label>
+                    <InputText id="course" class="form-control" @bind-Value="scholarship.RequiredCourse" aria-label="Required Course" placeholder="e.g. BS Computer Science, BS Information Technology" />
+                    <ValidationMessage For="@(() => scholarship.RequiredCourse)" class="text-danger small mt-1" />
+                    <small class="form-text text-muted">Leave blank if open to all courses. You can list multiple courses separated by commas.</small>
+                </div>
+
+                <!-- Side by Side Layout -->
+                <div class="row g-3">
+                    <!-- Eligibility Section (Left) -->
+                    <div class="col-md-6">
+                        <label for="eligibility" class="form-label fw-semibold">Eligibility Criteria</label>
+                        <InputTextArea id="eligibility" class="form-control" rows="12" @bind-Value="scholarship.Eligibility" aria-label="Eligibility" placeholder="Define who is eligible to apply for this scholarship. List each criterion on a separate line using bullet points.&#10;&#10;Example format:&#10;• Criterion 1&#10;• Criterion 2&#10;• Criterion 3" />
+                        <ValidationMessage For="@(() => scholarship.Eligibility)" class="text-danger small mt-1" />
+                        <small class="form-text text-muted">Define who is eligible to apply</small>
+                    </div>
+
+                    <!-- Requirements Section (Right) -->
+                    <div class="col-md-6">
+                        <label for="requirements" class="form-label fw-semibold">Requirements</label>
+                        <InputTextArea id="requirements" class="form-control" rows="12" @bind-Value="scholarship.Requirements" aria-label="Requirements" placeholder="List what applicants need to provide or fulfill. List each requirement on a separate line using bullet points.&#10;&#10;Example format:&#10;• Requirement 1&#10;• Requirement 2&#10;• Requirement 3" />
+                        <ValidationMessage For="@(() => scholarship.Requirements)" class="text-danger small mt-1" />
+                        <small class="form-text text-muted">List the requirements</small>
+                    </div>
+                </div>
+
+                <!-- External Application URL (Optional) -->
+                <div class="mt-4">
+                    <label for="externalurl" class="form-label fw-semibold">External Application URL (Optional)</label>
+                    <InputText id="externalurl" class="form-control" @bind-Value="scholarship.ExternalApplicationUrl" aria-label="External Application URL" placeholder="e.g. https://apply.example.com" />
+                    <ValidationMessage For="@(() => scholarship.ExternalApplicationUrl)" class="text-danger small mt-1" />
+                    <small class="form-text text-muted">If you have an external application form or website, provide the URL here</small>
+                </div>
+            }
+            else if (currentStep == 3)
+            {
+                <!-- Step 3: Review & Submit -->
+                <h4 class="mb-4">📋 Review Your Scholarship</h4>
+                <p class="text-muted mb-4">Please review all information before submitting. Click on any section header to edit.</p>
+
+                <!-- Visibility Review -->
+                <div class="review-section">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h6>🌐 Visibility</h6>
+                        <a href="#" @onclick="@(() => GoToStep(0))" @onclick:preventDefault class="edit-link text-primary">Edit</a>
+                    </div>
+                    <div class="review-item">
+                        <span class="review-label">Type:</span>
+                        <span class="review-value">
+                            @if (visibilityType == "open")
+                            {
+                                <span class="text-success fw-semibold">Open to All Students</span>
+                            }
+                            else
+                            {
+                                <span class="text-primary fw-semibold">Targeted to Specific Institutions</span>
+                            }
+                        </span>
+                    </div>
+                    @if (visibilityType == "targeted" && selectedTargetInstitutionIds.Any())
+                    {
+                        <div class="review-item">
+                            <span class="review-label">Target Institutions:</span>
+                            <span class="review-value">
+                                @{
+                                    var targetInstitutions = verifiedInstitutions?
+                                        .Where(i => selectedTargetInstitutionIds.Contains(i.InstitutionProfileId))
+                                        .Select(i => i.InstitutionName)
+                                        .ToList() ?? new List<string>();
+                                }
+                                @string.Join(", ", targetInstitutions)
+                            </span>
+                        </div>
+                        <div class="review-item">
+                            <span class="review-label"></span>
+                            <span class="review-value">
+                                <small class="text-muted">(@selectedTargetInstitutionIds.Count verified institution(s) selected)</small>
+                            </span>
+                        </div>
+                    }
+                </div>
+
+                <!-- Basic Information Review -->
+                <div class="review-section">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h6>📋 Basic Information</h6>
+                        <a href="#" @onclick="@(() => GoToStep(1))" @onclick:preventDefault class="edit-link text-primary">Edit</a>
+                    </div>
+                    @if (!string.IsNullOrEmpty(iconPreviewUrl))
+                    {
+                        <div class="mb-2">
+                            <img src="@iconPreviewUrl" alt="Scholarship Icon" style="max-width:60px;max-height:60px;border-radius:8px;border:1px solid #ccc;" />
+                        </div>
+                    }
+                    <div class="review-item">
+                        <span class="review-label">Title:</span>
+                        <span class="review-value">@(string.IsNullOrEmpty(scholarship.Title) ? "Not provided" : scholarship.Title)</span>
+                    </div>
+                    <div class="review-item">
+                        <span class="review-label">Benefits:</span>
+                        <span class="review-value">@(string.IsNullOrEmpty(scholarship.Benefits) ? "Not provided" : scholarship.Benefits)</span>
+                    </div>
+                    <div class="review-item">
+                        <span class="review-label">Deadline:</span>
+                        <span class="review-value">@scholarship.ApplicationDeadline.ToString("MMMM dd, yyyy")</span>
+                    </div>
+                    @if (!string.IsNullOrEmpty(scholarship.Description))
+                    {
+                        <div class="review-item">
+                            <span class="review-label">Description:</span>
+                            <span class="review-value">@scholarship.Description</span>
+                        </div>
+                    }
+                </div>
+
+                <!-- Eligibility & Requirements Review -->
+                <div class="review-section">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h6>📝 Eligibility & Requirements</h6>
+                        <a href="#" @onclick="@(() => GoToStep(2))" @onclick:preventDefault class="edit-link text-primary">Edit</a>
+                    </div>
+                    @if (!string.IsNullOrEmpty(scholarship.RequiredCourse))
+                    {
+                        <div class="review-item">
+                            <span class="review-label">Required Course:</span>
+                            <span class="review-value">@scholarship.RequiredCourse</span>
+                        </div>
+                    }
+                    @if (!string.IsNullOrEmpty(scholarship.Eligibility))
+                    {
+                        <div class="review-item">
+                            <span class="review-label">Eligibility:</span>
+                            <span class="review-value">@scholarship.Eligibility</span>
+                        </div>
+                    }
+                    @if (!string.IsNullOrEmpty(scholarship.Requirements))
+                    {
+                        <div class="review-item">
+                            <span class="review-label">Requirements:</span>
+                            <span class="review-value">@scholarship.Requirements</span>
+                        </div>
+                    }
+                    @if (scholarship.SlotsAvailable.HasValue)
+                    {
+                        <div class="review-item">
+                            <span class="review-label">Slots Available:</span>
+                            <span class="review-value">@scholarship.SlotsAvailable</span>
+                        </div>
+                    }
+                    @if (scholarship.MinimumGPA.HasValue)
+                    {
+                        <div class="review-item">
+                            <span class="review-label">Minimum GPA:</span>
+                            <span class="review-value">@scholarship.MinimumGPA.Value.ToString("F2")</span>
+                        </div>
+                    }
+                    @if (scholarship.RequiredYearLevel.HasValue)
+                    {
+                        <div class="review-item">
+                            <span class="review-label">Required Year Level:</span>
+                            <span class="review-value">Year @scholarship.RequiredYearLevel</span>
+                        </div>
+                    }
+                    @if (!string.IsNullOrEmpty(scholarship.ExternalApplicationUrl))
+                    {
+                        <div class="review-item">
+                            <span class="review-label">External URL:</span>
+                            <span class="review-value">@scholarship.ExternalApplicationUrl</span>
+                        </div>
+                    }
+                </div>
+            }
         </div>
 
-        <button type="submit" class="btn btn-primary btn-lg mt-4" style="min-width:180px;outline:2px solid transparent;outline-offset:2px;" disabled="@isSubmitted">
-            @if (isSubmitted)
+        <!-- Navigation Buttons -->
+        <div class="navigation-buttons">
+            @if (currentStep > 0)
             {
-                <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                <span>Posting...</span>
+                <button type="button" class="btn btn-outline-secondary btn-lg" @onclick="PreviousStep" disabled="@isSubmitted">
+                    <span>← Previous</span>
+                </button>
             }
             else
             {
-                <span class="visually-hidden">Submit scholarship form</span>
-                <span>Post Scholarship</span>
+                <div></div>
             }
-        </button>
+
+            @if (currentStep < steps.Length - 1)
+            {
+                <button type="button" class="btn btn-primary btn-lg" @onclick="NextStep" disabled="@isSubmitted">
+                    <span>Next →</span>
+                </button>
+            }
+            else
+            {
+                <button type="submit" class="btn btn-success btn-lg px-5" disabled="@isSubmitted">
+                    @if (isSubmitted)
+                    {
+                        <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                        <span>Posting...</span>
+                    }
+                    else
+                    {
+                        <span>Post Scholarship</span>
+                    }
+                </button>
+            }
+        </div>
     </EditForm>
 </div>
 
@@ -283,33 +784,101 @@
     private bool isSubmitted = false;
     private string? errorMessage;
 
-        // Icon upload variables
-        private IBrowserFile? uploadedIconFile;
-        private string? iconPreviewUrl;
-        private bool isUploadingIcon = false;
+    // Icon upload variables
+    private IBrowserFile? uploadedIconFile;
+    private string? iconPreviewUrl;
+    private bool isUploadingIcon = false;
     
-    // Partnership-related variables
-    private bool enablePartnership = false;
-    private string selectedInstitutionId = string.Empty;
-    private List<InstitutionProfile>? availableInstitutions;
+    // Verified institutions list (used in visibility targeting)
+    private List<InstitutionProfile>? verifiedInstitutions;
+
+    // Stepper variables
+    private int currentStep = 0;
+    private readonly string[] steps = new[]
+    {
+        "Visibility",
+        "Basic Info",
+        "Eligibility & Requirements",
+        "Review"
+    };
+    
+    // Visibility/Targeting variables
+    private string visibilityType = "open"; // "open" or "targeted"
+    private List<Guid> selectedTargetInstitutionIds = new();
+    private string institutionSearchQuery = string.Empty;
+
+    // Navigation methods
+    private void NextStep()
+    {
+        // Validate step 0 (Visibility) before proceeding
+        if (currentStep == 0 && visibilityType == "targeted" && !selectedTargetInstitutionIds.Any())
+        {
+            errorMessage = "Please select at least one institution for targeted visibility, or choose 'Open to All Students'.";
+            return;
+        }
+        
+        // Clear error message when moving to next step
+        errorMessage = null;
+        
+        if (currentStep < steps.Length - 1)
+        {
+            currentStep++;
+        }
+    }
+
+    private void PreviousStep()
+    {
+        if (currentStep > 0)
+        {
+            currentStep--;
+        }
+    }
+
+    private void GoToStep(int step)
+    {
+        if (step >= 0 && step < steps.Length)
+        {
+            currentStep = step;
+        }
+    }
+    
+    // Institution targeting methods
+    private void ToggleInstitutionSelection(Guid institutionId)
+    {
+        if (selectedTargetInstitutionIds.Contains(institutionId))
+        {
+            selectedTargetInstitutionIds.Remove(institutionId);
+        }
+        else
+        {
+            selectedTargetInstitutionIds.Add(institutionId);
+        }
+    }
+    
+    private void RemoveTargetInstitution(Guid institutionId)
+    {
+        selectedTargetInstitutionIds.Remove(institutionId);
+    }
 
     protected override async Task OnInitializedAsync()
     {
         try
         {
             using var context = await DbContextFactory.CreateDbContextAsync();
-            // Load all institutional users for partnership (regardless of verification status)
-            availableInstitutions = await context.InstitutionProfiles
+            
+            // Load ONLY verified institutions for visibility targeting
+            verifiedInstitutions = await context.InstitutionProfiles
+                .Where(ip => ip.IsVerified)
                 .OrderBy(ip => ip.InstitutionName)
                 .ToListAsync();
                 
-            // Debug: Log the count of institutions found
-            Console.WriteLine($"Found {availableInstitutions?.Count ?? 0} institutions for partnership");
+            // Debug: Log the count
+            Console.WriteLine($"Found {verifiedInstitutions?.Count ?? 0} verified institutions for targeting");
         }
         catch (Exception ex)
         {
             Console.WriteLine($"Error loading institutions: {ex.Message}");
-            availableInstitutions = new List<InstitutionProfile>();
+            verifiedInstitutions = new List<InstitutionProfile>();
         }
     }
 
@@ -343,35 +912,6 @@
             {
                 errorMessage = "No benefactor profile found for this user.";
                 return;
-            }
-
-            // ✅ Handle partnership validation
-            Guid? partnerInstitutionId = null;
-            if (enablePartnership)
-            {
-                if (string.IsNullOrEmpty(selectedInstitutionId))
-                {
-                    errorMessage = "Please select an institution partner or disable partnership.";
-                    return;
-                }
-                
-                if (!Guid.TryParse(selectedInstitutionId, out var parsedId))
-                {
-                    errorMessage = "Invalid institution selection.";
-                    return;
-                }
-                
-                partnerInstitutionId = parsedId;
-                
-                // Verify the institution exists
-                var partnerInstitution = await context.InstitutionProfiles
-                    .FirstOrDefaultAsync(ip => ip.InstitutionProfileId == partnerInstitutionId);
-                    
-                if (partnerInstitution == null)
-                {
-                    errorMessage = "Selected institution is not available for partnership.";
-                    return;
-                }
             }
 
             // ✅ Handle icon upload - Upload to Azure Blob Storage
@@ -418,11 +958,24 @@
 
             // ✅ Assign foreign keys and timestamps
             scholarship.BenefactorProfileId = benefactor.BenefactorProfileId;
-            scholarship.InstitutionProfileId = partnerInstitutionId; // Set partner institution if selected
+            scholarship.InstitutionProfileId = null; // No partnership support for benefactor scholarships
             scholarship.CreatedAt = DateTime.Now;
             // ✅ ENFORCE: Benefactor scholarships are ALWAYS external/open (accessible to all students)
-            // This ensures benefactor scholarships are never internal/institutional, even in partnerships
             scholarship.IsInternal = false;
+            
+            // ✅ Save visibility and targeting settings
+            scholarship.VisibilityType = visibilityType;
+            if (visibilityType == "targeted" && selectedTargetInstitutionIds.Any())
+            {
+                // Store target institution IDs as JSON
+                scholarship.TargetInstitutionIds = System.Text.Json.JsonSerializer.Serialize(selectedTargetInstitutionIds);
+                Console.WriteLine($"Targeting {selectedTargetInstitutionIds.Count} institutions: {scholarship.TargetInstitutionIds}");
+            }
+            else
+            {
+                scholarship.TargetInstitutionIds = null;
+                Console.WriteLine("Scholarship is open to all students");
+            }
 
             // ✅ Save to database
             context.Scholarships.Add(scholarship);
