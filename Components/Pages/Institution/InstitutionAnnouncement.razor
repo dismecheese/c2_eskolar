@@ -99,7 +99,7 @@
                                                     </span>
                                                 }
                                                 <span class="badge @(announcement.AuthorType == UserRole.Institution ? "badge-institution" : announcement.AuthorType == UserRole.Benefactor ? "badge-benefactor" : "badge-normal")">
-                                                    @announcement.AuthorType
+                                                    @(announcement.AuthorType == UserRole.SuperAdmin ? "System" : announcement.AuthorType.ToString())
                                                 </span>
                                                 @if (!string.IsNullOrEmpty(announcement.Category))
                                                 {
