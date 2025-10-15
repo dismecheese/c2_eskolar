@@ -590,6 +590,7 @@ namespace c2_eskolar.Services
                 
                 return await context.BookmarkedAnnouncements
                     .Include(b => b.Announcement)
+                    .ThenInclude(a => a.Photos) // Include photos for announcements
                     .Where(b => b.UserId == userId)
                     .OrderByDescending(b => b.CreatedAt)
                     .ToListAsync();

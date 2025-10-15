@@ -110,12 +110,12 @@
                                             <div class="d-flex align-items-center gap-2">
                                                 <small class="text-muted">@announcement.CreatedAt.ToString("MMM dd, yyyy")</small>
                                                 
-                                                <!-- Bookmark Button -->
-                                                <button class="btn @(GetBookmarkButtonClass(announcement.AnnouncementId)) btn-sm bookmark-btn" 
+                                                <!-- Heart Bookmark Button -->
+                                                <button class="btn @GetBookmarkButtonClass(announcement.AnnouncementId) btn-sm bookmark-btn" 
                                                         @onclick="(e) => ToggleBookmark(announcement.AnnouncementId, e)" 
                                                         @onclick:stopPropagation="true"
-                                                        title="@(GetBookmarkTooltip(announcement.AnnouncementId))">
-                                                    <i class="@(GetBookmarkIcon(announcement.AnnouncementId))"></i>
+                                                        title="@GetBookmarkTooltip(announcement.AnnouncementId)">
+                                                    <i class="@GetBookmarkIcon(announcement.AnnouncementId)"></i>
                                                 </button>
                                                 <!-- Expand/Collapse toggle -->
                                                 <button class="modern-expand-btn @(IsAnnouncementExpanded(announcement.AnnouncementId) ? "expanded" : "")" 
@@ -1842,16 +1842,15 @@
     {
         var isBookmarked = bookmarkedAnnouncementIds.Contains(announcementId);
         return isBookmarked 
-            ? "btn-success border-0 shadow-sm" // Strong green for bookmarked - matches scholarship style
+            ? "btn-success border-0 shadow-sm" // Strong green for bookmarked
             : "btn-outline-secondary border-2"; // Clear outline for unbookmarked
     }
 
     private string GetBookmarkIcon(Guid announcementId)
     {
-        var isBookmarked = bookmarkedAnnouncementIds.Contains(announcementId);
-        return isBookmarked 
-            ? "bi-bookmark-heart-fill" // Filled heart bookmark for bookmarked - matches scholarship style
-            : "bi-bookmark"; // Empty bookmark for unbookmarked
+        return bookmarkedAnnouncementIds.Contains(announcementId) 
+            ? "fas fa-heart" // Filled heart (Font Awesome solid)
+            : "far fa-heart"; // Empty heart (Font Awesome regular)
     }
 
     private string GetBookmarkTooltip(Guid announcementId)
