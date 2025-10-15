@@ -1021,7 +1021,7 @@
         Content = "",
         AuthorId = "",
         AuthorName = "",
-        AuthorType = UserRole.Benefactor
+        AuthorType = UserRole.SuperAdmin
     };
     
     private string currentUserId = "";
@@ -1164,7 +1164,7 @@
             Content = "",
             AuthorId = currentUserId,
             AuthorName = currentUserName,
-            AuthorType = UserRole.Benefactor,
+            AuthorType = UserRole.SuperAdmin,
             Priority = AnnouncementPriority.Normal,
             IsPublic = true,
             IsActive = true
@@ -1249,6 +1249,11 @@
             // Upload new images if any
             var uploadedImageUrls = await UploadSelectedImages();
             Console.WriteLine($"📸 SaveAnnouncement: Received {uploadedImageUrls.Count} uploaded URLs");
+
+            // Ensure announcements created from this admin page are tagged as System (SuperAdmin)
+            editingAnnouncement.AuthorId = currentUserId;
+            editingAnnouncement.AuthorName = currentUserName;
+            editingAnnouncement.AuthorType = UserRole.SuperAdmin;
 
             Announcement savedAnnouncement;
             if (editingAnnouncement.AnnouncementId != Guid.Empty)
@@ -1666,7 +1671,7 @@
             Content = "",
             AuthorId = "",
             AuthorName = "",
-            AuthorType = UserRole.Benefactor
+            AuthorType = UserRole.SuperAdmin
         };
         
         // Clear image-related data
