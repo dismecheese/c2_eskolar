@@ -458,9 +458,9 @@
 
             [Required(ErrorMessage = "Year level is required.")]
             public string YearLevel { get; set; } = string.Empty;
-        }
+    }
 
-        private StudentVerificationModel verificationModel = new StudentVerificationModel();
+    private StudentVerificationModel verificationModel = new StudentVerificationModel();
 
         private bool IsSubmitting = false;
         private bool ShowSuccessModal = false;
@@ -1077,7 +1077,11 @@
 
         // Year Level Dropdown
         private bool ShowYearLevelDropdown = false;
-        private string SelectedYearLevel = string.Empty;
+        private string SelectedYearLevel
+        {
+            get => verificationModel.YearLevel;
+            set => verificationModel.YearLevel = value;
+        }
         private string SelectedYearLevelText => string.IsNullOrEmpty(SelectedYearLevel) ? "Select year level" : SelectedYearLevel;
         private void ToggleYearLevelDropdown() => ShowYearLevelDropdown = !ShowYearLevelDropdown;
         private void CloseYearLevelDropdown() => ShowYearLevelDropdown = false;
@@ -1102,6 +1106,7 @@
             Navigation.NavigateTo("/dashboard/student");
         }
     }
+
     </div>
 </EditForm>
 

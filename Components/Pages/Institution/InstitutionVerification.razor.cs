@@ -404,7 +404,7 @@ namespace c2_eskolar.Components.Pages.Institution
                 institutionProfile.AccountStatus = "Pending";
 
                 await InstitutionProfileService.SaveProfileAsync(institutionProfile);
-                ProfileErrorMessage = "Verification submitted successfully!";
+                // Show the success modal (do not also set an inline ProfileErrorMessage)
                 ShowSuccessModal = true;
             }
             catch (Exception ex)

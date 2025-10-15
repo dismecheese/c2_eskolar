@@ -248,17 +248,41 @@
 
 @if (ShowSuccessModal)
 {
-	<div class="sv-modal-overlay">
-		<div class="sv-modal sv-modal-simple">
+	<div class="sv-modal-overlay" @onclick="CloseSuccessModal">
+		<div class="sv-modal" @onclick:stopPropagation="true">
 			<div class="sv-modal-header">
-				<h3>Verification Submitted!</h3>
+				<h3>Verification Submitted Successfully!</h3>
+				<button type="button" class="sv-modal-close" @onclick="CloseSuccessModal">
+					<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+						<path d="M6 18L18 6M6 6l12 12"/>
+					</svg>
+				</button>
 			</div>
 			<div class="sv-modal-body">
-				<p>Your institution verification has been submitted successfully. Your account status is now <b>Pending</b>.</p>
+				<div class="sv-modal-icon">
+					<svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+						<path d="M9 12l2 2 4-4"/>
+						<circle cx="12" cy="12" r="10"/>
+					</svg>
+				</div>
+				<div class="sv-modal-content">
+					<h4>Your institution verification request has been submitted!</h4>
+					<p>Thank you for submitting your documents. Our admin team will review your information and documents within 2-3 business days.</p>
+					<div class="sv-modal-info-box">
+						<h5>What happens next?</h5>
+						<ul>
+							<li>Admin review of your submitted documents</li>
+							<li>Verification of your institutional information</li>
+							<li>Email notification once verification is complete</li>
+							<li>Access to all features upon approval</li>
+						</ul>
+					</div>
+					<p><strong>Status:</strong> <span class="sv-status-badge sv-status-pending">Pending Review</span></p>
+				</div>
 			</div>
 			<div class="sv-modal-footer">
-				<button class="sv-btn sv-btn-primary" @onclick="@(() => ViewProfile())">View Profile</button>
-				<button class="sv-btn sv-btn-secondary" @onclick="@(() => CloseSuccessModal())">Close</button>
+				<button type="button" class="sv-btn sv-btn-secondary" @onclick="CloseSuccessModal">Stay Here</button>
+				<button type="button" class="sv-btn sv-btn-primary" @onclick="ViewProfile">View Profile</button>
 			</div>
 		</div>
 	</div>

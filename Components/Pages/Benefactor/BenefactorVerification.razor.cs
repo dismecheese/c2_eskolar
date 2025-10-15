@@ -121,6 +121,7 @@ namespace c2_eskolar.Components.Pages.Benefactor
         [Inject] private Services.BenefactorProfileService BenefactorProfileService { get; set; } = default!;
         [Inject] private AuthenticationStateProvider AuthenticationStateProvider { get; set; } = default!;
         [Inject] private Services.DocumentIntelligenceService DocumentIntelligenceService { get; set; } = default!;
+        [Inject] private NavigationManager Navigation { get; set; } = default!;
 
         // File upload and removal methods for Document Upload section
         private async Task OnIdFileChange(InputFileChangeEventArgs e)
@@ -447,7 +448,8 @@ namespace c2_eskolar.Components.Pages.Benefactor
                 benefactorProfile.AccountStatus = "Pending";
 
                 await BenefactorProfileService.SaveProfileAsync(benefactorProfile);
-                ProfileErrorMessage = "Verification submitted successfully!";
+                ShowSuccessModal = true;
+                StateHasChanged();
             }
             catch (Exception ex)
             {
@@ -486,6 +488,21 @@ namespace c2_eskolar.Components.Pages.Benefactor
                     LogoUploadUrl = profile.Logo;
                 }
             }
+        }
+
+        // Modal logic for success modal
+        public bool ShowSuccessModal = false;
+        
+        public void CloseSuccessModal()
+        {
+            ShowSuccessModal = false;
+            InvokeAsync(StateHasChanged);
+        }
+        
+        public void ViewProfile()
+        {
+            ShowSuccessModal = false;
+            Navigation.NavigateTo("/dashboard/benefactor");
         }
     }
 }
