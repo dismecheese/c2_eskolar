@@ -1638,15 +1638,16 @@
         }
     }
 
-    private string GetSourceHost(string url)
+    private string GetSourceHost(string? url)
     {
+        if (string.IsNullOrEmpty(url)) return "Unknown";
         try
         {
-            return new Uri(url).Host;
+            return new Uri(url!).Host.Replace("www.", "");
         }
         catch
         {
-            return url;
+            return url!;
         }
     }
 
@@ -1951,12 +1952,12 @@
         _ => "🔵"
     };
 
-    private string GetApprovalSourceName(string sourceUrl)
+    private string GetApprovalSourceName(string? sourceUrl)
     {
         if (string.IsNullOrEmpty(sourceUrl)) return "Unknown";
         try
         {
-            var uri = new Uri(sourceUrl);
+            var uri = new Uri(sourceUrl!);
             return uri.Host.Replace("www.", "");
         }
         catch
@@ -2399,19 +2400,19 @@
         return csv.ToString();
     }
 
-    private string EscapeCsvField(string field)
+    private string EscapeCsvField(string? field)
     {
         if (string.IsNullOrEmpty(field))
             return "";
-        
+
         // Escape quotes and wrap in quotes if contains comma, quote, or newline
-        field = field.Replace("\"", "\"\"");
-        if (field.Contains(",") || field.Contains("\"") || field.Contains("\n") || field.Contains("\r"))
+        var safe = field.Replace("\"", "\"\"");
+        if (safe.Contains(",") || safe.Contains("\"") || safe.Contains("\n") || safe.Contains("\r"))
         {
-            field = $"\"{field}\"";
+            safe = $"\"{safe}\"";
         }
-        
-        return field;
+
+        return safe;
     }
 
     // Cleanup

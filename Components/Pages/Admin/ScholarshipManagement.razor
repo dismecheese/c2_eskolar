@@ -266,8 +266,7 @@
                                         </span>
                                         <br />
                                         <small class="text-muted">
-                                            @(scholarship.ApplicationDeadline <= DateTime.Now ? "Expired" : 
-                                              (scholarship.ApplicationDeadline - DateTime.Now).Days + " days left")
+                                            @(scholarship.ApplicationDeadline <= DateTime.Now ? "Expired" : (scholarship.ApplicationDeadline - DateTime.Now).Days + " days left")
                                         </small>
                                     </div>
                                 </td>
@@ -428,8 +427,11 @@
         todayPublishedCount = allScholarships.Count(s => s.CreatedAt.Date == DateTime.Today);
         activeScholarshipsCount = allScholarships.Count(s => s.IsActive && s.ApplicationDeadline > DateTime.Now);
         totalApplicationsCount = allScholarships.Sum(s => s.Applications.Count);
-        averageMonetaryValue = allScholarships.Where(s => s.MonetaryValue.HasValue).Any() ? 
-            allScholarships.Where(s => s.MonetaryValue.HasValue).Average(s => s.MonetaryValue.Value) : 0m;
+        var monetaryValues = allScholarships
+            .Where(s => s.MonetaryValue.HasValue)
+            .Select(s => s.MonetaryValue!.Value)
+            .ToList();
+        averageMonetaryValue = monetaryValues.Any() ? monetaryValues.Average() : 0m;
     }
 
     private void ApplyFilters()
@@ -630,7 +632,7 @@
         await JSRuntime.InvokeVoidAsync("alert", "Bulk operations modal will be implemented next!");
     }
 
-    private async Task EditScholarship(Scholarship scholarship)
+    private Task EditScholarship(Scholarship scholarship)
     {
         // Open edit modal prefilled with scholarship data
         editingScholarship = new Scholarship
@@ -649,6 +651,7 @@
             IconUrl = scholarship.IconUrl
         };
         showEditModal = true;
+        return Task.CompletedTask;
     }
 
     private async Task PreviewScholarship(Scholarship scholarship)
