@@ -453,7 +453,7 @@
             .Where(a => a.GWA.HasValue && a.GWA.Value > 0)
             .ToList();
         
-        AverageGWA = studentsWithGWA.Any() ? studentsWithGWA.Average(a => a.GWA.Value) : 0;
+        AverageGWA = studentsWithGWA.Any() ? studentsWithGWA.Average(a => a.GWA!.Value) : 0;
 
         // Calculate acceptance rate
         var processedApplications = allApplications
@@ -601,184 +601,194 @@
     }
     else if (profile != null)
     {
-        <!-- Analytics Header -->
-        <div class="analytics-header">
-            <div class="analytics-header-bg"></div>
-            <h1 class="analytics-title">Institution Analytics Dashboard</h1>
-            <p class="analytics-subtitle">Comprehensive insights for @profile.InstitutionName</p>
-            <div class="last-updated">Last updated: @DateTime.Now.ToString("MMMM dd, yyyy 'at' h:mm tt")</div>
+        <!-- Top Bar -->
+        <div class="dashboard-topbar">
+            <div class="dashboard-date">@DateTime.Now.ToString("MMMM dd, yyyy")</div>
         </div>
-        <!-- Modern Metrics Grid -->
+
+        <!-- Welcome Banner -->
+        <div class="dashboard-banner-centered">
+            <div class="banner-text">
+                <h2>Institution Analytics</h2>
+                <p>Comprehensive insights for @profile.InstitutionName</p>
+            </div>
+            <div class="banner-img">
+                <i class="fas fa-chart-line"></i>
+            </div>
+        </div>
+        <!-- Key Metrics Cards -->
         <div class="metrics-grid">
             <!-- Total Applications -->
-            <div class="metric-card metric-card-primary">
-                <div class="metric-icon">
-                    <i class="fas fa-file-alt"></i>
-                </div>
-                <div class="metric-content">
-                    <div class="metric-title">Total Applications</div>
-                    <div class="metric-value">@TotalApplicants</div>
-                    <div class="metric-subtitle">
-                        <i class="fas fa-clock"></i>
-                        All time applications
+            <div class="metric-card application-stats">
+                <div>
+                    <div class="metric-icon">
+                        <i class="fas fa-file-alt"></i>
+                    </div>
+                    <div class="metric-info">
+                        <div class="metric-value">@TotalApplicants</div>
+                        <div class="metric-label">Total Applications</div>
+                        <div class="metric-breakdown">
+                            Accepted: @AcceptedApplicants | Pending: @PendingApplicants | Rejected: @RejectedApplicants
+                        </div>
                     </div>
                 </div>
             </div>
 
             <!-- New Applications This Month -->
-            <div class="metric-card metric-card-success">
-                <div class="metric-icon">
-                    <i class="fas fa-calendar-plus"></i>
-                </div>
-                <div class="metric-content">
-                    <div class="metric-title">New This Month</div>
-                    <div class="metric-value">@NewApplicantsThisMonth</div>
-                    <div class="metric-subtitle">
-                        <i class="fas fa-calendar"></i>
-                        @DateTime.Now.ToString("MMMM yyyy")
+            <div class="metric-card growth-stats">
+                <div>
+                    <div class="metric-icon">
+                        <i class="fas fa-calendar-plus"></i>
+                    </div>
+                    <div class="metric-info">
+                        <div class="metric-value">@NewApplicantsThisMonth</div>
+                        <div class="metric-label">New This Month</div>
+                        <div class="metric-breakdown">
+                            Applications in @DateTime.Now.ToString("MMMM yyyy")
+                        </div>
                     </div>
                 </div>
             </div>
 
             <!-- Pending Approvals -->
-            <div class="metric-card metric-card-warning">
-                <div class="metric-icon">
-                    <i class="fas fa-clock"></i>
-                </div>
-                <div class="metric-content">
-                    <div class="metric-title">Pending Approval</div>
-                    <div class="metric-value">@PendingApprovals</div>
-                    <div class="metric-subtitle">
-                        <i class="fas fa-exclamation-triangle"></i>
-                        Require review
+            <div class="metric-card efficiency-stats">
+                <div>
+                    <div class="metric-icon">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <div class="metric-info">
+                        <div class="metric-value">@PendingApprovals</div>
+                        <div class="metric-label">Pending Approval</div>
+                        <div class="metric-breakdown">
+                            Applications requiring review
+                        </div>
                     </div>
                 </div>
             </div>
 
             <!-- Acceptance Rate -->
-            <div class="metric-card metric-card-info">
-                <div class="metric-icon">
-                    <i class="fas fa-percentage"></i>
-                </div>
-                <div class="metric-content">
-                    <div class="metric-title">Acceptance Rate</div>
-                    <div class="metric-value">@AcceptanceRate.ToString("F1")%</div>
-                    <div class="metric-subtitle">
-                        <i class="fas fa-chart-bar"></i>
-                        Approval efficiency
+            <div class="metric-card user-stats">
+                <div>
+                    <div class="metric-icon">
+                        <i class="fas fa-percentage"></i>
+                    </div>
+                    <div class="metric-info">
+                        <div class="metric-value">@AcceptanceRate.ToString("F1")%</div>
+                        <div class="metric-label">Acceptance Rate</div>
+                        <div class="metric-breakdown">
+                            Approval efficiency metric
+                        </div>
                     </div>
                 </div>
             </div>
 
             <!-- Average GWA -->
-            <div class="metric-card metric-card-purple">
-                <div class="metric-icon">
-                    <i class="fas fa-star"></i>
-                </div>
-                <div class="metric-content">
-                    <div class="metric-title">Average GWA</div>
-                    <div class="metric-value">@AverageGWA.ToString("F2")</div>
-                    <div class="metric-subtitle">
-                        <i class="fas fa-trophy"></i>
-                        @GetGWAClassification(AverageGWA)
+            <div class="metric-card scholarship-stats">
+                <div>
+                    <div class="metric-icon">
+                        <i class="fas fa-star"></i>
+                    </div>
+                    <div class="metric-info">
+                        <div class="metric-value">@AverageGWA.ToString("F2")</div>
+                        <div class="metric-label">Average GWA</div>
+                        <div class="metric-breakdown">
+                            @GetGWAClassification(AverageGWA)
+                        </div>
                     </div>
                 </div>
             </div>
 
             <!-- Total Scholarship Value -->
-            <div class="metric-card metric-card-success">
-                <div class="metric-icon">
-                    <i class="fas fa-dollar-sign"></i>
-                </div>
-                <div class="metric-content">
-                    <div class="metric-title">Total Value</div>
-                    <div class="metric-value">₱@TotalScholarshipValue.ToString("N0")</div>
-                    <div class="metric-subtitle">
-                        <i class="fas fa-piggy-bank"></i>
-                        Available funding
+            <div class="metric-card financial-stats">
+                <div>
+                    <div class="metric-icon">
+                        <i class="fas fa-dollar-sign"></i>
+                    </div>
+                    <div class="metric-info">
+                        <div class="metric-value">₱@TotalScholarshipValue.ToString("N0")</div>
+                        <div class="metric-label">Total Value Offered</div>
+                        <div class="metric-breakdown">
+                            Available funding across programs
+                        </div>
                     </div>
                 </div>
             </div>
 
             <!-- Distributed Value -->
-            <div class="metric-card metric-card-primary">
-                <div class="metric-icon">
-                    <i class="fas fa-coins"></i>
-                </div>
-                <div class="metric-content">
-                    <div class="metric-title">Distributed</div>
-                    <div class="metric-value">₱@DistributedValue.ToString("N0")</div>
-                    <div class="metric-subtitle">
-                        <i class="fas fa-chart-pie"></i>
-                        @((TotalScholarshipValue > 0 ? (double)DistributedValue / (double)TotalScholarshipValue * 100 : 0).ToString("F1"))% utilized
+            <div class="metric-card user-stats">
+                <div>
+                    <div class="metric-icon">
+                        <i class="fas fa-coins"></i>
+                    </div>
+                    <div class="metric-info">
+                        <div class="metric-value">₱@DistributedValue.ToString("N0")</div>
+                        <div class="metric-label">Value Distributed</div>
+                        <div class="metric-breakdown">
+                            @((TotalScholarshipValue > 0 ? (double)DistributedValue / (double)TotalScholarshipValue * 100 : 0).ToString("F1"))% utilized
+                        </div>
                     </div>
                 </div>
             </div>
 
             <!-- Active Scholars -->
-            <div class="metric-card metric-card-indigo">
-                <div class="metric-icon">
-                    <i class="fas fa-users"></i>
-                </div>
-                <div class="metric-content">
-                    <div class="metric-title">Active Scholars</div>
-                    <div class="metric-value">@ActiveScholars</div>
-                    <div class="metric-subtitle">
-                        <i class="fas fa-user-check"></i>
-                        Currently enrolled
+            <div class="metric-card growth-stats">
+                <div>
+                    <div class="metric-icon">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <div class="metric-info">
+                        <div class="metric-value">@ActiveScholars</div>
+                        <div class="metric-label">Active Scholars</div>
+                        <div class="metric-breakdown">
+                            Currently enrolled students
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
 
         <!-- Enhanced Filters Section -->
-        <div class="card shadow-sm mb-4 border-0">
-            <div class="card-body">
-                <div class="p-3 mb-3 text-white rounded-3 shadow-sm position-relative overflow-hidden" 
-                     style="background: linear-gradient(135deg, #6f42c1, #9c6bdb);">
-                    <div class="position-absolute top-0 start-0 w-100 h-100"
-                         style="background: radial-gradient(circle at top left, rgba(255,255,255,0.15), transparent 60%);"></div>
-                    <h5 class="mb-0 fw-semibold position-relative">📊 Enhanced Analytics Filters</h5>
+        <div class="chart-container mb-4">
+            <h3><i class="fas fa-filter me-2"></i>Analytics Filters</h3>
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold text-muted">Filter by Status</label>
+                    <select class="form-select" @bind="selectedStatusFilter" @bind:after="ApplyFilters" 
+                            style="border-radius: 8px; border: 1px solid #e2e8f0; padding: 0.75rem;">
+                        <option value="">All Statuses</option>
+                        <option value="Pending">Pending</option>
+                        <option value="Approved">Approved</option>
+                        <option value="Rejected">Rejected</option>
+                    </select>
                 </div>
-                
-                <div class="row g-3">
-                    <div class="col-md-4">
-                        <label class="form-label small fw-semibold text-muted">Filter by Status</label>
-                        <select class="form-select" @bind="selectedStatusFilter" @bind:after="ApplyFilters">
-                            <option value="">All Statuses</option>
-                            <option value="Pending">Pending</option>
-                            <option value="Approved">Approved</option>
-                            <option value="Rejected">Rejected</option>
-                        </select>
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label small fw-semibold text-muted">Search Students</label>
-                        <input type="text" class="form-control" placeholder="Search by name..." 
-                               @bind="studentSearchText" @bind:after="ApplyFilters" />
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label small fw-semibold text-muted">Date Range</label>
-                        <select class="form-select" @bind="selectedDateRange" @bind:after="ApplyFilters">
-                            <option value="all">All Time</option>
-                            <option value="month">This Month</option>
-                            <option value="quarter">Last 3 Months</option>
-                            <option value="year">This Year</option>
-                        </select>
-                    </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold text-muted">Search Students</label>
+                    <input type="text" class="form-control" placeholder="Search by name..." 
+                           @bind="studentSearchText" @bind:after="ApplyFilters"
+                           style="border-radius: 8px; border: 1px solid #e2e8f0; padding: 0.75rem;" />
                 </div>
-
-                @if (!string.IsNullOrEmpty(selectedStatusFilter) || !string.IsNullOrEmpty(studentSearchText) || selectedDateRange != "all")
-                {
-                    <div class="mt-3">
-                        <div class="d-flex align-items-center">
-                            <span class="badge bg-primary me-2">@GetFilteredApplicationsCount() results</span>
-                            <button class="btn btn-outline-secondary btn-sm" @onclick="ClearFilters">
-                                <i class="fas fa-times me-1"></i>Clear Filters
-                            </button>
-                        </div>
-                    </div>
-                }
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold text-muted">Date Range</label>
+                    <select class="form-select" @bind="selectedDateRange" @bind:after="ApplyFilters"
+                            style="border-radius: 8px; border: 1px solid #e2e8f0; padding: 0.75rem;">
+                        <option value="all">All Time</option>
+                        <option value="month">This Month</option>
+                        <option value="quarter">Last 3 Months</option>
+                        <option value="year">This Year</option>
+                    </select>
+                </div>
             </div>
+
+            @if (!string.IsNullOrEmpty(selectedStatusFilter) || !string.IsNullOrEmpty(studentSearchText) || selectedDateRange != "all")
+            {
+                <div class="mt-3 d-flex align-items-center gap-2">
+                    <span class="status-badge status-accepted">@GetFilteredApplicationsCount() results</span>
+                    <button class="btn btn-outline-secondary btn-sm" @onclick="ClearFilters"
+                            style="border-radius: 8px; padding: 0.5rem 1rem;">
+                        <i class="fas fa-times me-1"></i>Clear Filters
+                    </button>
+                </div>
+            }
         </div>
 
         <!-- Applicant Demographics Chart -->
@@ -893,86 +903,147 @@
             </div>
         </div>
 
-        <!-- Demographic Analysis -->
-        <div class="chart-container">
-            <div class="chart-header">
-                <div class="chart-title">
-                    <i class="fas fa-users"></i>
-                    Demographic Analysis
-                </div>
-                <div class="chart-subtitle">Applicant demographics breakdown by category</div>
+        <!-- Demographic Analytics Section -->
+        <div class="demographics-section">
+            <h3><i class="fas fa-users me-2"></i>Demographic Analytics</h3>
+            <div class="demographics-grid">
+                @foreach (var category in demographicCategories)
+                {
+                    var categoryPieData = GetDemographicPieDataForCategory(category.Key);
+                    var categoryTotal = categoryPieData.Sum(x => x.Value);
+                    
+                    <div class="demographic-card">
+                        <div class="position-relative">
+                            <div class="click-hint">Click to expand</div>
+                            <h4><i class="fas fa-chart-pie"></i>@category.Value</h4>
+                            
+                            @if (categoryPieData.Count == 0 || categoryTotal == 0)
+                            {
+                                <div class="text-center py-4">
+                                    <i class="fas fa-inbox text-muted" style="font-size: 3rem; opacity: 0.3;"></i>
+                                    <p class="text-muted mt-2">No data available</p>
+                                </div>
+                            }
+                            else
+                            {
+                                @foreach (var slice in categoryPieData.Take(5)) // Show top 5 to avoid overcrowding
+                                {
+                                    var percent = categoryTotal > 0 ? Math.Round(slice.Value / categoryTotal * 100, 1) : 0;
+                                    if (slice.Value > 0)
+                                    {
+                                        <div class="demographic-item">
+                                            <div class="demographic-label">@slice.Label</div>
+                                            <div class="demographic-count">@slice.Value (@percent%)</div>
+                                        </div>
+                                    }
+                                }
+                                @if (categoryPieData.Count(x => x.Value > 0) > 5)
+                                {
+                                    <div class="demographic-item">
+                                        <div class="demographic-label text-muted">Others</div>
+                                        <div class="demographic-count">+@(categoryPieData.Count(x => x.Value > 0) - 5) more</div>
+                                    </div>
+                                }
+                            }
+                        </div>
+                    </div>
+                }
             </div>
-            <div class="chart-content">
+        </div>
 
-			<div class="row">
-				@foreach (var category in demographicCategories)
-				{
-					var categoryPieData = GetDemographicPieDataForCategory(category.Key);
-					var categoryNonZeroSlices = categoryPieData.Where(x => x.Value > 0).ToList();
-					var categoryPiePaths = GetPiePaths(categoryNonZeroSlices);
-					var categoryTotal = categoryPieData.Sum(x => x.Value);
-					
-					<div class="col-md-6 col-lg-3 mb-4">
-						<div class="card h-100 border-light">
-							<div class="card-body text-center">
-								<h6 class="card-title text-primary mb-3">@category.Value</h6>
-								
-								@if (categoryPieData.Count == 0 || categoryTotal == 0)
-								{
-									<div class="mb-3">
-										<svg width="120" height="120" viewBox="0 0 32 32">
-											<circle r="16" cx="16" cy="16" fill="#e9ecef" />
-										</svg>
-									</div>
-									<div class="text-muted small">No data available</div>
-								}
-								else
-								{
-									<div class="mb-3">
-										<svg width="120" height="120" viewBox="0 0 32 32">
-											@if (categoryNonZeroSlices.Count == 0)
-											{
-												<circle r="16" cx="16" cy="16" fill="#e9ecef" />
-											}
-											else if (categoryNonZeroSlices.Count == 1)
-											{
-												<circle r="16" cx="16" cy="16" fill="@categoryNonZeroSlices[0].Color" />
-											}
-											else
-											{
-												<circle r="16" cx="16" cy="16" fill="#e9ecef" />
-												@for (int i = 0; i < categoryNonZeroSlices.Count; i++)
-												{
-													<path d="@categoryPiePaths[i]" fill="@categoryNonZeroSlices[i].Color" stroke="white" stroke-width="0.3" />
-												}
-											}
-										</svg>
-									</div>
-									
-									<div class="text-start">
-										@foreach (var slice in categoryPieData.Take(5)) // Show top 5 to avoid overcrowding
-										{
-											var percent = categoryTotal > 0 ? Math.Round(slice.Value / categoryTotal * 100, 1) : 0;
-											var legendColor = slice.Value > 0 ? slice.Color : "#adb5bd";
-											<div class="d-flex align-items-center mb-1">
-												<span class="badge me-2" style="background:@legendColor; min-width: 12px;">&nbsp;</span>
-												<small class="text-truncate" style="max-width: 140px;" title="@slice.Label">
-													@slice.Label
-													<span class="text-muted">(@percent%)</span>
-												</small>
-											</div>
-										}
-										@if (categoryPieData.Count > 5)
-										{
-											<small class="text-muted">+@(categoryPieData.Count - 5) more...</small>
-										}
-									</div>
-								}
-							</div>
-						</div>
-					</div>
-				}
-            </div>
+        <!-- Performance Analytics Section -->
+        <div class="performance-section">
+            <h3><i class="fas fa-chart-bar me-2"></i>Performance Analytics</h3>
+            <div class="performance-grid">
+                <!-- Success Rate Display -->
+                <div class="performance-card">
+                    <h4><i class="fas fa-trophy"></i>Success Metrics</h4>
+                    <div class="success-rate-display">
+                        <div class="rate-label">Overall Success Rate</div>
+                        <div class="rate-value-large">@SuccessRate.ToString("F1")%</div>
+                        <div class="mini-line-graph">
+                            <svg class="line-svg" viewBox="0 0 200 60">
+                                <polyline points="10,40 50,25 90,30 130,15 170,20 190,10"
+                                         fill="none" stroke="#10b981" stroke-width="2"/>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="success-rate-item">
+                        <span>Acceptance Rate</span>
+                        <span class="rate-value">@AcceptanceRate.ToString("F1")%</span>
+                    </div>
+                    <div class="success-rate-item">
+                        <span>Retention Rate</span>
+                        <span class="rate-value">@RetentionRate.ToString("F1")%</span>
+                    </div>
+                    <div class="success-rate-item">
+                        <span>Utilization Rate</span>
+                        <span class="rate-value">@UtilizationRate.ToString("F1")%</span>
+                    </div>
+                </div>
+
+                <!-- Institution Performance -->
+                <div class="performance-card">
+                    <h4><i class="fas fa-building"></i>Institution Performance</h4>
+                    <div class="ai-stat-item">
+                        <span>Total Scholarships</span>
+                        <span class="stat-value">@TotalScholarshipSlots</span>
+                    </div>
+                    <div class="ai-stat-item">
+                        <span>Active Scholars</span>
+                        <span class="stat-value">@ActiveScholars</span>
+                    </div>
+                    <div class="ai-stat-item">
+                        <span>Available Slots</span>
+                        <span class="stat-value">@AvailableSlots</span>
+                    </div>
+                    <div class="ai-stat-item">
+                        <span>Graduated Scholars</span>
+                        <span class="stat-value">@GraduatedScholars</span>
+                    </div>
+                </div>
+
+                <!-- Financial Performance -->
+                <div class="performance-card">
+                    <h4><i class="fas fa-money-bill-wave"></i>Financial Impact</h4>
+                    <div class="ai-stat-item">
+                        <span>Total Value</span>
+                        <span class="stat-value">₱@TotalScholarshipValue.ToString("N0")</span>
+                    </div>
+                    <div class="ai-stat-item">
+                        <span>Distributed</span>
+                        <span class="stat-value">₱@DistributedValue.ToString("N0")</span>
+                    </div>
+                    <div class="ai-stat-item">
+                        <span>Average Award</span>
+                        <span class="stat-value">₱@((ActiveScholars > 0 ? DistributedValue / ActiveScholars : 0).ToString("N0"))</span>
+                    </div>
+                    <div class="ai-stat-item">
+                        <span>Efficiency Score</span>
+                        <span class="stat-value">@((TotalScholarshipValue > 0 ? (double)DistributedValue / (double)TotalScholarshipValue * 100 : 0).ToString("F1"))%</span>
+                    </div>
+                </div>
+
+                <!-- Application Trends -->
+                <div class="performance-card">
+                    <h4><i class="fas fa-trending-up"></i>Application Trends</h4>
+                    <div class="ai-stat-item">
+                        <span>This Month</span>
+                        <span class="stat-value">@NewApplicantsThisMonth</span>
+                    </div>
+                    <div class="ai-stat-item">
+                        <span>Pending Review</span>
+                        <span class="stat-value">@PendingApprovals</span>
+                    </div>
+                    <div class="ai-stat-item">
+                        <span>Average GWA</span>
+                        <span class="stat-value">@AverageGWA.ToString("F2")</span>
+                    </div>
+                    <div class="ai-stat-item">
+                        <span>Quality Score</span>
+                        <span class="stat-value">@((AverageGWA >= 3.0 ? "High" : AverageGWA >= 2.5 ? "Medium" : "Low"))</span>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -1154,200 +1225,114 @@
             </div>
         </div>
 
-        <!-- Scholarship Utilization & Impact -->
-        <div class="chart-container">
-            <div class="chart-header">
-                <div class="chart-title">
-                    <i class="fas fa-dollar-sign"></i>
-                    Scholarship Utilization & Impact
-                </div>
-                <div class="chart-subtitle">Financial metrics and scholarship effectiveness</div>
-            </div>
-            <div class="chart-content">
-            
-            <!-- 1. Active Scholarships vs Available Slots -->
-            <div class="mb-4">
-                <h6 class="text-success">📊 Scholarship Capacity Analysis</h6>
-                <div class="row">
-                    <div class="col-md-6">
-                        <div class="card bg-light">
-                            <div class="card-body text-center">
-                                <h3 class="text-primary mb-2">@ActiveScholars / @TotalScholarshipSlots</h3>
-                                <p class="mb-1"><strong>Active Scholars / Total Slots</strong></p>
-                                <div class="progress mb-2" style="height: 20px;">
-                                    <div class="progress-bar bg-success" role="progressbar" 
-                                         style="width: @(UtilizationRate.ToString("F1") + "%")" 
-                                         aria-valuenow="@UtilizationRate" aria-valuemin="0" aria-valuemax="100">
-                                        @UtilizationRate.ToString("F1")%
-                                    </div>
-                                </div>
-                                <small class="text-muted">
-                                    <span class="badge bg-success me-2">@ActiveScholars Active</span>
-                                    <span class="badge bg-secondary">@AvailableSlots Available</span>
-                                </small>
-                            </div>
-                        </div>
+        <!-- Financial Analytics Section -->
+        <div class="financial-section">
+            <h3><i class="fas fa-chart-pie me-2"></i>Financial Analytics</h3>
+            <div class="financial-grid">
+                <!-- Total Scholarship Value -->
+                <div class="financial-card">
+                    <div class="financial-header">
+                        <i class="fas fa-dollar-sign"></i>
+                        <span>Total Value</span>
                     </div>
-                    <div class="col-md-6">
-                        <div class="p-3">
-                            <h6 class="text-muted">Utilization Insights</h6>
-                            <ul class="list-unstyled small">
-                                <li class="mb-2">
-                                    <i class="text-success">✓</i> 
-                                    <strong>Capacity:</strong> @UtilizationRate.ToString("F1")% of scholarship slots are filled
-                                </li>
-                                <li class="mb-2">
-                                    <i class="text-info">ℹ️</i> 
-                                    <strong>Availability:</strong> @AvailableSlots slots remain open for new applicants
-                                </li>
-                                <li class="mb-2">
-                                    <i class="text-warning">⚡</i> 
-                                    <strong>Impact:</strong> Currently supporting @ActiveScholars students
-                                </li>
-                            </ul>
-                        </div>
-                    </div>
+                    <div class="financial-value">₱@TotalScholarshipValue.ToString("N0")</div>
+                    <div class="financial-detail">Available scholarship funding</div>
                 </div>
-            </div>
 
-            <!-- 2. Retention and Dropout Rates -->
-            <div class="mb-4">
-                <h6 class="text-success">📈 Retention and Dropout Analysis</h6>
-                <div class="row">
-                    <div class="col-md-4">
-                        <div class="card bg-success text-white text-center">
-                            <div class="card-body">
-                                <h4>@RetentionRate.ToString("F1")%</h4>
-                                <p class="mb-0"><strong>Retention Rate</strong></p>
-                                <small>@(TotalScholarsEver - DroppedOutScholars) of @TotalScholarsEver scholars retained</small>
-                            </div>
-                        </div>
+                <!-- Distributed Value -->
+                <div class="financial-card">
+                    <div class="financial-header">
+                        <i class="fas fa-hand-holding-usd"></i>
+                        <span>Distributed</span>
                     </div>
-                    <div class="col-md-4">
-                        <div class="card bg-danger text-white text-center">
-                            <div class="card-body">
-                                <h4>@DropoutRate.ToString("F1")%</h4>
-                                <p class="mb-0"><strong>Dropout Rate</strong></p>
-                                <small>@DroppedOutScholars of @TotalScholarsEver scholars discontinued</small>
-                            </div>
-                        </div>
+                    <div class="financial-value">₱@DistributedValue.ToString("N0")</div>
+                    <div class="financial-detail">@((TotalScholarshipValue > 0 ? (double)DistributedValue / (double)TotalScholarshipValue * 100 : 0).ToString("F1"))% of total value</div>
+                </div>
+
+                <!-- Average Scholarship -->
+                <div class="financial-card">
+                    <div class="financial-header">
+                        <i class="fas fa-calculator"></i>
+                        <span>Average Award</span>
                     </div>
-                    <div class="col-md-4">
-                        <div class="card bg-primary text-white text-center">
-                            <div class="card-body">
-                                <h4>@CurrentlyActive</h4>
-                                <p class="mb-0"><strong>Currently Active</strong></p>
-                                <small>Ongoing scholarship recipients</small>
-                            </div>
+                    <div class="financial-value">₱@((ActiveScholars > 0 ? DistributedValue / ActiveScholars : 0).ToString("N0"))</div>
+                    <div class="financial-detail">Per active scholar</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Activity Section -->
+        <div class="activity-section">
+            <!-- Recent Applications -->
+            <div class="recent-applications">
+                <h3><i class="fas fa-clock me-2"></i>Recent Applications</h3>
+                <div class="table-container">
+                    @if (FilteredApplications.Any())
+                    {
+                        <table class="analytics-table">
+                            <thead>
+                                <tr>
+                                    <th>Student</th>
+                                    <th>Applied</th>
+                                    <th>Status</th>
+                                    <th>GWA</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var application in FilteredApplications.Take(10))
+                                {
+                                    <tr>
+                                        <td>
+                                            <i class="fas fa-user me-2"></i>
+                                            @(application.Student?.FirstName + " " + application.Student?.LastName ?? "Unknown Student")
+                                        </td>
+                                        <td>@application.ApplicationDate.ToString("MMM dd, yyyy")</td>
+                                        <td><span class="status-badge @GetStatusBadgeClass(application.Status)">@application.Status</span></td>
+                                        <td>@(application.GWA?.ToString("F2") ?? "N/A")</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    }
+                    else
+                    {
+                        <div class="text-center py-4">
+                            <i class="fas fa-inbox text-muted" style="font-size: 3rem; opacity: 0.3;"></i>
+                            <p class="text-muted mt-2">No applications match your current filters</p>
                         </div>
-                    </div>
+                    }
                 </div>
             </div>
 
-            <!-- 3. Success Rates (Graduation) -->
-            <div class="mb-4">
-                <h6 class="text-success">🎯 Success and Graduation Outcomes</h6>
-                <div class="row">
-                    <div class="col-md-6">
-                        <div class="card bg-light">
-                            <div class="card-body">
-                                <div class="d-flex justify-content-between align-items-center mb-3">
-                                    <h5 class="mb-0">Success Rate</h5>
-                                    <span class="badge bg-success fs-6">@SuccessRate.ToString("F1")%</span>
-                                </div>
-                                
-                                <!-- Visual breakdown -->
-                                <div class="mb-3">
-                                    <div class="d-flex mb-2">
-                                        <div class="flex-fill">
-                                            <div class="progress" style="height: 25px;">
-                                                <div class="progress-bar bg-success" style="width: @(((double)GraduatedScholars/TotalScholarsEver*100).ToString("F1") + "%")">
-                                                    Graduated (@GraduatedScholars)
-                                                </div>
-                                                <div class="progress-bar bg-primary" style="width: @(((double)CurrentlyActive/TotalScholarsEver*100).ToString("F1") + "%")">
-                                                    Active (@CurrentlyActive)
-                                                </div>
-                                                <div class="progress-bar bg-danger" style="width: @(((double)DroppedOutScholars/TotalScholarsEver*100).ToString("F1") + "%")">
-                                                    Dropped (@DroppedOutScholars)
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div class="row text-center">
-                                    <div class="col-4">
-                                        <div class="text-success">
-                                            <strong>@GraduatedScholars</strong><br>
-                                            <small>Graduated</small>
-                                        </div>
-                                    </div>
-                                    <div class="col-4">
-                                        <div class="text-primary">
-                                            <strong>@CurrentlyActive</strong><br>
-                                            <small>In Progress</small>
-                                        </div>
-                                    </div>
-                                    <div class="col-4">
-                                        <div class="text-danger">
-                                            <strong>@DroppedOutScholars</strong><br>
-                                            <small>Discontinued</small>
-                                        </div>
-                                    </div>
-                                </div>
+            <!-- Application Statistics -->
+            <div class="top-scholarships">
+                <h3><i class="fas fa-chart-bar me-2"></i>Application Statistics</h3>
+                <div class="bar-chart">
+                    <div class="bar-item-horizontal">
+                        <div class="bar-label-left">Accepted</div>
+                        <div class="bar-wrapper-horizontal">
+                            <div class="bar-fill-horizontal" style="width: @((TotalApplicants > 0 ? (double)AcceptedApplicants / TotalApplicants * 100 : 0).ToString("F1"))%; background: linear-gradient(90deg, #10b981, #059669);">
+                                <div class="bar-percentage-badge">@AcceptedApplicants</div>
                             </div>
                         </div>
                     </div>
-                    <div class="col-md-6">
-                        <div class="p-3">
-                            <h6 class="text-muted">Impact Summary</h6>
-                            <ul class="list-unstyled">
-                                <li class="mb-3">
-                                    <div class="d-flex align-items-center">
-                                        <span class="badge bg-success me-2">📚</span>
-                                        <div>
-                                            <strong>Educational Impact:</strong><br>
-                                            <small class="text-muted">@GraduatedScholars students have successfully completed their education through your scholarships</small>
-                                        </div>
-                                    </div>
-                                </li>
-                                <li class="mb-3">
-                                    <div class="d-flex align-items-center">
-                                        <span class="badge bg-primary me-2">⏳</span>
-                                        <div>
-                                            <strong>Ongoing Support:</strong><br>
-                                            <small class="text-muted">@CurrentlyActive students are currently benefiting from your scholarship program</small>
-                                        </div>
-                                    </div>
-                                </li>
-                                <li class="mb-3">
-                                    <div class="d-flex align-items-center">
-                                        <span class="badge bg-info me-2">💡</span>
-                                        <div>
-                                            <strong>Program Effectiveness:</strong><br>
-                                            <small class="text-muted">Your scholarship program maintains a @RetentionRate.ToString("F1")% retention rate, indicating strong student support</small>
-                                        </div>
-                                    </div>
-                                </li>
-                            </ul>
+                    <div class="bar-item-horizontal">
+                        <div class="bar-label-left">Pending</div>
+                        <div class="bar-wrapper-horizontal">
+                            <div class="bar-fill-horizontal" style="width: @((TotalApplicants > 0 ? (double)PendingApplicants / TotalApplicants * 100 : 0).ToString("F1"))%; background: linear-gradient(90deg, #f59e0b, #d97706);">
+                                <div class="bar-percentage-badge">@PendingApplicants</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bar-item-horizontal">
+                        <div class="bar-label-left">Rejected</div>
+                        <div class="bar-wrapper-horizontal">
+                            <div class="bar-fill-horizontal" style="width: @((TotalApplicants > 0 ? (double)RejectedApplicants / TotalApplicants * 100 : 0).ToString("F1"))%; background: linear-gradient(90deg, #ef4444, #dc2626);">
+                                <div class="bar-percentage-badge">@RejectedApplicants</div>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
-
-            <!-- Additional Insights -->
-            <div class="alert alert-info">
-                <h6 class="alert-heading">📋 Program Insights</h6>
-                <p class="mb-1">
-                    <strong>Total Scholars Supported:</strong> @TotalScholarsEver students have received scholarships from your program.
-                </p>
-                <p class="mb-1">
-                    <strong>Capacity Utilization:</strong> You are currently using @UtilizationRate.ToString("F1")% of your scholarship capacity.
-                </p>
-                <p class="mb-0">
-                    <strong>Success Impact:</strong> @GraduatedScholars students have successfully graduated, representing a @SuccessRate.ToString("F1")% success rate.
-                </p>
-            </div>
             </div>
         </div>
     }

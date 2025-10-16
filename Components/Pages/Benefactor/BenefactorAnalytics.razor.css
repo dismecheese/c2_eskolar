@@ -1,36 +1,39 @@
-/* Modern Analytics Dashboard with Gradient Cards & Charts */
+/* Modern Analytics Dashboard with Gradient Cards & Charts - Benefactor Version */
 .analytics-container {
-    padding: 20px;
-    max-width: 1400px;
-    margin: 0 auto;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    min-height: 100vh;
+    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+    padding: 2rem;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
 /* Override topbar styling for Benefactor Analytics */
 .dashboard-topbar {
-    background: linear-gradient(135deg, #1976d2, #64b5f6);
-    margin-bottom: 20px;
+    background: transparent !important;
+    border-bottom: none !important;
 }
 
 .dashboard-date {
-    background: rgba(255, 255, 255, 0.1);
-    padding: 8px 16px;
-    border-radius: 20px;
-    color: white;
-    font-size: 0.9rem;
-    backdrop-filter: blur(10px);
+    background: rgba(255, 255, 255, 0.9);
+    border-radius: 12px;
+    padding: 0.75rem 1.5rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 /* Welcome Banner styling */
 .dashboard-banner-centered {
-    background: linear-gradient(135deg, #1976d2, #64b5f6);
-    border-radius: 16px;
-    padding: 32px;
-    text-align: center;
+    background: linear-gradient(135deg, #1976d2 0%, #64b5f6 100%);
+    border-radius: 20px;
+    padding: 3rem 2rem;
+    margin-bottom: 2rem;
     position: relative;
     overflow: hidden;
-    margin-bottom: 32px;
-    box-shadow: 0 8px 32px rgba(25, 118, 210, 0.15);
+    box-shadow: 0 8px 32px rgba(25, 118, 210, 0.3);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 160px;
 }
 
 .dashboard-banner-centered::before {
@@ -40,33 +43,33 @@
     left: 0;
     right: 0;
     bottom: 0;
-    background: radial-gradient(circle at top left, rgba(255,255,255,0.15), transparent 60%);
+    background: radial-gradient(circle at top right, rgba(255, 255, 255, 0.2), transparent 60%);
     pointer-events: none;
 }
 
 .banner-text h2 {
-    color: white;
-    font-size: 2.5rem;
-    font-weight: 700;
-    margin: 0;
     position: relative;
+    margin: 0;
+    font-weight: 700;
+    font-size: 2.5rem;
     z-index: 1;
+    color: white;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .banner-text p {
-    color: rgba(255, 255, 255, 0.85);
-    font-size: 1.1rem;
-    margin: 8px 0 0 0;
     position: relative;
+    margin: 0.5rem 0 0;
+    font-size: 1.1rem;
+    color: rgba(255, 255, 255, 0.9);
     z-index: 1;
 }
 
 .banner-img {
-    position: absolute;
-    right: 20px;
-    top: 50%;
-    transform: translateY(-50%);
-    opacity: 0.1;
+    position: relative;
+    z-index: 1;
+    font-size: 4rem;
+    opacity: 0.8;
 }
 
 .analytics-header {
@@ -116,23 +119,24 @@
 .metrics-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: 24px;
-    margin-bottom: 32px;
+    gap: 1.5rem;
+    margin-bottom: 2rem;
 }
 
 .metric-card {
-    background: white;
+    background: linear-gradient(145deg, #ffffff, #f8fafc);
     border-radius: 16px;
-    padding: 24px;
+    padding: 1.5rem;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.2);
     position: relative;
     overflow: hidden;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-    border: 1px solid rgba(25, 118, 210, 0.1);
+    transition: all 0.3s ease;
 }
 
 .metric-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+    transform: translateY(-4px);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
 }
 
 .metric-card::before {
@@ -140,33 +144,34 @@
     position: absolute;
     top: 0;
     left: 0;
+    right: 0;
     height: 4px;
-    width: 100%;
-    background: linear-gradient(90deg, #1976d2, #64b5f6);
+    background: linear-gradient(90deg, #3b82f6, #10b981);
+    border-radius: 16px 16px 0 0;
 }
 
 .metric-card.user-stats::before {
-    background: linear-gradient(90deg, #3b82f6, #60a5fa);
+    background: linear-gradient(90deg, #3b82f6, #1e40af);
 }
 
 .metric-card.scholarship-stats::before {
-    background: linear-gradient(90deg, #10b981, #34d399);
+    background: linear-gradient(90deg, #10b981, #059669);
 }
 
 .metric-card.application-stats::before {
-    background: linear-gradient(90deg, #f59e0b, #fbbf24);
+    background: linear-gradient(90deg, #f59e0b, #d97706);
 }
 
 .metric-card.financial-stats::before {
-    background: linear-gradient(90deg, #10b981, #34d399);
+    background: linear-gradient(90deg, #ef4444, #dc2626);
 }
 
 .metric-card.growth-stats::before {
-    background: linear-gradient(90deg, #8b5cf6, #a78bfa);
+    background: linear-gradient(90deg, #8b5cf6, #7c3aed);
 }
 
 .metric-card.efficiency-stats::before {
-    background: linear-gradient(90deg, #ef4444, #f87171);
+    background: linear-gradient(90deg, #06b6d4, #0891b2);
 }
 
 .metric-card > div {
@@ -174,21 +179,21 @@
     z-index: 1;
     display: flex;
     align-items: center;
-    gap: 16px;
+    gap: 1rem;
 }
 
 .metric-icon {
-    width: 60px;
-    height: 60px;
+    width: 48px;
+    height: 48px;
     border-radius: 12px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 24px;
+    font-size: 1.5rem;
     color: white;
-    background: linear-gradient(135deg, #1976d2, #64b5f6);
+    background: linear-gradient(135deg, #3b82f6, #1e40af);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
     flex-shrink: 0;
-    box-shadow: 0 4px 16px rgba(25, 118, 210, 0.3);
 }
 
 .metric-info {
@@ -197,66 +202,77 @@
 }
 
 .metric-card.scholarship-stats .metric-icon {
-    background: linear-gradient(135deg, #10b981, #34d399);
+    background: linear-gradient(135deg, #10b981, #059669);
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
 }
 
 .metric-card.application-stats .metric-icon {
-    background: linear-gradient(135deg, #f59e0b, #fbbf24);
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
 }
 
 .metric-card.financial-stats .metric-icon {
-    background: linear-gradient(135deg, #10b981, #34d399);
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
 }
 
 .metric-card.growth-stats .metric-icon {
-    background: linear-gradient(135deg, #8b5cf6, #a78bfa);
+    background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+    box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
 }
 
 .metric-card.efficiency-stats .metric-icon {
-    background: linear-gradient(135deg, #ef4444, #f87171);
+    background: linear-gradient(135deg, #06b6d4, #0891b2);
+    box-shadow: 0 4px 12px rgba(6, 182, 212, 0.3);
 }
 
 .metric-value {
     font-size: 2rem;
     font-weight: 700;
-    color: #1f2937;
-    margin: 0;
-    line-height: 1.2;
-    word-break: break-all;
+    color: #1e293b;
+    line-height: 1;
+    margin-bottom: 0.25rem;
+    background: linear-gradient(135deg, #1e293b, #475569);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
 }
 
 .metric-label {
-    font-size: 0.9rem;
-    color: #6b7280;
-    margin: 4px 0 0 0;
-    font-weight: 500;
+    color: #64748b;
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
 }
 
 .metric-breakdown {
+    margin-top: 0.75rem;
     font-size: 0.8rem;
-    color: #9ca3af;
-    margin-top: 8px;
+    color: #64748b;
+    opacity: 0.8;
 }
 
 /* Modern Chart Sections with Enhanced Design */
 .charts-section {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-    gap: 32px;
-    margin-bottom: 32px;
+    gap: 2rem;
+    margin-bottom: 2rem;
 }
 
 .chart-container {
-    background: white;
-    border-radius: 16px;
-    padding: 32px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-    border: 1px solid rgba(25, 118, 210, 0.1);
-    transition: all 0.3s ease;
+    background: linear-gradient(145deg, #ffffff, #f8fafc);
+    border-radius: 20px;
+    padding: 2rem;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    position: relative;
+    overflow: hidden;
 }
 
 .chart-container:hover {
-    transform: translateY(-2px);
+    box-shadow: 0 12px 48px rgba(0, 0, 0, 0.12);
 }
 
 .chart-container::before {
@@ -264,16 +280,16 @@
     position: absolute;
     top: 0;
     left: 0;
+    right: 0;
     height: 4px;
-    width: 100%;
-    background: linear-gradient(90deg, #1976d2, #64b5f6);
+    background: linear-gradient(90deg, #3b82f6, #10b981, #f59e0b);
 }
 
 .chart-container h3 {
-    font-size: 1.3rem;
-    font-weight: 600;
-    color: #1f2937;
-    margin-bottom: 24px;
+    margin: 0 0 1.5rem;
+    color: #1e293b;
+    font-weight: 700;
+    font-size: 1.25rem;
 }
 
 .pie-chart {
@@ -1213,4 +1229,80 @@
 .analytics-alert-text {
 	font-size: 1rem;
 	color: #212529;
+}
+
+/* Responsive Design */
+@media (max-width: 1200px) {
+    .metrics-grid {
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    }
+}
+
+@media (max-width: 768px) {
+    .analytics-container {
+        padding: 1rem;
+    }
+    
+    .dashboard-banner-centered {
+        padding: 2rem 1rem;
+    }
+    
+    .dashboard-banner-centered h1 {
+        font-size: 2rem;
+    }
+    
+    .dashboard-banner-centered p {
+        font-size: 1rem;
+    }
+    
+    .metrics-grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+    
+    .metric-card {
+        padding: 1.25rem;
+    }
+    
+    .metric-icon {
+        width: 40px;
+        height: 40px;
+        font-size: 1.25rem;
+    }
+    
+    .metric-value {
+        font-size: 1.75rem;
+    }
+    
+    .chart-container {
+        padding: 1.5rem;
+    }
+    
+    .charts-section {
+        grid-template-columns: 1fr;
+    }
+    
+    .financial-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .performance-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 480px) {
+    .dashboard-banner-centered h1 {
+        font-size: 1.75rem;
+    }
+    
+    .metric-card > div {
+        flex-direction: column;
+        text-align: center;
+        gap: 0.75rem;
+    }
+    
+    .metric-info {
+        text-align: center;
+    }
 }
