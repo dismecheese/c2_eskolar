@@ -30,6 +30,8 @@ namespace c2_eskolar.Data
     public DbSet<BenefactorAdminProfile> BenefactorAdminProfiles { get; set; }
     public DbSet<Document> Documents { get; set; }
     public DbSet<Photo> Photos { get; set; }
+    // Notifications
+    public DbSet<c2_eskolar.Models.Notification> Notifications { get; set; }
     
     // Bookmark system
     public DbSet<BookmarkedScholarship> BookmarkedScholarships { get; set; }
@@ -43,6 +45,9 @@ namespace c2_eskolar.Data
     
     // AI Token Usage Tracking
     public DbSet<AITokenUsage> AITokenUsages { get; set; }
+    
+    // Monthly Statistics for Historical Analytics
+    public DbSet<MonthlyStatistics> MonthlyStatistics { get; set; }
 
         // MODEL CONFIGURATION & RELATIONSHIPS
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -198,6 +203,11 @@ namespace c2_eskolar.Data
 
             modelBuilder.Entity<ScrapingProcessLog>()
                 .HasIndex(spl => spl.ProcessedAt);
+
+            // Configure MonthlyStatistics with unique constraint on Year/Month combination
+            modelBuilder.Entity<MonthlyStatistics>()
+                .HasIndex(ms => new { ms.Year, ms.Month })
+                .IsUnique();
         }
     }
 }

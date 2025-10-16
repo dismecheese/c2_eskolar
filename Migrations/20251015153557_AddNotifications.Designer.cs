@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using c2_eskolar.Data;
 
@@ -11,9 +12,11 @@ using c2_eskolar.Data;
 namespace c2_eskolar.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251015153557_AddNotifications")]
+    partial class AddNotifications
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -918,85 +921,6 @@ namespace c2_eskolar.Migrations
                     b.HasIndex("UserId");
 
                     b.ToTable("InstitutionProfiles");
-                });
-
-            modelBuilder.Entity("c2_eskolar.Models.MonthlyStatistics", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<int>("AcceptedApplications")
-                        .HasColumnType("int");
-
-                    b.Property<int>("ActiveScholarships")
-                        .HasColumnType("int");
-
-                    b.Property<double>("AverageProcessingDays")
-                        .HasColumnType("float");
-
-                    b.Property<double>("BenefactorSuccessRate")
-                        .HasColumnType("float");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<decimal>("DistributedValue")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<double>("InstitutionSuccessRate")
-                        .HasColumnType("float");
-
-                    b.Property<int>("Month")
-                        .HasColumnType("int");
-
-                    b.Property<int>("NewUsers")
-                        .HasColumnType("int");
-
-                    b.Property<int>("PendingApplications")
-                        .HasColumnType("int");
-
-                    b.Property<int>("RejectedApplications")
-                        .HasColumnType("int");
-
-                    b.Property<int>("TotalApplications")
-                        .HasColumnType("int");
-
-                    b.Property<int>("TotalBenefactors")
-                        .HasColumnType("int");
-
-                    b.Property<int>("TotalInstitutions")
-                        .HasColumnType("int");
-
-                    b.Property<decimal>("TotalScholarshipValue")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<int>("TotalScholarships")
-                        .HasColumnType("int");
-
-                    b.Property<int>("TotalStudents")
-                        .HasColumnType("int");
-
-                    b.Property<int>("TotalUsers")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("VerifiedUsers")
-                        .HasColumnType("int");
-
-                    b.Property<int>("Year")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("Year", "Month")
-                        .IsUnique();
-
-                    b.ToTable("MonthlyStatistics");
                 });
 
             modelBuilder.Entity("c2_eskolar.Models.Notification", b =>

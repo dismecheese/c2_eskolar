@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using c2_eskolar.Data;
 
@@ -11,9 +12,11 @@ using c2_eskolar.Data;
 namespace c2_eskolar.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251015061243_AddMonthlyStatisticsTable")]
+    partial class AddMonthlyStatisticsTable
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -999,44 +1002,6 @@ namespace c2_eskolar.Migrations
                     b.ToTable("MonthlyStatistics");
                 });
 
-            modelBuilder.Entity("c2_eskolar.Models.Notification", b =>
-                {
-                    b.Property<int>("NotificationId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("NotificationId"));
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<bool>("IsRead")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("Message")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime?>("ReadAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("Title")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Type")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("UserId")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("NotificationId");
-
-                    b.ToTable("Notifications");
-                });
-
             modelBuilder.Entity("c2_eskolar.Models.PasswordReset", b =>
                 {
                     b.Property<int>("Id")
@@ -1161,10 +1126,6 @@ namespace c2_eskolar.Migrations
                         .HasMaxLength(2000)
                         .HasColumnType("nvarchar(2000)");
 
-                    b.Property<string>("Eligibility")
-                        .HasMaxLength(3000)
-                        .HasColumnType("nvarchar(3000)");
-
                     b.Property<string>("ExternalApplicationUrl")
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
@@ -1211,10 +1172,6 @@ namespace c2_eskolar.Migrations
                     b.Property<int?>("SlotsAvailable")
                         .HasColumnType("int");
 
-                    b.Property<string>("TargetInstitutionIds")
-                        .HasMaxLength(2000)
-                        .HasColumnType("nvarchar(2000)");
-
                     b.Property<string>("Title")
                         .IsRequired()
                         .HasMaxLength(150)
@@ -1222,11 +1179,6 @@ namespace c2_eskolar.Migrations
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2");
-
-                    b.Property<string>("VisibilityType")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
 
                     b.HasKey("ScholarshipId");
 

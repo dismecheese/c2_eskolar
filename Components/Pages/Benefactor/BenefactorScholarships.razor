@@ -144,6 +144,8 @@
     </div>
 </div>
 
+@* Component-scoped CSS will be in BenefactorScholarships.razor.css *@
+
 @code {
     private List<Scholarship>? scholarships;
     private c2_eskolar.Models.BenefactorProfile? benefactorProfile;
@@ -310,4 +312,3 @@
         Navigation.NavigateTo("/dashboard/benefactor/scholarships/post");
     }
 }
-

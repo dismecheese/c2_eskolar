@@ -13,6 +13,7 @@
 @inject BenefactorProfileService BenefactorProfileService
 @inject AuthenticationStateProvider AuthStateProvider
 @inject ApplicationDbContext DbContext
+@inject IJSRuntime JSRuntime
 
 @* Styles moved to `BenefactorDashboard.razor.css` (component-scoped CSS) *@
 
@@ -542,25 +543,61 @@
     {
         <!-- Recently Viewed Scholarships Tab (separate layout) -->
         <div class="scholarship-section">
-            <div style="display: flex; justify-content: flex-end; align-items: center; margin-bottom: 8px;">
-                <button class="clear-link" style="background:none;border:none;color:#bbb;font-weight:500;font-size:16px;">Clear</button>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                <div style="color:#1a202c;font-weight:600;">Recently Viewed</div>
+                <div>
+                    <button class="btn btn-sm btn-outline-secondary me-2" @onclick="async () => await LoadRecentlyViewedAsync()">Refresh</button>
+                    <button class="btn btn-sm btn-danger" @onclick="async () => await ClearRecentlyViewedAsync()">Clear All</button>
+                </div>
             </div>
-            <div class="scholarship-cards" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 32px;">
-                @for (int i = 0; i < 9; i++)
-                {
-                    <div class="scholarship-card" style="position:relative;">
-                        <span style="position:absolute;top:10px;right:16px;font-size:18px;color:#bbb;cursor:pointer;">&times;</span>
-                        <div class="scholarship-card-img" style="display:flex;align-items:center;justify-content:center;">
-                            <svg width="60" height="60" viewBox="0 0 60 60">
-                                <rect x="5" y="5" width="50" height="50" fill="#eee" stroke="#bbb" stroke-width="2"/>
-                                <line x1="15" y1="15" x2="45" y2="45" stroke="#bbb" stroke-width="2"/>
-                                <line x1="15" y1="45" x2="45" y2="15" stroke="#bbb" stroke-width="2"/>
-                            </svg>
+
+            @if (recentlyViewedScholarships == null || !recentlyViewedScholarships.Any())
+            {
+                <div class="alert alert-info py-4 text-center">
+                    <i class="bi bi-clock-history me-2"></i>
+                    <div>No recently viewed scholarships yet.</div>
+                    <div class="mt-2 text-muted">View scholarships and they will appear here for quick access.</div>
+                </div>
+            }
+            else
+            {
+                <div class="row g-4">
+                    @foreach (var s in recentlyViewedScholarships)
+                    {
+                        <div class="col-12 col-md-6 col-lg-4">
+                            <div class="card shadow-sm h-100 clickable-card border-0" style="cursor: pointer;" @onclick="() => ViewScholarship(s.ScholarshipId)">
+                                <div class="card-body d-flex flex-column">
+                                    <div class="d-flex align-items-start justify-content-between mb-2">
+                                        <div>
+                                            <h6 class="mb-1 text-truncate">@s.Title</h6>
+                                            <div class="text-muted small">
+                                                @(!string.IsNullOrEmpty(s.Institution?.InstitutionName) ? s.Institution.InstitutionName : s.Benefactor?.OrganizationName ?? "Provider")
+                                            </div>
+                                        </div>
+                                        <div style="text-align:right;">
+                                            <small class="text-muted">@s.CreatedAt.ToString("MMM dd")</small>
+                                        </div>
+                                    </div>
+
+                                    <div class="mt-auto d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <span class="badge @(s.IsActive ? "bg-success" : "bg-danger")">@(s.IsActive ? "Active" : "Inactive")</span>
+                                            @if (s.SlotsAvailable.HasValue)
+                                            {
+                                                <span class="badge bg-secondary ms-1">@s.SlotsAvailable slots</span>
+                                            }
+                                        </div>
+                                        <div>
+                                            <button class="btn btn-sm btn-outline-primary me-2" @onclick:stopPropagation="true" @onclick="() => ViewScholarship(s.ScholarshipId)">Open</button>
+                                            <button class="btn btn-sm btn-outline-danger" @onclick:stopPropagation="true" @onclick="async (e) => await RemoveFromRecentlyViewedAsync(s.ScholarshipId)"><i class="bi bi-x-lg"></i></button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-                        <div class="scholarship-card-title" style="text-align:center;">Scholarship Name</div>
-                    </div>
-                }
-            </div>
+                    }
+                </div>
+            }
         </div>
     }
     else if (activeTab == 1)
@@ -608,6 +645,9 @@
     private string searchQuery = "";
     private List<Scholarship> scholarships = new();
     private List<Scholarship> filteredScholarships = new();
+    private List<int> recentlyViewedIds = new();
+    private List<Scholarship> recentlyViewedScholarships = new();
+    private const string RecentLocalStorageKey = "c2_eskolar_recently_viewed";
     
     // Filter and sort properties
     private string statusFilter = "";
@@ -638,6 +678,7 @@
         }
         
         await LoadDashboardData();
+        await LoadRecentlyViewedAsync();
         StateHasChanged();
     }
 
@@ -856,7 +897,139 @@
 
     private void ViewScholarship(int scholarshipId)
     {
+        // keep synchronous wrapper for existing callers
+        _ = AddToRecentlyViewedAsync(scholarshipId);
         Navigation.NavigateTo($"/dashboard/benefactor/scholarships-info/{scholarshipId}");
+    }
+
+    private async Task AddToRecentlyViewedAsync(int scholarshipId)
+    {
+        try
+        {
+            // load existing ids from localStorage
+            var json = await JSRuntime.InvokeAsync<string>("localStorage.getItem", RecentLocalStorageKey);
+            if (!string.IsNullOrWhiteSpace(json))
+            {
+                try
+                {
+                    recentlyViewedIds = System.Text.Json.JsonSerializer.Deserialize<List<int>>(json) ?? new List<int>();
+                }
+                catch
+                {
+                    recentlyViewedIds = new List<int>();
+                }
+            }
+
+            // add to front, remove duplicates
+            recentlyViewedIds.RemoveAll(id => id == scholarshipId);
+            recentlyViewedIds.Insert(0, scholarshipId);
+
+            // keep last 12
+            if (recentlyViewedIds.Count > 12)
+                recentlyViewedIds = recentlyViewedIds.Take(12).ToList();
+
+            // persist
+            var toSave = System.Text.Json.JsonSerializer.Serialize(recentlyViewedIds);
+            await JSRuntime.InvokeVoidAsync("localStorage.setItem", RecentLocalStorageKey, toSave);
+
+            // refresh list in UI
+            await LoadRecentlyViewedAsync();
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error updating recently viewed: {ex.Message}");
+        }
+    }
+
+    private async Task LoadRecentlyViewedAsync()
+    {
+        try
+        {
+            recentlyViewedIds = new List<int>();
+            recentlyViewedScholarships = new List<Scholarship>();
+
+            var json = await JSRuntime.InvokeAsync<string>("localStorage.getItem", RecentLocalStorageKey);
+            if (string.IsNullOrWhiteSpace(json))
+                return;
+
+            try
+            {
+                recentlyViewedIds = System.Text.Json.JsonSerializer.Deserialize<List<int>>(json) ?? new List<int>();
+            }
+            catch
+            {
+                recentlyViewedIds = new List<int>();
+            }
+
+            if (!recentlyViewedIds.Any())
+                return;
+
+            // fetch scholarship objects and preserve order from ids list
+            var items = await DbContext.Scholarships
+                .Include(s => s.Benefactor)
+                .Include(s => s.Institution)
+                .Include(s => s.Applications)
+                .Where(s => recentlyViewedIds.Contains(s.ScholarshipId))
+                .ToListAsync();
+
+            // order according to ids
+            recentlyViewedScholarships = recentlyViewedIds
+                .Select(id => items.FirstOrDefault(s => s.ScholarshipId == id))
+                .Where(s => s != null)
+                .Cast<Scholarship>()
+                .ToList();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading recently viewed: {ex.Message}");
+        }
+    }
+
+    private async Task ClearRecentlyViewedAsync()
+    {
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("localStorage.removeItem", RecentLocalStorageKey);
+            recentlyViewedIds.Clear();
+            recentlyViewedScholarships.Clear();
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error clearing recently viewed: {ex.Message}");
+        }
+    }
+
+    private async Task RemoveFromRecentlyViewedAsync(int scholarshipId)
+    {
+        try
+        {
+            var json = await JSRuntime.InvokeAsync<string>("localStorage.getItem", RecentLocalStorageKey);
+            if (!string.IsNullOrWhiteSpace(json))
+            {
+                try
+                {
+                    recentlyViewedIds = System.Text.Json.JsonSerializer.Deserialize<List<int>>(json) ?? new List<int>();
+                }
+                catch
+                {
+                    recentlyViewedIds = new List<int>();
+                }
+            }
+
+            recentlyViewedIds.RemoveAll(id => id == scholarshipId);
+
+            var toSave = System.Text.Json.JsonSerializer.Serialize(recentlyViewedIds);
+            await JSRuntime.InvokeVoidAsync("localStorage.setItem", RecentLocalStorageKey, toSave);
+
+            await LoadRecentlyViewedAsync();
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error removing recently viewed item: {ex.Message}");
+        }
     }
 
     private void AddScholarship()

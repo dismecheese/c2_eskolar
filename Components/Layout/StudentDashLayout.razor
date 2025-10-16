@@ -7,6 +7,8 @@
 @inject UserManager<IdentityUser> UserManager
 @inject StudentProfileService StudentProfileService
 @inject IDbContextFactory<ApplicationDbContext> DbContextFactory
+@inject c2_eskolar.Services.NotificationService NotificationService
+@inject HttpClient Http
 
 @using Microsoft.AspNetCore.Components.Web
 @using Microsoft.AspNetCore.Components.Authorization
@@ -45,6 +47,7 @@
 
     // --- LOGOUT MODAL STATE ---
     private bool showLogoutModal = false;
+    private DotNetObjectReference<StudentDashLayout>? _dotNetRef;
 
     // --- LOGOUT MODAL LOGIC ---
     private void ShowLogoutModal()
@@ -74,6 +77,32 @@
         await LoadNotifications();
     }
 
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            // Load the SignalR client script and connect
+            try
+            {
+                await JSRuntime.InvokeVoidAsync("import", "/js/notifications-client.js");
+                // register .NET reference so the JS client can call into Blazor
+                _dotNetRef = DotNetObjectReference.Create(this);
+                await JSRuntime.InvokeVoidAsync("eval", "window.eskolarNotifications && window.eskolarNotifications.registerDotNet(null)");
+                // Attach the DotNet reference: store in a global and then connect
+                await JSRuntime.InvokeVoidAsync("eval", "(function(){ if(window.eskolarNotifications){ window.eskolarNotifications.registerDotNet(window._dotNetRefPlaceholder); } })()");
+                // Set a placeholder that the JS file can read -- then call connect
+                await JSRuntime.InvokeVoidAsync("eval", "window._dotNetRefPlaceholder = { invokeMethodAsync: function(m,p){ /* placeholder until registered from Blazor */ } }; window.eskolarNotifications && window.eskolarNotifications.connect('/hubs/notifications');");
+                // Instead of complex eval wiring, explicitly call the register function via JS interop
+                await JSRuntime.InvokeVoidAsync("window.eskolarNotifications.registerDotNet", _dotNetRef);
+                await JSRuntime.InvokeVoidAsync("window.eskolarNotifications.connect", "/hubs/notifications");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Notification client load error: {ex.Message}");
+            }
+        }
+    }
+
     private async Task LoadStudentProfile()
     {
         try
@@ -100,48 +129,31 @@
         try
         {
             isLoadingNotifications = true;
-            var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
-            var userId = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-            
-            if (!string.IsNullOrEmpty(userId))
+            // Load persisted notifications via API
+            try
             {
-                var studentProfile = await StudentProfileService.GetProfileByUserIdAsync(userId);
-                if (studentProfile != null)
+                var resp = await Http.GetAsync($"api/notifications?page=1&pageSize=50");
+                if (resp.IsSuccessStatusCode)
                 {
-                    // Create a new DbContext instance for this operation
-                    using var dbContext = await DbContextFactory.CreateDbContextAsync();
-                    
-                    // Get recent scholarship application approvals
-                    var approvedApplications = await dbContext.ScholarshipApplications
-                        .Include(a => a.Scholarship)
-                        .Where(a => a.StudentProfileId == studentProfile.StudentProfileId && 
-                               a.Status == "Approved" && 
-                               a.UpdatedAt.HasValue && 
-                               a.UpdatedAt.Value >= DateTime.Now.AddDays(-30)) // Last 30 days
-                        .OrderByDescending(a => a.UpdatedAt)
-                        .Take(5)
-                        .ToListAsync();
-
-                    notifications = approvedApplications.Select(a => new NotificationItem
+                    var json = await resp.Content.ReadAsStringAsync();
+                    var list = System.Text.Json.JsonSerializer.Deserialize<List<c2_eskolar.Services.NotificationDto>>(json, new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                    if (list != null)
                     {
-                        Title = "Scholarship Approved!",
-                        Description = $"Your application for {a.Scholarship?.Title ?? "scholarship"} has been approved.",
-                        CreatedAt = a.UpdatedAt ?? a.ApplicationDate,
-                        Type = "approval"
-                    }).ToList();
-
-                    // Add general notifications if none exist
-                    if (!notifications.Any())
-                    {
-                        notifications.Add(new NotificationItem
+                        notifications = list.Select(n => new NotificationItem
                         {
-                            Title = "Welcome to eSkolar!",
-                            Description = "Complete your profile to get personalized scholarship recommendations.",
-                            CreatedAt = DateTime.Now,
-                            Type = "info"
-                        });
+                            Id = n.NotificationId,
+                            Title = n.Title,
+                            Description = n.Message,
+                            CreatedAt = n.CreatedAt,
+                            Type = n.Type,
+                            IsRead = n.IsRead
+                        }).ToList();
                     }
                 }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Failed to load notifications from API: {ex.Message}");
             }
         }
         catch (Exception ex)
@@ -155,11 +167,67 @@
         }
     }
 
+    private async Task MarkNotificationAsReadAsync(int notificationId)
+    {
+        try
+        {
+            var resp = await Http.PostAsync($"api/notifications/{notificationId}/read", null);
+            if (resp.IsSuccessStatusCode)
+            {
+                // remove from list by id and mark as read locally to avoid roundtrip
+                var item = notifications.FirstOrDefault(n => n.Id.HasValue && n.Id.Value == notificationId);
+                if (item != null)
+                {
+                    item.IsRead = true;
+                    notifications.Remove(item);
+                    StateHasChanged();
+                }
+                else
+                {
+                    // fallback: reload notifications
+                    await LoadNotifications();
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error marking notification as read: {ex.Message}");
+        }
+    }
+
+    private async Task OnNotificationClick(NotificationItem item)
+    {
+        if (item == null) return;
+        if (item.Id.HasValue && item.Id.Value > 0)
+        {
+            await MarkNotificationAsReadAsync(item.Id.Value);
+        }
+        else
+        {
+            // Temporary: just remove the in-memory item
+            notifications.Remove(item);
+            StateHasChanged();
+        }
+    }
+
     // Clears all notifications
     private void ClearNotifications()
     {
         notifications.Clear();
         StateHasChanged();
+    }
+
+    // Toggle the profile notification offcanvas (reuse rightSidebar or implement a quick toggle)
+    private async void ToggleNotificationOffcanvas()
+    {
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("eval", "var el = document.getElementById('notificationsOffcanvas'); if(el){ var bs = new bootstrap.Offcanvas(el); bs.toggle(); }");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error toggling notifications offcanvas: {ex.Message}");
+        }
     }
 
     // Loads the currently authenticated user's information
@@ -209,6 +277,13 @@
     public void Dispose()
     {
         Navigation.LocationChanged -= OnLocationChanged;
+        try
+        {
+            // tell client to disconnect and unregister dotnet
+            JSRuntime.InvokeVoidAsync("window.eskolarNotifications && window.eskolarNotifications.disconnect");
+        }
+        catch { }
+        _dotNetRef?.Dispose();
     }
 
 
@@ -273,6 +348,31 @@
         public string Description { get; set; } = "";
         public DateTime CreatedAt { get; set; }
         public string Type { get; set; } = "info"; // "approval", "info", "warning", etc.
+        public int? Id { get; set; }
+        public bool IsRead { get; set; }
+    }
+
+    [JSInvokable("ReceiveNotificationFromJs")]
+    public Task ReceiveNotificationFromJs(object payload)
+    {
+        try
+        {
+            // payload is a JSON-like object, but Blazor will marshal it as a System.Text.Json.JsonElement
+            var json = System.Text.Json.JsonSerializer.Serialize(payload);
+            var note = System.Text.Json.JsonSerializer.Deserialize<NotificationItem>(json, new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+            if (note != null)
+            {
+                if (notifications == null) notifications = new List<NotificationItem>();
+                notifications.Insert(0, note);
+                if (notifications.Count > 50) notifications.RemoveRange(50, notifications.Count - 50);
+                InvokeAsync(StateHasChanged);
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error handling incoming notification in Blazor: {ex.Message}");
+        }
+        return Task.CompletedTask;
     }
 }
 
@@ -286,9 +386,20 @@
         <div>
             <!-- Logo Section -->
             <div class="sidebar-brand-container text-center">
-                <a class="eskolar-logo" href="@GetDashboardUrl()">
-                    <img src="images/main/eSkolar-White.svg" alt="eSkolar Logo" class="eskolar-logo-img" />
-                </a>
+                <div style="display:flex;align-items:center;justify-content:center;gap:8px;">
+                    <a class="eskolar-logo" href="/dashboard/student">
+                        <img src="images/main/eSkolar-White.svg" alt="eSkolar Logo" class="eskolar-logo-img" />
+                    </a>
+                    <div style="position:relative;">
+                        <button class="btn btn-link eskolar-notification-bell" title="Notifications" @onclick="() => ToggleNotificationOffcanvas()" style="color: white;">
+                            <i class="fa fa-bell fa-lg"></i>
+                            @if (notifications?.Count > 0)
+                            {
+                                <span class="eskolar-notification-count">@notifications.Count</span>
+                            }
+                        </button>
+                    </div>
+                </div>
             </div>
             
             <!-- Navigation Links -->
@@ -397,7 +508,7 @@
     <div class="sidebar-notifications">
         <div class="sidebar-notifications-header">
             Notifications 
-            @if (notifications.Any())
+            @if (notifications != null && notifications.Any())
             {
                 <span style="float:right;cursor:pointer;color:#007bff;" @onclick="ClearNotifications">Clear</span>
             }
@@ -411,7 +522,7 @@
                     </div>
                 </div>
             }
-            else if (notifications.Any())
+            else if (notifications != null && notifications.Any())
             {
                 @foreach (var notification in notifications)
                 {
@@ -436,7 +547,34 @@
                 </div>
             }
         </div>
-    </div>
+        </div>
+
+        <!-- Notifications Offcanvas (right side) -->
+        <div class="offcanvas offcanvas-end" tabindex="-1" id="notificationsOffcanvas" aria-labelledby="notificationsOffcanvasLabel" data-bs-backdrop="false">
+            <div class="offcanvas-header">
+                <h5 class="offcanvas-title" id="notificationsOffcanvasLabel">Notifications</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+            </div>
+            <div class="offcanvas-body">
+                <div class="eskolar-notification-panel">
+                        @if (notifications != null && notifications.Any())
+                        {
+                @foreach (var notification in notifications)
+                {
+                    <div class="eskolar-notification-item" @onclick="() => OnNotificationClick(notification)">
+                        <h6>@notification.Title</h6>
+                        <p>@notification.Description</p>
+                        <div class="eskolar-notification-time">@notification.CreatedAt.ToString("MMM dd, yyyy hh:mm tt")</div>
+                    </div>
+                }
+                        }
+                        else
+                        {
+                                <div class="text-center text-muted p-3">No notifications</div>
+                        }
+                </div>
+            </div>
+        </div>
   </div>
 </div>
 

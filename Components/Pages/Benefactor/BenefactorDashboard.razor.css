@@ -1,3 +1,161 @@
+/* Component-scoped styles for BenefactorDashboard.razor */
+
+:root {
+  --eskolar-primary: #1a202c; /* dark slate */
+  --eskolar-muted: #64748b;  /* muted text */
+  --eskolar-accent: #0ea5a4; /* accent (teal) used sparingly) */
+}
+
+.dashboard-center-container {
+  padding: 18px 20px 48px;
+}
+
+.dashboard-topbar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.dashboard-date {
+  color: var(--eskolar-muted);
+  font-size: 0.95rem;
+}
+
+.dashboard-banner-centered {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #fff;
+  padding: 18px 20px;
+  border-radius: 12px;
+  box-shadow: 0 2px 12px rgba(10, 20, 30, 0.04);
+  margin-bottom: 20px;
+}
+
+.banner-text h2 {
+  margin: 0;
+  color: var(--eskolar-primary);
+}
+
+.banner-img {
+  width: 110px;
+  height: auto;
+  opacity: 0.95;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.stat-card {
+  background: #fff;
+  padding: 16px;
+  border-radius: 12px;
+  box-shadow: 0 1px 6px rgba(10, 20, 30, 0.04);
+}
+
+.stat-value {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--eskolar-primary);
+}
+
+.dashboard-tabs {
+  display: flex;
+  gap: 12px;
+  margin: 20px 0;
+}
+
+.dashboard-tab {
+  background: linear-gradient(135deg, #1560d4, #0d387e); /* subtle yellow */
+  border: none;
+  padding: 8px 14px;
+  border-radius: 8px;
+  color: var(--eskolar-primary);
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.dashboard-tab.active,
+.dashboard-tab:hover {
+  background: linear-gradient(135deg, #1560d4, #0d387e);
+  box-shadow: 0 4px 14px rgba(250, 200, 70, 0.06);
+}
+
+.clickable-card {
+  border-radius: 10px;
+  overflow: hidden;
+  transition: transform 180ms ease, box-shadow 180ms ease;
+}
+
+.clickable-card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 10px 30px rgba(20, 40, 60, 0.08);
+}
+
+.scholarship-section {
+  margin-bottom: 18px;
+}
+
+.scholarship-row-title-btn {
+  color: var(--eskolar-primary);
+}
+
+/* Recently Viewed specific */
+.scholarship-section .card {
+  min-height: 110px;
+}
+
+.scholarship-section .card .card-body {
+  padding: 14px 16px;
+}
+
+.scholarship-section h6.mb-1 {
+  font-size: 1rem;
+  max-width: 100%;
+}
+
+.scholarship-section .text-muted.small {
+  font-size: 0.82rem;
+}
+
+/* small utility for badges alignment */
+.scholarship-section .badge {
+  font-weight: 600;
+}
+
+/* make the grid more responsive on small screens */
+@media (max-width: 991px) {
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .scholarship-cards,
+  .row.g-4 {
+    gap: 18px;
+  }
+}
+
+@media (max-width: 575px) {
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-banner-centered {
+    flex-direction: column;
+    gap: 12px;
+  }
+}
+
+/* subtle button sizing for small buttons used in recently viewed */
+.btn-sm {
+  padding: 4px 8px;
+  font-size: 0.82rem;
+}
 /* Styles moved from BenefactorDashboard.razor inline <style> block */
 .text-decoration-none {
     text-decoration: none !important;

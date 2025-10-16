@@ -14,6 +14,7 @@
 @inject UserManager<IdentityUser> UserManager
 @inject NavigationManager Navigation
 @inject c2_eskolar.Services.BlobStorageService BlobStorageService
+@inject c2_eskolar.Services.NotificationService NotificationService
 
 <PageTitle>Review Application</PageTitle>
 
@@ -297,7 +298,7 @@ else
             application.ReviewDate = DateTime.Now;
             application.ReviewedBy = reviewerId;
 
-            // Only decrement slots if status is being set to Approved and was not previously Approved
+            // Only decrement slots and create notification if status is being set to Approved and was not previously Approved
             if (application.Status == "Approved" && previousStatus != "Approved" && application.Scholarship != null)
             {
                 // Reload scholarship from DB to ensure up-to-date value
@@ -307,8 +308,79 @@ else
                     scholarship.SlotsAvailable -= 1;
                     DbContext.Scholarships.Update(scholarship);
                 }
+
+                // Update application and create notification in the SAME DbContext/transaction
+                DbContext.ScholarshipApplications.Update(application);
+
+                // Determine the target Identity user id for the student so SignalR Clients.User(userId) matches
+                string? targetUserId = application.Student?.UserId;
+                if (string.IsNullOrEmpty(targetUserId))
+                {
+                    // Try to load from StudentProfiles table using the StudentProfileId
+                    try
+                    {
+                        targetUserId = await DbContext.StudentProfiles
+                            .Where(sp => sp.StudentProfileId == application.StudentProfileId)
+                            .Select(sp => sp.UserId)
+                            .FirstOrDefaultAsync();
+                    }
+                    catch
+                    {
+                        // ignore and fallback below
+                    }
+                }
+                // Final fallback — use the StudentProfileId as a string (not ideal but prevents null)
+                if (string.IsNullOrEmpty(targetUserId))
+                {
+                    targetUserId = application.StudentProfileId.ToString();
+                }
+
+                var notificationEntity = new c2_eskolar.Models.Notification
+                {
+                    UserId = targetUserId,
+                    Title = "Application Approved",
+                    Message = $"Your application for '{application.Scholarship?.Title ?? "a scholarship"}' has been approved.",
+                    CreatedAt = DateTime.UtcNow,
+                    Type = "approval",
+                    IsRead = false
+                };
+                DbContext.Notifications.Add(notificationEntity);
+
+                await DbContext.SaveChangesAsync().ConfigureAwait(false);
+
+                // Push the notification to the user (do not persist again)
+                try
+                {
+                    var payload = new c2_eskolar.Services.InAppNotification
+                    {
+                        Title = notificationEntity.Title,
+                        Message = notificationEntity.Message,
+                        CreatedAt = notificationEntity.CreatedAt,
+                        Type = notificationEntity.Type
+                    };
+                    await NotificationService.PushToUserAsync(notificationEntity.UserId, payload).ConfigureAwait(false);
+                }
+                catch (Exception pushEx)
+                {
+                    // Log push error but don't fail the approval flow
+                    Console.WriteLine($"Notification push failed: {pushEx.Message}");
+                }
+
+                // After handling approval-specific flow, redirect
+                successMessage = "✅ Review saved successfully.";
+                if (application.Scholarship != null)
+                {
+                    Navigation.NavigateTo($"/dashboard/institution/scholarships-info/{application.Scholarship.ScholarshipId}");
+                }
+                else
+                {
+                    Navigation.NavigateTo("/dashboard/institution/scholarships");
+                }
+
+                return;
             }
 
+            // Default update for non-approval decisions
             DbContext.ScholarshipApplications.Update(application);
             await DbContext.SaveChangesAsync().ConfigureAwait(false);
 

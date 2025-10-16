@@ -5,6 +5,8 @@ using c2_eskolar.Services; // Add this import
 using c2_eskolar.Services.AI; // Add this import for AI services
 using c2_eskolar.Models;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.SignalR;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.AspNetCore.Mvc; // Add this for [FromForm]
 using Microsoft.EntityFrameworkCore;
 using BlazorBootstrap;
@@ -20,6 +22,14 @@ try
 
     builder.Services.AddBlazorBootstrap();
     builder.Services.AddBlazoredLocalStorage();
+
+    // Register Notification service and SignalR
+    builder.Services.AddSingleton<NotificationService>(sp =>
+    {
+        var hub = sp.GetRequiredService<IHubContext<c2_eskolar.Hubs.NotificationHub>>();
+        var dbFactory = sp.GetRequiredService<IDbContextFactory<ApplicationDbContext>>();
+        return new NotificationService(hub, dbFactory);
+    });
 
     // Add Controllers for API endpoints
     builder.Services.AddControllers();
@@ -141,6 +151,12 @@ builder.Services.AddScoped<ChatbotMessageFormattingService>();
 builder.Services.AddScoped<OpenAIService>();
 builder.Services.AddScoped<AITokenTrackingService>();
 builder.Services.AddScoped<SuperAdminAnalyticsService>();
+builder.Services.AddScoped<MonthlyStatisticsService>();
+builder.Services.AddScoped<UniversityNormalizationService>();
+builder.Services.AddScoped<CourseNormalizationService>();
+
+// Register background services
+builder.Services.AddHostedService<c2_eskolar.BackgroundServices.MonthlyAggregationBackgroundService>();
 
     var app = builder.Build();
 
@@ -161,6 +177,8 @@ builder.Services.AddScoped<SuperAdminAnalyticsService>();
     app.UseAuthorization();
     app.UseAntiforgery();
     app.MapStaticAssets();
+    // Map SignalR hub for notifications
+    app.MapHub<c2_eskolar.Hubs.NotificationHub>("/hubs/notifications");
     app.MapControllers();
     app.MapRazorComponents<c2_eskolar.Components.App>()
         .AddInteractiveServerRenderMode();

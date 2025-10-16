@@ -4,9 +4,14 @@
 @using c2_eskolar.Models
 @using c2_eskolar.Services
 @using Microsoft.AspNetCore.Authorization
+@using System.Text.Json
 @layout Layout.SuperAdminDashLayout
 @inject c2_eskolar.Services.SuperAdminAnalyticsService SuperAdminAnalyticsService
+@inject c2_eskolar.Services.OpenAIService OpenAIService
+@inject c2_eskolar.Services.UniversityNormalizationService UniversityNormalizationService
+@inject c2_eskolar.Services.CourseNormalizationService CourseNormalizationService
 @inject AuthenticationStateProvider AuthStateProvider
+@inject IJSRuntime JSRuntime
 @rendermode InteractiveServer
 
 @code {
@@ -23,6 +28,41 @@
     private List<PieSliceData> UserDistributionPieData = new();
     private List<PieSliceData> ApplicationStatusPieData = new();
     private List<PieSliceData> VerificationStatusPieData = new();
+    
+    // Modal state
+    private bool showCoursesModal = false;
+    private bool showYearLevelModal = false;
+    private bool showUniversitiesModal = false;
+    private bool showBenefactorPerformanceModal = false;
+    private bool showInstitutionPerformanceModal = false;
+    private string? selectedScholarshipId = null;
+    private bool showScholarshipModal = false;
+    private bool showRegionsModal = false;
+    private bool showAIAnalyticsModal = false;
+    
+    // AI Analytics state
+    private string aiAnalyticsQuery = "";
+    private string aiAnalyticsResult = "";
+    private bool isProcessingAI = false;
+    private AIChartData? aiChartData = null;
+    private bool showRawJson = false;
+    private string rawJsonData = "";
+    
+    public class AIChartData
+    {
+        public string? Type { get; set; }
+        public string? Title { get; set; }
+        public List<ChartDataItem>? Data { get; set; }
+        public string? Explanation { get; set; }
+    }
+    
+    public class ChartDataItem
+    {
+        public string? Label { get; set; }
+        public string? Month { get; set; }
+        public double Value { get; set; }
+        public string? Color { get; set; }
+    }
 
     protected override async Task OnInitializedAsync()
     {
@@ -116,6 +156,465 @@
     {
         return new DateTime(2025, month, 1).ToString("MMM");
     }
+
+    private double GetBarPercentage(double value, double max)
+    {
+        return max > 0 ? (value / max) * 100 : 0;
+    }
+
+    private void OpenCoursesModal() => showCoursesModal = true;
+    private void CloseCoursesModal() => showCoursesModal = false;
+    private void OpenYearLevelModal() => showYearLevelModal = true;
+    private void CloseYearLevelModal() => showYearLevelModal = false;
+    private void OpenUniversitiesModal() => showUniversitiesModal = true;
+    private void CloseUniversitiesModal() => showUniversitiesModal = false;
+    private void OpenBenefactorPerformanceModal() => showBenefactorPerformanceModal = true;
+    private void CloseBenefactorPerformanceModal() => showBenefactorPerformanceModal = false;
+    private void OpenInstitutionPerformanceModal() => showInstitutionPerformanceModal = true;
+    private void CloseInstitutionPerformanceModal() => showInstitutionPerformanceModal = false;
+    private void OpenRegionsModal() => showRegionsModal = true;
+    private void CloseRegionsModal() => showRegionsModal = false;
+    private void OpenAIAnalyticsModal() => showAIAnalyticsModal = true;
+    private void CloseAIAnalyticsModal() 
+    {
+        showAIAnalyticsModal = false;
+        aiAnalyticsQuery = "";
+        aiAnalyticsResult = "";
+    }
+    
+    private void OpenScholarshipModal(string scholarshipTitle)
+    {
+        selectedScholarshipId = scholarshipTitle;
+        showScholarshipModal = true;
+    }
+    
+    private void CloseScholarshipModal()
+    {
+        showScholarshipModal = false;
+        selectedScholarshipId = null;
+    }
+    
+    // Quick analysis helper methods
+    private async Task AnalyzeCourseDistribution() { aiAnalyticsQuery = "Show me a pie chart of courses"; await ProcessAIAnalytics(); }
+    private async Task AnalyzeYearLevels() { aiAnalyticsQuery = "Create a bar chart of year levels"; await ProcessAIAnalytics(); }
+    private async Task AnalyzeUniversities() { aiAnalyticsQuery = "Show me a pie chart of universities"; await ProcessAIAnalytics(); }
+    private async Task AnalyzeGeography() { aiAnalyticsQuery = "Show me a bar chart of geographic distribution"; await ProcessAIAnalytics(); }
+    private async Task AnalyzeTrends() { aiAnalyticsQuery = "Create a line chart of application trends over time"; await ProcessAIAnalytics(); }
+    private async Task AnalyzeSuccessRates() { aiAnalyticsQuery = "Show me success rate comparison by institution type"; await ProcessAIAnalytics(); }
+    private async Task AnalyzeSexDistribution() { aiAnalyticsQuery = "Show me a pie chart of sex/gender distribution"; await ProcessAIAnalytics(); }
+    private async Task AnalyzeEngagement() { aiAnalyticsQuery = "Show me student engagement metrics"; await ProcessAIAnalytics(); }
+    private async Task AnalyzeApplicationStatus() { aiAnalyticsQuery = "Create a pie chart of application statuses"; await ProcessAIAnalytics(); }
+    private async Task AnalyzeAgeDistribution() { aiAnalyticsQuery = "Show me a bar chart of age distribution"; await ProcessAIAnalytics(); }
+    private async Task AnalyzeGPA() { aiAnalyticsQuery = "What is the average GPA by course?"; await ProcessAIAnalytics(); }
+    private async Task AnalyzeVerification() { aiAnalyticsQuery = "Show verification status breakdown"; await ProcessAIAnalytics(); }
+    
+    // Chart generation helper methods
+    private string GeneratePieChartPath(List<ChartDataItem> data, int index)
+    {
+        if (data == null || !data.Any()) return "";
+        
+        var total = data.Sum(d => d.Value);
+        if (total == 0) return "";
+        
+        var startAngle = 0.0;
+        for (int i = 0; i < index; i++)
+        {
+            startAngle += (data[i].Value / total) * 360;
+        }
+        
+        var sliceAngle = (data[index].Value / total) * 360;
+        
+        // Special case: if this is the only slice or represents 100%, draw a full circle
+        if (sliceAngle >= 359.9 || (data.Count == 1 && index == 0))
+        {
+            // Draw a full circle using two 180-degree arcs
+            return "M 150 10 A 140 140 0 0 1 150 290 A 140 140 0 0 1 150 10 Z";
+        }
+        
+        var endAngle = startAngle + sliceAngle;
+        
+        var startRad = (startAngle - 90) * Math.PI / 180;
+        var endRad = (endAngle - 90) * Math.PI / 180;
+        
+        var x1 = 150 + 140 * Math.Cos(startRad);
+        var y1 = 150 + 140 * Math.Sin(startRad);
+        var x2 = 150 + 140 * Math.Cos(endRad);
+        var y2 = 150 + 140 * Math.Sin(endRad);
+        
+        var largeArc = sliceAngle > 180 ? 1 : 0;
+        
+        return $"M 150 150 L {x1:F2} {y1:F2} A 140 140 0 {largeArc} 1 {x2:F2} {y2:F2} Z";
+    }
+    
+    private double GetBarPercentageForChart(double value, List<ChartDataItem> data)
+    {
+        if (data == null || !data.Any()) return 0;
+        var max = data.Max(d => d.Value);
+        return max > 0 ? (value / max) * 100 : 0;
+    }
+    
+    private string GenerateLineChartPath(List<ChartDataItem> data)
+    {
+        if (data == null || !data.Any()) return "";
+        
+        var width = 800.0;
+        var height = 300.0;
+        var padding = 60.0;
+        var graphWidth = width - (padding * 2);
+        var graphHeight = height - (padding * 2);
+        
+        var maxValue = data.Max(d => d.Value);
+        var minValue = data.Min(d => d.Value);
+        var range = maxValue - minValue;
+        if (range == 0) range = 1;
+        
+        var points = new List<string>();
+        for (int i = 0; i < data.Count; i++)
+        {
+            var x = padding + (i * graphWidth / Math.Max(data.Count - 1, 1));
+            var normalizedValue = (data[i].Value - minValue) / range;
+            var y = height - padding - (normalizedValue * graphHeight);
+            points.Add($"{x:F1},{y:F1}");
+        }
+        
+        return string.Join(" ", points);
+    }
+    
+    private async Task ProcessAIAnalytics()
+    {
+        if (string.IsNullOrWhiteSpace(aiAnalyticsQuery) || analyticsData == null)
+            return;
+            
+        isProcessingAI = true;
+        aiAnalyticsResult = "";
+        showRawJson = false;
+        rawJsonData = "";
+        StateHasChanged();
+        
+        try
+        {
+            // Normalize university names before sending to AI
+            var normalizedUniversities = analyticsData.UniversityDistribution
+                .Select(u => new 
+                { 
+                    Original = u.Category, 
+                    Normalized = UniversityNormalizationService.NormalizeUniversityName(u.Category ?? string.Empty),
+                    Count = u.Count 
+                })
+                .GroupBy(u => u.Normalized)
+                .Select(g => new { Category = g.Key, Count = g.Sum(x => x.Count) })
+                .OrderByDescending(u => u.Count)
+                .ToList();
+            
+            // Normalize course names before sending to AI
+            var normalizedCourses = analyticsData.CourseDistribution
+                .Select(c => new 
+                { 
+                    Original = c.Category, 
+                    Normalized = CourseNormalizationService.NormalizeCourseName(c.Category ?? string.Empty),
+                    Count = c.Count 
+                })
+                .GroupBy(c => c.Normalized)
+                .Select(g => new { Category = g.Key, Count = g.Sum(x => x.Count) })
+                .OrderByDescending(c => c.Count)
+                .ToList();
+            
+            // Prepare comprehensive analytics data for AI
+            var courseList = string.Join("\n", normalizedCourses.Select(c => $"- {c.Category}: {c.Count} students"));
+            var yearList = string.Join("\n", analyticsData.YearLevelDistribution.Select(y => $"- {y.Category}: {y.Count} students"));
+            var uniList = string.Join("\n", normalizedUniversities.Select(u => $"- {u.Category}: {u.Count} students"));
+            var geoList = string.Join("\n", analyticsData.GeographicDistribution.Select(g => $"- {g.Region}: {g.Count} students"));
+            var trendsList = string.Join("\n", analyticsData.MonthlyApplicationTrends.Select(t => $"- {new DateTime(t.Year, t.Month, 1):MMM yyyy}: {t.ApplicationCount} applications ({t.AcceptedCount} accepted)"));
+            var topScholarshipsList = string.Join("\n", analyticsData.TopPerformingScholarships.Select(s => $"- {s.Title}: {s.ApplicationCount} applications ({s.AcceptedCount} accepted, ₱{s.MonetaryValue:N2} value)"));
+            var sexList = string.Join("\n", analyticsData.SexDistribution.Select(s => $"- {s.Category}: {s.Count} students"));
+            var ageList = string.Join("\n", analyticsData.AgeDistribution.Select(a => $"- {a.Category} years: {a.Count} students"));
+            
+            var analyticsContext = $@"
+STUDENT ANALYTICS DATA:
+- Total Students: {analyticsData.TotalStudents}
+- Verified Students: {analyticsData.VerifiedUsers}
+- New Students This Month: {analyticsData.NewUsersThisMonth}
+- Active Students (Applied in last 3 months): {analyticsData.TotalApplications}
+
+COURSE DISTRIBUTION (Normalized from acronyms):
+{courseList}
+
+YEAR LEVEL DISTRIBUTION:
+{yearList}
+
+UNIVERSITY DISTRIBUTION (Normalized):
+{uniList}
+
+SEX/GENDER DISTRIBUTION:
+{sexList}
+
+AGE DISTRIBUTION:
+{ageList}
+
+GEOGRAPHIC DISTRIBUTION:
+{geoList}
+
+APPLICATION STATISTICS:
+- Total Applications: {analyticsData.TotalApplications}
+- Accepted: {analyticsData.AcceptedApplications}
+- Pending: {analyticsData.PendingApplications}
+- Rejected: {analyticsData.RejectedApplications}
+- Success Rate: {analyticsData.SystemUtilizationRate:F1}%
+
+SCHOLARSHIP STATISTICS:
+- Total Scholarships: {analyticsData.TotalScholarships}
+- Active Scholarships: {analyticsData.ActiveScholarships}
+- Total Value: ₱{analyticsData.TotalScholarshipValue:N2}
+- Average Value: ₱{analyticsData.AverageScholarshipValue:N2}
+- Distributed Value: ₱{analyticsData.DistributedValue:N2}
+
+TOP PERFORMING SCHOLARSHIPS:
+{topScholarshipsList}
+
+MONTHLY APPLICATION TRENDS (Last 6 months):
+{trendsList}
+
+ENGAGEMENT METRICS:
+- User Retention Rate: {analyticsData.UserRetentionRate:F1}%
+- User Growth Rate: {analyticsData.UserGrowthRate:F1}%
+- System Utilization Rate: {analyticsData.SystemUtilizationRate:F1}%
+- Scholarship Utilization Rate: {analyticsData.ScholarshipUtilizationRate:F1}%
+- Average Processing Time: {analyticsData.AverageProcessingTime:F1} days
+- Platform Efficiency Score: {analyticsData.PlatformEfficiencyScore:F1}%
+
+PERFORMANCE METRICS:
+- Benefactor Success Rate: {analyticsData.BenefactorSuccessRate:F1}%
+- Institution Success Rate: {analyticsData.InstitutionSuccessRate:F1}%
+- Benefactor vs Institution Ratio: {analyticsData.BenefactorVsInstitutionRatio:F2}
+
+NOTE: GPA data is not currently collected in the system. If asked about GPA, explain that this feature is not yet implemented.
+
+Based on this data, please answer the following query and provide visualizations when appropriate:
+
+USER QUERY: {aiAnalyticsQuery}
+
+RESPONSE FORMAT INSTRUCTIONS:
+1. If the query asks for a PIE CHART, respond with JSON in this exact format:
+{{
+  ""type"": ""pie"",
+  ""title"": ""Chart Title"",
+  ""data"": [
+    {{""label"": ""Category 1"", ""value"": 123, ""color"": ""#3b82f6""}},
+    {{""label"": ""Category 2"", ""value"": 456, ""color"": ""#10b981""}}
+  ],
+  ""explanation"": ""Brief explanation of what the chart shows""
+}}
+
+2. If the query asks for a BAR CHART, respond with JSON in this exact format:
+{{
+  ""type"": ""bar"",
+  ""title"": ""Chart Title"",
+  ""data"": [
+    {{""label"": ""Item 1"", ""value"": 123, ""color"": ""#3b82f6""}},
+    {{""label"": ""Item 2"", ""value"": 456, ""color"": ""#10b981""}}
+  ],
+  ""explanation"": ""Brief explanation of what the chart shows""
+}}
+
+3. If the query asks for a LINE CHART, respond with JSON in this exact format:
+{{
+  ""type"": ""line"",
+  ""title"": ""Chart Title"",
+  ""data"": [
+    {{""month"": ""Jan"", ""value"": 123}},
+    {{""month"": ""Feb"", ""value"": 456}}
+  ],
+  ""explanation"": ""Brief explanation of what the trend shows""
+}}
+
+4. For general questions, provide a clear text answer with insights and statistics.
+
+Always use the actual data provided above. Be specific and cite exact numbers.";
+
+            var response = await OpenAIService.GetChatCompletionAsync(analyticsContext);
+            aiAnalyticsResult = response;
+            
+            // Try to parse JSON for chart rendering
+            try
+            {
+                var jsonStart = response.IndexOf("{");
+                var jsonEnd = response.LastIndexOf("}");
+                
+                if (jsonStart >= 0 && jsonEnd > jsonStart)
+                {
+                    var jsonString = response.Substring(jsonStart, jsonEnd - jsonStart + 1);
+                    rawJsonData = jsonString; // Store raw JSON
+                    aiChartData = JsonSerializer.Deserialize<AIChartData>(jsonString, new JsonSerializerOptions 
+                    { 
+                        PropertyNameCaseInsensitive = true 
+                    });
+                }
+            }
+            catch
+            {
+                // If JSON parsing fails, just show the text response
+                aiChartData = null;
+                rawJsonData = "";
+            }
+        }
+        catch (Exception ex)
+        {
+            aiAnalyticsResult = $"Error processing analytics: {ex.Message}\n\nInner Exception: {ex.InnerException?.Message}\n\nStack Trace: {ex.InnerException?.StackTrace}";
+            aiChartData = null;
+            rawJsonData = "";
+        }
+        finally
+        {
+            isProcessingAI = false;
+            StateHasChanged();
+        }
+    }
+    
+    // Sample data generation methods for presentation
+    private void GenerateGrowthTrendData()
+    {
+        if (analyticsData == null) return;
+        
+        var random = new Random();
+        analyticsData.MonthlyApplicationTrends.Clear();
+        for (int i = 5; i >= 0; i--)
+        {
+            var month = DateTime.Now.AddMonths(-i);
+            var baseValue = 20 + (5 - i) * 8; // Growing trend
+            analyticsData.MonthlyApplicationTrends.Add(new MonthlyTrendData
+            {
+                Month = month.Month,
+                Year = month.Year,
+                ApplicationCount = baseValue + random.Next(-3, 5),
+                AcceptedCount = (int)(baseValue * 0.75) + random.Next(-2, 3)
+            });
+        }
+        StateHasChanged();
+    }
+    
+    private void GenerateDeclineTrendData()
+    {
+        if (analyticsData == null) return;
+        
+        var random = new Random();
+        analyticsData.MonthlyApplicationTrends.Clear();
+        for (int i = 5; i >= 0; i--)
+        {
+            var month = DateTime.Now.AddMonths(-i);
+            var baseValue = 50 - (5 - i) * 6; // Declining trend
+            analyticsData.MonthlyApplicationTrends.Add(new MonthlyTrendData
+            {
+                Month = month.Month,
+                Year = month.Year,
+                ApplicationCount = baseValue + random.Next(-3, 4),
+                AcceptedCount = (int)(baseValue * 0.65) + random.Next(-2, 3)
+            });
+        }
+        StateHasChanged();
+    }
+    
+    private void GenerateVolatileTrendData()
+    {
+        if (analyticsData == null) return;
+        
+        var random = new Random();
+        analyticsData.MonthlyApplicationTrends.Clear();
+        var volatileValues = new[] { 25, 45, 30, 50, 35, 48 }; // Volatile pattern
+        for (int i = 5; i >= 0; i--)
+        {
+            var month = DateTime.Now.AddMonths(-i);
+            var baseValue = volatileValues[5 - i];
+            analyticsData.MonthlyApplicationTrends.Add(new MonthlyTrendData
+            {
+                Month = month.Month,
+                Year = month.Year,
+                ApplicationCount = baseValue + random.Next(-3, 4),
+                AcceptedCount = (int)(baseValue * 0.7) + random.Next(-2, 3)
+            });
+        }
+        StateHasChanged();
+    }
+    
+    private string GenerateLineGraphPoints(List<MonthlyTrendData> trends, bool useSuccessRate = false)
+    {
+        if (trends == null || !trends.Any()) return "10,40 50,25 90,30 130,15 170,20 190,10";
+        
+        var sortedTrends = trends.OrderBy(t => t.Year).ThenBy(t => t.Month).Take(6).ToList();
+        if (!sortedTrends.Any()) return "10,40 50,25 90,30 130,15 170,20 190,10";
+        
+        double width = 200;
+        double height = 60;
+        double padding = 10;
+        double graphWidth = width - (padding * 2);
+        double graphHeight = height - (padding * 2);
+        
+        // Calculate values
+        var values = sortedTrends.Select(t => useSuccessRate && t.ApplicationCount > 0 
+            ? (double)t.AcceptedCount / t.ApplicationCount * 100 
+            : (double)t.ApplicationCount).ToList();
+            
+        var maxValue = values.Any() && values.Max() > 0 ? values.Max() : 100;
+        var minValue = values.Any() ? values.Min() : 0;
+        var range = maxValue - minValue > 0 ? maxValue - minValue : 1;
+        
+        // Generate points
+        var points = new List<string>();
+        for (int i = 0; i < values.Count; i++)
+        {
+            double x = padding + (i * graphWidth / Math.Max(values.Count - 1, 1));
+            double normalizedValue = (values[i] - minValue) / range;
+            double y = height - padding - (normalizedValue * graphHeight);
+            points.Add($"{x:F1},{y:F1}");
+        }
+        
+        return string.Join(" ", points);
+    }
+    
+    private string GenerateLargeLineGraphPoints(List<MonthlyTrendData> trends, bool useSuccessRate = false)
+    {
+        if (trends == null || !trends.Any()) return "60,150 200,100 340,120 480,80 620,90 760,60";
+        
+        var sortedTrends = trends.OrderBy(t => t.Year).ThenBy(t => t.Month).Take(6).ToList();
+        if (!sortedTrends.Any()) return "60,150 200,100 340,120 480,80 620,90 760,60";
+        
+        double width = 800;
+        double height = 300;
+        double paddingLeft = 60;
+        double paddingRight = 40;
+        double paddingTop = 40;
+        double paddingBottom = 60;
+        double graphWidth = width - paddingLeft - paddingRight;
+        double graphHeight = height - paddingTop - paddingBottom;
+        
+        // Calculate values
+        var values = sortedTrends.Select(t => useSuccessRate && t.ApplicationCount > 0 
+            ? (double)t.AcceptedCount / t.ApplicationCount * 100 
+            : (double)t.ApplicationCount).ToList();
+            
+        var maxValue = values.Any() && values.Max() > 0 ? values.Max() : 100;
+        var minValue = values.Any() ? Math.Max(0, values.Min() - (maxValue - values.Min()) * 0.1) : 0;
+        var range = maxValue - minValue > 0 ? maxValue - minValue : 1;
+        
+        // Generate points including bottom corners for fill area
+        var points = new List<string>();
+        
+        // Start from bottom left
+        points.Add($"{paddingLeft},{height - paddingBottom}");
+        
+        // Add data points
+        for (int i = 0; i < values.Count; i++)
+        {
+            double x = paddingLeft + (i * graphWidth / Math.Max(values.Count - 1, 1));
+            double normalizedValue = (values[i] - minValue) / range;
+            double y = height - paddingBottom - (normalizedValue * graphHeight);
+            points.Add($"{x:F1},{y:F1}");
+        }
+        
+        // End at bottom right
+        points.Add($"{paddingLeft + graphWidth},{height - paddingBottom}");
+        
+        return string.Join(" ", points);
+    }
 }
 
 <div class="analytics-container">
@@ -140,91 +639,108 @@
     }
     else if (analyticsData != null)
     {
-        <!-- Header Section -->
-        <div class="analytics-header">
-            <h1>System Analytics Dashboard</h1>
-            <p>Comprehensive overview of platform performance and user engagement</p>
-            <div class="last-updated">
-                Last updated: @DateTime.Now.ToString("MMM dd, yyyy hh:mm tt")
+        <!-- Top Bar -->
+        <div class="dashboard-topbar">
+            <span class="dashboard-date">@DateTime.Now.ToString("dd MMM yyyy, ddd")</span>
+        </div>
+
+        <!-- Welcome Banner -->
+        <div class="dashboard-banner-centered">
+            <div class="banner-text">
+                <h2>System Analytics Dashboard</h2>
+                <p>Comprehensive overview of platform performance and user engagement</p>
             </div>
+            <img src="images/eskolar_books.svg" alt="Analytics" class="banner-img" />
         </div>
 
         <!-- Key Metrics Cards -->
         <div class="metrics-grid">
             <div class="metric-card user-stats">
-                <div class="metric-icon">
-                    <i class="bi bi-people"></i>
-                </div>
-                <div class="metric-info">
-                    <div class="metric-value">@analyticsData.TotalUsers</div>
-                    <div class="metric-label">Total Users</div>
-                    <div class="metric-breakdown">
-                        @analyticsData.VerifiedUsers verified | @analyticsData.NewUsersThisMonth new this month
+                <div>
+                    <div class="metric-icon">
+                        <i class="bi bi-people"></i>
+                    </div>
+                    <div class="metric-info">
+                        <div class="metric-value">@analyticsData.TotalUsers</div>
+                        <div class="metric-label">Total Users</div>
+                        <div class="metric-breakdown">
+                            @analyticsData.VerifiedUsers verified | @analyticsData.NewUsersThisMonth new this month
+                        </div>
                     </div>
                 </div>
             </div>
 
             <div class="metric-card scholarship-stats">
-                <div class="metric-icon">
-                    <i class="bi bi-award"></i>
-                </div>
-                <div class="metric-info">
-                    <div class="metric-value">@analyticsData.TotalScholarships</div>
-                    <div class="metric-label">Total Scholarships</div>
-                    <div class="metric-breakdown">
-                        @analyticsData.ActiveScholarships active (@FormatPercentage(analyticsData.ScholarshipUtilizationRate))
+                <div>
+                    <div class="metric-icon">
+                        <i class="bi bi-award"></i>
+                    </div>
+                    <div class="metric-info">
+                        <div class="metric-value">@analyticsData.TotalScholarships</div>
+                        <div class="metric-label">Total Scholarships</div>
+                        <div class="metric-breakdown">
+                            @analyticsData.ActiveScholarships active (@FormatPercentage(analyticsData.ScholarshipUtilizationRate))
+                        </div>
                     </div>
                 </div>
             </div>
 
             <div class="metric-card application-stats">
-                <div class="metric-icon">
-                    <i class="bi bi-file-earmark-text"></i>
-                </div>
-                <div class="metric-info">
-                    <div class="metric-value">@analyticsData.TotalApplications</div>
-                    <div class="metric-label">Total Applications</div>
-                    <div class="metric-breakdown">
-                        @FormatPercentage(analyticsData.SystemUtilizationRate) success rate
+                <div>
+                    <div class="metric-icon">
+                        <i class="bi bi-file-earmark-text"></i>
+                    </div>
+                    <div class="metric-info">
+                        <div class="metric-value">@analyticsData.TotalApplications</div>
+                        <div class="metric-label">Total Applications</div>
+                        <div class="metric-breakdown">
+                            @FormatPercentage(analyticsData.SystemUtilizationRate) success rate
+                        </div>
                     </div>
                 </div>
             </div>
 
             <div class="metric-card financial-stats">
-                <div class="metric-icon">
-                    <i class="bi bi-currency-dollar"></i>
-                </div>
-                <div class="metric-info">
-                    <div class="metric-value">@FormatCurrency(analyticsData.TotalScholarshipValue)</div>
-                    <div class="metric-label">Total Scholarship Value</div>
-                    <div class="metric-breakdown">
-                        @FormatCurrency(analyticsData.DistributedValue) distributed
+                <div>
+                    <div class="metric-icon">
+                        <i class="bi bi-currency-dollar"></i>
+                    </div>
+                    <div class="metric-info">
+                        <div class="metric-value">@FormatCurrency(analyticsData.TotalScholarshipValue)</div>
+                        <div class="metric-label">Total Scholarship Value</div>
+                        <div class="metric-breakdown">
+                            @FormatCurrency(analyticsData.DistributedValue) distributed
+                        </div>
                     </div>
                 </div>
             </div>
 
             <div class="metric-card growth-stats">
-                <div class="metric-icon">
-                    <i class="bi bi-graph-up-arrow"></i>
-                </div>
-                <div class="metric-info">
-                    <div class="metric-value">@FormatPercentage(analyticsData.UserGrowthRate)</div>
-                    <div class="metric-label">User Growth Rate</div>
-                    <div class="metric-breakdown">
-                        @FormatPercentage(analyticsData.UserRetentionRate) retention
+                <div>
+                    <div class="metric-icon">
+                        <i class="bi bi-graph-up-arrow"></i>
+                    </div>
+                    <div class="metric-info">
+                        <div class="metric-value">@FormatPercentage(analyticsData.UserGrowthRate)</div>
+                        <div class="metric-label">User Growth Rate</div>
+                        <div class="metric-breakdown">
+                            @FormatPercentage(analyticsData.UserRetentionRate) retention
+                        </div>
                     </div>
                 </div>
             </div>
 
             <div class="metric-card efficiency-stats">
-                <div class="metric-icon">
-                    <i class="bi bi-speedometer2"></i>
-                </div>
-                <div class="metric-info">
-                    <div class="metric-value">@FormatPercentage(analyticsData.PlatformEfficiencyScore)</div>
-                    <div class="metric-label">Platform Efficiency</div>
-                    <div class="metric-breakdown">
-                        @analyticsData.AverageProcessingTime.ToString("F1") days avg processing
+                <div>
+                    <div class="metric-icon">
+                        <i class="bi bi-speedometer2"></i>
+                    </div>
+                    <div class="metric-info">
+                        <div class="metric-value">@FormatPercentage(analyticsData.PlatformEfficiencyScore)</div>
+                        <div class="metric-label">Platform Efficiency</div>
+                        <div class="metric-breakdown">
+                            @analyticsData.AverageProcessingTime.ToString("F1") days avg processing
+                        </div>
                     </div>
                 </div>
             </div>
@@ -265,36 +781,50 @@
         <div class="performance-section">
             <h3>Performance Analytics</h3>
             <div class="performance-grid">
-                <div class="performance-card">
-                    <h4>Success Rates</h4>
-                    <div class="success-rate-item">
-                        <span>Benefactor Success Rate:</span>
-                        <span class="rate-value">@FormatPercentage(analyticsData.BenefactorSuccessRate)</span>
+                <div class="performance-card clickable-card" @onclick="OpenBenefactorPerformanceModal">
+                    <h4><i class="bi bi-graph-up"></i> Benefactor Success Rates</h4>
+                    <div class="line-graph-preview">
+                        <div class="success-rate-display">
+                            <span class="rate-label">Success Rate:</span>
+                            <span class="rate-value-large">@FormatPercentage(analyticsData.BenefactorSuccessRate)</span>
+                        </div>
+                        <div class="mini-line-graph">
+                            <svg viewBox="0 0 200 60" class="line-svg">
+                                <defs>
+                                    <linearGradient id="benefactorGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                                        <stop offset="0%" style="stop-color:#4facfe;stop-opacity:1" />
+                                        <stop offset="100%" style="stop-color:#00f2fe;stop-opacity:1" />
+                                    </linearGradient>
+                                </defs>
+                                <polyline points="@GenerateLineGraphPoints(analyticsData.MonthlyApplicationTrends, true)" 
+                                         fill="none" stroke="url(#benefactorGradient)" stroke-width="3"/>
+                            </svg>
+                        </div>
                     </div>
-                    <div class="success-rate-item">
-                        <span>Institution Success Rate:</span>
-                        <span class="rate-value">@FormatPercentage(analyticsData.InstitutionSuccessRate)</span>
-                    </div>
-                    <div class="success-rate-item">
-                        <span>Benefactor vs Institution Ratio:</span>
-                        <span class="rate-value">@analyticsData.BenefactorVsInstitutionRatio.ToString("F2")</span>
-                    </div>
+                    <div class="click-hint-small">Click for detailed analysis</div>
                 </div>
                 
-                <div class="performance-card">
-                    <h4>AI Performance</h4>
-                    <div class="ai-stat-item">
-                        <span>Total Tokens Used:</span>
-                        <span class="stat-value">@analyticsData.AITokenUsageStats.TotalTokens.ToString("N0")</span>
+                <div class="performance-card clickable-card" @onclick="OpenInstitutionPerformanceModal">
+                    <h4><i class="bi bi-graph-up"></i> Institution Success Rates</h4>
+                    <div class="line-graph-preview">
+                        <div class="success-rate-display">
+                            <span class="rate-label">Success Rate:</span>
+                            <span class="rate-value-large">@FormatPercentage(analyticsData.InstitutionSuccessRate)</span>
+                        </div>
+                        <div class="mini-line-graph">
+                            <svg viewBox="0 0 200 60" class="line-svg">
+                                <defs>
+                                    <linearGradient id="institutionGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                                        <stop offset="0%" style="stop-color:#f093fb;stop-opacity:1" />
+                                        <stop offset="100%" style="stop-color:#f5576c;stop-opacity:1" />
+                                    </linearGradient>
+                                </defs>
+                                <polyline points="@GenerateLineGraphPoints(analyticsData.MonthlyApplicationTrends, true)" 
+                                         fill="none" stroke="url(#institutionGradient)" stroke-width="3"/>
+                            </svg>
+                        </div>
                     </div>
-                    <div class="ai-stat-item">
-                        <span>Success Rate:</span>
-                        <span class="stat-value">@FormatPercentage(analyticsData.AITokenUsageStats.SuccessRate)</span>
-                    </div>
-                    <div class="ai-stat-item">
-                        <span>Most Used Operation:</span>
-                        <span class="stat-value">@analyticsData.AITokenUsageStats.MostUsedOperation</span>
-                    </div>
+                    <div class="click-hint-small">Click for detailed analysis</div>
                 </div>
             </div>
         </div>
@@ -303,12 +833,20 @@
         <div class="charts-section">
             <div class="chart-container">
                 <h3>User Distribution</h3>
-                <div class="pie-chart">
-                    @foreach (var slice in UserDistributionPieData)
+                <div class="bar-chart">
+                    @{
+                        var maxUserValue = UserDistributionPieData.Max(x => x.Value);
+                    }
+                    @foreach (var item in UserDistributionPieData)
                     {
-                        <div class="chart-legend-item">
-                            <div class="legend-color" style="background-color: @slice.Color;"></div>
-                            <span>@slice.Label: @slice.Value</span>
+                        var percentage = maxUserValue > 0 ? (item.Value / maxUserValue) * 100 : 0;
+                        <div class="bar-item-horizontal">
+                            <div class="bar-label-left">@item.Label</div>
+                            <div class="bar-wrapper-horizontal">
+                                <div class="bar-fill-horizontal" style="width: @(percentage)%; background: linear-gradient(90deg, @item.Color, @(item.Color)99);">
+                                </div>
+                                <div class="bar-percentage-badge" style="background: @item.Color;">@item.Value</div>
+                            </div>
                         </div>
                     }
                 </div>
@@ -316,12 +854,20 @@
 
             <div class="chart-container">
                 <h3>Application Status</h3>
-                <div class="pie-chart">
-                    @foreach (var slice in ApplicationStatusPieData)
+                <div class="bar-chart">
+                    @{
+                        var maxAppValue = ApplicationStatusPieData.Max(x => x.Value);
+                    }
+                    @foreach (var item in ApplicationStatusPieData)
                     {
-                        <div class="chart-legend-item">
-                            <div class="legend-color" style="background-color: @slice.Color;"></div>
-                            <span>@slice.Label: @slice.Value</span>
+                        var percentage = maxAppValue > 0 ? (item.Value / maxAppValue) * 100 : 0;
+                        <div class="bar-item-horizontal">
+                            <div class="bar-label-left">@item.Label</div>
+                            <div class="bar-wrapper-horizontal">
+                                <div class="bar-fill-horizontal" style="width: @(percentage)%; background: linear-gradient(90deg, @item.Color, @(item.Color)99);">
+                                </div>
+                                <div class="bar-percentage-badge" style="background: @item.Color;">@item.Value</div>
+                            </div>
                         </div>
                     }
                 </div>
@@ -329,12 +875,20 @@
 
             <div class="chart-container">
                 <h3>Verification Status</h3>
-                <div class="pie-chart">
-                    @foreach (var slice in VerificationStatusPieData)
+                <div class="bar-chart">
+                    @{
+                        var maxVerifyValue = VerificationStatusPieData.Max(x => x.Value);
+                    }
+                    @foreach (var item in VerificationStatusPieData)
                     {
-                        <div class="chart-legend-item">
-                            <div class="legend-color" style="background-color: @slice.Color;"></div>
-                            <span>@slice.Label: @slice.Value</span>
+                        var percentage = maxVerifyValue > 0 ? (item.Value / maxVerifyValue) * 100 : 0;
+                        <div class="bar-item-horizontal">
+                            <div class="bar-label-left">@item.Label</div>
+                            <div class="bar-wrapper-horizontal">
+                                <div class="bar-fill-horizontal" style="width: @(percentage)%; background: linear-gradient(90deg, @item.Color, @(item.Color)99);">
+                                </div>
+                                <div class="bar-percentage-badge" style="background: @item.Color;">@item.Value</div>
+                            </div>
                         </div>
                     }
                 </div>
@@ -342,46 +896,235 @@
         </div>
 
         <!-- Demographic Analytics Section -->
-        <div class="demographics-section">
-            <h3>Student Demographics</h3>
-            <div class="demographics-grid">
-                <div class="demographic-card">
-                    <h4>Top Courses</h4>
-                    <div class="demographic-list">
-                        @foreach (var course in analyticsData.CourseDistribution.Take(5))
-                        {
-                            <div class="demographic-item">
-                                <span class="demographic-label">@course.Category</span>
-                                <span class="demographic-count">@course.Count</span>
-                            </div>
-                        }
+        <div class="demographics-section ai-powered-section">
+            <div class="section-header-with-badge">
+                <h3>AI-Powered Student Analytics</h3>
+                <span class="ai-badge"><i class="bi bi-stars"></i> AI Enhanced</span>
+            </div>
+            
+            <div class="ai-analytics-query-box">
+                <div class="query-input-wrapper">
+                    <div class="ai-query-input-group">
+                        <i class="bi bi-search query-icon"></i>
+                        <input 
+                            type="text" 
+                            class="ai-query-input" 
+                            placeholder="Ask AI to analyze student data or create charts (e.g., 'Show me a pie chart of courses' or 'Create a bar chart of year levels')..."
+                            @bind="aiAnalyticsQuery"
+                            @onkeypress="@(async (KeyboardEventArgs e) => { if (e.Key == "Enter") await ProcessAIAnalytics(); })"
+                            disabled="@isProcessingAI" />
                     </div>
+                    <button class="ai-analyze-btn" @onclick="ProcessAIAnalytics" disabled="@isProcessingAI">
+                        @if (isProcessingAI)
+                        {
+                            <span class="spinner-border spinner-border-sm me-2"></span>
+                            <span>Processing...</span>
+                        }
+                        else
+                        {
+                            <i class="bi bi-magic me-2"></i>
+                            <span>Analyze</span>
+                        }
+                    </button>
                 </div>
-
-                <div class="demographic-card">
-                    <h4>Year Level Distribution</h4>
-                    <div class="demographic-list">
-                        @foreach (var yearLevel in analyticsData.YearLevelDistribution)
-                        {
-                            <div class="demographic-item">
-                                <span class="demographic-label">@yearLevel.Category</span>
-                                <span class="demographic-count">@yearLevel.Count</span>
+                
+                @if (!string.IsNullOrEmpty(aiAnalyticsResult))
+                {
+                    @if (aiChartData != null && aiChartData.Data != null && aiChartData.Data.Any())
+                    {
+                        <div class="ai-chart-container">
+                            <h3 class="ai-chart-title">@aiChartData.Title</h3>
+                            
+                            @if (aiChartData.Type?.ToLower() == "pie")
+                            {
+                                <div class="ai-pie-chart">
+                                    <svg class="ai-pie-svg" viewBox="0 0 300 300">
+                                        @for (int i = 0; i < aiChartData.Data.Count; i++)
+                                        {
+                                            var item = aiChartData.Data[i];
+                                            var path = GeneratePieChartPath(aiChartData.Data, i);
+                                            <path class="ai-pie-slice" d="@path" fill="@item.Color" />
+                                        }
+                                    </svg>
+                                    <div class="ai-chart-legend">
+                                        @foreach (var item in aiChartData.Data)
+                                        {
+                                            <div class="ai-legend-item">
+                                                <div class="ai-legend-color" style="background: @item.Color;"></div>
+                                                <div class="ai-legend-text">
+                                                    @item.Label: <span class="ai-legend-value">@item.Value</span>
+                                                </div>
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+                            }
+                            else if (aiChartData.Type?.ToLower() == "bar")
+                            {
+                                <div class="ai-bar-chart">
+                                    @foreach (var item in aiChartData.Data)
+                                    {
+                                        var percentage = GetBarPercentageForChart(item.Value, aiChartData.Data);
+                                        <div class="ai-bar-item">
+                                            <div class="ai-bar-label">@item.Label</div>
+                                            <div class="ai-bar-track">
+                                                <div class="ai-bar-fill" style="width: @(percentage)%; background: @item.Color;">
+                                                    <span class="ai-bar-value">@item.Value</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    }
+                                </div>
+                            }
+                            else if (aiChartData.Type?.ToLower() == "line")
+                            {
+                                <div class="ai-line-chart">
+                                    <svg class="ai-line-svg" viewBox="0 0 800 300">
+                                        @{
+                                            var linePath = GenerateLineChartPath(aiChartData.Data);
+                                            var areaPath = $"M 60 240 {linePath} L 740 240 Z";
+                                        }
+                                        <path class="ai-line-area" d="@areaPath" fill="#6366f1" />
+                                        <polyline class="ai-line-path" points="@linePath" stroke="#6366f1" />
+                                        @for (int i = 0; i < aiChartData.Data.Count; i++)
+                                        {
+                                            var item = aiChartData.Data[i];
+                                            var width = 800.0;
+                                            var height = 300.0;
+                                            var padding = 60.0;
+                                            var graphWidth = width - (padding * 2);
+                                            var graphHeight = height - (padding * 2);
+                                            var maxValue = aiChartData.Data.Max(d => d.Value);
+                                            var minValue = aiChartData.Data.Min(d => d.Value);
+                                            var range = maxValue - minValue > 0 ? maxValue - minValue : 1;
+                                            var x = padding + (i * graphWidth / Math.Max(aiChartData.Data.Count - 1, 1));
+                                            var normalizedValue = (item.Value - minValue) / range;
+                                            var y = height - padding - (normalizedValue * graphHeight);
+                                            <circle class="ai-line-point" cx="@x" cy="@y" r="5" fill="#6366f1" />
+                                        }
+                                    </svg>
+                                </div>
+                            }
+                            
+                            @if (!string.IsNullOrEmpty(aiChartData.Explanation))
+                            {
+                                <div class="ai-chart-explanation">
+                                    <strong>Analysis:</strong> @aiChartData.Explanation
+                                </div>
+                            }
+                            
+                            @if (!string.IsNullOrEmpty(rawJsonData))
+                            {
+                                <div class="json-viewer-controls">
+                                    <button class="btn-show-json" @onclick="@(() => showRawJson = !showRawJson)">
+                                        <i class="bi bi-@(showRawJson ? "eye-slash" : "code-square")"></i>
+                                        @(showRawJson ? "Hide" : "Show") Raw JSON
+                                    </button>
+                                </div>
+                                
+                                @if (showRawJson)
+                                {
+                                    <div class="raw-json-container">
+                                        <div class="json-header">
+                                            <i class="bi bi-file-code"></i>
+                                            <span>AI Response JSON</span>
+                                        </div>
+                                        <pre class="json-content">@rawJsonData</pre>
+                                    </div>
+                                }
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="ai-result-container">
+                            <div class="ai-result-header">
+                                <i class="bi bi-lightbulb"></i>
+                                <span>AI Analysis Result</span>
                             </div>
-                        }
-                    </div>
-                </div>
-
-                <div class="demographic-card">
-                    <h4>Top Universities</h4>
-                    <div class="demographic-list">
-                        @foreach (var university in analyticsData.UniversityDistribution.Take(5))
-                        {
-                            <div class="demographic-item">
-                                <span class="demographic-label">@university.Category</span>
-                                <span class="demographic-count">@university.Count</span>
+                            <div class="ai-result-content">
+                                @((MarkupString)aiAnalyticsResult.Replace("\n", "<br/>"))
                             </div>
-                        }
-                    </div>
+                        </div>
+                    }
+                }
+            </div>
+            
+            <div class="quick-analysis-buttons">
+                <h4>Quick Analysis</h4>
+                <div class="quick-analysis-grid">
+                    <button class="analysis-btn" @onclick="AnalyzeCourseDistribution">
+                        <i class="bi bi-pie-chart"></i>
+                        <div class="analysis-btn-text">
+                            <strong>Course Distribution</strong>
+                        </div>
+                    </button>
+                    <button class="analysis-btn" @onclick="AnalyzeYearLevels">
+                        <i class="bi bi-bar-chart"></i>
+                        <div class="analysis-btn-text">
+                            <strong>Year Level Analysis</strong>
+                        </div>
+                    </button>
+                    <button class="analysis-btn" @onclick="AnalyzeUniversities">
+                        <i class="bi bi-building"></i>
+                        <div class="analysis-btn-text">
+                            <strong>University Distribution</strong>
+                        </div>
+                    </button>
+                    <button class="analysis-btn" @onclick="AnalyzeGeography">
+                        <i class="bi bi-geo-alt"></i>
+                        <div class="analysis-btn-text">
+                            <strong>Geographic Breakdown</strong>
+                        </div>
+                    </button>
+                    <button class="analysis-btn" @onclick="AnalyzeTrends">
+                        <i class="bi bi-graph-up"></i>
+                        <div class="analysis-btn-text">
+                            <strong>Application Trends</strong>
+                        </div>
+                    </button>
+                    <button class="analysis-btn" @onclick="AnalyzeSuccessRates">
+                        <i class="bi bi-award"></i>
+                        <div class="analysis-btn-text">
+                            <strong>Success Rates</strong>
+                        </div>
+                    </button>
+                    <button class="analysis-btn" @onclick="AnalyzeSexDistribution">
+                        <i class="bi bi-gender-ambiguous"></i>
+                        <div class="analysis-btn-text">
+                            <strong>Sex Distribution</strong>
+                        </div>
+                    </button>
+                    <button class="analysis-btn" @onclick="AnalyzeEngagement">
+                        <i class="bi bi-people"></i>
+                        <div class="analysis-btn-text">
+                            <strong>Engagement Metrics</strong>
+                        </div>
+                    </button>
+                    <button class="analysis-btn" @onclick="AnalyzeApplicationStatus">
+                        <i class="bi bi-file-check"></i>
+                        <div class="analysis-btn-text">
+                            <strong>Application Status</strong>
+                        </div>
+                    </button>
+                    <button class="analysis-btn" @onclick="AnalyzeAgeDistribution">
+                        <i class="bi bi-calendar-range"></i>
+                        <div class="analysis-btn-text">
+                            <strong>Age Distribution</strong>
+                        </div>
+                    </button>
+                    <button class="analysis-btn" @onclick="AnalyzeGPA">
+                        <i class="bi bi-graph-down-arrow"></i>
+                        <div class="analysis-btn-text">
+                            <strong>GPA Analysis</strong>
+                        </div>
+                    </button>
+                    <button class="analysis-btn" @onclick="AnalyzeVerification">
+                        <i class="bi bi-shield-check"></i>
+                        <div class="analysis-btn-text">
+                            <strong>Verification Status</strong>
+                        </div>
+                    </button>
                 </div>
             </div>
         </div>
@@ -390,14 +1133,27 @@
         <div class="geographic-section">
             <h3>Geographic Distribution</h3>
             <div class="geographic-grid">
-                @foreach (var region in analyticsData.GeographicDistribution.Take(6))
+                @foreach (var region in analyticsData.GeographicDistribution.Take(2))
                 {
-                    <div class="geographic-card">
+                    var isNCR = region.Region.Contains("National Capital Region", StringComparison.OrdinalIgnoreCase) || 
+                                region.Region.Contains("NCR", StringComparison.OrdinalIgnoreCase) ||
+                                region.Region.Contains("Metro Manila", StringComparison.OrdinalIgnoreCase);
+                    var isOtherRegions = region.Region.Contains("Other", StringComparison.OrdinalIgnoreCase);
+                    var cardClass = isOtherRegions ? "geographic-card geographic-card-other" : 
+                                    isNCR ? "geographic-card geographic-card-ncr" : 
+                                    "geographic-card";
+                    var clickable = isOtherRegions ? "clickable-card" : "";
+                    
+                    <div class="@cardClass @clickable" @onclick="@(() => { if (isOtherRegions) OpenRegionsModal(); })">
                         <div class="geographic-header">
                             <i class="bi bi-geo-alt"></i>
                             <span>@region.Region</span>
                         </div>
                         <div class="geographic-count">@region.Count students</div>
+                        @if (isOtherRegions)
+                        {
+                            <div class="click-hint-small">Click for regional breakdown</div>
+                        }
                     </div>
                 }
             </div>
@@ -469,14 +1225,17 @@
                 <div class="scholarship-list">
                     @foreach (var scholarship in analyticsData.TopPerformingScholarships)
                     {
-                        <div class="scholarship-item">
+                        <div class="scholarship-item clickable-card" @onclick="() => OpenScholarshipModal(scholarship.Title)">
                             <div class="scholarship-info">
                                 <h4>@scholarship.Title</h4>
                                 <div class="scholarship-stats">
-                                    <span>@scholarship.ApplicationCount applications</span>
-                                    <span>@scholarship.AcceptedCount accepted</span>
-                                    <span>@FormatCurrency(scholarship.MonetaryValue)</span>
+                                    <span><i class="bi bi-file-earmark-text"></i> @scholarship.ApplicationCount applications</span>
+                                    <span><i class="bi bi-check-circle"></i> @scholarship.AcceptedCount accepted</span>
+                                    <span><i class="bi bi-currency-dollar"></i> @FormatCurrency(scholarship.MonetaryValue)</span>
                                 </div>
+                            </div>
+                            <div class="scholarship-arrow">
+                                <i class="bi bi-chevron-right"></i>
                             </div>
                         </div>
                     }
@@ -498,5 +1257,495 @@
                 }
             </div>
         </div>
+
+        <!-- Demographic Modals -->
+        @if (showCoursesModal)
+        {
+            <div class="modal-overlay" @onclick="CloseCoursesModal">
+                <div class="modal-content" @onclick:stopPropagation="true">
+                    <div class="modal-header">
+                        <h3><i class="bi bi-book"></i> Course Distribution</h3>
+                        <button class="modal-close" @onclick="CloseCoursesModal">
+                            <i class="bi bi-x-lg"></i>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="modal-bar-chart">
+                            @{
+                                var maxCourse = analyticsData.CourseDistribution.Max(x => x.Count);
+                            }
+                            @foreach (var course in analyticsData.CourseDistribution)
+                            {
+                                <div class="modal-bar-item">
+                                    <div class="modal-bar-label">@course.Category</div>
+                                    <div class="modal-bar-wrapper">
+                                        <div class="modal-bar-fill" style="width: @GetBarPercentage(course.Count, maxCourse)%;">
+                                            <span class="modal-bar-value">@course.Count students</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+
+        @if (showYearLevelModal)
+        {
+            <div class="modal-overlay" @onclick="CloseYearLevelModal">
+                <div class="modal-content" @onclick:stopPropagation="true">
+                    <div class="modal-header">
+                        <h3><i class="bi bi-calendar3"></i> Year Level Distribution</h3>
+                        <button class="modal-close" @onclick="CloseYearLevelModal">
+                            <i class="bi bi-x-lg"></i>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="modal-pie-chart">
+                            @{
+                                var totalYearLevel = analyticsData.YearLevelDistribution.Sum(x => x.Count);
+                                var colors = new[] { "#667eea", "#4facfe", "#43e97b", "#f093fb", "#fa709a", "#30cfd0" };
+                                var index = 0;
+                            }
+                            <svg viewBox="0 0 200 200" class="pie-svg">
+                                @{
+                                    double currentAngle = 0;
+                                    foreach (var yearLevel in analyticsData.YearLevelDistribution)
+                                    {
+                                        var percentage = (double)yearLevel.Count / totalYearLevel;
+                                        var angle = percentage * 360;
+                                        var largeArc = angle > 180 ? 1 : 0;
+                                        
+                                        var startX = 100 + 80 * Math.Cos((currentAngle - 90) * Math.PI / 180);
+                                        var startY = 100 + 80 * Math.Sin((currentAngle - 90) * Math.PI / 180);
+                                        var endX = 100 + 80 * Math.Cos((currentAngle + angle - 90) * Math.PI / 180);
+                                        var endY = 100 + 80 * Math.Sin((currentAngle + angle - 90) * Math.PI / 180);
+                                        
+                                        <path d="M 100 100 L @startX @startY A 80 80 0 @largeArc 1 @endX @endY Z"
+                                              fill="@colors[index % colors.Length]"
+                                              stroke="white"
+                                              stroke-width="2">
+                                            <title>@yearLevel.Category: @yearLevel.Count students (@percentage.ToString("P1"))</title>
+                                        </path>
+                                        
+                                        currentAngle += angle;
+                                        index++;
+                                    }
+                                }
+                            </svg>
+                            <div class="pie-legend">
+                                @{
+                                    index = 0;
+                                }
+                                @foreach (var yearLevel in analyticsData.YearLevelDistribution)
+                                {
+                                    var percentage = (double)yearLevel.Count / totalYearLevel;
+                                    <div class="pie-legend-item">
+                                        <div class="pie-legend-color" style="background: @colors[index % colors.Length];"></div>
+                                        <span>@yearLevel.Category: @yearLevel.Count (@percentage.ToString("P1"))</span>
+                                    </div>
+                                    index++;
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+
+        @if (showUniversitiesModal)
+        {
+            <div class="modal-overlay" @onclick="CloseUniversitiesModal">
+                <div class="modal-content" @onclick:stopPropagation="true">
+                    <div class="modal-header">
+                        <h3><i class="bi bi-building"></i> University Distribution</h3>
+                        <button class="modal-close" @onclick="CloseUniversitiesModal">
+                            <i class="bi bi-x-lg"></i>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="modal-bar-chart">
+                            @{
+                                var maxUniversity = analyticsData.UniversityDistribution.Max(x => x.Count);
+                            }
+                            @foreach (var university in analyticsData.UniversityDistribution)
+                            {
+                                <div class="modal-bar-item">
+                                    <div class="modal-bar-label">@university.Category</div>
+                                    <div class="modal-bar-wrapper">
+                                        <div class="modal-bar-fill" style="width: @GetBarPercentage(university.Count, maxUniversity)%;">
+                                            <span class="modal-bar-value">@university.Count students</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+
+        @if (showBenefactorPerformanceModal)
+        {
+            <div class="modal-overlay" @onclick="CloseBenefactorPerformanceModal">
+                <div class="modal-content modal-large" @onclick:stopPropagation="true">
+                    <div class="modal-header">
+                        <h3><i class="bi bi-graph-up"></i> Benefactor Performance Analysis</h3>
+                        <button class="modal-close" @onclick="CloseBenefactorPerformanceModal">
+                            <i class="bi bi-x-lg"></i>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="performance-details">
+                            <div class="performance-stats-grid">
+                                <div class="stat-card gradient-blue">
+                                    <i class="bi bi-trophy"></i>
+                                    <div class="stat-content">
+                                        <div class="stat-value">@FormatPercentage(analyticsData.BenefactorSuccessRate)</div>
+                                        <div class="stat-label">Success Rate</div>
+                                    </div>
+                                </div>
+                                <div class="stat-card gradient-green">
+                                    <i class="bi bi-people"></i>
+                                    <div class="stat-content">
+                                        <div class="stat-value">@analyticsData.TotalBenefactors</div>
+                                        <div class="stat-label">Total Benefactors</div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="sample-data-controls">
+                                <h5><i class="bi bi-sliders"></i> Demo Controls (For Presentation)</h5>
+                                <div class="demo-buttons">
+                                    <button class="demo-btn demo-btn-growth" @onclick="GenerateGrowthTrendData">
+                                        <i class="bi bi-graph-up-arrow"></i> Growth Trend
+                                    </button>
+                                    <button class="demo-btn demo-btn-decline" @onclick="GenerateDeclineTrendData">
+                                        <i class="bi bi-graph-down-arrow"></i> Decline Trend
+                                    </button>
+                                    <button class="demo-btn demo-btn-volatile" @onclick="GenerateVolatileTrendData">
+                                        <i class="bi bi-activity"></i> Volatile Pattern
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <div class="performance-chart-section">
+                                <h4>6-Month Success Rate Trend</h4>
+                                <div class="large-line-graph">
+                                    <svg viewBox="0 0 800 300" class="line-svg-large">
+                                        <defs>
+                                            <linearGradient id="benefactorGradientLarge" x1="0%" y1="0%" x2="0%" y2="100%">
+                                                <stop offset="0%" style="stop-color:#4facfe;stop-opacity:0.3" />
+                                                <stop offset="100%" style="stop-color:#4facfe;stop-opacity:0" />
+                                            </linearGradient>
+                                            <linearGradient id="benefactorStroke" x1="0%" y1="0%" x2="100%" y2="0%">
+                                                <stop offset="0%" style="stop-color:#4facfe;stop-opacity:1" />
+                                                <stop offset="100%" style="stop-color:#00f2fe;stop-opacity:1" />
+                                            </linearGradient>
+                                        </defs>
+                                        <!-- Grid lines -->
+                                        @for (int i = 0; i <= 4; i++)
+                                        {
+                                            var y = 40 + (i * 55);
+                                            <line x1="60" y1="@y" x2="760" y2="@y" stroke="#e2e8f0" stroke-width="1"/>
+                                        }
+                                        <!-- Line graph -->
+                                        <polyline points="@GenerateLargeLineGraphPoints(analyticsData.MonthlyApplicationTrends, true)" 
+                                                 fill="url(#benefactorGradientLarge)" stroke="url(#benefactorStroke)" stroke-width="4"/>
+                                        <!-- Data points with tooltips -->
+                                        @{
+                                            var benefactorTrendsForPoints = analyticsData.MonthlyApplicationTrends.OrderBy(t => t.Year).ThenBy(t => t.Month).Take(6).ToList();
+                                            var pointsArray = GenerateLargeLineGraphPoints(analyticsData.MonthlyApplicationTrends, true).Split(' ');
+                                            for (int i = 1; i < pointsArray.Length - 1 && i - 1 < benefactorTrendsForPoints.Count; i++)
+                                            {
+                                                var coords = pointsArray[i].Split(',');
+                                                if (coords.Length == 2)
+                                                {
+                                                    var trend = benefactorTrendsForPoints[i - 1];
+                                                    var successRate = trend.ApplicationCount > 0 ? (double)trend.AcceptedCount / trend.ApplicationCount * 100 : 0;
+                                                    var tooltipText = $"{GetMonthName(trend.Month)}: {successRate:F1}% ({trend.AcceptedCount}/{trend.ApplicationCount})";
+                                                    <circle cx="@coords[0]" cy="@coords[1]" r="6" fill="#4facfe" stroke="white" stroke-width="2" class="data-point">
+                                                        <title>@tooltipText</title>
+                                                    </circle>
+                                                }
+                                            }
+                                        }
+                                    </svg>
+                                </div>
+                                <div class="chart-labels">
+                                    @{
+                                        var benefactorTrends = analyticsData.MonthlyApplicationTrends.OrderBy(t => t.Year).ThenBy(t => t.Month).Take(6).ToList();
+                                        for (int i = 0; i < benefactorTrends.Count; i++)
+                                        {
+                                            <span class="chart-label">@GetMonthName(benefactorTrends[i].Month)</span>
+                                        }
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+
+        @if (showInstitutionPerformanceModal)
+        {
+            <div class="modal-overlay" @onclick="CloseInstitutionPerformanceModal">
+                <div class="modal-content modal-large" @onclick:stopPropagation="true">
+                    <div class="modal-header">
+                        <h3><i class="bi bi-graph-up"></i> Institution Performance Analysis</h3>
+                        <button class="modal-close" @onclick="CloseInstitutionPerformanceModal">
+                            <i class="bi bi-x-lg"></i>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="performance-details">
+                            <div class="performance-stats-grid">
+                                <div class="stat-card gradient-pink">
+                                    <i class="bi bi-trophy"></i>
+                                    <div class="stat-content">
+                                        <div class="stat-value">@FormatPercentage(analyticsData.InstitutionSuccessRate)</div>
+                                        <div class="stat-label">Success Rate</div>
+                                    </div>
+                                </div>
+                                <div class="stat-card gradient-purple">
+                                    <i class="bi bi-building"></i>
+                                    <div class="stat-content">
+                                        <div class="stat-value">@analyticsData.TotalInstitutions</div>
+                                        <div class="stat-label">Total Institutions</div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="sample-data-controls">
+                                <h5><i class="bi bi-sliders"></i> Demo Controls (For Presentation)</h5>
+                                <div class="demo-buttons">
+                                    <button class="demo-btn demo-btn-growth" @onclick="GenerateGrowthTrendData">
+                                        <i class="bi bi-graph-up-arrow"></i> Growth Trend
+                                    </button>
+                                    <button class="demo-btn demo-btn-decline" @onclick="GenerateDeclineTrendData">
+                                        <i class="bi bi-graph-down-arrow"></i> Decline Trend
+                                    </button>
+                                    <button class="demo-btn demo-btn-volatile" @onclick="GenerateVolatileTrendData">
+                                        <i class="bi bi-activity"></i> Volatile Pattern
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <div class="performance-chart-section">
+                                <h4>6-Month Success Rate Trend</h4>
+                                <div class="large-line-graph">
+                                    <svg viewBox="0 0 800 300" class="line-svg-large">
+                                        <defs>
+                                            <linearGradient id="institutionGradientLarge" x1="0%" y1="0%" x2="0%" y2="100%">
+                                                <stop offset="0%" style="stop-color:#f093fb;stop-opacity:0.3" />
+                                                <stop offset="100%" style="stop-color:#f093fb;stop-opacity:0" />
+                                            </linearGradient>
+                                            <linearGradient id="institutionStroke" x1="0%" y1="0%" x2="100%" y2="0%">
+                                                <stop offset="0%" style="stop-color:#f093fb;stop-opacity:1" />
+                                                <stop offset="100%" style="stop-color:#f5576c;stop-opacity:1" />
+                                            </linearGradient>
+                                        </defs>
+                                        <!-- Grid lines -->
+                                        @for (int i = 0; i <= 4; i++)
+                                        {
+                                            var y = 40 + (i * 55);
+                                            <line x1="60" y1="@y" x2="760" y2="@y" stroke="#e2e8f0" stroke-width="1"/>
+                                        }
+                                        <!-- Line graph -->
+                                        <polyline points="@GenerateLargeLineGraphPoints(analyticsData.MonthlyApplicationTrends, true)" 
+                                                 fill="url(#institutionGradientLarge)" stroke="url(#institutionStroke)" stroke-width="4"/>
+                                        <!-- Data points with tooltips -->
+                                        @{
+                                            var institutionTrendsForPoints = analyticsData.MonthlyApplicationTrends.OrderBy(t => t.Year).ThenBy(t => t.Month).Take(6).ToList();
+                                            var pointsArrayInst = GenerateLargeLineGraphPoints(analyticsData.MonthlyApplicationTrends, true).Split(' ');
+                                            for (int i = 1; i < pointsArrayInst.Length - 1 && i - 1 < institutionTrendsForPoints.Count; i++)
+                                            {
+                                                var coords = pointsArrayInst[i].Split(',');
+                                                if (coords.Length == 2)
+                                                {
+                                                    var trend = institutionTrendsForPoints[i - 1];
+                                                    var successRate = trend.ApplicationCount > 0 ? (double)trend.AcceptedCount / trend.ApplicationCount * 100 : 0;
+                                                    var tooltipText = $"{GetMonthName(trend.Month)}: {successRate:F1}% ({trend.AcceptedCount}/{trend.ApplicationCount})";
+                                                    <circle cx="@coords[0]" cy="@coords[1]" r="6" fill="#f093fb" stroke="white" stroke-width="2" class="data-point">
+                                                        <title>@tooltipText</title>
+                                                    </circle>
+                                                }
+                                            }
+                                        }
+                                    </svg>
+                                </div>
+                                <div class="chart-labels">
+                                    @{
+                                        var institutionTrends = analyticsData.MonthlyApplicationTrends.OrderBy(t => t.Year).ThenBy(t => t.Month).Take(6).ToList();
+                                        for (int i = 0; i < institutionTrends.Count; i++)
+                                        {
+                                            <span class="chart-label">@GetMonthName(institutionTrends[i].Month)</span>
+                                        }
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+
+        @if (showScholarshipModal && selectedScholarshipId != null)
+        {
+            <div class="modal-overlay" @onclick="CloseScholarshipModal">
+                <div class="modal-content modal-large" @onclick:stopPropagation="true">
+                    <div class="modal-header gradient-green-header scholarship-modal-header">
+                        <h3>@selectedScholarshipId</h3>
+                        <button class="modal-close" @onclick="CloseScholarshipModal">
+                            <i class="bi bi-x-lg"></i>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        @{
+                            var scholarship = analyticsData.TopPerformingScholarships.FirstOrDefault(s => s.Title == selectedScholarshipId);
+                            if (scholarship != null)
+                            {
+                                <!-- Scholarship Statistics Section -->
+                                <div class="scholarship-stats-section">
+                                    <div class="scholarship-stat-cards">
+                                        <div class="scholarship-stat-card stat-card-applications">
+                                            <div class="stat-card-icon">
+                                                <i class="bi bi-file-earmark-text"></i>
+                                            </div>
+                                            <div class="stat-card-content">
+                                                <div class="stat-card-value">@scholarship.ApplicationCount</div>
+                                                <div class="stat-card-label">Total Applications</div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="scholarship-stat-card stat-card-accepted">
+                                            <div class="stat-card-icon">
+                                                <i class="bi bi-check-circle-fill"></i>
+                                            </div>
+                                            <div class="stat-card-content">
+                                                <div class="stat-card-value">@scholarship.AcceptedCount</div>
+                                                <div class="stat-card-label">Accepted</div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="scholarship-stat-card stat-card-value">
+                                            <div class="stat-card-icon">
+                                                <i class="bi bi-currency-dollar"></i>
+                                            </div>
+                                            <div class="stat-card-content">
+                                                <div class="stat-card-value scholarship-amount">@FormatCurrency(scholarship.MonetaryValue)</div>
+                                                <div class="stat-card-label">Scholarship Value</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Recent Applicants Section -->
+                                <div class="scholarship-applicants-section">
+                                    <div class="section-header">
+                                        <h4><i class="bi bi-people"></i> Recent Applicants</h4>
+                                    </div>
+                                    <div class="scholarship-applicants-table">
+                                        <table class="applicants-table">
+                                            <thead>
+                                                <tr>
+                                                    <th>Student Name</th>
+                                                    <th>Application Date</th>
+                                                    <th>Status</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @foreach (var app in analyticsData.RecentApplications.Where(a => a.ScholarshipTitle == selectedScholarshipId).Take(10))
+                                                {
+                                                    <tr class="applicant-row">
+                                                        <td class="applicant-name-cell">
+                                                            <i class="bi bi-person-circle"></i>
+                                                            <span>@app.StudentName</span>
+                                                        </td>
+                                                        <td class="applicant-date-cell">
+                                                            <i class="bi bi-calendar3"></i>
+                                                            <span>@app.ApplicationDate.ToString("MM/dd/yyyy")</span>
+                                                        </td>
+                                                        <td class="applicant-status-cell">
+                                                            <span class="@GetStatusBadgeClass(app.Status)">@app.Status</span>
+                                                        </td>
+                                                    </tr>
+                                                }
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            }
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+        
+        @if (showRegionsModal)
+        {
+            <div class="modal-overlay" @onclick="CloseRegionsModal">
+                <div class="modal-content" @onclick:stopPropagation="true">
+                    <div class="modal-header">
+                        <h3><i class="bi bi-geo-alt"></i> Regional Distribution</h3>
+                        <button class="modal-close" @onclick="CloseRegionsModal">
+                            <i class="bi bi-x-lg"></i>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="modal-pie-chart">
+                            @{
+                                var allRegions = analyticsData.GeographicDistribution.Where(g => !g.Region.Contains("Other", StringComparison.OrdinalIgnoreCase)).ToList();
+                                var totalRegional = allRegions.Sum(x => x.Count);
+                                var regionalColors = new[] { "#ef4444", "#f59e0b", "#f59e0b", "#fbbf24", "#facc15", "#a3e635", "#4ade80", "#34d399", "#2dd4bf", "#22d3ee", "#38bdf8", "#60a5fa", "#818cf8", "#a78bfa", "#c084fc", "#e879f9" };
+                                var colorIndex = 0;
+                            }
+                            <svg viewBox="0 0 200 200" class="pie-svg">
+                                @{
+                                    double currentAngle = 0;
+                                    foreach (var region in allRegions)
+                                    {
+                                        var percentage = (double)region.Count / totalRegional;
+                                        var angle = percentage * 360;
+                                        var largeArc = angle > 180 ? 1 : 0;
+                                        
+                                        var startX = 100 + 80 * Math.Cos((currentAngle - 90) * Math.PI / 180);
+                                        var startY = 100 + 80 * Math.Sin((currentAngle - 90) * Math.PI / 180);
+                                        var endX = 100 + 80 * Math.Cos((currentAngle + angle - 90) * Math.PI / 180);
+                                        var endY = 100 + 80 * Math.Sin((currentAngle + angle - 90) * Math.PI / 180);
+                                        
+                                        <path d="M 100 100 L @startX @startY A 80 80 0 @largeArc 1 @endX @endY Z"
+                                              fill="@regionalColors[colorIndex % regionalColors.Length]"
+                                              stroke="white"
+                                              stroke-width="2">
+                                            <title>@region.Region: @region.Count students (@percentage.ToString("P1"))</title>
+                                        </path>
+                                        
+                                        currentAngle += angle;
+                                        colorIndex++;
+                                    }
+                                }
+                            </svg>
+                            <div class="pie-legend">
+                                @{
+                                    colorIndex = 0;
+                                }
+                                @foreach (var region in allRegions)
+                                {
+                                    var percentage = (double)region.Count / totalRegional;
+                                    <div class="pie-legend-item">
+                                        <div class="pie-legend-color" style="background: @regionalColors[colorIndex % regionalColors.Length];"></div>
+                                        <span>@region.Region: @region.Count (@percentage.ToString("P1"))</span>
+                                    </div>
+                                    colorIndex++;
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
     }
 </div>

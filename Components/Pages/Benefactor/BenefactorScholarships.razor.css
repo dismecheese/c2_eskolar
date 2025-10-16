@@ -1,7 +1,16 @@
-/* Global Font Family */
-    * {
-        font-family: 'Inter', 'Helvetica Neue', Helvetica, Arial, sans-serif !important;
-    }
+/* Component-scoped font family - applies only to this component */
+.search-header-section,
+.modern-tabs,
+.card,
+.empty-state,
+.btn-custom-primary,
+.tab-pill,
+.badge,
+input,
+button,
+h1, h2, h3, h4, h5, h6, p, span, div {
+    font-family: 'Inter', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+}
 
     /* Search Header Section */
     .search-header-section {
