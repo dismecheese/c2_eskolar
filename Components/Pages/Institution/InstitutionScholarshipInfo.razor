@@ -5,25 +5,64 @@
 @using Microsoft.EntityFrameworkCore
 @using c2_eskolar.Data
 @using c2_eskolar.Models
+@using c2_eskolar.Services
+@using Microsoft.AspNetCore.Components.Authorization
+@using System.Security.Claims
 @inject ApplicationDbContext DbContext
+@inject BlobStorageService BlobStorageService
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject Microsoft.AspNetCore.Identity.UserManager<Microsoft.AspNetCore.Identity.IdentityUser> UserManager
+@inject IJSRuntime JS
 
 @code {
     [Parameter] public int ScholarshipId { get; set; }
     private Scholarship? scholarship;
     private List<ScholarshipApplication> studentApplicants = new();
+    private List<ScholarshipApplication> acceptedStudents = new();
     private bool isEditMode = false;
 
-    private Scholarship editableScholarship = new Scholarship { Title = string.Empty, Benefits = string.Empty, ApplicationDeadline = DateTime.Now };
-    private int SlotsRemaining => (scholarship?.SlotsAvailable ?? 0) - studentApplicants.Count;
+    private Scholarship editableScholarship = new Scholarship 
+    { 
+        Title = string.Empty, 
+        Benefits = string.Empty, 
+        ApplicationDeadline = DateTime.Now.AddMonths(3) 
+    };
     private string? errorMessage;
     private string? successMessage;
     private bool showStudentList = false;
+    private bool isSaving = false;
+    private Guid? currentInstitutionProfileId = null;
+    private string? scholarshipIconSasUrl = null;
+    private int SlotsRemaining => (scholarship?.SlotsAvailable ?? 0) - studentApplicants.Count;
 
     [Inject] private NavigationManager? Navigation { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
+        await LoadCurrentInstitution();
         await LoadScholarship();
+    }
+
+    private async Task LoadCurrentInstitution()
+    {
+        try
+        {
+            var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+            if (authState.User.Identity?.IsAuthenticated == true)
+            {
+                var user = await UserManager.GetUserAsync(authState.User);
+                if (user != null)
+                {
+                    var institutionProfile = await DbContext.InstitutionProfiles
+                        .FirstOrDefaultAsync(p => p.UserId == user.Id);
+                    currentInstitutionProfileId = institutionProfile?.InstitutionProfileId;
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading institution: {ex.Message}");
+        }
     }
 
     private async Task LoadScholarship()
@@ -37,17 +76,27 @@
 
         if (scholarship != null)
         {
+            // Debug: Log the IconUrl value
+            Console.WriteLine($"🔍 DEBUG: Scholarship ID {scholarship.ScholarshipId} - IconUrl: '{scholarship.IconUrl}'");
+            
+            // Generate secure SAS URL for the scholarship icon
+            scholarshipIconSasUrl = GetSecureIconUrl(scholarship.IconUrl);
+            
             studentApplicants = scholarship.Applications
                 .Where(a => a.Student != null)
+                .ToList();
+            acceptedStudents = scholarship.Applications
+                .Where(a => a.Student != null && a.Status == "Accepted")
                 .ToList();
             // Copy scholarship to editableScholarship for editing
             editableScholarship = new Scholarship
             {
                 ScholarshipId = scholarship.ScholarshipId,
-                Title = scholarship.Title,
+                Title = scholarship.Title ?? string.Empty,
                 Description = scholarship.Description,
-                Benefits = scholarship.Benefits,
+                Benefits = scholarship.Benefits ?? string.Empty,
                 IsActive = scholarship.IsActive,
+                Eligibility = scholarship.Eligibility,
                 Requirements = scholarship.Requirements,
                 ApplicationDeadline = scholarship.ApplicationDeadline,
                 SlotsAvailable = scholarship.SlotsAvailable,
@@ -55,7 +104,13 @@
                 RequiredCourse = scholarship.RequiredCourse,
                 RequiredYearLevel = scholarship.RequiredYearLevel,
                 RequiredUniversity = scholarship.RequiredUniversity,
-                ExternalApplicationUrl = scholarship.ExternalApplicationUrl
+                ExternalApplicationUrl = scholarship.ExternalApplicationUrl,
+                BenefactorProfileId = scholarship.BenefactorProfileId,
+                InstitutionProfileId = scholarship.InstitutionProfileId,
+                IsInternal = scholarship.IsInternal,
+                VisibilityType = scholarship.VisibilityType,
+                TargetInstitutionIds = scholarship.TargetInstitutionIds,
+                IconUrl = scholarship.IconUrl
             };
         }
     }
@@ -96,44 +151,113 @@
 
     private async Task SaveChangesAsync()
     {
+        isSaving = true;
         errorMessage = null;
         successMessage = null;
+
+        // Validate required fields
+        if (string.IsNullOrWhiteSpace(editableScholarship.Title))
+        {
+            errorMessage = "Title is required.";
+            isSaving = false;
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(editableScholarship.Benefits))
+        {
+            errorMessage = "Benefits field is required.";
+            isSaving = false;
+            return;
+        }
+
         try
         {
             var existing = await DbContext.Scholarships.FindAsync(editableScholarship.ScholarshipId);
             if (existing == null)
             {
                 errorMessage = "Scholarship not found.";
+                isSaving = false;
                 return;
             }
+
             // Update fields
-            existing.Title = editableScholarship.Title;
-            existing.Description = editableScholarship.Description;
-            existing.Benefits = editableScholarship.Benefits;
+            existing.Title = editableScholarship.Title.Trim();
+            existing.Description = string.IsNullOrWhiteSpace(editableScholarship.Description) ? null : editableScholarship.Description.Trim();
+            existing.Benefits = editableScholarship.Benefits.Trim();
             existing.IsActive = editableScholarship.IsActive;
-            existing.Requirements = editableScholarship.Requirements;
+            existing.Eligibility = string.IsNullOrWhiteSpace(editableScholarship.Eligibility) ? null : editableScholarship.Eligibility.Trim();
+            existing.Requirements = string.IsNullOrWhiteSpace(editableScholarship.Requirements) ? null : editableScholarship.Requirements.Trim();
             existing.ApplicationDeadline = editableScholarship.ApplicationDeadline;
             existing.SlotsAvailable = editableScholarship.SlotsAvailable;
             existing.MinimumGPA = editableScholarship.MinimumGPA;
-            existing.RequiredCourse = editableScholarship.RequiredCourse;
+            existing.RequiredCourse = string.IsNullOrWhiteSpace(editableScholarship.RequiredCourse) ? null : editableScholarship.RequiredCourse.Trim();
             existing.RequiredYearLevel = editableScholarship.RequiredYearLevel;
-            existing.RequiredUniversity = editableScholarship.RequiredUniversity;
-            existing.ExternalApplicationUrl = editableScholarship.ExternalApplicationUrl;
+            existing.RequiredUniversity = string.IsNullOrWhiteSpace(editableScholarship.RequiredUniversity) ? null : editableScholarship.RequiredUniversity.Trim();
+            existing.ExternalApplicationUrl = string.IsNullOrWhiteSpace(editableScholarship.ExternalApplicationUrl) ? null : editableScholarship.ExternalApplicationUrl.Trim();
             existing.UpdatedAt = DateTime.Now;
-            await DbContext.SaveChangesAsync();
-            successMessage = "Scholarship updated successfully.";
-            isEditMode = false;
-            await LoadScholarship();
+
+            // Save changes
+            var changes = await DbContext.SaveChangesAsync();
+            
+            if (changes > 0)
+            {
+                successMessage = "✅ Scholarship updated successfully!";
+                isEditMode = false;
+                await LoadScholarship();
+            }
+            else
+            {
+                errorMessage = "No changes were made.";
+            }
         }
         catch (Exception ex)
         {
             errorMessage = $"Error saving changes: {ex.Message}";
+            Console.WriteLine($"SaveChangesAsync Exception: {ex}");
+        }
+        finally
+        {
+            isSaving = false;
         }
     }
 
-    private void GoBackToList()
+    private async Task GoBack()
     {
-        Navigation?.NavigateTo("/dashboard/institution/scholarships");
+        await JS.InvokeVoidAsync("history.back");
+    }
+
+    /// <summary>
+    /// Converts a blob URL to a secure SAS URL for display
+    /// </summary>
+    private string GetSecureIconUrl(string? iconUrl)
+    {
+        if (string.IsNullOrEmpty(iconUrl))
+        {
+            return string.Empty;
+        }
+
+        try
+        {
+            // If it's already a data URL (base64), return as-is
+            if (iconUrl.StartsWith("data:"))
+            {
+                return iconUrl;
+            }
+
+            // If it's a blob storage URL, convert to SAS URL
+            if (iconUrl.Contains("blob.core.windows.net"))
+            {
+                return BlobStorageService.GetPhotoSasUrlFromBlobUrl(iconUrl, 480); // 8 hours validity
+            }
+
+            // Return original URL for other cases
+            return iconUrl;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"⚠️ Error generating secure icon URL: {ex.Message}");
+            return iconUrl; // Return original URL on error
+        }
     }
 }
 
@@ -146,33 +270,156 @@
 }
 else
 {
-    <!-- 🔷 Improved Banner -->
-    <div class="scholarship-banner mb-4 animate__animated animate__fadeIn" style="background: linear-gradient(90deg, #2563eb 60%, #60a5fa 100%); box-shadow: 0 4px 24px #2563eb22; border-radius: 1.5rem; padding: 2.5rem 2rem 2rem 2rem; display: flex; align-items: center; gap: 2rem; margin-right: 0;">
-        <div class="d-flex align-items-center justify-content-center" style="min-width: 100px;">
-            <div style="width: 90px; height: 90px; border-radius: 50%; background: #fff; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 12px #2563eb33; border: 4px solid #60a5fa;">
-                <img src="https://via.placeholder.com/70x70.png?text=🎓" alt="Scholarship Logo" style="width: 70px; height: 70px; border-radius: 50%; object-fit: cover;" />
+    <!-- Back Button -->
+    <button class="btn btn-outline-primary mb-4 animate__animated animate__fadeIn d-flex align-items-center gap-2" 
+            style="border-radius: 8px; padding: 0.5rem 1.25rem; font-weight: 500;" 
+            @onclick="GoBack">
+        <span style="font-size:1.2rem;">←</span>
+        <span>Back</span>
+    </button>
+
+    <!-- Professional Header Banner -->
+    <div class="scholarship-banner mb-4 animate__animated animate__fadeIn" 
+         style="background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%); 
+                border-radius: 16px; 
+                padding: 2.5rem; 
+                box-shadow: 0 8px 32px rgba(30, 64, 175, 0.15);
+                position: relative;
+                overflow: hidden;">
+        
+        <!-- Subtle background pattern -->
+        <div style="position: absolute; top: 0; right: 0; width: 300px; height: 300px; 
+                    background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+                    border-radius: 50%;
+                    transform: translate(30%, -30%);"></div>
+        
+        <div class="d-flex align-items-center gap-4" style="position: relative; z-index: 1;">
+            <!-- Icon Container -->
+            <div class="flex-shrink-0">
+                <div style="width: 100px; height: 100px; 
+                           border-radius: 20px; 
+                           background: white; 
+                           display: flex; 
+                           align-items: center; 
+                           justify-content: center; 
+                           box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+                           border: 3px solid rgba(255,255,255,0.3);">
+                    @if (!string.IsNullOrEmpty(scholarshipIconSasUrl))
+                    {
+                        <img src="@scholarshipIconSasUrl" alt="@scholarship.Title Icon" 
+                             style="width: 80px; height: 80px; border-radius: 14px; object-fit: cover;" 
+                             onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" />
+                        <div style="width: 80px; height: 80px; 
+                                   border-radius: 14px; 
+                                   background: linear-gradient(135deg, #3b82f6, #60a5fa); 
+                                   display: none; 
+                                   align-items: center; 
+                                   justify-content: center; 
+                                   color: white; 
+                                   font-size: 2.5rem;">
+                            🎓
+                        </div>
+                    }
+                    else
+                    {
+                        <div style="width: 80px; height: 80px; 
+                                   border-radius: 14px; 
+                                   background: linear-gradient(135deg, #3b82f6, #60a5fa); 
+                                   display: flex; 
+                                   align-items: center; 
+                                   justify-content: center; 
+                                   color: white; 
+                                   font-size: 2.5rem;">
+                            🎓
+                        </div>
+                    }
+                </div>
             </div>
-        </div>
-        <div class="flex-grow-1">
-            <h1 class="mb-2 fw-bold" style="color: #fff; font-size: 2.3rem; letter-spacing: -1px; text-shadow: 0 2px 8px #2563eb55;">
-                @scholarship.Title
-            </h1>
-            <div class="d-flex align-items-center mb-1">
-                <span class="badge bg-white text-primary fw-semibold me-2" style="font-size: 1rem; box-shadow: 0 1px 4px #2563eb22;">
-                    @(!string.IsNullOrEmpty(scholarship.Institution?.InstitutionName)
-                        ? scholarship.Institution.InstitutionName
-                        : scholarship.Benefactor?.OrganizationName ?? "Unknown Provider")
-                </span>
-                @if (!string.IsNullOrWhiteSpace(scholarship.Description))
-                {
-                    <span class="text-white-50 ms-2" style="font-size: 1rem;">@scholarship.Description</span>
-                }
+
+            <!-- Content -->
+            <div class="flex-grow-1">
+                <h1 class="mb-2 fw-bold" style="color: white; font-size: 2.25rem; letter-spacing: -0.5px;">
+                    @scholarship.Title
+                </h1>
+                
+                <div class="d-flex align-items-center flex-wrap gap-2 mb-3">
+                    <span class="badge" style="background: rgba(255,255,255,0.2); 
+                                              color: white; 
+                                              padding: 0.5rem 1rem; 
+                                              font-size: 0.95rem; 
+                                              font-weight: 500;
+                                              border-radius: 8px;">
+                        @(!string.IsNullOrEmpty(scholarship.Institution?.InstitutionName)
+                            ? scholarship.Institution.InstitutionName
+                            : scholarship.Benefactor?.OrganizationName ?? "Unknown Provider")
+                    </span>
+                </div>
+
+                <!-- Status Badges -->
+                <div class="d-flex align-items-center flex-wrap gap-2">
+                    <span class="badge" style="background: white; 
+                                              color: #1e40af; 
+                                              padding: 0.4rem 0.9rem; 
+                                              font-size: 0.875rem;
+                                              font-weight: 600;
+                                              border-radius: 6px;
+                                              box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                        📅 @scholarship.ApplicationDeadline.ToString("MMM dd, yyyy")
+                    </span>
+                    @if (scholarship.SlotsAvailable.HasValue && scholarship.SlotsAvailable.Value > 0)
+                    {
+                        <span class="badge" style="background: rgba(255,255,255,0.25); 
+                                                  color: white; 
+                                                  padding: 0.4rem 0.9rem; 
+                                                  font-size: 0.875rem;
+                                                  font-weight: 600;
+                                                  border-radius: 6px;">
+                            👥 @scholarship.SlotsAvailable Slots
+                        </span>
+                    }
+                    @if (scholarship.IsInternal)
+                    {
+                        <span class="badge" style="background: #059669; 
+                                                  color: white; 
+                                                  padding: 0.4rem 0.9rem; 
+                                                  font-size: 0.875rem;
+                                                  font-weight: 600;
+                                                  border-radius: 6px;">
+                            🏛️ Internal
+                        </span>
+                    }
+                    else
+                    {
+                        <span class="badge" style="background: #8b5cf6; 
+                                                  color: white; 
+                                                  padding: 0.4rem 0.9rem; 
+                                                  font-size: 0.875rem;
+                                                  font-weight: 600;
+                                                  border-radius: 6px;">
+                            🌐 Open
+                        </span>
+                    }
+                </div>
             </div>
-            <div class="mt-2">
-                <span class="badge bg-primary text-white me-2">@scholarship.ApplicationDeadline.ToString("MMM dd, yyyy")</span>
-                <span class="badge bg-info text-dark me-2">Slots: @SlotsRemaining of @scholarship.SlotsAvailable</span>
-                <span class="badge bg-secondary text-white">@((scholarship.IsActive) ? "Active" : "Inactive")</span>
-            </div>
+
+            <!-- Edit Button -->
+            @if (!isEditMode && scholarship?.InstitutionProfileId != null && currentInstitutionProfileId != null && scholarship.InstitutionProfileId == currentInstitutionProfileId)
+            {
+                <div class="flex-shrink-0">
+                    <button class="btn animate__animated animate__fadeIn" 
+                            style="background: white; 
+                                   color: #1e40af; 
+                                   border: none; 
+                                   padding: 0.75rem 1.5rem; 
+                                   border-radius: 10px; 
+                                   font-weight: 600;
+                                   box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                                   transition: all 0.3s ease;"
+                            @onclick="EnterEditMode">
+                        ✏️ Edit
+                    </button>
+                </div>
+            }
         </div>
     </div>
 
@@ -203,10 +450,6 @@ else
     </style>
 
     <div class="container-fluid px-2 px-md-4">
-        <button class="eskolar-back-btn" @onclick="GoBackToList">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 20 20"><path d="M9.707 15.707a1 1 0 01-1.414 0l-5-5a1 1 0 010-1.414l5-5a1 1 0 111.414 1.414L6.414 9H17a1 1 0 110 2H6.414l3.293 3.293a1 1 0 010 1.414z"/></svg>
-            Back to List
-        </button>
         <div class="row gx-4 gy-4">
             <!-- 📄 Scholarship Info (Left Column, Categorized) -->
             <div class="col-lg-8 mb-5 animate__animated animate__fadeInUp">
@@ -219,189 +462,374 @@ else
                     <div class="alert alert-primary mb-2">@successMessage</div>
                 }
 
-                @if (!isEditMode)
-                {
-                    <button class="btn btn-primary mb-2 animate__animated animate__pulse animate__infinite" @onclick="EnterEditMode">Edit</button>
-                }
-
                 <EditForm Model="editableScholarship" OnValidSubmit="SaveChangesAsync" class="mb-3">
                     <DataAnnotationsValidator />
-                    <ValidationSummary />
+                    <ValidationSummary class="alert alert-danger" />
+                    
                     <!-- Basic Information -->
-                    <div class="card shadow-sm border-0 mb-2 animate__animated animate__fadeIn" style="padding: 0.75rem 1rem;">
-                        <div class="card-header bg-primary text-white fw-bold py-2 px-3" style="font-size: 1rem;">Basic Information</div>
-                        <div class="card-body bg-white text-dark py-2 px-3">
-                            <div class="mb-2"><strong>Provider:</strong>
-                                @(!string.IsNullOrEmpty(scholarship.Institution?.InstitutionName)
-                                    ? scholarship.Institution.InstitutionName
-                                    : scholarship.Benefactor?.OrganizationName ?? "Unknown")
+                    <div class="card shadow-sm border-0 mb-3 animate__animated animate__fadeIn" 
+                         style="border-radius: 12px; overflow: hidden;">
+                        <div class="card-header text-white fw-semibold py-3 px-4" 
+                             style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); 
+                                    font-size: 1.05rem; 
+                                    border: none;">
+                            📋 Basic Information
+                        </div>
+                        <div class="card-body bg-white text-dark py-3 px-4" style="background: #f9fafb !important;">
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold mb-2" style="color: #374151;">Provider</label>
+                                <p class="text-secondary mb-0">
+                                    @(scholarship != null && !string.IsNullOrEmpty(scholarship.Institution?.InstitutionName)
+                                        ? scholarship.Institution.InstitutionName
+                                        : scholarship?.Benefactor?.OrganizationName ?? "Unknown")
+                                </p>
                             </div>
                             @if (isEditMode)
                             {
-                                <div class="mb-2">
-                                    <strong>Title:</strong>
-                                    <InputText class="form-control form-control-sm" @bind-Value="editableScholarship.Title" />
+                                <div class="mb-3">
+                                    <label class="form-label fw-semibold" style="color: #374151;">
+                                        Title <span class="text-danger">*</span>
+                                    </label>
+                                    <InputText class="form-control" 
+                                               style="border-radius: 8px; border: 1px solid #d1d5db; padding: 0.625rem 0.875rem;"
+                                               @bind-Value="editableScholarship.Title" 
+                                               placeholder="Enter scholarship title" />
+                                    <ValidationMessage For="@(() => editableScholarship.Title)" class="text-danger small mt-1" />
                                 </div>
-                                <div class="mb-2">
-                                    <strong>Description:</strong>
-                                    <InputTextArea class="form-control form-control-sm" @bind-Value="editableScholarship.Description" />
+                                <div class="mb-3">
+                                    <label class="form-label fw-semibold" style="color: #374151;">Description</label>
+                                    <InputTextArea class="form-control" 
+                                                   style="border-radius: 8px; border: 1px solid #d1d5db; padding: 0.625rem 0.875rem; min-height: 100px;"
+                                                   @bind-Value="editableScholarship.Description" 
+                                                   placeholder="Brief description of the scholarship" />
+                                    <ValidationMessage For="@(() => editableScholarship.Description)" class="text-danger small mt-1" />
                                 </div>
-                                <div class="mb-2">
-                                    <strong>Benefits:</strong>
-                                    <InputTextArea class="form-control form-control-sm" @bind-Value="editableScholarship.Benefits" />
+                                <div class="mb-3">
+                                    <label class="form-label fw-semibold" style="color: #374151;">
+                                        Benefits <span class="text-danger">*</span>
+                                    </label>
+                                    <InputTextArea class="form-control" 
+                                                   style="border-radius: 8px; border: 1px solid #d1d5db; padding: 0.625rem 0.875rem; min-height: 100px;"
+                                                   @bind-Value="editableScholarship.Benefits" 
+                                                   placeholder="List the benefits and what's included" />
+                                    <ValidationMessage For="@(() => editableScholarship.Benefits)" class="text-danger small mt-1" />
                                 </div>
-                                <div class="mb-2">
-                                    <strong>Status:</strong>
-                                    <InputCheckbox class="form-check-input" @bind-Value="editableScholarship.IsActive" />
-                                    <span class="ms-2">@((editableScholarship.IsActive) ? "🟢 Active" : "🔴 Inactive")</span>
+                                <div class="mb-3">
+                                    <label class="form-label fw-semibold" style="color: #374151;">
+                                        Application Deadline <span class="text-danger">*</span>
+                                    </label>
+                                    <InputDate class="form-control" 
+                                               style="border-radius: 8px; border: 1px solid #d1d5db; padding: 0.625rem 0.875rem;"
+                                               @bind-Value="editableScholarship.ApplicationDeadline" />
+                                    <ValidationMessage For="@(() => editableScholarship.ApplicationDeadline)" class="text-danger small mt-1" />
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label fw-semibold" style="color: #374151;">Slots Available</label>
+                                    <InputNumber class="form-control" 
+                                                 style="border-radius: 8px; border: 1px solid #d1d5db; padding: 0.625rem 0.875rem;"
+                                                 @bind-Value="editableScholarship.SlotsAvailable" 
+                                                 placeholder="0" />
+                                    <ValidationMessage For="@(() => editableScholarship.SlotsAvailable)" class="text-danger small mt-1" />
                                 </div>
                             }
                             else
                             {
-                                @if (!string.IsNullOrWhiteSpace(scholarship.Description))
+                                @if (scholarship != null && !string.IsNullOrWhiteSpace(scholarship.Description))
                                 {
-                                    <div class="mb-2"><strong>Description:</strong><p class="mb-1">@scholarship.Description</p></div>
+                                    <div class="mb-3">
+                                        <label class="form-label fw-semibold mb-2" style="color: #374151;">Description</label>
+                                        <p class="text-secondary mb-0" style="line-height: 1.6;">@scholarship.Description</p>
+                                    </div>
                                 }
-                                <div class="mb-2"><strong>Benefits:</strong> <p class="mb-1">@scholarship.Benefits</p></div>
-                                <div class="mb-2"><strong>Status:</strong> @(scholarship.IsActive ? "🟢 Active" : "🔴 Inactive")</div>
+                                <div class="mb-3">
+                                    <label class="form-label fw-semibold mb-2" style="color: #374151;">Benefits</label>
+                                    <p class="text-secondary mb-0" style="line-height: 1.6; white-space: pre-wrap;">@(scholarship != null ? scholarship.Benefits : "")</p>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label fw-semibold mb-2" style="color: #374151;">Application Deadline</label>
+                                    <p class="text-secondary mb-0">@(scholarship != null ? scholarship.ApplicationDeadline.ToString("MMMM dd, yyyy") : "")</p>
+                                </div>
+                                @if (scholarship?.SlotsAvailable.HasValue == true && scholarship.SlotsAvailable.Value > 0)
+                                {
+                                    <div class="mb-0">
+                                        <label class="form-label fw-semibold mb-2" style="color: #374151;">Slots Available</label>
+                                        <p class="text-secondary mb-0 fs-5 fw-bold">@scholarship.SlotsAvailable</p>
+                                    </div>
+                                }
                             }
                         </div>
                     </div>
 
-                    <!-- Requirements -->
-                    <div class="card shadow-sm border-0 mb-2 animate__animated animate__fadeIn" style="padding: 0.75rem 1rem;">
-                        <div class="card-header bg-info text-white fw-bold py-2 px-3" style="font-size: 1rem;">Requirements</div>
-                        <div class="card-body bg-white text-dark py-2 px-3">
+                    <!-- Eligibility & Requirements -->
+                    <div class="card shadow-sm border-0 mb-3 animate__animated animate__fadeIn" 
+                         style="border-radius: 12px; overflow: hidden;">
+                        <div class="card-header text-white fw-semibold py-3 px-4" 
+                             style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); 
+                                    font-size: 1.05rem; 
+                                    border: none;">
+                            📝 Eligibility & Requirements
+                        </div>
+                        <div class="card-body bg-white text-dark py-3 px-4" style="background: #f9fafb !important;">
                             @if (isEditMode)
                             {
-                                <div class="mb-2">
-                                    <strong>Requirements:</strong>
-                                    <InputTextArea class="form-control form-control-sm" @bind-Value="editableScholarship.Requirements" />
+                                <div class="mb-3">
+                                    <label class="form-label fw-semibold" style="color: #374151;">Required Course</label>
+                                    <InputText class="form-control" 
+                                               style="border-radius: 8px; border: 1px solid #d1d5db; padding: 0.625rem 0.875rem;"
+                                               @bind-Value="editableScholarship.RequiredCourse" 
+                                               placeholder="e.g., Computer Science, Engineering" />
+                                    <small class="form-text text-muted mt-1">Leave blank if open to all courses</small>
+                                    <ValidationMessage For="@(() => editableScholarship.RequiredCourse)" class="text-danger small mt-1" />
                                 </div>
-                                <div class="mb-2">
-                                    <strong>Application Deadline:</strong>
-                                    <InputDate class="form-control form-control-sm" @bind-Value="editableScholarship.ApplicationDeadline" />
+                                <div class="row g-3 mb-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-semibold" style="color: #374151;">Eligibility</label>
+                                        <InputTextArea class="form-control" 
+                                                       style="border-radius: 8px; border: 1px solid #d1d5db; padding: 0.625rem 0.875rem; min-height: 120px;"
+                                                       @bind-Value="editableScholarship.Eligibility" 
+                                                       placeholder="Define who is eligible to apply" />
+                                        <ValidationMessage For="@(() => editableScholarship.Eligibility)" class="text-danger small mt-1" />
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-semibold" style="color: #374151;">Requirements</label>
+                                        <InputTextArea class="form-control" 
+                                                       style="border-radius: 8px; border: 1px solid #d1d5db; padding: 0.625rem 0.875rem; min-height: 120px;"
+                                                       @bind-Value="editableScholarship.Requirements" 
+                                                       placeholder="List what applicants need to provide" />
+                                        <ValidationMessage For="@(() => editableScholarship.Requirements)" class="text-danger small mt-1" />
+                                    </div>
                                 </div>
-                                <div class="mb-2">
-                                    <strong>Slots Available:</strong>
-                                    <InputNumber class="form-control form-control-sm" @bind-Value="editableScholarship.SlotsAvailable" />
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-semibold" style="color: #374151;">Minimum GPA</label>
+                                        <InputNumber class="form-control" 
+                                                     style="border-radius: 8px; border: 1px solid #d1d5db; padding: 0.625rem 0.875rem;"
+                                                     @bind-Value="editableScholarship.MinimumGPA" 
+                                                     placeholder="0.0" />
+                                        <ValidationMessage For="@(() => editableScholarship.MinimumGPA)" class="text-danger small mt-1" />
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-semibold" style="color: #374151;">Required Year Level</label>
+                                        <InputNumber class="form-control" 
+                                                     style="border-radius: 8px; border: 1px solid #d1d5db; padding: 0.625rem 0.875rem;"
+                                                     @bind-Value="editableScholarship.RequiredYearLevel" 
+                                                     placeholder="0 for any year" />
+                                        <ValidationMessage For="@(() => editableScholarship.RequiredYearLevel)" class="text-danger small mt-1" />
+                                    </div>
                                 </div>
-                                <div class="mb-2">
-                                    <strong>Minimum GPA:</strong>
-                                    <InputNumber class="form-control form-control-sm" @bind-Value="editableScholarship.MinimumGPA" />
+                                <div class="mt-3">
+                                    <label class="form-label fw-semibold" style="color: #374151;">Required University</label>
+                                    <InputText class="form-control" 
+                                               style="border-radius: 8px; border: 1px solid #d1d5db; padding: 0.625rem 0.875rem;"
+                                               @bind-Value="editableScholarship.RequiredUniversity" 
+                                               placeholder="Leave empty for any university" />
+                                    <ValidationMessage For="@(() => editableScholarship.RequiredUniversity)" class="text-danger small mt-1" />
+                                </div>
+                                <div class="mt-3">
+                                    <label class="form-label fw-semibold" style="color: #374151;">External Application URL</label>
+                                    <InputText class="form-control" 
+                                               style="border-radius: 8px; border: 1px solid #d1d5db; padding: 0.625rem 0.875rem;"
+                                               @bind-Value="editableScholarship.ExternalApplicationUrl" 
+                                               placeholder="https://example.com/apply" />
+                                    <small class="form-text text-muted mt-1">Leave empty for internal applications only</small>
+                                    <ValidationMessage For="@(() => editableScholarship.ExternalApplicationUrl)" class="text-danger small mt-1" />
                                 </div>
                             }
                             else
                             {
-                                <div class="mb-2"><strong>Requirements:</strong> <p class="mb-1">@scholarship.Requirements</p></div>
-                                <div class="mb-2"><strong>Application Deadline:</strong> @scholarship.ApplicationDeadline.ToString("MMMM dd, yyyy")</div>
-                                <div class="mb-2"><strong>Slots Available:</strong> @SlotsRemaining of @scholarship.SlotsAvailable</div>
-                                <div class="mb-2"><strong>Minimum GPA:</strong> @scholarship.MinimumGPA</div>
-                            }
-                        </div>
-                    </div>
-
-                    <!-- Eligibility -->
-                    <div class="card shadow-sm border-0 mb-2 animate__animated animate__fadeIn" style="padding: 0.75rem 1rem;">
-                        <div class="card-header bg-primary text-white fw-bold py-2 px-3" style="font-size: 1rem;">Eligibility</div>
-                        <div class="card-body bg-white text-dark py-2 px-3">
-                            @if (isEditMode)
-                            {
-                                <div class="mb-2">
-                                    <strong>Required Course:</strong>
-                                    <InputText class="form-control form-control-sm" @bind-Value="editableScholarship.RequiredCourse" />
+                                @if (scholarship != null && !string.IsNullOrWhiteSpace(scholarship.RequiredCourse))
+                                {
+                                    <div class="mb-3">
+                                        <label class="form-label fw-semibold mb-2" style="color: #374151;">Required Course</label>
+                                        <p class="text-secondary mb-0">@scholarship.RequiredCourse</p>
+                                    </div>
+                                }
+                                @if (scholarship != null && !string.IsNullOrWhiteSpace(scholarship.Eligibility))
+                                {
+                                    <div class="mb-3">
+                                        <label class="form-label fw-semibold mb-2" style="color: #374151;">Eligibility</label>
+                                        <p class="text-secondary mb-0" style="line-height: 1.6; white-space: pre-wrap;">@scholarship.Eligibility</p>
+                                    </div>
+                                }
+                                @if (scholarship != null && !string.IsNullOrWhiteSpace(scholarship.Requirements))
+                                {
+                                    <div class="mb-3">
+                                        <label class="form-label fw-semibold mb-2" style="color: #374151;">Requirements</label>
+                                        <p class="text-secondary mb-0" style="line-height: 1.6; white-space: pre-wrap;">@scholarship.Requirements</p>
+                                    </div>
+                                }
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label fw-semibold mb-2" style="color: #374151;">Minimum GPA</label>
+                                        <p class="text-secondary mb-0">@(scholarship != null && scholarship.MinimumGPA.HasValue ? scholarship.MinimumGPA.Value.ToString("0.00") : "None")</p>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label fw-semibold mb-2" style="color: #374151;">Required Year Level</label>
+                                        <p class="text-secondary mb-0">@(scholarship != null && scholarship.RequiredYearLevel.HasValue && scholarship.RequiredYearLevel > 0 ? $"Year {scholarship.RequiredYearLevel}" : "Any year level")</p>
+                                    </div>
                                 </div>
-                                <div class="mb-2">
-                                    <strong>Required Year Level:</strong>
-                                    <InputNumber class="form-control form-control-sm" @bind-Value="editableScholarship.RequiredYearLevel" />
-                                </div>
-                                <div class="mb-2">
-                                    <strong>Required University:</strong>
-                                    <InputText class="form-control form-control-sm" @bind-Value="editableScholarship.RequiredUniversity" />
-                                </div>
-                            }
-                            else
-                            {
-                                <div class="mb-2"><strong>Required Course:</strong> @scholarship.RequiredCourse</div>
-                                <div class="mb-2"><strong>Required Year Level:</strong> @scholarship.RequiredYearLevel</div>
-                                <div class="mb-2"><strong>Required University:</strong> @scholarship.RequiredUniversity</div>
-                            }
-                        </div>
-                    </div>
-
-                    <!-- Settings -->
-                    <div class="card shadow-sm border-0 mb-2 animate__animated animate__fadeIn" style="padding: 0.75rem 1rem;">
-                        <div class="card-header bg-info text-white fw-bold py-2 px-3" style="font-size: 1rem;">Settings</div>
-                        <div class="card-body bg-white text-dark py-2 px-3">
-                            @if (isEditMode)
-                            {
-                                <div class="mb-2">
-                                    <strong>Apply Externally:</strong>
-                                    <InputText class="form-control form-control-sm" @bind-Value="editableScholarship.ExternalApplicationUrl" />
-                                </div>
-                            }
-                            else if (!string.IsNullOrWhiteSpace(scholarship.ExternalApplicationUrl))
-                            {
-                                <div class="mb-2">
-                                    <strong>Apply Externally:</strong>
-                                    <a href="@scholarship.ExternalApplicationUrl" target="_blank">@scholarship.ExternalApplicationUrl</a>
-                                </div>
+                                @if (scholarship != null && !string.IsNullOrWhiteSpace(scholarship.RequiredUniversity))
+                                {
+                                    <div class="mb-3">
+                                        <label class="form-label fw-semibold mb-2" style="color: #374151;">Required University</label>
+                                        <p class="text-secondary mb-0">@scholarship.RequiredUniversity</p>
+                                    </div>
+                                }
+                                @if (scholarship != null && !string.IsNullOrWhiteSpace(scholarship.ExternalApplicationUrl))
+                                {
+                                    <div class="mb-0">
+                                        <label class="form-label fw-semibold mb-2" style="color: #374151;">External Application</label>
+                                        <p class="mb-0">
+                                            <a href="@scholarship.ExternalApplicationUrl" 
+                                               target="_blank" 
+                                               style="color: #3b82f6; text-decoration: none; font-weight: 500;"
+                                               class="d-inline-flex align-items-center gap-1">
+                                                @scholarship.ExternalApplicationUrl
+                                                <span style="font-size: 0.875rem;">↗</span>
+                                            </a>
+                                        </p>
+                                    </div>
+                                }
                             }
                         </div>
                     </div>
 
                     @if (isEditMode)
                     {
-                        <button type="submit" class="btn btn-primary me-2 animate__animated animate__fadeIn btn-sm">Save</button>
-                        <button type="button" class="btn btn-secondary animate__animated animate__fadeIn btn-sm" @onclick="CancelEdit">Cancel</button>
+                        <div class="d-flex gap-2 mt-4">
+                            <button type="submit" 
+                                    class="btn animate__animated animate__fadeIn" 
+                                    style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); 
+                                           color: white; 
+                                           border: none; 
+                                           padding: 0.75rem 2rem; 
+                                           border-radius: 10px; 
+                                           font-weight: 600;
+                                           box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);"
+                                    disabled="@isSaving">
+                                @if (isSaving)
+                                {
+                                    <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                                    <span>Saving...</span>
+                                }
+                                else
+                                {
+                                    <span>💾 Save Changes</span>
+                                }
+                            </button>
+                            <button type="button" 
+                                    class="btn animate__animated animate__fadeIn" 
+                                    style="background: #6b7280; 
+                                           color: white; 
+                                           border: none; 
+                                           padding: 0.75rem 2rem; 
+                                           border-radius: 10px; 
+                                           font-weight: 600;"
+                                    @onclick="CancelEdit" 
+                                    disabled="@isSaving">
+                                ✕ Cancel
+                            </button>
+                        </div>
                     }
                 </EditForm>
 
+
+
             </div>
 
-            <!-- 👥 Student Applicants (Right Column, toggled by button) -->
+            <!-- 👥 Students Helped & Applicants (Right Column, toggled by button) -->
             <div class="col-lg-4 mb-5 animate__animated animate__fadeInRight">
-                <button class="btn btn-primary w-100 mb-2" @onclick="() => showStudentList = !showStudentList">
+                <div class="card shadow-sm border-0 animate__animated animate__fadeIn mb-4" 
+                     style="border-radius: 12px; overflow: hidden;">
+                    <div class="card-header text-white fw-semibold py-3 px-4" 
+                         style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); 
+                                font-size: 1.05rem; 
+                                border: none;">
+                        ✓ Students Helped
+                    </div>
+                    <div class="card-body py-3 px-4" 
+                         style="max-height: 250px; overflow-y: auto; background: #f9fafb !important;">
+                        @if (!acceptedStudents.Any())
+                        {
+                            <p class="text-muted mb-0">No students have been accepted yet.</p>
+                        }
+                        else
+                        {
+                            <ul class="list-group list-group-flush">
+                                @foreach (var application in acceptedStudents)
+                                {
+                                    <li class="list-group-item d-flex justify-content-between align-items-center" 
+                                        style="background: white; border: none; border-bottom: 1px solid #e5e7eb; padding: 1rem;">
+                                        <span class="fw-semibold">@application.Student?.FirstName @application.Student?.LastName</span>
+                                        <NavLink class="btn btn-sm text-white" 
+                                                 style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); 
+                                                        border: none; 
+                                                        padding: 0.4rem 1rem; 
+                                                        border-radius: 6px;"
+                                                 href="@($"/dashboard/institution/applications/review/{application.ScholarshipApplicationId}")">
+                                            View
+                                        </NavLink>
+                                    </li>
+                                }
+                            </ul>
+                        }
+                    </div>
+                </div>
+                <button class="btn w-100 mb-3" 
+                        style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); 
+                               color: white; 
+                               border: none; 
+                               padding: 0.75rem 1.5rem; 
+                               border-radius: 10px; 
+                               font-weight: 600;
+                               box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+                               transition: all 0.3s ease;" 
+                        @onclick="() => showStudentList = !showStudentList">
                     @if (showStudentList)
                     {
-                        <span>Hide Student Applicants</span>
+                        <span>▲ Hide Student Applicants</span>
                     }
                     else
                     {
-                        <span>Show Student Applicants</span>
+                        <span>▼ Show Student Applicants</span>
                     }
                 </button>
                 @if (showStudentList)
                 {
-                    <div class="card shadow-sm border-0 animate__animated animate__fadeIn">
-                        <ul class="nav nav-tabs nav-fill bg-light" id="studentTabs" role="tablist">
-                            <li class="nav-item" role="presentation">
-                                <button class="nav-link active text-primary fw-bold" id="students-tab" data-bs-toggle="tab" data-bs-target="#students" type="button" role="tab" aria-controls="students" aria-selected="true">
-                                    📋 Student Applicants
-                                </button>
-                            </li>
-                        </ul>
-                        <div class="tab-content" id="studentTabsContent">
-                            <div class="tab-pane fade show active" id="students" role="tabpanel" aria-labelledby="students-tab">
-                                <div class="card-body bg-white text-dark" style="max-height: 500px; overflow-y: auto;">
-                                    @if (!studentApplicants.Any())
+                    <div class="card shadow-sm border-0 animate__animated animate__fadeIn" 
+                         style="border-radius: 12px; overflow: hidden;">
+                        <div class="card-header text-white fw-semibold py-3 px-4" 
+                             style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); 
+                                    font-size: 1.05rem; 
+                                    border: none;">
+                            📋 Student Applicants
+                        </div>
+                        <div class="card-body py-3 px-4" 
+                             style="max-height: 500px; overflow-y: auto; background: #f9fafb !important;">
+                            @if (!studentApplicants.Any())
+                            {
+                                <p class="text-muted">No students have applied yet.</p>
+                            }
+                            else
+                            {
+                                <ul class="list-group list-group-flush">
+                                    @foreach (var application in studentApplicants)
                                     {
-                                        <p class="text-muted">No students have applied yet.</p>
+                                        <li class="list-group-item d-flex justify-content-between align-items-center" 
+                                            style="background: white; border: none; border-bottom: 1px solid #e5e7eb; padding: 1rem;">
+                                            <span class="fw-semibold">@application.Student?.FirstName @application.Student?.LastName</span>
+                                            <NavLink class="btn btn-sm text-white" 
+                                                     style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); 
+                                                            border: none; 
+                                                            padding: 0.4rem 1rem; 
+                                                            border-radius: 6px;"
+                                                     href="@($"/dashboard/institution/applications/review/{application.ScholarshipApplicationId}")">
+                                                View
+                                            </NavLink>
+                                        </li>
                                     }
-                                    else
-                                    {
-                                        <ul class="list-group list-group-flush">
-                                            @foreach (var application in studentApplicants)
-                                            {
-                                                <li class="list-group-item d-flex justify-content-between align-items-center">
-                                                    <span class="fw-semibold">@application.Student?.FirstName @application.Student?.LastName</span>
-                                                    <NavLink class="btn btn-sm btn-primary text-white" href="@($"/dashboard/institution/applications/review/{application.ScholarshipApplicationId}")">View</NavLink>
-                                                </li>
-                                            }
-                                        </ul>
-                                    }
-                                </div>
-                            </div>
+                                </ul>
+                            }
                         </div>
                     </div>
                 }
