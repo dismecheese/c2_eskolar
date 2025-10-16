@@ -391,6 +391,30 @@
         border-top: 1px solid #e2e8f0;
     }
 
+    /* Selectable Row Styles */
+    .selectable-row {
+        transition: background-color 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .selectable-row:hover {
+        background-color: #f8fafc !important;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    }
+
+    .selectable-row.selected {
+        background-color: #e0f2fe !important;
+        border-left: 3px solid #0284c7;
+    }
+
+    .selectable-row.selected:hover {
+        background-color: #bae6fd !important;
+    }
+
+    /* Make checkbox column not affect hover */
+    .selectable-row td:first-child {
+        padding-left: 1rem;
+    }
+
     @media (max-width: 768px) {
         .page-header-content {
             flex-direction: column;
