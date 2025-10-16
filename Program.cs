@@ -142,6 +142,16 @@ builder.Services.AddScoped<OpenAIService>();
 builder.Services.AddScoped<AITokenTrackingService>();
 builder.Services.AddScoped<SuperAdminAnalyticsService>();
 
+// Register CourseNormalizationService for analytics and normalization features
+
+
+// Register missing services for DI (except ScholarshipSeedService)
+builder.Services.AddScoped<BenefactorAnalyticsService>();
+builder.Services.AddScoped<MonthlyStatisticsService>();
+builder.Services.AddScoped<NotificationService>();
+builder.Services.AddScoped<UniversityNormalizationService>();
+builder.Services.AddScoped<CourseNormalizationService>();
+
     var app = builder.Build();
 
     // Configure the HTTP request pipeline.
