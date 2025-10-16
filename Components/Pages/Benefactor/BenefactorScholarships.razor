@@ -105,9 +105,6 @@
                                                     @(scholarship.Benefactor?.OrganizationName ?? "Unknown Benefactor")
                                                 </p>
                                             </div>
-                                            <span class="badge @(scholarship.IsActive ? "bg-success" : "bg-secondary")">
-                                                @(scholarship.IsActive ? "Active" : "Inactive")
-                                            </span>
                                         </div>
 
                                         <div class="mb-3">
@@ -193,11 +190,13 @@
     {
         if (scholarships == null) return;
         
+        var now = DateTime.Now;
+        
         // TODO: Implement actual logic for "My Scholars" (scholarships with awarded students)
         myScholarsCount = 0; // Placeholder - needs implementation
         
-        openCount = scholarships.Count(s => s.IsActive && !s.IsInternal);
-        archivedCount = scholarships.Count(s => !s.IsActive);
+        openCount = scholarships.Count(s => s.IsActive && !s.IsInternal && s.ApplicationDeadline >= now);
+        archivedCount = scholarships.Count(s => !s.IsActive || s.ApplicationDeadline < now);
         
         // TODO: Load scraped scholarships for Explore tab
         exploreCount = 0; // Placeholder - needs implementation
@@ -208,13 +207,14 @@
         if (scholarships == null) return new List<Scholarship>();
         
         var filtered = scholarships.AsEnumerable();
+        var now = DateTime.Now;
         
         // Filter by tab
         filtered = selectedTab switch
         {
             0 => filtered.Where(s => false), // My Scholars - TODO: implement logic for scholarships with awarded students
-            1 => filtered.Where(s => s.IsActive && !s.IsInternal), // Open
-            2 => filtered.Where(s => !s.IsActive), // Archived
+            1 => filtered.Where(s => s.IsActive && !s.IsInternal && s.ApplicationDeadline >= now), // Open - must have future deadline
+            2 => filtered.Where(s => !s.IsActive || s.ApplicationDeadline < now), // Archived - inactive OR deadline passed
             3 => filtered.Where(s => false), // Explore - TODO: implement scraped scholarships
             _ => filtered
         };
@@ -311,220 +311,3 @@
     }
 }
 
-<style>
-    /* Global Font Family */
-    * {
-        font-family: 'Inter', 'Helvetica Neue', Helvetica, Arial, sans-serif !important;
-    }
-
-    /* Search Header Section */
-    .search-header-section {
-        background: transparent;
-        border-radius: 16px;
-        padding: 1.5rem;
-        border: none;
-    }
-
-    .input-group {
-        position: relative;
-        background: white;
-        border-radius: 50px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-        display: flex;
-        align-items: center;
-    }
-
-    .input-group .form-control {
-        border: none;
-        background: transparent;
-        border-radius: 50px;
-        padding: 0.75rem 3.5rem 0.75rem 1.5rem;
-        outline: none;
-        box-shadow: none;
-        flex: 1;
-    }
-
-    .input-group .form-control:focus {
-        border: none;
-        outline: none;
-        box-shadow: none;
-    }
-
-    .input-group-text {
-        position: absolute;
-        right: 1rem;
-        background: transparent;
-        color: #6c757d;
-        border: none;
-        border-radius: 0;
-        width: auto;
-        height: auto;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 0;
-        z-index: 10;
-    }
-
-    /* Custom Primary Button */
-    .btn-custom-primary {
-        background: linear-gradient(135deg, #1560d4, #0d387e);
-        color: white;
-        border: none;
-        border-radius: 12px;
-        padding: 0.75rem 1.5rem;
-        font-weight: 600;
-        transition: all 0.3s ease;
-        box-shadow: 0 4px 12px rgba(21, 96, 212, 0.3);
-    }
-
-    .btn-custom-primary:hover {
-        background: linear-gradient(135deg, #0d387e, #1560d4);
-        transform: translateY(-2px);
-        box-shadow: 0 6px 16px rgba(21, 96, 212, 0.4);
-        color: white;
-    }
-
-    /* Tabs Navigation */
-    .modern-tabs {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 1rem;
-        margin-bottom: 2rem;
-    }
-
-    .tab-pills {
-        display: flex;
-        gap: 0.5rem;
-        flex-wrap: wrap;
-    }
-
-    .tab-pill {
-        background: linear-gradient(135deg, #fff 0%, #f8fafc 100%);
-        color: #4a5568;
-        border: 2px solid #e2e8f0;
-        padding: 0.75rem 1.5rem;
-        border-radius: 25px;
-        font-weight: 600;
-        font-size: 0.95rem;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-    }
-
-    .tab-pill.active {
-        background: linear-gradient(135deg, #1560d4, #0d387e);
-        color: white;
-        border-color: #0d387e;
-        box-shadow: 0 4px 12px rgba(21, 96, 212, 0.4);
-        transform: translateY(-2px);
-    }
-
-    .tab-pill:hover:not(.active) {
-        background: linear-gradient(135deg, #fbbf24, #f59e0b);
-        color: white;
-        border-color: #f59e0b;
-        transform: translateY(-1px);
-        box-shadow: 0 4px 12px rgba(245, 158, 11, 0.4);
-    }
-
-    .tab-pill i {
-        font-size: 1.1rem;
-    }
-
-    /* Card Styles */
-    .card {
-        background: linear-gradient(135deg, #fff 0%, #f8fafc 100%);
-        border-radius: 16px;
-        box-shadow: 0 4px 16px rgba(0,0,0,0.08);
-        border: 1px solid rgba(0,0,0,0.05);
-        transition: all 0.3s ease;
-        position: relative;
-        overflow: hidden;
-    }
-
-    .card::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        height: 4px;
-        background: linear-gradient(90deg, #1560d4, #0d387e);
-    }
-
-    .card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 8px 25px rgba(0,0,0,0.15);
-    }
-
-    .clickable-card {
-        cursor: pointer;
-    }
-
-    /* Empty State */
-    .empty-state {
-        text-align: center;
-        padding: 4rem 2rem;
-    }
-
-    .empty-icon {
-        font-size: 4rem;
-        background: linear-gradient(135deg, #1560d4, #0d387e);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-        margin-bottom: 1.5rem;
-    }
-
-    .empty-state h5 {
-        color: #2d3748;
-        font-weight: 600;
-        margin-bottom: 1rem;
-    }
-
-    .empty-state p {
-        color: #4a5568;
-        font-size: 1rem;
-        margin-bottom: 2rem;
-    }
-
-    /* Badges */
-    .badge {
-        font-size: 0.75rem;
-        font-weight: 600;
-        padding: 0.375rem 0.75rem;
-        border-radius: 8px;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-    }
-
-    /* Loading */
-    .spinner-border {
-        width: 3rem;
-        height: 3rem;
-        border-width: 0.3rem;
-        border-color: #1560d4;
-        border-right-color: transparent;
-    }
-
-    /* Responsive */
-    @@media (max-width: 768px) {
-        .search-header-section {
-            padding: 1rem;
-        }
-
-        .tab-pills {
-            flex-direction: column;
-            width: 100%;
-        }
-
-        .tab-pill {
-            width: 100%;
-            justify-content: center;
-        }
-    }
-</style>
