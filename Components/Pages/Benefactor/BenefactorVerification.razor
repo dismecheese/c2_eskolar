@@ -233,6 +233,12 @@
 					</div>
 				</div>
 				<div class="sv-field sv-field-vertical sv-field-full">
+					<label for="organizationContactEmail" class="sv-field-label">Organization Contact Email <span class="sv-required">*</span></label>
+					<InputText id="organizationContactEmail" class="sv-input" placeholder="contact@organization.com" @bind-Value="verificationModel.ContactEmail" />
+					<ValidationMessage For="@(() => verificationModel.ContactEmail)" />
+					<small style="color: #6b7280; font-size: 0.875rem; margin-top: 0.25rem;">General contact email for your organization</small>
+				</div>
+				<div class="sv-field sv-field-vertical sv-field-full">
 					<label for="contactPersonName" class="sv-field-label">Authorizing Supervisor/Organization Head <span class="sv-required">*</span></label>
 					<InputText id="contactPersonName" class="sv-input" placeholder="Enter name of director, head, or supervisor who authorized you" @bind-Value="verificationModel.DeanName" />
 					<ValidationMessage For="@(() => verificationModel.DeanName)" />
