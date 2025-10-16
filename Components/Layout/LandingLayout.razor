@@ -39,10 +39,10 @@
                             <a class="nav-link nav-link-custom" href="#" data-bs-toggle="modal" data-bs-target="#contactModal">Contact Us</a>
                         </li>
                         <li class="nav-item me-3">
-                            <NavLink type="button" href="/signup" class="btn btn-primary nav-button ms-2" @onclick="GoToSignUp">Sign Up</NavLink>
+                            <a type="button" href="/signup" class="btn btn-primary nav-button ms-2">Sign Up</a>
                         </li>
                         <li class="nav-item me-3">
-                            <NavLink type="button" href="/login" class="btn btn-primary nav-button ms-2" @onclick="GoToLogin">Login</NavLink>
+                            <a type="button" href="/login" class="btn btn-primary nav-button ms-2">Login</a>
                         </li>
                     </ul>
                 </div>
@@ -484,11 +484,7 @@ function forceCleanup() {
 
 <!-- ---------------- BLAZOR BACKEND CODE ---------------- -->
 @code {
-    private bool acceptedTerms = false; // Tracks if user accepted T&C
-}
-
-@code {
-            // Navigation handlers for header buttons
-            void GoToSignUp() => Navigation.NavigateTo("/signup");
-            void GoToLogin() => Navigation.NavigateTo("/login");
+    // Navigation handlers for header buttons
+    void GoToSignUp() => Navigation.NavigateTo("/signup");
+    void GoToLogin() => Navigation.NavigateTo("/login");
 }
