@@ -13,7 +13,7 @@
 @inject IJSRuntime JS
 @inject AuthenticationStateProvider AuthStateProvider
 @inject NavigationManager Navigation
-
+@inject BlobStorageService BlobStorageService
 
 @code {
     [Parameter] public int ScholarshipId { get; set; }
@@ -22,6 +22,7 @@
     private bool hasPendingApplication = false;
     private string? currentUserId;
     private bool isBookmarked = false;
+    private string? scholarshipIconSasUrl = null;
 
     protected override async Task OnInitializedAsync()
     {
@@ -49,6 +50,10 @@
             else
             {
                 Console.WriteLine($"[DEBUG] Scholarship loaded: {scholarship.Title}");
+                
+                // Generate secure SAS URL for the scholarship icon
+                scholarshipIconSasUrl = GetSecureIconUrl(scholarship.IconUrl);
+                
                 await AddToRecentlyViewedAsync(ScholarshipId);
 
                 // Check if the current student has a pending application for this scholarship
@@ -93,139 +98,7 @@
             Console.WriteLine($"[ERROR] Failed to update recently viewed scholarships: {ex.Message}");
         }
     }
-}
 
-@if (scholarship == null)
-{
-    <div class="text-center my-5">
-        <div class="spinner-border text-primary" role="status"></div>
-        <p>Loading scholarship details...</p>
-        <p class="text-danger mt-3">@($"Debug: ScholarshipId = {ScholarshipId}")</p>
-        <p class="text-danger">Scholarship not found or failed to load. Please check if the scholarship exists and try again.</p>
-    </div>
-}
-else
-{
-    <!-- 🔷 Banner -->
-    <div class="scholarship-banner text-white mb-4 me-lg-5"
-         style="background: linear-gradient(135deg, #004085, #007bff); padding: 40px 32px; border-radius: 12px; display: flex; align-items: center; margin-right: 40px; box-shadow: 0 4px 24px rgba(0,0,0,0.08); justify-content: space-between;">
-        <div style="display: flex; align-items: center;">
-            <img src="https://via.placeholder.com/80x80.png?text=🎓" alt="Scholarship Logo"
-                 style="width: 80px; height: 80px; border-radius: 50%; background-color: white; padding: 10px; margin-right: 28px; box-shadow: 0 2px 8px rgba(0,0,0,0.10);" />
-            <div>
-                <h1 class="mb-1" style="font-size: 2.2rem; font-weight: 700;">@scholarship.Title</h1>
-                <p class="mb-0" style="opacity: 0.92; font-size: 1.1rem;">
-                    @(!string.IsNullOrEmpty(scholarship.Institution?.InstitutionName)
-                        ? scholarship.Institution.InstitutionName
-                        : scholarship.Benefactor?.OrganizationName ?? "Unknown Provider")
-                </p>
-            </div>
-        </div>
-        <div class="d-flex gap-2">
-            <button class="btn @(GetBookmarkButtonClass()) btn-lg fw-bold shadow-sm bookmark-detail-btn" 
-                    @onclick="ToggleBookmark" 
-                    title="@(GetBookmarkTooltip())"
-                    style="min-width: 160px; transition: all 0.3s ease;">
-                <i class="bi @(GetBookmarkIcon()) me-2"></i>@(GetBookmarkText())
-            </button>
-            @if (scholarship.IsActive)
-            {
-                @if (hasPendingApplication)
-                {
-                    <button class="btn btn-lg btn-secondary fw-bold shadow-sm" style="min-width: 120px;" disabled>Already Applied</button>
-                }
-                else
-                {
-                    <a class="btn btn-lg btn-success fw-bold shadow-sm" href="/dashboard/student/apply/@scholarship.ScholarshipId" style="min-width: 120px;">Apply</a>
-                }
-            }
-        </div>
-    </div>
-
-    <!-- 🔄 Main content with categories -->
-    <div class="container-fluid px-2 px-md-4">
-        <div class="row justify-content-center">
-            <div class="col-lg-9 col-xl-8">
-                <!-- General Info -->
-                <div class="card shadow-sm mb-4">
-                    <div class="card-header bg-primary text-white fw-bold" style="font-size: 1.15rem;">General Information</div>
-                    <div class="card-body">
-                        <div class="mb-2"><strong>Provider:</strong>
-                            @(!string.IsNullOrEmpty(scholarship.Institution?.InstitutionName)
-                                ? scholarship.Institution.InstitutionName
-                                : scholarship.Benefactor?.OrganizationName ?? "Unknown")
-                        </div>
-                        @if (!string.IsNullOrWhiteSpace(scholarship.Description))
-                        {
-                            <div class="mb-2"><strong>Description:</strong><p class="mb-1">@scholarship.Description</p></div>
-                        }
-                        <div class="mb-2"><strong>Status:</strong> <span class="ms-1">
-                            @{
-                                var takenCount = scholarship.Applications?.Count(a => a.Status != "Rejected" && a.Status != "Withdrawn") ?? 0;
-                                var totalSlots = (int)(scholarship.SlotsAvailable ?? 0);
-                                var slotsLeft = Math.Max(0, totalSlots - takenCount);
-                            }
-                            @(slotsLeft == 0 ? "🔴 Closed" : (scholarship.IsActive ? "🟢 Active" : "🔴 Inactive"))
-                        </span></div>
-                    </div>
-                </div>
-
-                <!-- Benefits & Requirements -->
-                <div class="card shadow-sm mb-4">
-                    <div class="card-header bg-info text-white fw-bold" style="font-size: 1.12rem;">Benefits & Requirements</div>
-                    <div class="card-body">
-                        <div class="mb-2"><strong>Benefits:</strong> <p class="mb-1">@scholarship.Benefits</p></div>
-                        <div class="mb-2"><strong>Requirements:</strong> <p class="mb-1">@scholarship.Requirements</p></div>
-                    </div>
-                </div>
-
-                <!-- Eligibility -->
-                <div class="card shadow-sm mb-4">
-                    <div class="card-header bg-success text-white fw-bold" style="font-size: 1.12rem;">Eligibility</div>
-                    <div class="card-body">
-                        <div class="row g-2">
-                            <div class="col-md-6 mb-2"><strong>Minimum GPA:</strong> <span class="ms-1">@scholarship.MinimumGPA</span></div>
-                            <div class="col-md-6 mb-2"><strong>Required Course:</strong> <span class="ms-1">@scholarship.RequiredCourse</span></div>
-                            <div class="col-md-6 mb-2"><strong>Required Year Level:</strong> <span class="ms-1">@scholarship.RequiredYearLevel</span></div>
-                            <div class="col-md-6 mb-2"><strong>Required University:</strong> <span class="ms-1">@scholarship.RequiredUniversity</span></div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Application Details -->
-                <div class="card shadow-sm mb-4">
-                    <div class="card-header bg-warning text-dark fw-bold" style="font-size: 1.12rem;">Application Details</div>
-                    <div class="card-body">
-                        <div class="mb-2"><strong>Application Deadline:</strong> <span class="ms-1">@scholarship.ApplicationDeadline.ToString("MMMM dd, yyyy")</span></div>
-                        <div class="mb-2"><strong>Slots Available:</strong> <span class="ms-1">
-                            @slotsLeft<span class="text-secondary" style="font-size:0.95em;"> of @scholarship.SlotsAvailable</span>
-                        </span></div>
-                        @if (!string.IsNullOrWhiteSpace(scholarship.ExternalApplicationUrl))
-                        {
-                            <div class="mb-2">
-                                <strong>Apply Externally:</strong>
-                                <a href="@scholarship.ExternalApplicationUrl" target="_blank" class="ms-1">@scholarship.ExternalApplicationUrl</a>
-                            </div>
-                        }
-                    </div>
-                </div>
-
-                <!-- Actions -->
-                <div class="d-flex flex-wrap gap-2 mb-4">
-                    <button type="button" class="btn btn-lg btn-primary fw-bold shadow-sm d-flex align-items-center gap-2 px-4 py-2"
-                            style="border-radius: 0.75rem; box-shadow: 0 2px 8px rgba(0,0,0,0.08);"
-                            @onclick="GoBack">
-                        <i class="bi bi-arrow-left-circle-fill" style="font-size: 1.3rem;"></i>
-                        <span>Back</span>
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-}
-
-@code {
-    // ...existing code...
     private async Task GoBack()
     {
         try
@@ -299,4 +172,348 @@ else
     {
         return isBookmarked ? "Remove from bookmarks" : "Add to bookmarks";
     }
+
+    /// <summary>
+    /// Converts a blob URL to a secure SAS URL for display
+    /// </summary>
+    private string GetSecureIconUrl(string? iconUrl)
+    {
+        if (string.IsNullOrEmpty(iconUrl))
+        {
+            return string.Empty;
+        }
+
+        try
+        {
+            // If it's already a data URL (base64), return as-is
+            if (iconUrl.StartsWith("data:"))
+            {
+                return iconUrl;
+            }
+
+            // If it's a blob storage URL, convert to SAS URL
+            if (iconUrl.Contains("blob.core.windows.net"))
+            {
+                return BlobStorageService.GetPhotoSasUrlFromBlobUrl(iconUrl, 480); // 8 hours validity
+            }
+
+            // Return original URL for other cases
+            return iconUrl;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"⚠️ Error generating secure icon URL: {ex.Message}");
+            return iconUrl; // Return original URL on error
+        }
+    }
+}
+
+@if (scholarship == null)
+{
+    <div class="text-center my-5">
+        <div class="spinner-border text-primary" role="status"></div>
+        <p>Loading scholarship details...</p>
+    </div>
+}
+else
+{
+    <!-- Back Button -->
+    <button class="btn btn-outline-primary mb-4 animate__animated animate__fadeIn d-flex align-items-center gap-2" 
+            style="border-radius: 8px; padding: 0.5rem 1.25rem; font-weight: 500;" 
+            @onclick="GoBack">
+        <span style="font-size:1.2rem;">←</span>
+        <span>Back</span>
+    </button>
+
+    <!-- Professional Header Banner -->
+    <div class="scholarship-banner mb-4 animate__animated animate__fadeIn" 
+         style="background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%); 
+                border-radius: 16px; 
+                padding: 2.5rem; 
+                box-shadow: 0 8px 32px rgba(30, 64, 175, 0.15);
+                position: relative;
+                overflow: hidden;">
+        
+        <!-- Subtle background pattern -->
+        <div style="position: absolute; top: 0; right: 0; width: 300px; height: 300px; 
+                    background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+                    border-radius: 50%;
+                    transform: translate(30%, -30%);"></div>
+        
+        <div class="d-flex align-items-center gap-4" style="position: relative; z-index: 1;">
+            <!-- Icon Container -->
+            <div class="flex-shrink-0">
+                <div style="width: 100px; height: 100px; 
+                           border-radius: 20px; 
+                           background: white; 
+                           display: flex; 
+                           align-items: center; 
+                           justify-content: center; 
+                           box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+                           border: 3px solid rgba(255,255,255,0.3);">
+                    @if (!string.IsNullOrEmpty(scholarshipIconSasUrl))
+                    {
+                        <img src="@scholarshipIconSasUrl" alt="@scholarship.Title Icon" 
+                             style="width: 80px; height: 80px; border-radius: 14px; object-fit: cover;" 
+                             onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';" />
+                        <div style="width: 80px; height: 80px; 
+                                   border-radius: 14px; 
+                                   background: linear-gradient(135deg, #3b82f6, #60a5fa); 
+                                   display: none; 
+                                   align-items: center; 
+                                   justify-content: center; 
+                                   color: white; 
+                                   font-size: 2.5rem;">
+                            🎓
+                        </div>
+                    }
+                    else
+                    {
+                        <div style="width: 80px; height: 80px; 
+                                   border-radius: 14px; 
+                                   background: linear-gradient(135deg, #3b82f6, #60a5fa); 
+                                   display: flex; 
+                                   align-items: center; 
+                                   justify-content: center; 
+                                   color: white; 
+                                   font-size: 2.5rem;">
+                            🎓
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <!-- Content -->
+            <div class="flex-grow-1">
+                <h1 class="mb-2 fw-bold" style="color: white; font-size: 2.25rem; letter-spacing: -0.5px;">
+                    @scholarship.Title
+                </h1>
+                
+                <div class="d-flex align-items-center flex-wrap gap-2 mb-3">
+                    <span class="badge" style="background: rgba(255,255,255,0.2); 
+                                              color: white; 
+                                              padding: 0.5rem 1rem; 
+                                              font-size: 0.95rem; 
+                                              font-weight: 500;
+                                              border-radius: 8px;">
+                        @(!string.IsNullOrEmpty(scholarship.Institution?.InstitutionName)
+                            ? scholarship.Institution.InstitutionName
+                            : scholarship.Benefactor?.OrganizationName ?? "Unknown Provider")
+                    </span>
+                </div>
+
+                <!-- Status Badges -->
+                <div class="d-flex align-items-center flex-wrap gap-2">
+                    <span class="badge" style="background: white; 
+                                              color: #1e40af; 
+                                              padding: 0.4rem 0.9rem; 
+                                              font-size: 0.875rem;
+                                              font-weight: 600;
+                                              border-radius: 6px;
+                                              box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                        📅 @scholarship.ApplicationDeadline.ToString("MMM dd, yyyy")
+                    </span>
+                    @if (scholarship.SlotsAvailable.HasValue && scholarship.SlotsAvailable.Value > 0)
+                    {
+                        var takenCount = scholarship.Applications?.Count(a => a.Status != "Rejected" && a.Status != "Withdrawn") ?? 0;
+                        var slotsLeft = Math.Max(0, scholarship.SlotsAvailable.Value - takenCount);
+                        <span class="badge" style="background: rgba(255,255,255,0.25); 
+                                                  color: white; 
+                                                  padding: 0.4rem 0.9rem; 
+                                                  font-size: 0.875rem;
+                                                  font-weight: 600;
+                                                  border-radius: 6px;">
+                            👥 @slotsLeft / @scholarship.SlotsAvailable Slots
+                        </span>
+                    }
+                    @if (scholarship.IsInternal)
+                    {
+                        <span class="badge" style="background: #059669; 
+                                                  color: white; 
+                                                  padding: 0.4rem 0.9rem; 
+                                                  font-size: 0.875rem;
+                                                  font-weight: 600;
+                                                  border-radius: 6px;">
+                            🏛️ Internal
+                        </span>
+                    }
+                    else
+                    {
+                        <span class="badge" style="background: #8b5cf6; 
+                                                  color: white; 
+                                                  padding: 0.4rem 0.9rem; 
+                                                  font-size: 0.875rem;
+                                                  font-weight: 600;
+                                                  border-radius: 6px;">
+                            🌐 Open
+                        </span>
+                    }
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex-shrink-0 d-flex flex-column gap-2">
+                <button class="btn animate__animated animate__fadeIn @GetBookmarkButtonClass()" 
+                        style="padding: 0.75rem 1.5rem; 
+                               border-radius: 10px; 
+                               font-weight: 600;
+                               box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                               transition: all 0.3s ease;
+                               min-width: 150px;"
+                        @onclick="ToggleBookmark">
+                    <i class="bi @GetBookmarkIcon() me-2"></i>@GetBookmarkText()
+                </button>
+                @if (scholarship.IsActive)
+                {
+                    @if (hasPendingApplication)
+                    {
+                        <button class="btn btn-secondary" 
+                                style="padding: 0.75rem 1.5rem; 
+                                       border-radius: 10px; 
+                                       font-weight: 600;
+                                       min-width: 150px;" 
+                                disabled>
+                            ✓ Already Applied
+                        </button>
+                    }
+                    else
+                    {
+                        <a class="btn animate__animated animate__fadeIn" 
+                           href="/dashboard/student/apply/@scholarship.ScholarshipId" 
+                           style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); 
+                                  color: white; 
+                                  border: none; 
+                                  padding: 0.75rem 1.5rem; 
+                                  border-radius: 10px; 
+                                  font-weight: 600;
+                                  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+                                  min-width: 150px;
+                                  text-decoration: none;
+                                  text-align: center;">
+                            📝 Apply Now
+                        </a>
+                    }
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="container-fluid px-2 px-md-4">
+        <div class="row gx-4 gy-4">
+            <!-- 📄 Scholarship Info (Single Column Layout) -->
+            <div class="col-12 mb-5 animate__animated animate__fadeInUp">
+                
+                <!-- Basic Information -->
+                <div class="card shadow-sm border-0 mb-3 animate__animated animate__fadeIn" 
+                     style="border-radius: 12px; overflow: hidden;">
+                    <div class="card-header text-white fw-semibold py-3 px-4" 
+                         style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); 
+                                font-size: 1.05rem; 
+                                border: none;">
+                        📋 Basic Information
+                    </div>
+                    <div class="card-body bg-white text-dark py-3 px-4" style="background: #f9fafb !important;">
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold mb-2" style="color: #374151;">Provider</label>
+                            <p class="text-secondary mb-0">
+                                @(!string.IsNullOrEmpty(scholarship.Institution?.InstitutionName)
+                                    ? scholarship.Institution.InstitutionName
+                                    : scholarship.Benefactor?.OrganizationName ?? "Unknown")
+                            </p>
+                        </div>
+                        @if (!string.IsNullOrWhiteSpace(scholarship.Description))
+                        {
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold mb-2" style="color: #374151;">Description</label>
+                                <p class="text-secondary mb-0" style="line-height: 1.6;">@scholarship.Description</p>
+                            </div>
+                        }
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold mb-2" style="color: #374151;">Benefits</label>
+                            <p class="text-secondary mb-0" style="line-height: 1.6; white-space: pre-wrap;">@scholarship.Benefits</p>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold mb-2" style="color: #374151;">Application Deadline</label>
+                            <p class="text-secondary mb-0">@scholarship.ApplicationDeadline.ToString("MMMM dd, yyyy")</p>
+                        </div>
+                        @if (scholarship.SlotsAvailable.HasValue && scholarship.SlotsAvailable.Value > 0)
+                        {
+                            var takenCount = scholarship.Applications?.Count(a => a.Status != "Rejected" && a.Status != "Withdrawn") ?? 0;
+                            var slotsLeft = Math.Max(0, scholarship.SlotsAvailable.Value - takenCount);
+                            <div class="mb-0">
+                                <label class="form-label fw-semibold mb-2" style="color: #374151;">Slots Available</label>
+                                <p class="text-secondary mb-0 fs-5 fw-bold">@slotsLeft of @scholarship.SlotsAvailable</p>
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                <!-- Eligibility & Requirements -->
+                <div class="card shadow-sm border-0 mb-3 animate__animated animate__fadeIn" 
+                     style="border-radius: 12px; overflow: hidden;">
+                    <div class="card-header text-white fw-semibold py-3 px-4" 
+                         style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); 
+                                font-size: 1.05rem; 
+                                border: none;">
+                        📝 Eligibility & Requirements
+                    </div>
+                    <div class="card-body bg-white text-dark py-3 px-4" style="background: #f9fafb !important;">
+                        @if (!string.IsNullOrWhiteSpace(scholarship.RequiredCourse))
+                        {
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold mb-2" style="color: #374151;">Required Course</label>
+                                <p class="text-secondary mb-0">@scholarship.RequiredCourse</p>
+                            </div>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(scholarship.Eligibility))
+                        {
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold mb-2" style="color: #374151;">Eligibility</label>
+                                <p class="text-secondary mb-0" style="line-height: 1.6; white-space: pre-wrap;">@scholarship.Eligibility</p>
+                            </div>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(scholarship.Requirements))
+                        {
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold mb-2" style="color: #374151;">Requirements</label>
+                                <p class="text-secondary mb-0" style="line-height: 1.6; white-space: pre-wrap;">@scholarship.Requirements</p>
+                            </div>
+                        }
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-semibold mb-2" style="color: #374151;">Minimum GPA</label>
+                                <p class="text-secondary mb-0">@(scholarship.MinimumGPA.HasValue ? scholarship.MinimumGPA.Value.ToString("0.00") : "None")</p>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label fw-semibold mb-2" style="color: #374151;">Required Year Level</label>
+                                <p class="text-secondary mb-0">@(scholarship.RequiredYearLevel.HasValue && scholarship.RequiredYearLevel > 0 ? $"Year {scholarship.RequiredYearLevel}" : "Any year level")</p>
+                            </div>
+                        </div>
+                        @if (!string.IsNullOrWhiteSpace(scholarship.RequiredUniversity))
+                        {
+                            <div class="mb-3">
+                                <label class="form-label fw-semibold mb-2" style="color: #374151;">Required University</label>
+                                <p class="text-secondary mb-0">@scholarship.RequiredUniversity</p>
+                            </div>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(scholarship.ExternalApplicationUrl))
+                        {
+                            <div class="mb-0">
+                                <label class="form-label fw-semibold mb-2" style="color: #374151;">External Application</label>
+                                <p class="mb-0">
+                                    <a href="@scholarship.ExternalApplicationUrl" 
+                                       target="_blank" 
+                                       style="color: #3b82f6; text-decoration: none; font-weight: 500;"
+                                       class="d-inline-flex align-items-center gap-1">
+                                        @scholarship.ExternalApplicationUrl
+                                        <span style="font-size: 0.875rem;">↗</span>
+                                    </a>
+                                </p>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 }

@@ -437,11 +437,16 @@
         }
         else if (activeFilter == "Archive")
         {
+            // Force recalculation by using render key
+            var _ = archiveRenderKey; // Reference the key to ensure re-evaluation
+            
             var archivedUsers = allUsers.Where(u =>
                 (studentProfilesByUserId.TryGetValue(u.Id, out var student) && student.AccountStatus == "Archived") ||
                 (institutionProfilesByUserId.TryGetValue(u.Id, out var institution) && institution.AccountStatus == "Archived") ||
                 (benefactorProfilesByUserId.TryGetValue(u.Id, out var benefactor) && benefactor.AccountStatus == "Archived")
             ).ToList();
+            
+            Console.WriteLine($"[DEBUG] Archive tab rendering - Found {archivedUsers.Count} archived users (render key: {archiveRenderKey})");
             
             if (archivedUsers.Any())
             {
@@ -750,6 +755,9 @@
     private bool showBulkArchiveConfirmModal = false;
     private bool showBulkAcceptConfirmModal = false;
     private bool showBulkRejectConfirmModal = false;
+    
+    // Render key to force re-evaluation of Archive tab
+    private int archiveRenderKey = 0;
     
     // Only for requests tab
     private void OnRequestTypeDropdownChanged(ChangeEventArgs e)
@@ -1385,6 +1393,9 @@
             
             // Recalculate counts
             RecalculateCounts();
+            
+            // Increment render key to force Archive tab to recalculate
+            archiveRenderKey++;
         }
         catch (Exception ex)
         {
@@ -1402,9 +1413,15 @@
     
     private async Task ConfirmBulkDelete()
     {
-        if (selectedUserIds.Count == 0) return;
+        if (selectedUserIds.Count == 0)
+        {
+            Console.WriteLine("[DEBUG] ConfirmBulkDelete called but no users selected");
+            return;
+        }
         
-        Console.WriteLine($"[DEBUG] Starting bulk deletion of {selectedUserIds.Count} users");
+        Console.WriteLine($"[DEBUG] Starting bulk deletion of {selectedUserIds.Count} users from Archive tab");
+        Console.WriteLine($"[DEBUG] Selected user IDs: {string.Join(", ", selectedUserIds)}");
+        Console.WriteLine($"[DEBUG] Total users before deletion: {allUsers.Count}");
         
         try
         {
@@ -1474,11 +1491,14 @@
                 }
             }
             
-            Console.WriteLine($"[DEBUG] Bulk deletion completed. Updating UI...");
+            Console.WriteLine($"[DEBUG] Bulk deletion completed. Total users after deletion: {allUsers.Count}");
+            Console.WriteLine($"[DEBUG] Updating UI...");
             
             // Recalculate counts
             totalUsers = allUsers.Count;
             RecalculateCounts();
+            
+            Console.WriteLine($"[DEBUG] New counts - Total: {totalUsers}, Archived: {totalArchived}");
         }
         catch (Exception ex)
         {
@@ -1487,10 +1507,16 @@
         }
         finally
         {
+            Console.WriteLine($"[DEBUG] Closing modal and clearing selection");
             showBulkDeleteConfirmModal = false;
             selectedUserIds.Clear();
-            ApplyFilter(); // Reapply filter to update UI without full reload
-            StateHasChanged();
+            
+            // Increment render key to force Archive tab to recalculate
+            archiveRenderKey++;
+            
+            // Force UI update on the correct synchronization context
+            await InvokeAsync(StateHasChanged);
+            Console.WriteLine($"[DEBUG] UI should now be updated (render key: {archiveRenderKey})");
         }
     }
     
@@ -1607,6 +1633,9 @@
             totalUsers = allUsers.Count;
             RecalculateCounts();
             
+            // Increment render key to force Archive tab to recalculate
+            archiveRenderKey++;
+            
             Console.WriteLine($"[DEBUG] User permanently deleted. Updating UI...");
         }
         catch (Exception ex)
@@ -1703,6 +1732,9 @@
                 }
             }
             
+            // Increment render key to force Archive tab to recalculate
+            archiveRenderKey++;
+            
             // Apply filter to update the UI immediately without full refresh
             ApplyFilter();
         }
@@ -1790,6 +1822,9 @@
                     }
                 }
             }
+            
+            // Increment render key to force Archive tab to recalculate
+            archiveRenderKey++;
             
             // Apply filter to update the UI immediately without full refresh
             ApplyFilter();
