@@ -23,32 +23,9 @@ namespace c2_eskolar.Services
 
         public BlobStorageService(IConfiguration config)
         {
-            // Read connection string with fallbacks. Prefer ConnectionStrings:AzureBlobStorage
-            // because App Service exposes ConnectionStrings__AzureBlobStorage -> ConnectionStrings:AzureBlobStorage
-            var connKeyPreferred = config["ConnectionStrings:AzureBlobStorage"];
-            var connKey1 = config["AzureBlobStorage:ConnectionString"];
-            var connKey3 = config["AzureBlobStorageConnectionString"];
-            var conn = connKeyPreferred ?? connKey1 ?? connKey3;
-
-            // Provide clearer diagnostics if missing or malformed
-            if (string.IsNullOrWhiteSpace(conn))
-            {
-                throw new ArgumentNullException("AzureBlobStorage connection string is missing. Set 'ConnectionStrings__AzureBlobStorage' in App Service (maps to ConnectionStrings:AzureBlobStorage) or set 'ConnectionStrings:AzureBlobStorage' in user-secrets/local configuration.");
-            }
-
-            // Basic sanity check: a storage connection string should contain '=' and usually 'AccountName=' or 'DefaultEndpointsProtocol='
-            if (!conn.Contains("=") || (!conn.Contains("AccountName=") && !conn.Contains("DefaultEndpointsProtocol=")))
-            {
-                throw new ArgumentException("AzureBlobStorage connection string appears invalid. Ensure you set the raw storage connection string (not a prefixed key). For App Service use 'ConnectionStrings__AzureBlobStorage' with value 'DefaultEndpointsProtocol=...;AccountName=...;AccountKey=...;'. If you intend to use Managed Identity, set 'AzureBlobStorage:AccountName' instead and update the application to use DefaultAzureCredential.");
-            }
-            _connectionString = conn;
+            _connectionString = config["AzureBlobStorage:ConnectionString"] ?? throw new ArgumentNullException("AzureBlobStorage:ConnectionString is missing in configuration.");
             _documentsContainer = config["AzureBlobStorage:DocumentsContainer"] ?? throw new ArgumentNullException("AzureBlobStorage:DocumentsContainer is missing in configuration.");
             _photosContainer = config["AzureBlobStorage:PhotosContainer"] ?? throw new ArgumentNullException("AzureBlobStorage:PhotosContainer is missing in configuration.");
-
-            // Log which config key supplied the connection (mask most of the secret)
-            var source = connKeyPreferred != null ? "ConnectionStrings:AzureBlobStorage" : (connKey1 != null ? "AzureBlobStorage:ConnectionString" : "AzureBlobStorageConnectionString");
-            var masked = _connectionString.Length > 12 ? _connectionString.Substring(0, 8) + "..." : "(masked)";
-            Console.WriteLine($"[BlobStorageService] Using blob connection from {source} (masked: {masked})");
         }
 
         private BlobContainerClient GetContainerClient(string containerName)
@@ -441,5 +418,38 @@ namespace c2_eskolar.Services
                 return blobUrl; // Return original URL if conversion fails
             }
         }
+
+        /// <summary>
+        /// Returns the approximate count of blobs in the specified container.
+        /// This performs a listing and counts the blobs; for very large containers consider adding caching.
+        /// </summary>
+        public async Task<long> GetContainerBlobCountAsync(string containerName)
+        {
+            try
+            {
+                var containerClient = GetContainerClient(containerName);
+                long count = 0;
+                await foreach (var blob in containerClient.GetBlobsAsync())
+                {
+                    count++;
+                }
+                return count;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[BlobStorageService] GetContainerBlobCountAsync error for '{containerName}': {ex.Message}");
+                return 0;
+            }
+        }
+
+        /// <summary>
+        /// Returns the count of blobs in the photos container.
+        /// </summary>
+        public Task<long> GetPhotosCountAsync() => GetContainerBlobCountAsync(_photosContainer);
+
+        /// <summary>
+        /// Returns the count of blobs in the documents container.
+        /// </summary>
+        public Task<long> GetDocumentsCountAsync() => GetContainerBlobCountAsync(_documentsContainer);
     }
 }
