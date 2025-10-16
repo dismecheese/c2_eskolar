@@ -480,16 +480,38 @@
  .announcement-action-icons {
      display: none !important;
 }
-/* Hide like buttons and other icons - EXCLUDES bookmark buttons */
- .announcement-icons, .action-icons, .like-button, .card .btn-outline-secondary:not(.bookmark-btn), .thumbs-up, .like-icon, .fas.fa-thumbs-up, .far.fa-thumbs-up, .bi-hand-thumbs-up, .bi-hand-thumbs-up-fill, .emoji-like, .like-emoji, .card-header .like, .card-body .like, .like-section, .interaction-buttons, .social-buttons {
+/* Hide like buttons and other icons - EXCLUDES bookmark buttons - SCOPED TO ANNOUNCEMENT CARDS ONLY */
+.announcement-card .announcement-icons, 
+.announcement-card .action-icons, 
+.announcement-card .like-button, 
+.announcement-card .btn-outline-secondary:not(.bookmark-btn), 
+.announcement-card .thumbs-up, 
+.announcement-card .like-icon, 
+.announcement-card .like-section, 
+.announcement-card .interaction-buttons, 
+.announcement-card .social-buttons,
+.announcement-card .bi-hand-thumbs-up, 
+.announcement-card .bi-hand-thumbs-up-fill, 
+.announcement-card .emoji-like, 
+.announcement-card .like-emoji, 
+.announcement-card .card-header .like, 
+.announcement-card .card-body .like {
      display: none !important;
 }
-/* More specific selectors for like buttons */
- .card i.fa-thumbs-up, .card i.fas.fa-thumbs-up, .card i.far.fa-thumbs-up, .card .thumbs-up-icon, .card .like-button-container, .card .social-interaction, .card .engagement-buttons {
+/* More specific selectors for like buttons - SCOPED TO ANNOUNCEMENT CARDS ONLY */
+.announcement-card .card i.fa-thumbs-up, 
+.announcement-card .card i.fas.fa-thumbs-up, 
+.announcement-card .card i.far.fa-thumbs-up, 
+.announcement-card .card .thumbs-up-icon, 
+.announcement-card .card .like-button-container, 
+.announcement-card .card .social-interaction, 
+.announcement-card .card .engagement-buttons {
      display: none !important;
 }
-/* Hide any emoji or icon in top left area - but NOT chevron icons */
- .card-body > div:first-child i:not(.bi-chevron-down):not(.bi-chevron-up), .card-body > span:first-child, .card-body > .d-flex:first-child .like, .card-body > .d-flex:first-child i.fa-thumbs-up {
+/* Hide any emoji or icon in top left area - but NOT chevron icons or FontAwesome icons - SCOPED TO ANNOUNCEMENT CARDS ONLY */
+.announcement-card .card-body > div:first-child .emoji:not(.bi-chevron-down):not(.bi-chevron-up):not(.fas):not(.far):not(.fab):not(.fa), 
+.announcement-card .card-body > span:first-child:not(.fas):not(.far):not(.fab):not(.fa), 
+.announcement-card .card-body > .d-flex:first-child .like:not(.fas):not(.far):not(.fab):not(.fa) {
      display: none !important;
 }
 /* Specifically preserve chevron icons for expand buttons */

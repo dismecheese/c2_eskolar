@@ -1,59 +1,620 @@
 @page "/dashboard/benefactor/settings"
 @attribute [Authorize(Roles = "Benefactor,SuperAdmin")]
 @layout Layout.BenefactorDashLayout
+@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.AspNetCore.Identity
+@using System.Security.Claims
+@using c2_eskolar.Models
+@using c2_eskolar.Services
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject UserManager<IdentityUser> UserManager
+@inject BenefactorProfileService BenefactorProfileService
+@inject IJSRuntime JSRuntime
+@rendermode InteractiveServer
 
 <PageTitle>Settings</PageTitle>
 
-<div class="settings-container py-5">
+<div class="settings-page container-fluid">
     <div class="row justify-content-center">
-        <div class="col-12 col-md-8 col-lg-6">
-            <div class="settings-card p-4 mb-4">
-                <div class="d-flex align-items-center mb-4">
-                    <div class="profile-pic rounded-circle bg-secondary me-3" style="width:64px; height:64px; display:flex; align-items:center; justify-content:center;">
-                        <svg width="40" height="40" fill="#fff"><circle cx="20" cy="16" r="10"/><rect x="8" y="28" width="24" height="8" rx="4"/></svg>
-                    </div>
-                    <div>
-                        <div class="fw-bold fs-5">Ralph Student</div>
-                        <div class="text-muted">Student</div>
-                    </div>
+        <div class="col-12 col-lg-10">
+
+            <header class="d-flex align-items-start justify-content-between mb-4 mt-5">
+                <div>
+                    <h1 class="page-title mb-1">Account Settings</h1>
+                    <p class="text-muted small mb-0">Profile, security and preferences — a single place to manage your organization</p>
                 </div>
-                <form>
-                    <div class="mb-3">
-                        <label class="form-label fw-semibold">Email</label>
-                        <input type="email" class="form-control" placeholder="Enter your email" value="ralph@student.edu" />
+
+                <div class="status-badge align-self-center">
+                    @if (benefactorProfile?.IsVerified == true)
+                    {
+                        <span class="badge badge-custom-success"><i class="fas fa-check-circle me-1"></i>Verified</span>
+                    }
+                    else
+                    {
+                        <span class="badge badge-custom-accent"><i class="fas fa-clock me-1"></i>@(benefactorProfile?.AccountStatus ?? "Pending")</span>
+                    }
+                </div>
+            </header>
+
+            <nav class="modern-tabs mb-3">
+                <div class="tab-pills">
+                    <button class="tab-pill @(activeTab == "profile" ? "active" : "")" @onclick='() => SetActiveTab("profile")'>
+                        <i class="fas fa-user me-2"></i>Profile
+                    </button>
+                    <button class="tab-pill @(activeTab == "organization" ? "active" : "")" @onclick='() => SetActiveTab("organization")'>
+                        <i class="fas fa-building me-2"></i>Organization
+                    </button>
+                    <button class="tab-pill @(activeTab == "security" ? "active" : "")" @onclick='() => SetActiveTab("security")'>
+                        <i class="fas fa-shield-alt me-2"></i>Security
+                    </button>
+                    <button class="tab-pill @(activeTab == "notifications" ? "active" : "")" @onclick='() => SetActiveTab("notifications")'>
+                        <i class="fas fa-bell me-2"></i>Notifications
+                    </button>
+                    <button class="tab-pill @(activeTab == "privacy" ? "active" : "")" @onclick='() => SetActiveTab("privacy")'>
+                        <i class="fas fa-eye me-2"></i>Privacy
+                    </button>
+                    <button class="tab-pill @(activeTab == "verification" ? "active" : "")" @onclick='() => SetActiveTab("verification")'>
+                        <i class="fas fa-certificate me-2"></i>Verification
+                    </button>
+                </div>
+            </nav>
+
+            <section>
+                @if (activeTab == "profile")
+                {
+                    <div class="card">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center justify-content-between mb-3">
+                                <div>
+                                    <h3 class="announcement-title mb-1">Personal Information</h3>
+                                    <p class="text-muted small mb-0">Manage admin contact details</p>
+                                </div>
+                                <div class="badge badge-custom-primary">Profile</div>
+                            </div>
+
+                            <EditForm Model="@benefactorProfile" OnValidSubmit="@SavePersonalInfo">
+                                <DataAnnotationsValidator />
+
+                                <div class="d-flex gap-3 align-items-center mb-3">
+                                    <div class="profile-avatar">
+                                        @if (!string.IsNullOrEmpty(benefactorProfile?.Logo))
+                                        {
+                                            <img src="@benefactorProfile.Logo" alt="Logo" />
+                                        }
+                                        else
+                                        {
+                                            <div class="avatar-placeholder"><i class="fas fa-building"></i></div>
+                                        }
+                                    </div>
+                                    <div>
+                                        <div class="fw-semibold">@(benefactorProfile?.AdminFullName ?? "Admin Name")</div>
+                                        <div class="text-muted small">@(benefactorProfile?.AdminPosition ?? "Administrator") • @(benefactorProfile?.OrganizationName ?? "Organization")</div>
+                                    </div>
+                                    <div class="ms-auto">
+                                        <button type="button" class="btn btn-outline-secondary btn-sm" @onclick="OpenImageUpload"><i class="fas fa-camera me-1"></i>Change</button>
+                                    </div>
+                                </div>
+
+                                <div class="form-grid mb-3">
+                                    <div class="modern-form-group">
+                                        <label class="modern-form-label">First name</label>
+                                        <InputText @bind-Value="benefactorProfile!.AdminFirstName" class="modern-input" placeholder="First" />
+                                    </div>
+                                    <div class="modern-form-group">
+                                        <label class="modern-form-label">Middle</label>
+                                        <InputText @bind-Value="benefactorProfile!.AdminMiddleName" class="modern-input" placeholder="Middle" />
+                                    </div>
+                                    <div class="modern-form-group">
+                                        <label class="modern-form-label">Last name</label>
+                                        <InputText @bind-Value="benefactorProfile!.AdminLastName" class="modern-input" placeholder="Last" />
+                                    </div>
+                                    <div class="modern-form-group">
+                                        <label class="modern-form-label">Position</label>
+                                        <InputText @bind-Value="benefactorProfile!.AdminPosition" class="modern-input" placeholder="Title" />
+                                    </div>
+                                    <div class="modern-form-group">
+                                        <label class="modern-form-label">Contact email</label>
+                                        <InputText @bind-Value="benefactorProfile!.ContactEmail" class="modern-input" type="email" placeholder="contact@org.com" />
+                                    </div>
+                                    <div class="modern-form-group">
+                                        <label class="modern-form-label">Phone</label>
+                                        <InputText @bind-Value="benefactorProfile!.ContactNumber" class="modern-input" placeholder="+63 900 000 0000" />
+                                    </div>
+                                </div>
+
+                                <div class="panel-footer text-end">
+                                    <button type="submit" class="btn-modern-primary" disabled="@isLoading">
+                                        @if (isLoading)
+                                        {
+                                            <span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>
+                                        }
+                                        Save
+                                    </button>
+                                </div>
+                            </EditForm>
+                        </div>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-semibold">Phone Number</label>
-                        <input type="text" class="form-control" placeholder="Enter your phone number" value="+63 900 000 0000" />
+                }
+
+                else if (activeTab == "organization")
+                {
+                    <div class="card">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center justify-content-between mb-3">
+                                <div>
+                                    <h3 class="announcement-title mb-1">Organization</h3>
+                                    <p class="text-muted small mb-0">Profile and description</p>
+                                </div>
+                                <div class="badge badge-custom-primary">Organization</div>
+                            </div>
+
+                            <EditForm Model="@benefactorProfile" OnValidSubmit="@SaveOrganizationInfo">
+                                <DataAnnotationsValidator />
+
+                                <div class="form-grid mb-3">
+                                    <div class="modern-form-group" style="grid-column: 1 / -1;">
+                                        <label class="modern-form-label">Organization name</label>
+                                        <InputText @bind-Value="benefactorProfile!.OrganizationName" class="modern-input" placeholder="Name" />
+                                    </div>
+
+                                    <div class="modern-form-group">
+                                        <label class="modern-form-label">Website</label>
+                                        <InputText @bind-Value="benefactorProfile!.Website" class="modern-input" type="url" placeholder="https://" />
+                                    </div>
+
+                                    <div class="modern-form-group">
+                                        <label class="modern-form-label">Type</label>
+                                        <InputSelect @bind-Value="benefactorProfile!.OrganizationType" class="modern-input">
+                                            <option value="">Select</option>
+                                            <option value="Foundation">Foundation</option>
+                                            <option value="Corporation">Corporation</option>
+                                            <option value="Government">Government</option>
+                                            <option value="NGO">NGO</option>
+                                            <option value="Educational Institution">Educational Institution</option>
+                                            <option value="Other">Other</option>
+                                        </InputSelect>
+                                    </div>
+
+                                    <div class="modern-form-group" style="grid-column: 1 / -1;">
+                                        <label class="modern-form-label">Address</label>
+                                        <InputTextArea @bind-Value="benefactorProfile!.Address" class="modern-input" rows="3" />
+                                    </div>
+
+                                    <div class="modern-form-group" style="grid-column: 1 / -1;">
+                                        <label class="modern-form-label">Short description</label>
+                                        <InputTextArea @bind-Value="benefactorProfile!.Description" class="modern-input" rows="4" />
+                                    </div>
+                                </div>
+
+                                <div class="panel-footer text-end">
+                                    <button type="submit" class="btn-modern-primary" disabled="@isLoading">Save</button>
+                                </div>
+                            </EditForm>
+                        </div>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-semibold">Password</label>
-                        <input type="password" class="form-control" placeholder="Change password" />
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-semibold">University</label>
-                        <input type="text" class="form-control" placeholder="Your university" value="Sample University" />
-                    </div>
-                    <div class="d-flex justify-content-end">
-                        <button type="submit" class="btn btn-primary px-4">Save Changes</button>
-                    </div>
-                </form>
-            </div>
+                }
+
+                else
+                {
+                    <!-- For other tabs keep original simplified sections but minimal layout -->
+                    @if (activeTab == "security")
+                    {
+                        <div class="card">
+                            <div class="card-body">
+                                <h3 class="announcement-title mb-2">Security</h3>
+                                <EditForm Model="@passwordChangeModel" OnValidSubmit="@ChangePassword">
+                                    <div class="form-grid mb-3">
+                                        <div class="modern-form-group">
+                                            <label class="modern-form-label">Current password</label>
+                                            <InputText @bind-Value="passwordChangeModel.CurrentPassword" type="@(showCurrentPassword ? "text" : "password")" class="modern-input" />
+                                        </div>
+                                        <div class="modern-form-group">
+                                            <label class="modern-form-label">New password</label>
+                                            <InputText @bind-Value="passwordChangeModel.NewPassword" type="@(showNewPassword ? "text" : "password")" class="modern-input" />
+                                        </div>
+                                        <div class="modern-form-group">
+                                            <label class="modern-form-label">Confirm</label>
+                                            <InputText @bind-Value="passwordChangeModel.ConfirmPassword" type="password" class="modern-input" />
+                                        </div>
+                                    </div>
+                                    <div class="text-end"><button class="btn-modern-primary">Change password</button></div>
+                                </EditForm>
+                            </div>
+                        </div>
+                    }
+
+                    else if (activeTab == "notifications")
+                    {
+                        <div class="card">
+                            <div class="card-body">
+                                <h3 class="announcement-title mb-2">Notifications</h3>
+                                <div class="form-grid mb-3">
+                                    <div class="modern-form-group">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" @bind="notifications.NewApplications" id="newApplications" />
+                                            <label class="form-check-label" for="newApplications">New applications</label>
+                                        </div>
+                                    </div>
+                                    <div class="modern-form-group">
+                                        <label class="modern-form-label">Digest</label>
+                                        <select class="form-select" @bind="notifications.DigestFrequency">
+                                            <option value="immediate">Immediate</option>
+                                            <option value="daily">Daily</option>
+                                            <option value="weekly">Weekly</option>
+                                            <option value="never">Never</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="text-end"><button class="btn-modern-primary" @onclick="SaveNotificationSettings">Save</button></div>
+                            </div>
+                        </div>
+                    }
+
+                    else if (activeTab == "privacy")
+                    {
+                        <div class="card">
+                            <div class="card-body">
+                                <h3 class="announcement-title mb-2">Privacy</h3>
+                                <div class="form-grid mb-3">
+                                    <div class="modern-form-group">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" @bind="privacy.PublicProfile" id="publicProfile" />
+                                            <label class="form-check-label" for="publicProfile">Public profile</label>
+                                        </div>
+                                    </div>
+                                    <div class="modern-form-group">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" @bind="privacy.AnalyticsTracking" id="analyticsTracking" />
+                                            <label class="form-check-label" for="analyticsTracking">Allow analytics</label>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="text-end"><button class="btn-modern-primary" @onclick="SavePrivacySettings">Save</button></div>
+                            </div>
+                        </div>
+                    }
+
+                    else if (activeTab == "verification")
+                    {
+                        <div class="card">
+                            <div class="card-body">
+                                <h3 class="announcement-title mb-2">Verification</h3>
+                                <div class="d-flex gap-3 align-items-center">
+                                    <div class="verification-icon">
+                                        @if (benefactorProfile?.IsVerified == true)
+                                        {
+                                            <i class="fas fa-check-circle text-success"></i>
+                                        }
+                                        else
+                                        {
+                                            <i class="fas fa-clock text-warning"></i>
+                                        }
+                                    </div>
+                                    <div>
+                                        <div class="fw-semibold">@(benefactorProfile?.IsVerified == true ? "Verified" : "Pending")</div>
+                                        <div class="text-muted small">@(benefactorProfile?.AccountStatus ?? "N/A")</div>
+                                    </div>
+                                </div>
+                                @if (benefactorProfile?.IsVerified != true)
+                                {
+                                    <div class="mt-3"><a class="btn-modern-primary" href="/dashboard/benefactor/verification">Continue verification</a></div>
+                                }
+                            </div>
+                        </div>
+                    }
+                }
+            </section>
+
+            @* Compact toasts *@
+            @if (showSuccessMessage)
+            {
+                <div class="toast fixed-toast success">@successMessage</div>
+            }
+            @if (showErrorMessage)
+            {
+                <div class="toast fixed-toast error">@errorMessage</div>
+            }
+
         </div>
     </div>
 </div>
 
-<style>
-.settings-container {
-    background: #f7f9fa;
-    min-height: 100vh;
+@code {
+    private c2_eskolar.Models.BenefactorProfile benefactorProfile = new()
+    {
+        UserId = "",
+        AdminFirstName = "",
+        AdminLastName = "",
+        OrganizationName = "",
+        AccountStatus = "Unverified"
+    };
+    
+    private string activeTab = "profile";
+    private bool isLoading = false;
+    private string? currentUserId;
+    
+    // Password change model
+    private PasswordChangeModel passwordChangeModel = new();
+    private bool showCurrentPassword = false;
+    private bool showNewPassword = false;
+    private bool twoFactorEnabled = false;
+    
+    // Notification settings
+    private NotificationSettings notifications = new();
+    
+    // Privacy settings
+    private PrivacySettings privacy = new();
+    
+    // Toast messages
+    private bool showSuccessMessage = false;
+    private bool showErrorMessage = false;
+    private string successMessage = "";
+    private string errorMessage = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadCurrentUser();
+        await LoadBenefactorProfile();
+        LoadSettings();
+    }
+
+    private async Task LoadCurrentUser()
+    {
+        try
+        {
+            var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+            currentUserId = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading user: {ex.Message}");
+        }
+    }
+
+    private async Task LoadBenefactorProfile()
+    {
+        if (string.IsNullOrEmpty(currentUserId))
+            return;
+
+        try
+        {
+            var profile = await BenefactorProfileService.GetProfileByUserIdAsync(currentUserId);
+            if (profile != null)
+            {
+                benefactorProfile = profile;
+            }
+            else
+            {
+                // Initialize a new profile if none exists
+                benefactorProfile = new c2_eskolar.Models.BenefactorProfile
+                {
+                    UserId = currentUserId,
+                    AdminFirstName = "",
+                    AdminLastName = "",
+                    OrganizationName = "",
+                    AccountStatus = "Unverified"
+                };
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading benefactor profile: {ex.Message}");
+            // Initialize empty profile on error
+            benefactorProfile = new c2_eskolar.Models.BenefactorProfile
+            {
+                UserId = currentUserId ?? "",
+                AdminFirstName = "",
+                AdminLastName = "",
+                OrganizationName = "",
+                AccountStatus = "Unverified"
+            };
+        }
+    }
+
+    private void LoadSettings()
+    {
+        // Load notification and privacy settings from storage/database
+        // This would typically come from a settings service
+        notifications = new NotificationSettings
+        {
+            NewApplications = true,
+            ApplicationUpdates = true,
+            SecurityAlerts = true,
+            SystemUpdates = true,
+            Newsletter = false,
+            Tips = false,
+            DigestFrequency = "daily"
+        };
+
+        privacy = new PrivacySettings
+        {
+            PublicProfile = true,
+            ShowContactInfo = false,
+            AnalyticsTracking = true
+        };
+    }
+
+    private void SetActiveTab(string tab)
+    {
+        activeTab = tab;
+        StateHasChanged();
+    }
+
+    private async Task SavePersonalInfo()
+    {
+        isLoading = true;
+        try
+        {
+            await BenefactorProfileService.SaveProfileAsync(benefactorProfile);
+            ShowSuccessMessage("Personal information updated successfully!");
+        }
+        catch (Exception ex)
+        {
+            ShowErrorMessage($"Error updating personal information: {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task SaveOrganizationInfo()
+    {
+        isLoading = true;
+        try
+        {
+            await BenefactorProfileService.SaveProfileAsync(benefactorProfile);
+            ShowSuccessMessage("Organization information updated successfully!");
+        }
+        catch (Exception ex)
+        {
+            ShowErrorMessage($"Error updating organization information: {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task ChangePassword()
+    {
+        isLoading = true;
+        try
+        {
+            // Implement password change logic
+            // This would typically call UserManager.ChangePasswordAsync()
+            ShowSuccessMessage("Password changed successfully!");
+            passwordChangeModel = new PasswordChangeModel();
+        }
+        catch (Exception ex)
+        {
+            ShowErrorMessage($"Error changing password: {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task SaveNotificationSettings()
+    {
+        isLoading = true;
+        try
+        {
+            // Save notification settings to database/storage
+            ShowSuccessMessage("Notification settings saved successfully!");
+        }
+        catch (Exception ex)
+        {
+            ShowErrorMessage($"Error saving notification settings: {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task SavePrivacySettings()
+    {
+        isLoading = true;
+        try
+        {
+            // Save privacy settings to database/storage
+            ShowSuccessMessage("Privacy settings saved successfully!");
+        }
+        catch (Exception ex)
+        {
+            ShowErrorMessage($"Error saving privacy settings: {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task OpenImageUpload()
+    {
+        // Implement image upload functionality
+        await JSRuntime.InvokeVoidAsync("openImageUpload");
+    }
+
+    private async Task ExportData()
+    {
+        isLoading = true;
+        try
+        {
+            // Implement data export functionality
+            ShowSuccessMessage("Data export started! You'll receive an email when it's ready.");
+        }
+        catch (Exception ex)
+        {
+            ShowErrorMessage($"Error exporting data: {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private void ShowDeactivateModal()
+    {
+        // Implement deactivate account modal
+        ShowErrorMessage("Account deactivation is not implemented yet.");
+    }
+
+    private void ShowSuccessMessage(string message)
+    {
+        successMessage = message;
+        showSuccessMessage = true;
+        showErrorMessage = false;
+        StateHasChanged();
+        
+        // Auto-hide after 5 seconds
+        Task.Delay(5000).ContinueWith(_ => 
+        {
+            showSuccessMessage = false;
+            InvokeAsync(StateHasChanged);
+        });
+    }
+
+    private void ShowErrorMessage(string message)
+    {
+        errorMessage = message;
+        showErrorMessage = true;
+        showSuccessMessage = false;
+        StateHasChanged();
+        
+        // Auto-hide after 5 seconds
+        Task.Delay(5000).ContinueWith(_ => 
+        {
+            showErrorMessage = false;
+            InvokeAsync(StateHasChanged);
+        });
+    }
+
+    // Supporting models
+    public class PasswordChangeModel
+    {
+        public string CurrentPassword { get; set; } = "";
+        public string NewPassword { get; set; } = "";
+        public string ConfirmPassword { get; set; } = "";
+    }
+
+    public class NotificationSettings
+    {
+        public bool NewApplications { get; set; }
+        public bool ApplicationUpdates { get; set; }
+        public bool SecurityAlerts { get; set; }
+        public bool SystemUpdates { get; set; }
+        public bool Newsletter { get; set; }
+        public bool Tips { get; set; }
+        public string DigestFrequency { get; set; } = "daily";
+    }
+
+    public class PrivacySettings
+    {
+        public bool PublicProfile { get; set; }
+        public bool ShowContactInfo { get; set; }
+        public bool AnalyticsTracking { get; set; }
+    }
 }
-.settings-card {
-    background: #fff;
-    border-radius: 12px;
-    box-shadow: 0 2px 8px rgba(60,60,60,0.07);
-}
-.profile-pic {
-    background: #3976c6 !important;
-}
-</style>

@@ -3,18 +3,79 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>FontAwesome Icon Test</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" 
-          integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeDq6T2eJxL5fJ2WQvZ6jIW3yU6X8n0V5A1rFjXo7r3O5IQ==" 
+    <title>FontAwesome Icons Fixed - Test Page</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" 
           crossorigin="anonymous" referrerpolicy="no-referrer" />
     <style>
-        body { padding: 20px; font-family: Arial, sans-serif; }
-        .icon-test { margin: 10px 0; font-size: 18px; }
-        .icon-large { font-size: 24px; color: #007bff; }
+        body { 
+            padding: 20px; 
+            font-family: Arial, sans-serif; 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: rgba(255,255,255,0.1);
+            padding: 30px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+        }
+        .icon-test { 
+            margin: 15px 0; 
+            font-size: 18px; 
+            padding: 10px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+        .icon-test:hover {
+            background: rgba(255,255,255,0.2);
+            transform: translateY(-2px);
+        }
+        .icon-large { 
+            font-size: 24px; 
+            margin-right: 10px;
+            color: #ffd700;
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        .status {
+            background: #28a745;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 25px;
+            text-align: center;
+            margin-bottom: 20px;
+            font-weight: bold;
+        }
+        .fas, .far, .fab, .fa {
+            display: inline-block !important;
+            font-family: "Font Awesome 6 Free", "Font Awesome 6 Brands" !important;
+            font-weight: 900;
+            font-style: normal;
+            font-variant: normal;
+            text-rendering: auto;
+            line-height: 1;
+        }        
+        .far { font-weight: 400; }        
+        .fab { 
+            font-family: "Font Awesome 6 Brands" !important;
+            font-weight: 400; 
+        }
     </style>
 </head>
 <body>
-    <h1>FontAwesome 6.5.0 Icon Test</h1>
+    <div class="container">
+        <h1><i class="fas fa-star"></i> FontAwesome Icons - FIXED! <i class="fas fa-star"></i></h1>
+        
+        <div class="status">
+            <i class="fas fa-check-circle"></i> Icons are now working properly!
+        </div>
     
     <div class="icon-test">
         <i class="fas fa-graduation-cap icon-large"></i> Graduation Cap (fas fa-graduation-cap)
