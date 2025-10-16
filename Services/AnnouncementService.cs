@@ -229,6 +229,20 @@ namespace c2_eskolar.Services
             return true;
         }
 
+        // Toggle pin status (admin override - no author check)
+        public async Task<bool> TogglePinAsync(Guid id)
+        {
+            using var context = _contextFactory.CreateDbContext();
+            var announcement = await context.Announcements.FindAsync(id);
+
+            if (announcement == null) return false;
+
+            announcement.IsPinned = !announcement.IsPinned;
+            announcement.UpdatedAt = DateTime.UtcNow;
+            await context.SaveChangesAsync();
+            return true;
+        }
+
         // Increment view count (tracks how many times announcement viewed)
         public async Task IncrementViewCountAsync(Guid id)
         {
