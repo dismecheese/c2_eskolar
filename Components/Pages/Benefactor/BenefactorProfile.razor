@@ -1,4 +1,4 @@
-@page "/dashboard/benefactor/profile"
+@* @page "/dashboard/benefactor/profile"
 @attribute [Authorize(Roles = "Benefactor,SuperAdmin")]
 @layout Layout.BenefactorDashLayout
 @inject AuthenticationStateProvider AuthenticationStateProvider
@@ -1576,4 +1576,4 @@
             SetErrorMessageWithTimer($"Error removing profile picture: {ex.Message}");
         }
     }
-}
+} *@

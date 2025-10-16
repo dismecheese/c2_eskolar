@@ -1,4 +1,4 @@
-@page "/dashboard/benefactor/analytics"
+@* @page "/dashboard/benefactor/analytics"
 @attribute [Authorize(Roles = "Benefactor,SuperAdmin")]
 @using Microsoft.EntityFrameworkCore
 @using c2_eskolar.Models
@@ -606,16 +606,20 @@ else if (!string.IsNullOrEmpty(ErrorMessage))
 else
 {
 <div class="analytics-container">
-    <!-- Analytics Header -->
-    <div class="analytics-header">
-        <h1>Benefactor Analytics Dashboard</h1>
-        <p>Comprehensive scholarship impact tracking and performance metrics</p>
-        <div class="last-updated">
-            <i class="fas fa-clock me-1"></i>
-            Last updated: @DateTime.Now.ToString("MMM dd, yyyy 'at' h:mm tt")
-        </div>
+    <!-- Top Bar -->
+    <div class="dashboard-topbar">
+        <span class="dashboard-date">@DateTime.Now.ToString("dd MMM yyyy, ddd")</span>
     </div>
-</div>
+
+    <!-- Welcome Banner -->
+    <div class="dashboard-banner-centered">
+        <div class="banner-text">
+            <h1>Benefactor Analytics Dashboard</h1>
+            <p>Comprehensive scholarship impact tracking and performance metrics</p>
+        </div>
+        <img src="images/eskolar_books.svg" alt="Analytics" class="banner-img" />
+    </div>
+
     <!-- Modern Metrics Grid -->
     <div class="metrics-grid">
         <!-- Total Applications -->
@@ -1074,7 +1078,5 @@ else
             }
         </div>
     </div>
-</div>
 }
-
-
+ *@
