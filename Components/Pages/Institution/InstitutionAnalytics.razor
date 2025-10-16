@@ -577,224 +577,155 @@
         await InvokeAsync(StateHasChanged);
     }
 }
-@if (IsLoading)
-{
-    <div class="w-100 py-5 d-flex flex-column align-items-center justify-content-center">
-        <div class="mb-3" style="width: 60%;">
-            <div class="progress" style="height: 24px;">
-                <div class="progress-bar progress-bar-striped progress-bar-animated bg-primary" role="progressbar" style="width: @(LoadingProgress)%">
-                    @LoadingProgress%
-                </div>
+<div class="analytics-container">
+    @if (IsLoading)
+    {
+        <div class="loading-container">
+            <div class="loading-spinner"></div>
+            <p>Loading Institution Analytics... (@LoadingProgress%)</p>
+            <div class="analytics-loading-bar">
+                <div class="analytics-progress" style="width: @(LoadingProgress)%"></div>
             </div>
         </div>
-        <div class="text-primary fw-bold fs-5">Loading analytics data... (@LoadingProgress%)</div>
-        <div class="mt-3 text-danger small">IsLoading: @IsLoading | ErrorMessage: @ErrorMessage | Exception: @(caughtException?.Message ?? "none")</div>
-    </div>
-}
-else if (!string.IsNullOrEmpty(ErrorMessage))
-{
-    <div class="alert alert-danger mt-5 mx-auto" style="max-width: 600px;">
-        <strong>Error:</strong> @ErrorMessage
-        <br />
-        <span class="small">If this persists, please contact support or check the browser console for details.</span>
-    </div>
-}
-else
-{
-	<div class="text-white py-4 mb-4 rounded-4 shadow-sm text-center position-relative overflow-hidden"
-		 style="background: linear-gradient(135deg, #1976d2, #64b5f6); margin-right: 100px;">
-	  <div class="position-absolute top-0 start-0 w-100 h-100"
-		   style="background: radial-gradient(circle at top left, rgba(255,255,255,0.15), transparent 60%);"></div>
-    <h2 class="m-0 fw-bold position-relative">Institution Analytics</h2>
-	  <p class="m-0 mt-2 small text-light opacity-75 position-relative">Applicants • Performance • Trends</p>
-	</div>
-
-    <!-- Enhanced KPI Cards Section -->
-    <div class="container mt-4">
-        <div class="row g-4 mb-4">
+    }
+    else if (!string.IsNullOrEmpty(ErrorMessage))
+    {
+        <div class="error-container">
+            <div class="error-message">
+                <i class="fas fa-exclamation-triangle"></i>
+                <strong>Error:</strong> @ErrorMessage
+                <br />
+                <span class="small">If this persists, please contact support or check the browser console for details.</span>
+            </div>
+        </div>
+    }
+    else if (profile != null)
+    {
+        <!-- Analytics Header -->
+        <div class="analytics-header">
+            <div class="analytics-header-bg"></div>
+            <h1 class="analytics-title">Institution Analytics Dashboard</h1>
+            <p class="analytics-subtitle">Comprehensive insights for @profile.InstitutionName</p>
+            <div class="last-updated">Last updated: @DateTime.Now.ToString("MMMM dd, yyyy 'at' h:mm tt")</div>
+        </div>
+        <!-- Modern Metrics Grid -->
+        <div class="metrics-grid">
             <!-- Total Applications -->
-            <div class="col-md-6 col-lg-3">
-                <div class="card border-0 shadow-sm h-100 position-relative overflow-hidden">
-                    <div class="position-absolute top-0 end-0 p-2">
-                        <i class="fas fa-users text-primary opacity-25" style="font-size: 2rem;"></i>
-                    </div>
-                    <div class="card-body">
-                        <div class="d-flex align-items-center mb-2">
-                            <div class="p-2 rounded-circle me-3" style="background: linear-gradient(135deg, #1976d2, #64b5f6);">
-                                <i class="fas fa-file-alt text-white"></i>
-                            </div>
-                            <div>
-                                <h6 class="card-title mb-0 text-muted small">Total Applications</h6>
-                                <h3 class="mb-0 fw-bold text-primary">@TotalApplicants</h3>
-                            </div>
-                        </div>
-                        <div class="small text-muted">
-                            <i class="fas fa-clock me-1"></i>All time applications
-                        </div>
+            <div class="metric-card metric-card-primary">
+                <div class="metric-icon">
+                    <i class="fas fa-file-alt"></i>
+                </div>
+                <div class="metric-content">
+                    <div class="metric-title">Total Applications</div>
+                    <div class="metric-value">@TotalApplicants</div>
+                    <div class="metric-subtitle">
+                        <i class="fas fa-clock"></i>
+                        All time applications
                     </div>
                 </div>
             </div>
 
             <!-- New Applications This Month -->
-            <div class="col-md-6 col-lg-3">
-                <div class="card border-0 shadow-sm h-100 position-relative overflow-hidden">
-                    <div class="position-absolute top-0 end-0 p-2">
-                        <i class="fas fa-plus-circle text-success opacity-25" style="font-size: 2rem;"></i>
-                    </div>
-                    <div class="card-body">
-                        <div class="d-flex align-items-center mb-2">
-                            <div class="p-2 rounded-circle me-3" style="background: linear-gradient(135deg, #28a745, #20c997);">
-                                <i class="fas fa-calendar-plus text-white"></i>
-                            </div>
-                            <div>
-                                <h6 class="card-title mb-0 text-muted small">New This Month</h6>
-                                <h3 class="mb-0 fw-bold text-success">@NewApplicantsThisMonth</h3>
-                            </div>
-                        </div>
-                        <div class="small text-muted">
-                            <i class="fas fa-calendar me-1"></i>@DateTime.Now.ToString("MMMM yyyy")
-                        </div>
+            <div class="metric-card metric-card-success">
+                <div class="metric-icon">
+                    <i class="fas fa-calendar-plus"></i>
+                </div>
+                <div class="metric-content">
+                    <div class="metric-title">New This Month</div>
+                    <div class="metric-value">@NewApplicantsThisMonth</div>
+                    <div class="metric-subtitle">
+                        <i class="fas fa-calendar"></i>
+                        @DateTime.Now.ToString("MMMM yyyy")
                     </div>
                 </div>
             </div>
 
             <!-- Pending Approvals -->
-            <div class="col-md-6 col-lg-3">
-                <div class="card border-0 shadow-sm h-100 position-relative overflow-hidden">
-                    <div class="position-absolute top-0 end-0 p-2">
-                        <i class="fas fa-hourglass-half text-warning opacity-25" style="font-size: 2rem;"></i>
-                    </div>
-                    <div class="card-body">
-                        <div class="d-flex align-items-center mb-2">
-                            <div class="p-2 rounded-circle me-3" style="background: linear-gradient(135deg, #ffc107, #ffeb3b);">
-                                <i class="fas fa-clock text-white"></i>
-                            </div>
-                            <div>
-                                <h6 class="card-title mb-0 text-muted small">Pending Approval</h6>
-                                <h3 class="mb-0 fw-bold text-warning">@PendingApprovals</h3>
-                            </div>
-                        </div>
-                        <div class="small text-muted">
-                            <i class="fas fa-exclamation-triangle me-1"></i>Require review
-                        </div>
+            <div class="metric-card metric-card-warning">
+                <div class="metric-icon">
+                    <i class="fas fa-clock"></i>
+                </div>
+                <div class="metric-content">
+                    <div class="metric-title">Pending Approval</div>
+                    <div class="metric-value">@PendingApprovals</div>
+                    <div class="metric-subtitle">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        Require review
                     </div>
                 </div>
             </div>
 
             <!-- Acceptance Rate -->
-            <div class="col-md-6 col-lg-3">
-                <div class="card border-0 shadow-sm h-100 position-relative overflow-hidden">
-                    <div class="position-absolute top-0 end-0 p-2">
-                        <i class="fas fa-chart-line text-info opacity-25" style="font-size: 2rem;"></i>
-                    </div>
-                    <div class="card-body">
-                        <div class="d-flex align-items-center mb-2">
-                            <div class="p-2 rounded-circle me-3" style="background: linear-gradient(135deg, #17a2b8, #6fc3d0);">
-                                <i class="fas fa-percentage text-white"></i>
-                            </div>
-                            <div>
-                                <h6 class="card-title mb-0 text-muted small">Acceptance Rate</h6>
-                                <h3 class="mb-0 fw-bold text-info">@AcceptanceRate.ToString("F1")%</h3>
-                            </div>
-                        </div>
-                        <div class="small text-muted">
-                            <i class="fas fa-chart-bar me-1"></i>Approval efficiency
-                        </div>
+            <div class="metric-card metric-card-info">
+                <div class="metric-icon">
+                    <i class="fas fa-percentage"></i>
+                </div>
+                <div class="metric-content">
+                    <div class="metric-title">Acceptance Rate</div>
+                    <div class="metric-value">@AcceptanceRate.ToString("F1")%</div>
+                    <div class="metric-subtitle">
+                        <i class="fas fa-chart-bar"></i>
+                        Approval efficiency
                     </div>
                 </div>
             </div>
-        </div>
 
-        <!-- Financial Metrics Row -->
-        <div class="row g-4 mb-4">
             <!-- Average GWA -->
-            <div class="col-md-6 col-lg-3">
-                <div class="card border-0 shadow-sm h-100 position-relative overflow-hidden">
-                    <div class="position-absolute top-0 end-0 p-2">
-                        <i class="fas fa-graduation-cap text-purple opacity-25" style="font-size: 2rem;"></i>
-                    </div>
-                    <div class="card-body">
-                        <div class="d-flex align-items-center mb-2">
-                            <div class="p-2 rounded-circle me-3" style="background: linear-gradient(135deg, #6f42c1, #9c6bdb);">
-                                <i class="fas fa-star text-white"></i>
-                            </div>
-                            <div>
-                                <h6 class="card-title mb-0 text-muted small">Average GWA</h6>
-                                <h3 class="mb-0 fw-bold" style="color: #6f42c1;">@AverageGWA.ToString("F2")</h3>
-                            </div>
-                        </div>
-                        <div class="small text-muted">
-                            <i class="fas fa-trophy me-1"></i>@GetGWAClassification(AverageGWA)
-                        </div>
+            <div class="metric-card metric-card-purple">
+                <div class="metric-icon">
+                    <i class="fas fa-star"></i>
+                </div>
+                <div class="metric-content">
+                    <div class="metric-title">Average GWA</div>
+                    <div class="metric-value">@AverageGWA.ToString("F2")</div>
+                    <div class="metric-subtitle">
+                        <i class="fas fa-trophy"></i>
+                        @GetGWAClassification(AverageGWA)
                     </div>
                 </div>
             </div>
 
             <!-- Total Scholarship Value -->
-            <div class="col-md-6 col-lg-3">
-                <div class="card border-0 shadow-sm h-100 position-relative overflow-hidden">
-                    <div class="position-absolute top-0 end-0 p-2">
-                        <i class="fas fa-money-bill-wave text-success opacity-25" style="font-size: 2rem;"></i>
-                    </div>
-                    <div class="card-body">
-                        <div class="d-flex align-items-center mb-2">
-                            <div class="p-2 rounded-circle me-3" style="background: linear-gradient(135deg, #28a745, #34ce57);">
-                                <i class="fas fa-dollar-sign text-white"></i>
-                            </div>
-                            <div>
-                                <h6 class="card-title mb-0 text-muted small">Total Value</h6>
-                                <h3 class="mb-0 fw-bold text-success">₱@TotalScholarshipValue.ToString("N0")</h3>
-                            </div>
-                        </div>
-                        <div class="small text-muted">
-                            <i class="fas fa-piggy-bank me-1"></i>Available funding
-                        </div>
+            <div class="metric-card metric-card-success">
+                <div class="metric-icon">
+                    <i class="fas fa-dollar-sign"></i>
+                </div>
+                <div class="metric-content">
+                    <div class="metric-title">Total Value</div>
+                    <div class="metric-value">₱@TotalScholarshipValue.ToString("N0")</div>
+                    <div class="metric-subtitle">
+                        <i class="fas fa-piggy-bank"></i>
+                        Available funding
                     </div>
                 </div>
             </div>
 
             <!-- Distributed Value -->
-            <div class="col-md-6 col-lg-3">
-                <div class="card border-0 shadow-sm h-100 position-relative overflow-hidden">
-                    <div class="position-absolute top-0 end-0 p-2">
-                        <i class="fas fa-hand-holding-usd text-primary opacity-25" style="font-size: 2rem;"></i>
-                    </div>
-                    <div class="card-body">
-                        <div class="d-flex align-items-center mb-2">
-                            <div class="p-2 rounded-circle me-3" style="background: linear-gradient(135deg, #007bff, #4dabf7);">
-                                <i class="fas fa-coins text-white"></i>
-                            </div>
-                            <div>
-                                <h6 class="card-title mb-0 text-muted small">Distributed</h6>
-                                <h3 class="mb-0 fw-bold text-primary">₱@DistributedValue.ToString("N0")</h3>
-                            </div>
-                        </div>
-                        <div class="small text-muted">
-                            <i class="fas fa-chart-pie me-1"></i>@((TotalScholarshipValue > 0 ? (double)DistributedValue / (double)TotalScholarshipValue * 100 : 0).ToString("F1"))% utilized
-                        </div>
+            <div class="metric-card metric-card-primary">
+                <div class="metric-icon">
+                    <i class="fas fa-coins"></i>
+                </div>
+                <div class="metric-content">
+                    <div class="metric-title">Distributed</div>
+                    <div class="metric-value">₱@DistributedValue.ToString("N0")</div>
+                    <div class="metric-subtitle">
+                        <i class="fas fa-chart-pie"></i>
+                        @((TotalScholarshipValue > 0 ? (double)DistributedValue / (double)TotalScholarshipValue * 100 : 0).ToString("F1"))% utilized
                     </div>
                 </div>
             </div>
 
             <!-- Active Scholars -->
-            <div class="col-md-6 col-lg-3">
-                <div class="card border-0 shadow-sm h-100 position-relative overflow-hidden">
-                    <div class="position-absolute top-0 end-0 p-2">
-                        <i class="fas fa-user-graduate text-indigo opacity-25" style="font-size: 2rem;"></i>
-                    </div>
-                    <div class="card-body">
-                        <div class="d-flex align-items-center mb-2">
-                            <div class="p-2 rounded-circle me-3" style="background: linear-gradient(135deg, #6610f2, #8449d6);">
-                                <i class="fas fa-users text-white"></i>
-                            </div>
-                            <div>
-                                <h6 class="card-title mb-0 text-muted small">Active Scholars</h6>
-                                <h3 class="mb-0 fw-bold" style="color: #6610f2;">@ActiveScholars</h3>
-                            </div>
-                        </div>
-                        <div class="small text-muted">
-                            <i class="fas fa-user-check me-1"></i>Currently enrolled
-                        </div>
+            <div class="metric-card metric-card-indigo">
+                <div class="metric-icon">
+                    <i class="fas fa-users"></i>
+                </div>
+                <div class="metric-content">
+                    <div class="metric-title">Active Scholars</div>
+                    <div class="metric-value">@ActiveScholars</div>
+                    <div class="metric-subtitle">
+                        <i class="fas fa-user-check"></i>
+                        Currently enrolled
                     </div>
                 </div>
             </div>
@@ -850,19 +781,23 @@ else
             </div>
         </div>
 
-        <!-- Original pie chart section -->
-    <div class="card shadow-sm mb-4 border-0">
-        <div class="card-body">
-            <div class="p-3 mb-3 text-white rounded-3 shadow-sm" 
-                 style="background: linear-gradient(135deg, #1976d2 0%, #64b5f6 100%);">
-                <h5 class="mb-0 fw-semibold">Institution Analytics - Applicants Pie Chart</h5>
+        <!-- Applicant Demographics Chart -->
+        <div class="chart-container">
+            <div class="chart-header">
+                <div class="chart-title">
+                    <i class="fas fa-chart-pie"></i>
+                    Applicant Demographics
+                </div>
+                <div class="chart-subtitle">Distribution by status and category</div>
             </div>
 
-            <div class="mb-2 text-muted">
-                Total Applicants: <strong>@TotalApplicants</strong>
-            </div>
-
-            <div class="d-flex flex-row flex-wrap align-items-start">
+            <div class="chart-content">
+                <div class="chart-info">
+                    <span class="info-label">Total Applicants:</span>
+                    <span class="info-value">@TotalApplicants</span>
+                </div>
+                
+                <div class="chart-visualization">
                 <div>
                     @{
                         var nonZeroSlices = PieData.Where(x => x.Value > 0).ToList();
@@ -908,17 +843,22 @@ else
                         }
                     </ul>
                 </div>
+                </div>
             </div>
         </div>
-    </div>
 
 
 
-	<div class="card shadow-sm">
-		<div class="card-body">
-            <div class="p-3 mb-3 text-white rounded-3" style="background: linear-gradient(135deg, #1976d2, #64b5f6);">
-                <h5 class="card-title">Student Grades for Your Institution's Applicants</h5>
-			</div>
+        <!-- Student Grades Analysis -->
+        <div class="chart-container">
+            <div class="chart-header">
+                <div class="chart-title">
+                    <i class="fas fa-graduation-cap"></i>
+                    Student Academic Performance
+                </div>
+                <div class="chart-subtitle">GWA analysis for institution applicants</div>
+            </div>
+            <div class="chart-content">
 			
 			@if (profile == null)
 			{
@@ -950,14 +890,19 @@ else
 					</tbody>
 				</table>
 			}
-		</div>
-	</div>
+            </div>
+        </div>
 
-	<div class="card shadow-sm mt-4">
-		<div class="card-body">
-            <div class="p-3 mb-4 text-white rounded-3" style="background: linear-gradient(135deg, #1976d2, #64b5f6);">
-                <h5 class="card-title mb-0">Demographic Profile of Institution Applicants</h5>
-			</div>
+        <!-- Demographic Analysis -->
+        <div class="chart-container">
+            <div class="chart-header">
+                <div class="chart-title">
+                    <i class="fas fa-users"></i>
+                    Demographic Analysis
+                </div>
+                <div class="chart-subtitle">Applicant demographics breakdown by category</div>
+            </div>
+            <div class="chart-content">
 
 			<div class="row">
 				@foreach (var category in demographicCategories)
@@ -1027,14 +972,20 @@ else
 						</div>
 					</div>
 				}
-			</div>
-		</div>
-	</div>
+            </div>
+            </div>
+        </div>
 
-    <!-- Predictive Analytics Card -->
-    <div class="card shadow-sm mt-4">
-        <div class="card-body">
-            <h5 class="card-title">📈 Predictive Analytics & Future Forecasting</h5>
+        <!-- Predictive Analytics -->
+        <div class="chart-container">
+            <div class="chart-header">
+                <div class="chart-title">
+                    <i class="fas fa-chart-line"></i>
+                    Predictive Analytics & Forecasting
+                </div>
+                <div class="chart-subtitle">Future trends and application predictions</div>
+            </div>
+            <div class="chart-content">
             
             <!-- Comprehensive Explanation -->
             <div class="mb-4">
@@ -1200,15 +1151,19 @@ else
                     </small>
                 </div>
             </div>
-        </div>
-    </div>
-
-    <!-- Scholarship Utilization and Impact Card -->
-    <div class="card shadow-sm mt-4">
-        <div class="card-body">
-            <div class="p-3 mb-3 text-white rounded-3" style="background: linear-gradient(135deg, #28a745, #20c997);">
-                <h5 class="mb-0 fw-semibold">🎓 Scholarship Utilization and Impact</h5>
             </div>
+        </div>
+
+        <!-- Scholarship Utilization & Impact -->
+        <div class="chart-container">
+            <div class="chart-header">
+                <div class="chart-title">
+                    <i class="fas fa-dollar-sign"></i>
+                    Scholarship Utilization & Impact
+                </div>
+                <div class="chart-subtitle">Financial metrics and scholarship effectiveness</div>
+            </div>
+            <div class="chart-content">
             
             <!-- 1. Active Scholarships vs Available Slots -->
             <div class="mb-4">
@@ -1393,10 +1348,10 @@ else
                     <strong>Success Impact:</strong> @GraduatedScholars students have successfully graduated, representing a @SuccessRate.ToString("F1")% success rate.
                 </p>
             </div>
+            </div>
         </div>
-    </div>
+    }
 </div>
-}
 
 
 
