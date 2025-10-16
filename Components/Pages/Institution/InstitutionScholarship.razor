@@ -8,7 +8,7 @@
 @using c2_eskolar.Data
 @using c2_eskolar.Models
 @using c2_eskolar.Services
-@inject ApplicationDbContext DbContext
+@inject IDbContextFactory<ApplicationDbContext> DbContextFactory
 @inject NavigationManager Navigation
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @inject InstitutionProfileService InstitutionProfileService
@@ -183,13 +183,15 @@
         // Load scholarships owned by this institution (internal) and partnership scholarships (external with this institution as partner)
         if (institutionProfile != null)
         {
-            scholarships = await DbContext.Scholarships
+            // Use a new DbContext instance from the factory for this operation to avoid concurrent usage
+            await using var context = await DbContextFactory.CreateDbContextAsync();
+            scholarships = await context.Scholarships
                 .Include(s => s.Institution)
                 .Include(s => s.Benefactor)
                 .Where(s => s.InstitutionProfileId == institutionProfile.InstitutionProfileId) // Both internal and partnership scholarships
                 .OrderByDescending(s => s.CreatedAt)
                 .ToListAsync();
-                
+
             UpdateTabCounts();
         }
         else
@@ -302,13 +304,14 @@
 
     private async Task DeleteScholarship(int id)
     {
-        var scholarship = await DbContext.Scholarships.FindAsync(id);
+        await using var context = await DbContextFactory.CreateDbContextAsync();
+        var scholarship = await context.Scholarships.FindAsync(id);
         if (scholarship is not null && 
             institutionProfile is not null && 
-            scholarship.InstitutionProfileId == institutionProfile.InstitutionProfileId) // Allow delete for both internal scholarships and partnership scholarships
+            scholarship.InstitutionProfileId == institutionProfile.InstitutionProfileId)
         {
-            DbContext.Scholarships.Remove(scholarship);
-            await DbContext.SaveChangesAsync();
+            context.Scholarships.Remove(scholarship);
+            await context.SaveChangesAsync();
             scholarships?.RemoveAll(s => s.ScholarshipId == id);
             UpdateTabCounts();
             StateHasChanged();
