@@ -1,0 +1,523 @@
+/* Student Settings - Modern Design matching BenefactorSettings
+   Re-uses colors and utility classes from BenefactorAnnouncement.razor.css
+*/
+
+.settings-page {
+    padding-bottom: 4rem;
+}
+
+.settings-page .page-title {
+    font-size: 1.25rem;
+    margin: 0;
+    font-weight: 600;
+    background-clip: text;
+}
+
+.status-badge .badge { font-size: 0.85rem; padding: 0.45rem 0.6rem; }
+
+.modern-tabs .tab-pills { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+.modern-tabs .tab-pill {
+    background: transparent;
+    border-radius: 8px;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid rgba(15,23,42,0.05);
+    color: #0d387e; /* inactive text color - blue */
+    display: inline-flex; align-items: center; gap: 0.5rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+    transition: all 180ms ease;
+}
+.modern-tabs .tab-pill i { color: inherit; }
+.modern-tabs .tab-pill:hover { transform: translateY(-1px); }
+.modern-tabs .tab-pill.active {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(21,96,212,0.12);
+    color: #ffffff !important; /* active text color - white */
+    background: linear-gradient(90deg,#1560d4,#0d387e); /* theme gradient */
+    border-color: rgba(13,56,126,0.15);
+}
+
+.card { border: none; border-radius: 12px; box-shadow: 0 8px 30px rgba(14,22,50,0.06); margin-bottom: 1rem; }
+.card .card-body { padding: 1rem 1.25rem; }
+
+.announcement-title { font-size: 1.05rem; margin: 0; font-weight: 600; }
+.text-muted.small { color: #6b7280; }
+
+.profile-avatar { width: 64px; height: 64px; border-radius: 8px; overflow: hidden; display:flex; align-items:center; justify-content:center; background: linear-gradient(90deg,#f8fafc,#ffffff); border:1px solid rgba(15,23,42,0.04); }
+.profile-avatar img { width:100%; height:100%; object-fit:cover; }
+.avatar-placeholder { font-size: 1.25rem; color: rgba(13,56,126,0.8); }
+
+.form-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; }
+.form-grid .modern-form-group { display:flex; flex-direction:column; }
+.modern-form-label { font-size: 0.85rem; margin-bottom: 0.35rem; color:#111827; }
+.modern-input { padding: 0.5rem 0.65rem; border-radius: 8px; border:1px solid #e6eef8; background: #fff; }
+.modern-input:focus { outline: none; box-shadow: 0 6px 18px rgba(21,96,212,0.08); }
+
+.panel-footer { padding-top: 0.5rem; }
+.btn-modern-primary, .btn-modern-primary {
+    background: linear-gradient(90deg,#1560d4,#0d387e);
+    color: #fff; border:none; padding: 0.5rem 0.85rem; border-radius: 8px;
+}
+.btn-modern-primary:disabled { opacity: 0.6; }
+
+.fixed-toast { position: fixed; bottom: 1.25rem; right: 1.25rem; padding: 0.6rem 0.9rem; border-radius: 8px; color: white; box-shadow: 0 8px 20px rgba(2,6,23,0.2); }
+.fixed-toast.success { background: linear-gradient(90deg,#10b981,#059669); }
+.fixed-toast.error { background: linear-gradient(90deg,#ef4444,#dc2626); }
+
+/* Responsive adjustments */
+@media (max-width: 992px) {
+    .form-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 640px) {
+    .form-grid { grid-template-columns: 1fr; }
+    .modern-tabs .tab-pills { gap: 0.35rem; }
+    .profile-avatar { width:48px; height:48px; }
+}
+
+/* Global Font Family & Base Colors */
+* {
+    font-family: 'Inter', 'Helvetica Neue', Helvetica, Arial, sans-serif !important;
+    color-scheme: light dark;
+}
+
+body, .container-fluid {
+    background: linear-gradient(135deg, #e3f2fd 0%, #ffffff 100%) !important;
+    color: #1976d2 !important;
+    font-weight: 500 !important;
+}
+
+/* Modern Form Input Styles - Match BenefactorAnnouncement */
+::deep .modern-modal .force-premium-input, ::deep .modern-modal .force-premium-input input, ::deep .modern-modal .force-premium-input select, ::deep .modern-modal .force-premium-input textarea {
+    width: 100% !important;
+    padding: 16px 22px !important;
+    border: 2px solid #e2e8f0 !important;
+    border-radius: 20px !important;
+    font-size: 1.12rem !important;
+    background: #fff !important;
+    color: #222 !important;
+    outline: none !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08) !important;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    margin-bottom: 14px !important;
+    font-family: 'Inter', 'Helvetica Neue', Helvetica, Arial, sans-serif !important;
+}
+
+::deep .modern-modal .force-premium-input:focus, ::deep .modern-modal .force-premium-input input:focus, ::deep .modern-modal .force-premium-input select:focus, ::deep .modern-modal .force-premium-input textarea:focus, ::deep .modern-modal .force-premium-input:hover, ::deep .modern-modal .force-premium-input input:hover, ::deep .modern-modal .force-premium-input select:hover, ::deep .modern-modal .force-premium-input textarea:hover {
+    border-color: #1560d4 !important;
+    background: linear-gradient(135deg, #f8faff 0%, #ffffff 100%) !important;
+    transform: translateY(-3px) !important;
+    box-shadow: 0 12px 30px rgba(21, 96, 212, 0.15) !important;
+}
+
+::deep .modern-input {
+    width: 100% !important;
+    padding: 16px 22px !important;
+    margin-bottom: 1.25rem !important;
+    border: 2px solid #e2e8f0 !important;
+    border-radius: 20px !important;
+    font-size: 1.12rem !important;
+    font-weight: 500 !important;
+    line-height: 1.5 !important;
+    background: #fff !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08) !important;
+    font-family: 'Inter', 'Helvetica Neue', Helvetica, Arial, sans-serif !important;
+    color: #222 !important;
+    outline: none !important;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+::deep .modern-input:hover, ::deep .modern-input:focus {
+    border-color: #1560d4 !important;
+    background: linear-gradient(135deg, #f8faff 0%, #ffffff 100%) !important;
+    transform: translateY(-3px) !important;
+    box-shadow: 0 12px 30px rgba(21, 96, 212, 0.15) !important;
+}
+
+/* Readonly/Disabled field styles for verified users */
+::deep .modern-input[readonly], ::deep .modern-input:disabled {
+    background: #f8f9fa !important;
+    color: #6c757d !important;
+    border-color: #dee2e6 !important;
+    cursor: not-allowed !important;
+    transform: none !important;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05) !important;
+}
+
+::deep .modern-input[readonly]:hover, ::deep .modern-input:disabled:hover,
+::deep .modern-input[readonly]:focus, ::deep .modern-input:disabled:focus {
+    background: #f8f9fa !important;
+    color: #6c757d !important;
+    border-color: #dee2e6 !important;
+    transform: none !important;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05) !important;
+}
+
+::deep .modern-input::placeholder, ::deep .modern-modal .force-premium-input::placeholder, ::deep .modern-modal .force-premium-input input::placeholder, ::deep .modern-modal .force-premium-input textarea::placeholder {
+    color: #94a3b8 !important;
+    font-style: italic !important;
+    font-weight: 400 !important;
+    opacity: 0.7 !important;
+}
+
+/* Page Title - Match BenefactorAnnouncement */
+.page-title {
+    color: #0d1b2a !important;
+    font-weight: 800;
+    margin: 0;
+    font-size: 2.2rem;
+    letter-spacing: -0.02em;
+    text-shadow: 0 2px 8px rgba(13, 27, 42, 0.12);
+}
+
+/* Modern Tabs - Match BenefactorAnnouncement */
+.modern-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.tab-pills {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.tab-pill {
+    background: #f3f6fc;
+    color: #1a1a1a !important;
+    border: 2px solid #dbeafe;
+    padding: 0.75rem 1.5rem;
+    border-radius: 25px;
+    font-weight: 700;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    box-shadow: 0 2px 8px rgba(21, 96, 212, 0.05);
+}
+
+.tab-pill.active {
+    background: linear-gradient(135deg, #1976d2 0%, #0d387e 100%);
+    color: #fff;
+    border-color: #1976d2;
+    box-shadow: 0 4px 16px rgba(21, 96, 212, 0.18);
+    transform: translateY(-2px);
+}
+
+.tab-pill:hover:not(.active) {
+    background: linear-gradient(135deg, #ffe082 0%, #ffd54f 100%);
+    color: #1a1a1a !important;
+    border-color: #ffd54f;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(255, 213, 79, 0.18);
+}
+
+.tab-pill i {
+    font-size: 1.1rem;
+}
+
+/* Badge Styles - Match BenefactorAnnouncement */
+.badge {
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 0.375rem 0.75rem;
+    border-radius: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.badge-custom-primary {
+    background: linear-gradient(135deg, #1976d2 0%, #0d387e 100%);
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(21, 96, 212, 0.08);
+}
+
+.badge-custom-accent {
+    background: linear-gradient(135deg, #ffd54f 0%, #ffb300 100%);
+    color: #1a1a1a !important;
+    font-weight: 700;
+    box-shadow: 0 2px 8px rgba(255, 213, 79, 0.08);
+}
+
+.badge-custom-success {
+    background: linear-gradient(135deg, #43ea7c 0%, #1de9b6 100%);
+    color: #fff;
+    box-shadow: 0 2px 8px rgba(67, 234, 124, 0.08);
+}
+
+/* Card Styles - Match BenefactorAnnouncement */
+.card {
+    background: linear-gradient(135deg, #ffffff 0%, #f8faff 100%);
+    border-radius: 18px;
+    box-shadow: 0 4px 24px rgba(25, 118, 210, 0.12);
+    border: 2px solid #1976d2;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #1976d2, #ffd54f);
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 32px rgba(21, 96, 212, 0.18);
+}
+
+.card-body {
+    padding: 1.5rem;
+}
+
+/* Announcement Title Style */
+.announcement-title {
+    font-size: 1.35rem !important;
+    font-weight: 800 !important;
+    line-height: 1.2 !important;
+    color: #0d1b2a !important;
+    margin-bottom: .25rem !important;
+    text-align: left !important;
+    letter-spacing: -0.01em !important;
+    display: block !important;
+    text-transform: uppercase !important;
+}
+
+/* Modern Form Styles */
+.modern-form-group {
+    margin-bottom: 2rem;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.modern-form-label {
+    display: flex;
+    align-items: center;
+    font-weight: 700;
+    color: #1976d2 !important;
+    margin-bottom: 0.75rem;
+    font-size: 1rem;
+    letter-spacing: 0.025em;
+    min-height: 1.5rem;
+}
+
+/* Button Styles - Match BenefactorAnnouncement */
+.btn-custom-primary {
+    background: linear-gradient(135deg, #1560d4, #0d387e);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    padding: 0.75rem 1.5rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 12px rgba(21, 96, 212, 0.3);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.btn-custom-primary:hover {
+    background: linear-gradient(135deg, #0d387e, #1560d4);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(21, 96, 212, 0.4);
+    color: white;
+}
+
+.btn-custom-primary:disabled {
+    opacity: 0.6;
+    transform: none;
+    cursor: not-allowed;
+    box-shadow: 0 2px 8px rgba(21, 96, 212, 0.2);
+}
+
+.btn-custom-outline {
+    background: transparent;
+    color: #1560d4;
+    border: 2px solid #1560d4;
+    border-radius: 12px;
+    padding: 0.75rem 1.5rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.btn-custom-outline:hover {
+    background: linear-gradient(135deg, #1560d4, #0d387e);
+    color: white;
+    border-color: transparent;
+    transform: translateY(-1px);
+}
+
+/* Form Grid Enhanced Alignment */
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+    align-items: start;
+}
+
+.form-grid .modern-form-group,
+.form-grid .form-group {
+    display: flex;
+    flex-direction: column;
+    min-height: 100px;
+}
+
+.form-grid .modern-form-label,
+.form-grid .form-label {
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+    color: #1976d2;
+    min-height: 1.2rem;
+}
+
+.form-grid .modern-input,
+.form-grid .form-control,
+.form-grid .form-select {
+    flex: 1;
+    min-height: 50px;
+}
+
+/* Form Grid Responsive */
+@media (max-width: 992px) {
+    .form-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 768px) {
+    .form-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Blue and White Text Color Scheme */
+.card-body h3, .card-body h4, .card-body h5, .card-body h6 {
+    color: #1976d2 !important;
+}
+
+.card-body p {
+    color: #2c2c2c !important;
+}
+
+.badge-custom-primary {
+    background: linear-gradient(135deg, #1976d2 0%, #0d387e 100%);
+    color: #fff;
+}
+
+.panel-title {
+    color: #0d1b2a !important;
+}
+
+.panel-description {
+    color: #2c2c2c !important;
+}
+
+.text-muted {
+    color: #6b7280 !important;
+    font-weight: 500 !important;
+}
+
+/* Additional Form Alignment Improvements */
+.modern-form-group .modern-input,
+.form-group .form-control,
+.form-group .form-select {
+    height: auto;
+}
+
+/* Ensure consistent spacing between form elements */
+.form-grid > * {
+    margin-bottom: 0;
+}
+
+/* Better spacing for form labels */
+.form-grid .modern-form-label:after,
+.form-grid .form-label:after {
+    content: '';
+    flex: 1;
+}
+
+/* Make sure all form controls have consistent height */
+.form-grid .modern-input,
+.form-grid .form-control,
+.form-grid .form-select,
+.modern-input.force-premium-input {
+    min-height: 50px;
+}
+
+/* Verification Section */
+.verification-icon {
+    width: 60px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: #f0f9ff;
+}
+
+/* Toast Messages */
+.toast {
+    z-index: 1050;
+    opacity: 1;
+}
+
+/* Info Alert for Verified Users */
+.alert {
+    border: 1px solid transparent;
+    margin-bottom: 1rem;
+}
+
+.alert-info {
+    color: #055160;
+    background-color: #cff4fc;
+    border-color: #b3e5fc;
+}
+
+/* Focus Styles for Accessibility */
+.btn:focus,
+.form-control:focus,
+.form-select:focus,
+.form-check-input:focus {
+    outline: 2px solid #1976d2;
+    outline-offset: 2px;
+}
+
+/* High Contrast Mode Support */
+@media (prefers-contrast: high) {
+    .card {
+        border: 3px solid #000;
+    }
+    
+    .btn-custom-primary {
+        background: #000;
+        color: #fff;
+        border: 2px solid #fff;
+    }
+    
+    .modern-input {
+        border: 2px solid #000;
+    }
+}
+
+/* Reduced Motion Support */
+@media (prefers-reduced-motion: reduce) {
+    * {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}

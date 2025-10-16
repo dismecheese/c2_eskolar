@@ -292,7 +292,7 @@ builder.Services.AddHostedService<c2_eskolar.BackgroundServices.MonthlyAggregati
         {
             Console.WriteLine($"❌ Startup error: {ex.Message}\n{ex.StackTrace}");
             throw;
-        }
+        }   
     }
 
     await SeedDataAsync(app);
