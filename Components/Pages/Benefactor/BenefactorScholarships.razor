@@ -304,7 +304,9 @@
 
     private void EditScholarship(int id)
     {
-        Navigation.NavigateTo($"/dashboard/benefactor/scholarships/edit/{id}");
+        // The dedicated '/scholarships/edit/{id}' page was removed/renamed.
+        // The scholarship info page supports inline editing, so navigate there.
+        Navigation.NavigateTo($"/dashboard/benefactor/scholarships-info/{id}");
     }
 
     private void AddScholarship()
