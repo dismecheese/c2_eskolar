@@ -91,7 +91,7 @@
                                                     </span>
                                                 }
                                                 <span class="badge @(announcement.AuthorType == UserRole.Institution ? "badge-institution" : announcement.AuthorType == UserRole.Benefactor ? "badge-benefactor" : "badge-normal")">
-                                                    @(announcement.AuthorType == UserRole.SuperAdmin ? "System" : announcement.AuthorType.ToString())
+                                                    @announcement.AuthorType
                                                 </span>
                                                 @if (!string.IsNullOrEmpty(announcement.Category))
                                                 {
@@ -115,7 +115,7 @@
                                                         @onclick="(e) => ToggleBookmark(announcement.AnnouncementId, e)" 
                                                         @onclick:stopPropagation="true"
                                                         title="@GetBookmarkTooltip(announcement.AnnouncementId)">
-                                                    @GetBookmarkIcon(announcement.AnnouncementId)
+                                                    <i class="@GetBookmarkIcon(announcement.AnnouncementId)"></i>
                                                 </button>
                                                 <!-- Expand/Collapse toggle -->
                                                 <button class="modern-expand-btn @(IsAnnouncementExpanded(announcement.AnnouncementId) ? "expanded" : "")" 
@@ -1849,8 +1849,8 @@
     private string GetBookmarkIcon(Guid announcementId)
     {
         return bookmarkedAnnouncementIds.Contains(announcementId) 
-            ? "♥" // Filled heart symbol
-            : "♡"; // Empty heart symbol
+            ? "fas fa-heart" // Filled heart (Font Awesome solid)
+            : "far fa-heart"; // Empty heart (Font Awesome regular)
     }
 
     private string GetBookmarkTooltip(Guid announcementId)
@@ -1873,13 +1873,6 @@
         align-items: center;
         justify-content: center;
         border-radius: 8px !important;
-    }
-
-    /* Ensure bookmark icons are visible */
-    .bookmark-btn i {
-        display: inline-block !important;
-        font-size: 16px !important;
-        line-height: 1 !important;
     }
 
     .bookmark-btn:hover {
