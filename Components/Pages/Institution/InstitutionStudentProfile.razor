@@ -37,6 +37,48 @@
 	private string? modalDocumentUrl = null;
 	private string? modalDocumentType = null;
 
+	// Verification document viewer methods
+	private void ViewStudentIdDocument()
+	{
+		if (studentProfile != null && !string.IsNullOrWhiteSpace(studentProfile.StudentIdDocumentPath))
+		{
+			ViewVerificationDocument(studentProfile.StudentIdDocumentPath, "Student ID");
+		}
+	}
+
+	private void ViewCorDocument()
+	{
+		if (studentProfile != null && !string.IsNullOrWhiteSpace(studentProfile.CorDocumentPath))
+		{
+			ViewVerificationDocument(studentProfile.CorDocumentPath, "Certificate of Registration");
+		}
+	}
+
+	private void ViewVerificationDocument(string? documentPath, string documentName)
+	{
+		if (string.IsNullOrWhiteSpace(documentPath))
+		{
+			return;
+		}
+
+		try
+		{
+			// Generate SAS URL if it's a blob storage URL
+			string viewUrl = documentPath;
+			if (documentPath.Contains("blob.core.windows.net"))
+			{
+				viewUrl = BlobStorageService.GetPhotoSasUrlFromBlobUrl(documentPath);
+			}
+			
+			// Open document in new tab/window
+			Navigation.NavigateTo(viewUrl, true);
+		}
+		catch (Exception ex)
+		{
+			Console.WriteLine($"Error viewing document {documentName}: {ex.Message}");
+		}
+	}
+
 	protected override async Task OnInitializedAsync()
 	{
 		studentProfile = await DbContext.StudentProfiles.FindAsync(StudentId);
@@ -205,6 +247,66 @@
             <p>Loading student details...</p>
         }
     </section>
+
+    <!-- Verification Documents Section -->
+    <div class="verification-documents-container">
+        <div class="verification-doc-header">
+            <i class="fas fa-file-alt"></i>
+            <span>Verification Documents</span>
+        </div>
+        <div class="verification-doc-body">
+            @if (studentProfile != null && (!string.IsNullOrWhiteSpace(studentProfile.StudentIdDocumentPath) || !string.IsNullOrWhiteSpace(studentProfile.CorDocumentPath)))
+            {
+                @if (!string.IsNullOrWhiteSpace(studentProfile.StudentIdDocumentPath))
+                {
+                    <div class="verification-doc-item" @onclick="ViewStudentIdDocument">
+                        <div class="verification-doc-info">
+                            <div class="verification-doc-icon">
+                                <i class="fas fa-id-card"></i>
+                            </div>
+                            <div class="verification-doc-text">
+                                <div class="verification-doc-name">Student ID Document</div>
+                                <div class="verification-doc-type">Identity Verification</div>
+                            </div>
+                        </div>
+                        <div class="verification-doc-action">
+                            <span>View</span>
+                            <i class="fas fa-external-link-alt"></i>
+                        </div>
+                    </div>
+                }
+                
+                @if (!string.IsNullOrWhiteSpace(studentProfile.CorDocumentPath))
+                {
+                    <div class="verification-doc-item" @onclick="ViewCorDocument">
+                        <div class="verification-doc-info">
+                            <div class="verification-doc-icon">
+                                <i class="fas fa-graduation-cap"></i>
+                            </div>
+                            <div class="verification-doc-text">
+                                <div class="verification-doc-name">Certificate of Registration</div>
+                                <div class="verification-doc-type">Academic Verification</div>
+                            </div>
+                        </div>
+                        <div class="verification-doc-action">
+                            <span>View</span>
+                            <i class="fas fa-external-link-alt"></i>
+                        </div>
+                    </div>
+                }
+            }
+            else
+            {
+                <div class="verification-doc-empty">
+                    <div class="verification-doc-empty-icon">
+                        <i class="fas fa-file-times"></i>
+                    </div>
+                    <div class="verification-doc-empty-text">No verification documents uploaded</div>
+                    <div class="verification-doc-empty-subtitle">Student has not completed verification process</div>
+                </div>
+            }
+        </div>
+    </div>
 
     <!-- Academic Grades Section -->
     <section class="grades-section">

@@ -179,3 +179,191 @@
 .profile-upload-label:hover .profile-upload-icon {
     background: #0d6efd;
 }
+
+/* Verification Documents Container */
+.verification-documents-container {
+    background: #ffffff;
+    border-radius: 16px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+    border: 1px solid #e3e6f0;
+    transition: all 0.3s ease;
+    margin-bottom: 1.5rem;
+}
+
+.verification-documents-container:hover {
+    box-shadow: 0 4px 20px rgba(21, 96, 212, 0.12);
+    border-color: #1560d4;
+    transform: translateY(-2px);
+}
+
+.verification-doc-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    color: #1560d4;
+}
+
+.verification-doc-header i {
+    background: linear-gradient(135deg, #1560d4, #2b7de9);
+    color: #ffffff;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 1rem;
+    font-size: 1.2rem;
+    box-shadow: 0 3px 10px rgba(21, 96, 212, 0.3);
+}
+
+.verification-doc-header h5 {
+    margin: 0;
+    font-weight: 700;
+    font-size: 1.25rem;
+    color: #1560d4;
+    letter-spacing: 0.5px;
+}
+
+.verification-doc-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 1.25rem;
+    background: linear-gradient(135deg, #f8f9ff, #ffffff);
+    border: 2px solid #e8ecf4;
+    border-radius: 12px;
+    margin-bottom: 1rem;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+}
+
+.verification-doc-item::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+    background: linear-gradient(135deg, #1560d4, #2b7de9);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.verification-doc-item:hover {
+    background: linear-gradient(135deg, #f0f4ff, #ffffff);
+    border-color: #1560d4;
+    transform: translateX(8px);
+    box-shadow: 0 4px 16px rgba(21, 96, 212, 0.15);
+}
+
+.verification-doc-item:hover::before {
+    opacity: 1;
+}
+
+.verification-doc-item:active {
+    transform: translateX(4px) scale(0.98);
+}
+
+.verification-doc-info {
+    display: flex;
+    align-items: center;
+    flex: 1;
+}
+
+.verification-doc-icon {
+    background: linear-gradient(135deg, #1560d4, #2b7de9);
+    color: #ffffff;
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 1rem;
+    font-size: 1.3rem;
+    box-shadow: 0 3px 12px rgba(21, 96, 212, 0.25);
+    transition: all 0.3s ease;
+}
+
+.verification-doc-item:hover .verification-doc-icon {
+    transform: scale(1.1) rotate(5deg);
+    box-shadow: 0 5px 20px rgba(21, 96, 212, 0.4);
+}
+
+.verification-doc-details {
+    flex: 1;
+}
+
+.verification-doc-name {
+    font-weight: 700;
+    font-size: 1.1rem;
+    color: #2d3748;
+    margin-bottom: 0.25rem;
+    letter-spacing: 0.3px;
+}
+
+.verification-doc-status {
+    font-size: 0.9rem;
+    color: #718096;
+    font-weight: 500;
+}
+
+.verification-doc-view-btn {
+    background: linear-gradient(135deg, #1560d4, #2b7de9);
+    color: #ffffff;
+    border: none;
+    padding: 0.6rem 1.2rem;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    box-shadow: 0 2px 8px rgba(21, 96, 212, 0.3);
+}
+
+.verification-doc-view-btn:hover {
+    background: linear-gradient(135deg, #0f4fb3, #1560d4);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(21, 96, 212, 0.4);
+}
+
+.verification-doc-view-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 8px rgba(21, 96, 212, 0.3);
+}
+
+.verification-doc-unavailable {
+    opacity: 0.6;
+    cursor: not-allowed;
+    background: linear-gradient(135deg, #f7f8fc, #ffffff);
+    border-color: #e2e8f0;
+}
+
+.verification-doc-unavailable:hover {
+    transform: none;
+    border-color: #e2e8f0;
+    box-shadow: none;
+}
+
+.verification-doc-unavailable::before {
+    display: none;
+}
+
+.verification-doc-unavailable .verification-doc-icon {
+    background: linear-gradient(135deg, #a0aec0, #cbd5e0);
+    box-shadow: 0 2px 6px rgba(160, 174, 192, 0.2);
+}
+
+.verification-doc-unavailable .verification-doc-name {
+    color: #a0aec0;
+}
+
+.verification-doc-unavailable .verification-doc-status {
+    color: #cbd5e0;
+}

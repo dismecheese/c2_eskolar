@@ -5,6 +5,7 @@
 @inject UserManager<IdentityUser> UserManager
 @inject BenefactorProfileService BenefactorProfileService
 @inject Services.BlobStorageService BlobStorageService
+@inject NavigationManager NavigationManager
 @using Microsoft.AspNetCore.Components.Authorization
 @using Microsoft.AspNetCore.Identity
 @using Microsoft.AspNetCore.Components.Forms
@@ -380,6 +381,68 @@
                     }
                 </div>
             </div>
+
+            <!-- Verification Documents Container -->
+            <div class="verification-documents-container">
+                <div class="verification-doc-header">
+                    <i class="fas fa-file-alt"></i>
+                    <h5>Verification Documents</h5>
+                </div>
+                
+                <div class="verification-doc-item @(string.IsNullOrWhiteSpace(BenefactorIdDocumentPath) ? "verification-doc-unavailable" : "")" @onclick="ViewBenefactorIdDocument">
+                    <div class="verification-doc-info">
+                        <div class="verification-doc-icon">
+                            <i class="fas fa-id-card"></i>
+                        </div>
+                        <div class="verification-doc-details">
+                            <div class="verification-doc-name">Benefactor ID Document</div>
+                            <div class="verification-doc-status">
+                                @if (string.IsNullOrWhiteSpace(BenefactorIdDocumentPath))
+                                {
+                                    <span>Not uploaded</span>
+                                }
+                                else
+                                {
+                                    <span>Click to view document</span>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                    @if (!string.IsNullOrWhiteSpace(BenefactorIdDocumentPath))
+                    {
+                        <button class="verification-doc-view-btn" type="button">
+                            <i class="fas fa-eye me-1"></i>View
+                        </button>
+                    }
+                </div>
+
+                <div class="verification-doc-item @(string.IsNullOrWhiteSpace(AccreditationDocumentPath) ? "verification-doc-unavailable" : "")" @onclick="ViewAccreditationDocument">
+                    <div class="verification-doc-info">
+                        <div class="verification-doc-icon">
+                            <i class="fas fa-certificate"></i>
+                        </div>
+                        <div class="verification-doc-details">
+                            <div class="verification-doc-name">Accreditation Document</div>
+                            <div class="verification-doc-status">
+                                @if (string.IsNullOrWhiteSpace(AccreditationDocumentPath))
+                                {
+                                    <span>Not uploaded</span>
+                                }
+                                else
+                                {
+                                    <span>Click to view document</span>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                    @if (!string.IsNullOrWhiteSpace(AccreditationDocumentPath))
+                    {
+                        <button class="verification-doc-view-btn" type="button">
+                            <i class="fas fa-eye me-1"></i>View
+                        </button>
+                    }
+                </div>
+            </div>
         </div>
     </div>
 </div>
@@ -602,6 +665,10 @@
     private int Applications = 0;
     private string GPA = "0.00";
 
+    // Document paths for verification
+    private string BenefactorIdDocumentPath = "";
+    private string AccreditationDocumentPath = "";
+
 
     private bool _profileLoaded = false;
     private bool _isInitialized = false;
@@ -786,6 +853,10 @@
             BenefactorContactNumber = profile.ContactNumber ?? "";
             BenefactorEmail = profile.ContactEmail ?? "";
 
+            // Document paths
+            BenefactorIdDocumentPath = profile.BenefactorIdDocumentPath ?? "";
+            AccreditationDocumentPath = profile.AccreditationDocumentPath ?? "";
+
             Console.WriteLine($"[BenefactorProfile] Profile data loaded successfully for {AdminFirstName} {AdminLastName}");
         }
         else
@@ -812,6 +883,8 @@
         BenefactorOrganizationAddress = "";
         BenefactorContactNumber = "";
         BenefactorEmail = "";
+        BenefactorIdDocumentPath = "";
+        AccreditationDocumentPath = "";
     }
 
     // Validation methods (similar to Institution profile)
@@ -1109,6 +1182,40 @@
             _benefactorSuccessMessage = "";
             InvokeAsync(StateHasChanged);
         }, null, TimeSpan.FromSeconds(5), Timeout.InfiniteTimeSpan);
+    }
+
+    // Document viewing methods
+    private async Task ViewBenefactorIdDocument()
+    {
+        await ViewDocument(BenefactorIdDocumentPath, "Benefactor ID Document");
+    }
+
+    private async Task ViewAccreditationDocument()
+    {
+        await ViewDocument(AccreditationDocumentPath, "Accreditation Document");
+    }
+
+    private async Task ViewDocument(string documentPath, string documentName)
+    {
+        if (string.IsNullOrWhiteSpace(documentPath))
+        {
+            SetErrorMessageWithTimer($"{documentName} is not available.");
+            return;
+        }
+
+        try
+        {
+            // Generate SAS URL for the document
+            var sasUrl = BlobStorageService.GetDocumentSasUrlFromBlobUrl(documentPath);
+            
+            // Open document in new tab
+            await JSRuntime.InvokeVoidAsync("open", sasUrl, "_blank");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error viewing {documentName}: {ex.Message}");
+            SetErrorMessageWithTimer($"Error opening {documentName}. Please try again.");
+        }
     }
 
     public void Dispose()

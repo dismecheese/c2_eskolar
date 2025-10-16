@@ -76,6 +76,12 @@ namespace c2_eskolar.Models
     [StringLength(50)]
     public string AccountStatus { get; set; } = "Unverified"; // Unverified, Pending, Verified, Rejected, Locked
 
+    // Document Uploads for Verification
+    [StringLength(255)]
+    public string? BenefactorIdDocumentPath { get; set; } // Organization registration/ID document
+    [StringLength(255)]
+    public string? AccreditationDocumentPath { get; set; } // Accreditation/certification documents
+
         // Timestamps
         public DateTime CreatedAt { get; set; } = DateTime.Now;
         public DateTime? UpdatedAt { get; set; }
