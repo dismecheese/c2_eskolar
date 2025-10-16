@@ -499,7 +499,7 @@ namespace c2_eskolar.Components.Pages.Institution
         public void ViewProfile()
         {
             ShowSuccessModal = false;
-            NavigationManager.NavigateTo("/dashboard/institution/unverified");
+            NavigationManager.NavigateTo("/dashboard/institution/profile/unverified");
         }
 
         // Modal logic for already submitted modal

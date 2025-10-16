@@ -515,7 +515,7 @@ namespace c2_eskolar.Components.Pages.Benefactor
         public void ViewProfile()
         {
             ShowSuccessModal = false;
-            Navigation.NavigateTo("/dashboard/benefactor/unverified");
+            Navigation.NavigateTo("/dashboard/benefactor/profile/unverified");
         }
 
         // Modal logic for already submitted modal

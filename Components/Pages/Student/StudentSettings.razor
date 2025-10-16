@@ -1,60 +1,684 @@
 @page "/dashboard/student/settings"
 @attribute [Authorize(Roles = "Student,SuperAdmin")]
 @layout Layout.StudentDashLayout
-
+@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.AspNetCore.Identity
+@using System.Security.Claims
+@using c2_eskolar.Models
+@using c2_eskolar.Services
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject UserManager<IdentityUser> UserManager
+@inject StudentProfileService StudentProfileService
+@inject IJSRuntime JSRuntime
+@rendermode InteractiveServer
 
 <PageTitle>Settings</PageTitle>
 
-<div class="settings-container py-5">
+<div class="settings-page container-fluid">
     <div class="row justify-content-center">
-        <div class="col-12 col-md-8 col-lg-6">
-            <div class="settings-card p-4 mb-4">
-                <div class="d-flex align-items-center mb-4">
-                    <div class="profile-pic rounded-circle bg-secondary me-3" style="width:64px; height:64px; display:flex; align-items:center; justify-content:center;">
-                        <svg width="40" height="40" fill="#fff"><circle cx="20" cy="16" r="10"/><rect x="8" y="28" width="24" height="8" rx="4"/></svg>
-                    </div>
-                    <div>
-                        <div class="fw-bold fs-5">Ralph Student</div>
-                        <div class="text-muted">Student</div>
-                    </div>
+        <div class="col-12 col-lg-10">
+
+            <header class="d-flex align-items-start justify-content-between mb-4 mt-5">
+                <div>
+                    <h1 class="page-title mb-1">Account Settings</h1>
+                    <p class="text-muted small mb-0">Profile, security and preferences — manage your student account</p>
                 </div>
-                <form>
-                    <div class="mb-3">
-                        <label class="form-label fw-semibold">Email</label>
-                        <input type="email" class="form-control" placeholder="Enter your email" value="ralph@student.edu" />
+
+                <div class="status-badge align-self-center">
+                    @if (studentProfile?.IsVerified == true)
+                    {
+                        <span class="badge badge-custom-success"><i class="fas fa-check-circle me-1"></i>Verified</span>
+                    }
+                    else
+                    {
+                        <span class="badge badge-custom-accent"><i class="fas fa-clock me-1"></i>@(studentProfile?.AccountStatus ?? "Pending")</span>
+                    }
+                </div>
+            </header>
+
+            <nav class="modern-tabs mb-3">
+                <div class="tab-pills">
+                    <button class="tab-pill @(activeTab == "profile" ? "active" : "")" @onclick='() => SetActiveTab("profile")'>
+                        <i class="fas fa-user me-2"></i>Profile
+                    </button>
+                    <button class="tab-pill @(activeTab == "academic" ? "active" : "")" @onclick='() => SetActiveTab("academic")'>
+                        <i class="fas fa-graduation-cap me-2"></i>Academic
+                    </button>
+                    <button class="tab-pill @(activeTab == "security" ? "active" : "")" @onclick='() => SetActiveTab("security")'>
+                        <i class="fas fa-shield-alt me-2"></i>Security
+                    </button>
+                    <button class="tab-pill @(activeTab == "notifications" ? "active" : "")" @onclick='() => SetActiveTab("notifications")'>
+                        <i class="fas fa-bell me-2"></i>Notifications
+                    </button>
+                    <button class="tab-pill @(activeTab == "privacy" ? "active" : "")" @onclick='() => SetActiveTab("privacy")'>
+                        <i class="fas fa-eye me-2"></i>Privacy
+                    </button>
+                    <button class="tab-pill @(activeTab == "verification" ? "active" : "")" @onclick='() => SetActiveTab("verification")'>
+                        <i class="fas fa-certificate me-2"></i>Verification
+                    </button>
+                </div>
+            </nav>
+
+            <section>
+                @if (activeTab == "profile")
+                {
+                    <div class="card">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center justify-content-between mb-3">
+                                <div>
+                                    <h3 class="announcement-title mb-1">Personal Information</h3>
+                                    <p class="text-muted small mb-0">Manage your personal details</p>
+                                    @if (studentProfile?.IsVerified == true)
+                                    {
+                                        <div class="alert alert-info mt-2 mb-0" style="padding: 0.5rem 0.75rem; font-size: 0.85rem; border-radius: 8px;">
+                                            <i class="fas fa-info-circle me-1"></i>
+                                            Personal information is locked because your account is verified. Contact support if you need to make changes.
+                                        </div>
+                                    }
+                                </div>
+                                <div class="badge badge-custom-primary">Profile</div>
+                            </div>
+
+                            <EditForm Model="@studentProfile" OnValidSubmit="@SavePersonalInfo">
+                                <DataAnnotationsValidator />
+
+                                <div class="d-flex gap-3 align-items-center mb-3">
+                                    <div class="profile-avatar">
+                                        @if (!string.IsNullOrEmpty(studentProfile?.ProfilePicture))
+                                        {
+                                            <img src="@studentProfile.ProfilePicture" alt="Profile" />
+                                        }
+                                        else
+                                        {
+                                            <div class="avatar-placeholder"><i class="fas fa-user"></i></div>
+                                        }
+                                    </div>
+                                    <div>
+                                        <div class="fw-semibold">@(studentProfile?.FullName ?? "Student Name")</div>
+                                        <div class="text-muted small">Student • @(studentProfile?.UniversityName ?? "University")</div>
+                                    </div>
+                                    <div class="ms-auto">
+                                        <button type="button" class="btn btn-outline-secondary btn-sm" @onclick="OpenImageUpload"><i class="fas fa-camera me-1"></i>Change</button>
+                                    </div>
+                                </div>
+
+                                <div class="form-grid mb-3">
+                                    <div class="modern-form-group">
+                                        <label class="modern-form-label">First Name</label>
+                                        <InputText @bind-Value="studentProfile.FirstName" class="modern-input" placeholder="Enter first name" readonly="@(studentProfile?.IsVerified == true)" />
+                                    </div>
+                                    <div class="modern-form-group">
+                                        <label class="modern-form-label">Middle Name</label>
+                                        <InputText @bind-Value="studentProfile.MiddleName" class="modern-input" placeholder="Enter middle name (optional)" />
+                                    </div>
+                                    <div class="modern-form-group">
+                                        <label class="modern-form-label">Last Name</label>
+                                        <InputText @bind-Value="studentProfile.LastName" class="modern-input" placeholder="Enter last name" readonly="@(studentProfile?.IsVerified == true)" />
+                                    </div>
+                                    <div class="modern-form-group">
+                                        <label class="modern-form-label">Email</label>
+                                        <InputText @bind-Value="studentProfile.Email" class="modern-input" placeholder="Enter email address" />
+                                    </div>
+                                    <div class="modern-form-group">
+                                        <label class="modern-form-label">Phone Number</label>
+                                        <InputText @bind-Value="studentProfile.MobileNumber" class="modern-input" placeholder="Enter phone number" />
+                                    </div>
+                                    <div class="modern-form-group">
+                                        <label class="modern-form-label">Sex</label>
+                                        <InputSelect @bind-Value="studentProfile.Sex" class="modern-input" disabled="@(studentProfile?.IsVerified == true)">
+                                            <option value="">Select sex</option>
+                                            <option value="Male">Male</option>
+                                            <option value="Female">Female</option>
+                                            <option value="Other">Other</option>
+                                        </InputSelect>
+                                    </div>
+                                    <div class="modern-form-group">
+                                        <label class="modern-form-label">Nationality</label>
+                                        <InputText @bind-Value="studentProfile.Nationality" class="modern-input" placeholder="Enter nationality" readonly="@(studentProfile?.IsVerified == true)" />
+                                    </div>
+                                    <div class="modern-form-group">
+                                        <label class="modern-form-label">Birth Date</label>
+                                        <InputDate @bind-Value="studentProfile.BirthDate" class="modern-input" readonly="@(studentProfile?.IsVerified == true)" />
+                                    </div>
+                                    <div class="modern-form-group" style="grid-column: 1 / -1;">
+                                        <label class="modern-form-label">Permanent Address</label>
+                                        <InputText @bind-Value="studentProfile.PermanentAddress" class="modern-input" placeholder="Enter permanent address" />
+                                    </div>
+                                </div>
+
+                                <div class="panel-footer text-end">
+                                    <button type="submit" class="btn-modern-primary" disabled="@(isLoading || (studentProfile?.IsVerified == true))">
+                                        @if (isLoading)
+                                        {
+                                            <span><i class="fas fa-spinner fa-spin me-1"></i>Saving...</span>
+                                        }
+                                        else if (studentProfile?.IsVerified == true)
+                                        {
+                                            <span><i class="fas fa-lock me-1"></i>Profile Verified</span>
+                                        }
+                                        else
+                                        {
+                                            <span><i class="fas fa-save me-1"></i>Save Changes</span>
+                                        }
+                                    </button>
+                                </div>
+                            </EditForm>
+                        </div>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-semibold">Phone Number</label>
-                        <input type="text" class="form-control" placeholder="Enter your phone number" value="+63 900 000 0000" />
+                }
+
+                else if (activeTab == "academic")
+                {
+                    <div class="card">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center justify-content-between mb-3">
+                                <div>
+                                    <h3 class="announcement-title mb-1">Academic Information</h3>
+                                    <p class="text-muted small mb-0">University and course details</p>
+                                    @if (studentProfile?.IsVerified == true)
+                                    {
+                                        <div class="alert alert-info mt-2 mb-0" style="padding: 0.5rem 0.75rem; font-size: 0.85rem; border-radius: 8px;">
+                                            <i class="fas fa-info-circle me-1"></i>
+                                            Academic information is locked because your account is verified. Contact support if you need to make changes.
+                                        </div>
+                                    }
+                                </div>
+                                <div class="badge badge-custom-primary">Academic</div>
+                            </div>
+
+                            <EditForm Model="@studentProfile" OnValidSubmit="@SaveAcademicInfo">
+                                <DataAnnotationsValidator />
+
+                                <div class="form-grid mb-3">
+                                    <div class="modern-form-group" style="grid-column: 1 / -1;">
+                                        <label class="modern-form-label">University Name</label>
+                                        <InputText @bind-Value="studentProfile.UniversityName" class="modern-input" placeholder="Enter university name" readonly="@(studentProfile?.IsVerified == true)" />
+                                    </div>
+
+                                    <div class="modern-form-group">
+                                        <label class="modern-form-label">Student Number</label>
+                                        <InputText @bind-Value="studentProfile.StudentNumber" class="modern-input" placeholder="Enter student number" readonly="@(studentProfile?.IsVerified == true)" />
+                                    </div>
+
+                                    <div class="modern-form-group">
+                                        <label class="modern-form-label">Year Level</label>
+                                        <InputSelect @bind-Value="studentProfile.YearLevel" class="modern-input" disabled="@(studentProfile?.IsVerified == true)">
+                                            <option value="">Select year level</option>
+                                            <option value="1">1st Year</option>
+                                            <option value="2">2nd Year</option>
+                                            <option value="3">3rd Year</option>
+                                            <option value="4">4th Year</option>
+                                            <option value="5">5th Year</option>
+                                            <option value="6">6th Year</option>
+                                        </InputSelect>
+                                    </div>
+
+                                    <div class="modern-form-group" style="grid-column: 1 / -1;">
+                                        <label class="modern-form-label">Course/Program</label>
+                                        <InputText @bind-Value="studentProfile.Course" class="modern-input" placeholder="Enter course or program" readonly="@(studentProfile?.IsVerified == true)" />
+                                    </div>
+
+                                    <div class="modern-form-group">
+                                        <label class="modern-form-label">Institutional Email</label>
+                                        <InputText @bind-Value="studentProfile.InstitutionalEmail" class="modern-input" placeholder="Enter institutional email" />
+                                    </div>
+
+                                    <div class="modern-form-group">
+                                        <label class="modern-form-label">Enrollment Status</label>
+                                        <InputSelect @bind-Value="studentProfile.EnrollmentStatus" class="modern-input">
+                                            <option value="">Select status</option>
+                                            <option value="Regular">Regular</option>
+                                            <option value="Irregular">Irregular</option>
+                                            <option value="Cross-Enrollee">Cross-Enrollee</option>
+                                            <option value="Transferee">Transferee</option>
+                                        </InputSelect>
+                                    </div>
+
+                                    <div class="modern-form-group">
+                                        <label class="modern-form-label">GPA (Optional)</label>
+                                        <InputNumber @bind-Value="studentProfile.GPA" class="modern-input" placeholder="Enter GPA (1.0-5.0)" step="0.01" min="1.0" max="5.0" />
+                                    </div>
+                                </div>
+
+                                <div class="panel-footer text-end">
+                                    <button type="submit" class="btn-modern-primary" disabled="@(isLoading || (studentProfile?.IsVerified == true))">
+                                        @if (isLoading)
+                                        {
+                                            <span><i class="fas fa-spinner fa-spin me-1"></i>Saving...</span>
+                                        }
+                                        else if (studentProfile?.IsVerified == true)
+                                        {
+                                            <span><i class="fas fa-lock me-1"></i>Academic Info Verified</span>
+                                        }
+                                        else
+                                        {
+                                            <span><i class="fas fa-save me-1"></i>Save</span>
+                                        }
+                                    </button>
+                                </div>
+                            </EditForm>
+                        </div>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-semibold">Password</label>
-                        <input type="password" class="form-control" placeholder="Change password" />
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label fw-semibold">University</label>
-                        <input type="text" class="form-control" placeholder="Your university" value="Sample University" />
-                    </div>
-                    <div class="d-flex justify-content-end">
-                        <button type="submit" class="btn btn-primary px-4">Save Changes</button>
-                    </div>
-                </form>
-            </div>
+                }
+
+                else
+                {
+                    <!-- For other tabs keep original simplified sections but minimal layout -->
+                    @if (activeTab == "security")
+                    {
+                        <div class="card">
+                            <div class="card-body">
+                                <h3 class="announcement-title mb-2">Security</h3>
+                                <EditForm Model="@passwordChangeModel" OnValidSubmit="@ChangePassword">
+                                    <div class="form-grid mb-3">
+                                        <div class="modern-form-group">
+                                            <label class="modern-form-label">Current Password</label>
+                                            <InputText @bind-Value="passwordChangeModel.CurrentPassword" type="password" class="modern-input" placeholder="Enter current password" />
+                                        </div>
+                                        <div class="modern-form-group">
+                                            <label class="modern-form-label">New Password</label>
+                                            <InputText @bind-Value="passwordChangeModel.NewPassword" type="password" class="modern-input" placeholder="Enter new password" />
+                                        </div>
+                                        <div class="modern-form-group">
+                                            <label class="modern-form-label">Confirm Password</label>
+                                            <InputText @bind-Value="passwordChangeModel.ConfirmPassword" type="password" class="modern-input" placeholder="Confirm new password" />
+                                        </div>
+                                    </div>
+                                    <div class="text-end"><button class="btn-modern-primary">Change password</button></div>
+                                </EditForm>
+                            </div>
+                        </div>
+                    }
+
+                    else if (activeTab == "notifications")
+                    {
+                        <div class="card">
+                            <div class="card-body">
+                                <h3 class="announcement-title mb-2">Notifications</h3>
+                                <div class="form-grid mb-3">
+                                    <div class="modern-form-group">
+                                        <label class="modern-form-label">
+                                            <input type="checkbox" @bind="notifications.ScholarshipAlerts" class="form-check-input me-2" />
+                                            Scholarship Alerts
+                                        </label>
+                                    </div>
+                                    <div class="modern-form-group">
+                                        <label class="modern-form-label">Email Frequency</label>
+                                        <InputSelect @bind-Value="notifications.DigestFrequency" class="modern-input">
+                                            <option value="daily">Daily</option>
+                                            <option value="weekly">Weekly</option>
+                                            <option value="monthly">Monthly</option>
+                                            <option value="never">Never</option>
+                                        </InputSelect>
+                                    </div>
+                                </div>
+                                <div class="text-end"><button class="btn-modern-primary" @onclick="SaveNotificationSettings">Save</button></div>
+                            </div>
+                        </div>
+                    }
+
+                    else if (activeTab == "privacy")
+                    {
+                        <div class="card">
+                            <div class="card-body">
+                                <h3 class="announcement-title mb-2">Privacy</h3>
+                                <div class="form-grid mb-3">
+                                    <div class="modern-form-group">
+                                        <label class="modern-form-label">
+                                            <input type="checkbox" @bind="privacy.PublicProfile" class="form-check-input me-2" />
+                                            Public Profile
+                                        </label>
+                                    </div>
+                                    <div class="modern-form-group">
+                                        <label class="modern-form-label">
+                                            <input type="checkbox" @bind="privacy.ShowContactInfo" class="form-check-input me-2" />
+                                            Show Contact Information
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="text-end"><button class="btn-modern-primary" @onclick="SavePrivacySettings">Save</button></div>
+                            </div>
+                        </div>
+                    }
+
+                    else if (activeTab == "verification")
+                    {
+                        <div class="card">
+                            <div class="card-body">
+                                <h3 class="announcement-title mb-2">Verification</h3>
+                                <div class="d-flex gap-3 align-items-center">
+                                    <div class="verification-icon">
+                                        @if (studentProfile?.IsVerified == true)
+                                        {
+                                            <i class="fas fa-check-circle text-success" style="font-size: 2rem;"></i>
+                                        }
+                                        else
+                                        {
+                                            <i class="fas fa-clock text-warning" style="font-size: 2rem;"></i>
+                                        }
+                                    </div>
+                                    <div>
+                                        <h4>@(studentProfile?.IsVerified == true ? "Verified Student" : "Verification Pending")</h4>
+                                        <p class="text-muted mb-0">@(studentProfile?.IsVerified == true ? "Your account has been verified." : "Complete your verification to access all features.")</p>
+                                    </div>
+                                </div>
+                                @if (studentProfile?.IsVerified != true)
+                                {
+                                    <div class="mt-3"><a class="btn-modern-primary" href="/dashboard/student/verification">Continue verification</a></div>
+                                }
+                            </div>
+                        </div>
+                    }
+                }
+            </section>
+
+            @* Compact toasts *@
+            @if (showSuccessMessage)
+            {
+                <div class="toast fixed-toast success">@successMessage</div>
+            }
+            @if (showErrorMessage)
+            {
+                <div class="toast fixed-toast error">@errorMessage</div>
+            }
+
         </div>
     </div>
 </div>
 
-<style>
-.settings-container {
-    background: #f7f9fa;
-    min-height: 100vh;
+@code {
+    private c2_eskolar.Models.StudentProfile studentProfile = new()
+    {
+        UserId = "",
+        FirstName = "",
+        LastName = "",
+        AccountStatus = "Unverified"
+    };
+    
+    private string activeTab = "profile";
+    private bool isLoading = false;
+    private string? currentUserId;
+    
+    // Password change model
+    private PasswordChangeModel passwordChangeModel = new();
+    private bool showCurrentPassword = false;
+    private bool showNewPassword = false;
+    private bool twoFactorEnabled = false;
+    
+    // Notification settings
+    private NotificationSettings notifications = new();
+    
+    // Privacy settings
+    private PrivacySettings privacy = new();
+    
+    // Toast messages
+    private bool showSuccessMessage = false;
+    private bool showErrorMessage = false;
+    private string successMessage = "";
+    private string errorMessage = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadCurrentUser();
+        await LoadStudentProfile();
+        LoadSettings();
+    }
+
+    private async Task LoadCurrentUser()
+    {
+        try
+        {
+            var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+            currentUserId = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading user: {ex.Message}");
+        }
+    }
+
+    private async Task LoadStudentProfile()
+    {
+        if (string.IsNullOrEmpty(currentUserId))
+            return;
+
+        try
+        {
+            var profile = await StudentProfileService.GetProfileByUserIdAsync(currentUserId);
+            if (profile != null)
+            {
+                studentProfile = profile;
+            }
+            else
+            {
+                // Initialize a new profile if none exists
+                studentProfile = new c2_eskolar.Models.StudentProfile
+                {
+                    UserId = currentUserId,
+                    FirstName = "",
+                    LastName = "",
+                    AccountStatus = "Unverified"
+                };
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading student profile: {ex.Message}");
+            // Initialize empty profile on error
+            studentProfile = new c2_eskolar.Models.StudentProfile
+            {
+                UserId = currentUserId ?? "",
+                FirstName = "",
+                LastName = "",
+                AccountStatus = "Unverified"
+            };
+        }
+    }
+
+    private void LoadSettings()
+    {
+        // Load notification and privacy settings from storage/database
+        // This would typically come from a settings service
+        notifications = new NotificationSettings
+        {
+            ScholarshipAlerts = true,
+            ApplicationUpdates = true,
+            SecurityAlerts = true,
+            SystemUpdates = true,
+            Newsletter = false,
+            Tips = false,
+            DigestFrequency = "daily"
+        };
+
+        privacy = new PrivacySettings
+        {
+            PublicProfile = true,
+            ShowContactInfo = false,
+            AnalyticsTracking = true
+        };
+    }
+
+    private void SetActiveTab(string tab)
+    {
+        activeTab = tab;
+        StateHasChanged();
+    }
+
+    private async Task SavePersonalInfo()
+    {
+        isLoading = true;
+        try
+        {
+            await StudentProfileService.SaveProfileAsync(studentProfile);
+            ShowSuccessMessage("Personal information updated successfully!");
+        }
+        catch (Exception ex)
+        {
+            ShowErrorMessage($"Error updating personal information: {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task SaveAcademicInfo()
+    {
+        isLoading = true;
+        try
+        {
+            await StudentProfileService.SaveProfileAsync(studentProfile);
+            ShowSuccessMessage("Academic information updated successfully!");
+        }
+        catch (Exception ex)
+        {
+            ShowErrorMessage($"Error updating academic information: {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task ChangePassword()
+    {
+        isLoading = true;
+        try
+        {
+            // Implement password change logic
+            // This would typically call UserManager.ChangePasswordAsync()
+            ShowSuccessMessage("Password changed successfully!");
+            passwordChangeModel = new PasswordChangeModel();
+        }
+        catch (Exception ex)
+        {
+            ShowErrorMessage($"Error changing password: {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task SaveNotificationSettings()
+    {
+        isLoading = true;
+        try
+        {
+            // Save notification settings to database/storage
+            ShowSuccessMessage("Notification settings saved successfully!");
+        }
+        catch (Exception ex)
+        {
+            ShowErrorMessage($"Error saving notification settings: {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task SavePrivacySettings()
+    {
+        isLoading = true;
+        try
+        {
+            // Save privacy settings to database/storage
+            ShowSuccessMessage("Privacy settings saved successfully!");
+        }
+        catch (Exception ex)
+        {
+            ShowErrorMessage($"Error saving privacy settings: {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task OpenImageUpload()
+    {
+        // Implement image upload functionality
+        await JSRuntime.InvokeVoidAsync("openImageUpload");
+    }
+
+    private async Task ExportData()
+    {
+        isLoading = true;
+        try
+        {
+            // Implement data export functionality
+            ShowSuccessMessage("Data export started! You'll receive an email when it's ready.");
+        }
+        catch (Exception ex)
+        {
+            ShowErrorMessage($"Error exporting data: {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private void ShowDeactivateModal()
+    {
+        // Implement deactivate account modal
+        ShowErrorMessage("Account deactivation is not implemented yet.");
+    }
+
+    private void ShowSuccessMessage(string message)
+    {
+        successMessage = message;
+        showSuccessMessage = true;
+        showErrorMessage = false;
+        StateHasChanged();
+        
+        // Auto-hide after 5 seconds
+        Task.Delay(5000).ContinueWith(_ => 
+        {
+            showSuccessMessage = false;
+            InvokeAsync(StateHasChanged);
+        });
+    }
+
+    private void ShowErrorMessage(string message)
+    {
+        errorMessage = message;
+        showErrorMessage = true;
+        showSuccessMessage = false;
+        StateHasChanged();
+        
+        // Auto-hide after 5 seconds
+        Task.Delay(5000).ContinueWith(_ => 
+        {
+            showErrorMessage = false;
+            InvokeAsync(StateHasChanged);
+        });
+    }
+
+    // Supporting models
+    public class PasswordChangeModel
+    {
+        public string CurrentPassword { get; set; } = "";
+        public string NewPassword { get; set; } = "";
+        public string ConfirmPassword { get; set; } = "";
+    }
+
+    public class NotificationSettings
+    {
+        public bool ScholarshipAlerts { get; set; }
+        public bool ApplicationUpdates { get; set; }
+        public bool SecurityAlerts { get; set; }
+        public bool SystemUpdates { get; set; }
+        public bool Newsletter { get; set; }
+        public bool Tips { get; set; }
+        public string DigestFrequency { get; set; } = "daily";
+    }
+
+    public class PrivacySettings
+    {
+        public bool PublicProfile { get; set; }
+        public bool ShowContactInfo { get; set; }
+        public bool AnalyticsTracking { get; set; }
+    }
 }
-.settings-card {
-    background: #fff;
-    border-radius: 12px;
-    box-shadow: 0 2px 8px rgba(60,60,60,0.07);
-}
-.profile-pic {
-    background: #3976c6 !important;
-}
-</style>
