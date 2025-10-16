@@ -6,6 +6,7 @@
 @inject UserManager<IdentityUser> UserManager
 @inject Services.StudentProfileService StudentProfileService
 @inject Services.BlobStorageService BlobStorageService
+@inject NavigationManager Navigation
 @using Microsoft.AspNetCore.Components.Authorization
 @using Microsoft.AspNetCore.Identity
 
@@ -214,6 +215,10 @@
     private string PermanentAddress = "";
     private string Nationality = "";
     private IBrowserFile? UploadedProfileImage;
+    
+    // Document paths for verification documents
+    private string? StudentIdDocumentPath = "";
+    private string? CorDocumentPath = "";
     private string PreviewProfilePicture 
     {
         get
@@ -641,6 +646,10 @@
                 
                 ProfilePicture = !string.IsNullOrWhiteSpace(studentProfile.ProfilePicture) ? studentProfile.ProfilePicture : "https://via.placeholder.com/120";
                 
+                // Load verification document paths
+                StudentIdDocumentPath = studentProfile.StudentIdDocumentPath;
+                CorDocumentPath = studentProfile.CorDocumentPath;
+                
                 // Set timestamps
                 CreatedDate = studentProfile.CreatedAt;
                 LastLogin = DateTime.Now;
@@ -685,6 +694,43 @@
     {
         // Placeholder for email verification logic
         SetSuccessMessageWithTimer(type == "personal" ? "Verification link sent to personal email." : "Verification link sent to institutional email.");
+    }
+
+    private void ViewStudentIdDocument()
+    {
+        ViewDocument(StudentIdDocumentPath, "Student ID");
+    }
+
+    private void ViewCorDocument()
+    {
+        ViewDocument(CorDocumentPath, "Certificate of Registration");
+    }
+
+    private void ViewDocument(string? documentPath, string documentName)
+    {
+        if (string.IsNullOrWhiteSpace(documentPath))
+        {
+            SetErrorMessageWithTimer($"No {documentName} document available to view.");
+            return;
+        }
+
+        try
+        {
+            // Generate SAS URL if it's a blob storage URL
+            string viewUrl = documentPath;
+            if (documentPath.Contains("blob.core.windows.net"))
+            {
+                viewUrl = BlobStorageService.GetPhotoSasUrlFromBlobUrl(documentPath);
+            }
+            
+            // Open document in new tab/window
+            Navigation.NavigateTo(viewUrl, true);
+        }
+        catch (Exception ex)
+        {
+            SetErrorMessageWithTimer($"Error opening {documentName} document: {ex.Message}");
+            Console.WriteLine($"Error viewing document {documentName}: {ex.Message}");
+        }
     }
 }
 
@@ -824,6 +870,66 @@
                             </span>
                         </div>
                     </div>
+                </div>
+            </div>
+            
+            <!-- Verification Documents Container -->
+            <div class="verification-documents-container mb-4">
+                <div class="verification-doc-header">
+                    <i class="fas fa-file-alt"></i>
+                    <span>Verification Documents</span>
+                </div>
+                <div class="verification-doc-body">
+                    @if (!string.IsNullOrWhiteSpace(StudentIdDocumentPath) || !string.IsNullOrWhiteSpace(CorDocumentPath))
+                    {
+                        @if (!string.IsNullOrWhiteSpace(StudentIdDocumentPath))
+                        {
+                            <div class="verification-doc-item" @onclick="ViewStudentIdDocument">
+                                <div class="verification-doc-info">
+                                    <div class="verification-doc-icon">
+                                        <i class="fas fa-id-card"></i>
+                                    </div>
+                                    <div class="verification-doc-text">
+                                        <div class="verification-doc-name">Student ID Document</div>
+                                        <div class="verification-doc-type">Identity Verification</div>
+                                    </div>
+                                </div>
+                                <div class="verification-doc-action">
+                                    <span>View</span>
+                                    <i class="fas fa-external-link-alt"></i>
+                                </div>
+                            </div>
+                        }
+                        
+                        @if (!string.IsNullOrWhiteSpace(CorDocumentPath))
+                        {
+                            <div class="verification-doc-item" @onclick="ViewCorDocument">
+                                <div class="verification-doc-info">
+                                    <div class="verification-doc-icon">
+                                        <i class="fas fa-graduation-cap"></i>
+                                    </div>
+                                    <div class="verification-doc-text">
+                                        <div class="verification-doc-name">Certificate of Registration</div>
+                                        <div class="verification-doc-type">Academic Verification</div>
+                                    </div>
+                                </div>
+                                <div class="verification-doc-action">
+                                    <span>View</span>
+                                    <i class="fas fa-external-link-alt"></i>
+                                </div>
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <div class="verification-doc-empty">
+                            <div class="verification-doc-empty-icon">
+                                <i class="fas fa-file-times"></i>
+                            </div>
+                            <div class="verification-doc-empty-text">No verification documents uploaded</div>
+                            <div class="verification-doc-empty-subtitle">Complete your verification to upload documents</div>
+                        </div>
+                    }
                 </div>
             </div>
         </div>

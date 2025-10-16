@@ -279,3 +279,124 @@ tbody tr:hover {
     opacity: 0.5;
     cursor: not-allowed;
 }
+
+/* Verification Documents Container */
+.verification-documents-container {
+    background: #f8fbff;
+    border-radius: 16px;
+    border: 1px solid #e0e8f4;
+    box-shadow: 0 2px 8px rgba(21,96,212,0.08);
+    transition: box-shadow 0.2s;
+    margin-bottom: 2rem;
+}
+
+.verification-documents-container:hover {
+    box-shadow: 0 4px 16px rgba(21,96,212,0.12);
+}
+
+.verification-doc-header {
+    background: linear-gradient(135deg, #1976d2, #64b5f6);
+    color: #fff;
+    padding: 1rem 1.25rem;
+    border-radius: 16px 16px 0 0;
+    font-weight: 600;
+    font-size: 1.1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.verification-doc-body {
+    padding: 1.25rem;
+}
+
+.verification-doc-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem 1rem;
+    background: #fff;
+    border: 1px solid #e0e8f4;
+    border-radius: 12px;
+    margin-bottom: 0.75rem;
+    transition: all 0.2s;
+    cursor: pointer;
+}
+
+.verification-doc-item:hover {
+    border-color: #1976d2;
+    box-shadow: 0 2px 8px rgba(25,118,210,0.10);
+}
+
+.verification-doc-item:last-child {
+    margin-bottom: 0;
+}
+
+.verification-doc-info {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.verification-doc-icon {
+    width: 40px;
+    height: 40px;
+    background: #e3f2fd;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #1976d2;
+    font-size: 1.2rem;
+}
+
+.verification-doc-text {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+}
+
+.verification-doc-name {
+    font-weight: 600;
+    color: #333;
+    font-size: 0.95rem;
+}
+
+.verification-doc-type {
+    font-size: 0.8rem;
+    color: #666;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.verification-doc-action {
+    color: #1976d2;
+    font-size: 0.9rem;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.verification-doc-empty {
+    text-align: center;
+    padding: 2rem;
+    color: #666;
+}
+
+.verification-doc-empty-icon {
+    font-size: 2.5rem;
+    color: #ddd;
+    margin-bottom: 1rem;
+}
+
+.verification-doc-empty-text {
+    font-size: 1rem;
+    margin-bottom: 0.5rem;
+    color: #666;
+}
+
+.verification-doc-empty-subtitle {
+    font-size: 0.9rem;
+    color: #999;
+}
