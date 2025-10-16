@@ -105,9 +105,6 @@
                                                     @(scholarship.Benefactor?.OrganizationName ?? "Unknown Benefactor")
                                                 </p>
                                             </div>
-                                            <span class="badge @(scholarship.IsActive ? "bg-success" : "bg-secondary")">
-                                                @(scholarship.IsActive ? "Active" : "Inactive")
-                                            </span>
                                         </div>
 
                                         <div class="mb-3">
@@ -195,11 +192,13 @@
     {
         if (scholarships == null) return;
         
+        var now = DateTime.Now;
+        
         // TODO: Implement actual logic for "My Scholars" (scholarships with awarded students)
         myScholarsCount = 0; // Placeholder - needs implementation
         
-        openCount = scholarships.Count(s => s.IsActive && !s.IsInternal);
-        archivedCount = scholarships.Count(s => !s.IsActive);
+        openCount = scholarships.Count(s => s.IsActive && !s.IsInternal && s.ApplicationDeadline >= now);
+        archivedCount = scholarships.Count(s => !s.IsActive || s.ApplicationDeadline < now);
         
         // TODO: Load scraped scholarships for Explore tab
         exploreCount = 0; // Placeholder - needs implementation
@@ -210,13 +209,14 @@
         if (scholarships == null) return new List<Scholarship>();
         
         var filtered = scholarships.AsEnumerable();
+        var now = DateTime.Now;
         
         // Filter by tab
         filtered = selectedTab switch
         {
             0 => filtered.Where(s => false), // My Scholars - TODO: implement logic for scholarships with awarded students
-            1 => filtered.Where(s => s.IsActive && !s.IsInternal), // Open
-            2 => filtered.Where(s => !s.IsActive), // Archived
+            1 => filtered.Where(s => s.IsActive && !s.IsInternal && s.ApplicationDeadline >= now), // Open - must have future deadline
+            2 => filtered.Where(s => !s.IsActive || s.ApplicationDeadline < now), // Archived - inactive OR deadline passed
             3 => filtered.Where(s => false), // Explore - TODO: implement scraped scholarships
             _ => filtered
         };
