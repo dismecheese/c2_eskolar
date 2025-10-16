@@ -23,9 +23,38 @@ namespace c2_eskolar.Services
 
         public BlobStorageService(IConfiguration config)
         {
-            _connectionString = config["AzureBlobStorage:ConnectionString"] ?? throw new ArgumentNullException("AzureBlobStorage:ConnectionString is missing in configuration.");
-            _documentsContainer = config["AzureBlobStorage:DocumentsContainer"] ?? throw new ArgumentNullException("AzureBlobStorage:DocumentsContainer is missing in configuration.");
-            _photosContainer = config["AzureBlobStorage:PhotosContainer"] ?? throw new ArgumentNullException("AzureBlobStorage:PhotosContainer is missing in configuration.");
+            // Try multiple configuration keys for Azure App Service compatibility
+            // Azure App Service uses ConnectionStrings__ prefix for connection strings
+            _connectionString = config["ConnectionStrings:AzureBlobStorage"] 
+                ?? config["AzureBlobStorage:ConnectionString"] 
+                ?? config["AzureBlobStorageConnectionString"]
+                ?? throw new ArgumentNullException("AzureBlobStorage connection string is missing. Check ConnectionStrings:AzureBlobStorage, AzureBlobStorage:ConnectionString, or AzureBlobStorageConnectionString in configuration.");
+
+            // Validate connection string format
+            if (!_connectionString.Contains("=") || 
+                (!_connectionString.Contains("AccountName=") && !_connectionString.Contains("DefaultEndpointsProtocol=")))
+            {
+                throw new ArgumentException("Invalid Azure Blob Storage connection string format. Expected format: DefaultEndpointsProtocol=https;AccountName=...;AccountKey=...;EndpointSuffix=...");
+            }
+
+            _documentsContainer = config["AzureBlobStorage:DocumentsContainer"] 
+                ?? throw new ArgumentNullException("AzureBlobStorage:DocumentsContainer is missing in configuration.");
+            _photosContainer = config["AzureBlobStorage:PhotosContainer"] 
+                ?? throw new ArgumentNullException("AzureBlobStorage:PhotosContainer is missing in configuration.");
+
+            // Log configuration source (mask sensitive data)
+            var maskedConnectionString = _connectionString.Length > 20 
+                ? _connectionString.Substring(0, 20) + "..." 
+                : "***";
+            
+            string configSource = config["ConnectionStrings:AzureBlobStorage"] != null ? "ConnectionStrings:AzureBlobStorage" 
+                : config["AzureBlobStorage:ConnectionString"] != null ? "AzureBlobStorage:ConnectionString"
+                : "AzureBlobStorageConnectionString";
+            
+            Console.WriteLine($"[BlobStorageService] Initialized with connection string from: {configSource}");
+            Console.WriteLine($"[BlobStorageService] Connection string prefix: {maskedConnectionString}");
+            Console.WriteLine($"[BlobStorageService] Documents container: {_documentsContainer}");
+            Console.WriteLine($"[BlobStorageService] Photos container: {_photosContainer}");
         }
 
         private BlobContainerClient GetContainerClient(string containerName)

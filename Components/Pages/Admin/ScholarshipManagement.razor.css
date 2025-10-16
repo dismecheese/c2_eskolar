@@ -1,148 +1,564 @@
-/* Modern button and modal styles for Scholarship Management (matches SuperAdminAnnouncements gradients) */
-.btn-modern-primary {
-    background: linear-gradient(135deg, #1560d4, #0d387e);
-    color: white;
-    border: none;
-    box-shadow: 0 6px 18px rgba(21,96,212,0.18);
-    padding: 0.5rem 0.9rem;
-    border-radius: 10px;
-    font-weight: 600;
+/* Web Scraping Management Styles */
+.scraping-section {
+    margin-bottom: 32px;
 }
-.btn-modern-primary:hover { transform: translateY(-2px); }
 
-.btn-modern-secondary {
+.scraping-card {
     background: linear-gradient(135deg, #fff 0%, #f8fafc 100%);
+    border-radius: 16px;
+    padding: 24px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+    border: 1px solid rgba(0,0,0,0.05);
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+    height: 100%;
+}
+
+.scraping-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #1560d4, #0d387e);
+}
+
+.scraping-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+}
+
+.scraping-card-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.scraping-card-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    color: white;
+    margin-right: 16px;
+    flex-shrink: 0;
+}
+
+.scraping-card-icon.scholarship { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+.scraping-card-icon.institution { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
+.scraping-card-icon.organization { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
+.scraping-card-icon.news { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); }
+
+.scraping-card-header h5 {
+    font-size: 1.25rem;
+    font-weight: 600;
     color: #2d3748;
-    border: 1px solid #e2e8f0;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.06);
-    padding: 0.45rem 0.8rem;
-    border-radius: 10px;
-    font-weight: 600;
-}
-.btn-modern-success {
-    background: linear-gradient(135deg, #43e97b, #38f9d7);
-    color: white;
-    border: none;
-    box-shadow: 0 6px 18px rgba(67,233,123,0.18);
-    padding: 0.45rem 0.8rem;
-    border-radius: 10px;
-    font-weight: 600;
-}
-.btn-modern-warning {
-    background: linear-gradient(135deg, #f093fb, #f5576c);
-    color: white;
-    border: none;
-    box-shadow: 0 6px 18px rgba(240,147,251,0.12);
-    padding: 0.45rem 0.8rem;
-    border-radius: 10px;
-    font-weight: 600;
-}
-.btn-modern-danger {
-    background: linear-gradient(135deg, #f56565, #c53030);
-    color: white;
-    border: none;
-    box-shadow: 0 6px 18px rgba(245,101,101,0.14);
-    padding: 0.45rem 0.8rem;
-    border-radius: 10px;
-    font-weight: 600;
+    margin: 0 0 4px 0;
 }
 
-/* Table action cell layout */
-.action-buttons-modern {
+.scraping-card-header p {
+    color: #4a5568;
+    margin: 0;
+    font-size: 0.9rem;
+}
+
+.scraping-card-body {
+    flex: 1;
+}
+
+.scraping-input {
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 12px 16px;
+    font-size: 0.95rem;
+    transition: all 0.3s ease;
+}
+
+.scraping-input:focus {
+    border-color: #1560d4;
+    box-shadow: 0 0 0 3px rgba(21, 96, 212, 0.1);
+    outline: none;
+}
+
+.scraping-actions {
     display: flex;
-    gap: 8px;
     align-items: center;
-}
-
-/* Modal overrides to match site look */
-.scholarship-edit-modal .modal-content {
-    border-radius: 12px;
-    box-shadow: 0 12px 40px rgba(13,56,126,0.15);
-    border: none;
-}
-.scholarship-edit-modal .modal-header {
-    background: linear-gradient(135deg, #1560d4, #0d387e);
-    color: white;
-    border-top-left-radius: 12px;
-    border-top-right-radius: 12px;
-}
-.scholarship-edit-modal .modal-body {
-    background: white;
-}
-.scholarship-edit-modal .modal-footer {
-    border-top: none;
-    background: linear-gradient(180deg, rgba(248,250,252,0.6), rgba(255,255,255,0.6));
-}
-
-/* Small responsive tweaks */
-@media (max-width: 768px) {
-    .action-buttons-modern { flex-direction: column; }
-}
-.scholarship-management-container {
-    padding: 20px;
-    max-width: 100%;
-    margin: 0 auto;
-}
-
-.dashboard-header {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    border-radius: 12px;
-    padding: 30px;
-    margin-bottom: 30px;
-    color: white;
-}
-
-.header-content {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+    gap: 16px;
     flex-wrap: wrap;
 }
 
-.page-title {
-    font-size: 2rem;
-    font-weight: 700;
-    margin: 0;
+.btn-scraping {
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.95rem;
+    border: none;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    cursor: pointer;
+    text-decoration: none;
+}
+
+.btn-scraping.btn-primary {
+    background: linear-gradient(135deg, #1560d4, #0d387e);
+    color: white;
+}
+
+.btn-scraping.btn-primary:hover {
+    background: linear-gradient(135deg, #0d387e, #1560d4);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(21, 96, 212, 0.4);
+}
+
+.btn-scraping.btn-info {
+    background: linear-gradient(135deg, #4299e1, #3182ce);
+    color: white;
+}
+
+.btn-scraping.btn-info:hover {
+    background: linear-gradient(135deg, #3182ce, #4299e1);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(66, 153, 225, 0.4);
+}
+
+.btn-scraping.btn-warning {
+    background: linear-gradient(135deg, #fbbf24, #f59e0b);
+    color: white;
+}
+
+.btn-scraping.btn-warning:hover {
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(245, 158, 11, 0.4);
+}
+
+.btn-scraping.btn-success {
+    background: linear-gradient(135deg, #48bb78, #38a169);
+    color: white;
+}
+
+.btn-scraping.btn-success:hover {
+    background: linear-gradient(135deg, #38a169, #48bb78);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(72, 187, 120, 0.4);
+}
+
+.btn-scraping.btn-outline-primary {
+    background: transparent;
+    border: 2px solid #1560d4;
+    color: #1560d4;
+}
+
+.btn-scraping.btn-outline-primary:hover {
+    background: #1560d4;
+    color: white;
+}
+
+.btn-scraping.btn-outline-secondary {
+    background: transparent;
+    border: 2px solid #6b7280;
+    color: #6b7280;
+}
+
+.btn-scraping.btn-outline-secondary:hover {
+    background: #6b7280;
+    color: white;
+}
+
+.scraping-help {
     display: flex;
     align-items: center;
-    gap: 15px;
+    color: #4a5568;
+    font-size: 0.85rem;
 }
 
-.page-subtitle {
-    margin: 8px 0 0 0;
-    opacity: 0.9;
-    font-weight: 300;
+.scraping-stats {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
 }
 
-.header-actions {
+.stat-item {
+    background: linear-gradient(135deg, #fff 0%, #f8fafc 100%);
+    border-radius: 12px;
+    padding: 20px;
+    text-align: center;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    border: 1px solid rgba(0,0,0,0.05);
+}
+
+.stat-value {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #2d3748;
+    margin-bottom: 4px;
+}
+
+.stat-label {
+    font-size: 0.9rem;
+    color: #4a5568;
+    font-weight: 500;
+}
+
+.scraped-data-card {
+    background: linear-gradient(135deg, #fff 0%, #f8fafc 100%);
+    border-radius: 16px;
+    padding: 24px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+    border: 1px solid rgba(0,0,0,0.05);
+    position: relative;
+    overflow: hidden;
+}
+
+.scraped-data-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #43e97b, #38f9d7);
+}
+
+.scraped-data-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.scraped-data-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    color: white;
+    margin-right: 16px;
+}
+
+.scraped-data-header h5 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #2d3748;
+    margin: 0 0 4px 0;
+}
+
+.scraped-data-header p {
+    color: #4a5568;
+    margin: 0;
+    font-size: 0.9rem;
+}
+
+.data-preview {
+    background: #f7fafc;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    margin-bottom: 16px;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.data-content {
+    padding: 16px;
+    margin: 0;
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-size: 0.85rem;
+    line-height: 1.5;
+    color: #2d3748;
+    background: transparent;
+    border: none;
+}
+
+.data-actions {
     display: flex;
     gap: 12px;
     flex-wrap: wrap;
 }
 
+.empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: #4a5568;
+}
+
+.empty-state-icon {
+    font-size: 4rem;
+    color: #cbd5e0;
+    margin-bottom: 20px;
+}
+
+.empty-state h5 {
+    color: #2d3748;
+    margin-bottom: 12px;
+    font-weight: 600;
+}
+
+.empty-state p {
+    margin-bottom: 24px;
+    font-size: 1rem;
+}
+
+.scraped-data-section {
+    background: linear-gradient(135deg, #fff 0%, #f8fafc 100%);
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    border: 1px solid rgba(0,0,0,0.05);
+}
+
+.scraped-data-header {
+    display: flex;
+    justify-content: between;
+    align-items: center;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.scraped-data-header h5 {
+    color: #2d3748;
+    font-weight: 600;
+    margin: 0;
+    flex: 1;
+}
+
+.scraped-data-table {
+    margin-bottom: 0;
+}
+
+.scraped-data-table thead th {
+    background: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%);
+    border: none;
+    color: #4a5568;
+    font-weight: 600;
+    padding: 12px;
+    border-bottom: 2px solid #e2e8f0;
+}
+
+.scraped-data-table tbody td {
+    padding: 12px;
+    vertical-align: middle;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.scraped-data-table tbody tr:hover {
+    background-color: #f7fafc;
+}
+
+.btn-sm {
+    padding: 6px 12px;
+    font-size: 0.85rem;
+}
+
+.badge {
+    font-size: 0.8rem;
+    padding: 4px 8px;
+}
+
+.dashboard-tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 32px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.dashboard-tab {
+    background: linear-gradient(135deg, #fbbf24, #f59e0b);
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 25px;
+    font-weight: 600;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-decoration: none;
+    display: inline-block;
+}
+
+.dashboard-tab:hover {
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(245, 158, 11, 0.4);
+    color: white;
+    text-decoration: none;
+}
+
+.dashboard-tab.active {
+    background: linear-gradient(135deg, #1560d4, #0d387e);
+    box-shadow: 0 4px 12px rgba(21, 96, 212, 0.4);
+}
+
+@media (max-width: 768px) {
+    .scraping-actions {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .btn-scraping {
+        justify-content: center;
+    }
+    
+    .dashboard-tabs {
+        flex-direction: column;
+        gap: 12px;
+    }
+    
+    .dashboard-tab {
+        width: 100%;
+    }
+    
+    .data-actions {
+        flex-direction: column;
+    }
+}
+
+/* Modal Styles */
+.scholarship-details {
+    margin: 0;
+}
+
+.detail-section {
+    margin-bottom: 24px;
+    border-radius: 8px;
+    background: #f7fafc;
+    padding: 16px;
+    border: 1px solid #e2e8f0;
+}
+
+.detail-section-title {
+    color: #2d3748;
+    font-weight: 600;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    font-size: 1rem;
+}
+
+.detail-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 12px;
+}
+
+.detail-item {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.detail-item label {
+    font-weight: 600;
+    color: #4a5568;
+    font-size: 0.85rem;
+    margin-bottom: 0;
+}
+
+.detail-value {
+    color: #2d3748;
+    font-size: 0.95rem;
+    word-wrap: break-word;
+}
+
+.detail-description {
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    padding: 12px;
+    color: #2d3748;
+    font-size: 0.95rem;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
+
+.parsing-notes {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.raw-text-container {
+    margin-top: 8px;
+}
+
+.raw-text {
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    padding: 12px;
+    font-size: 0.8rem;
+    color: #4a5568;
+    max-height: 300px;
+    overflow-y: auto;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
+
+.modal-dialog-scrollable {
+    max-height: 90vh;
+}
+
+@media (max-width: 576px) {
+    .detail-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .modal-dialog {
+        margin: 0.5rem;
+    }
+}
+
+/* Scholarship Management Styles for Approval Tab */
+.scholarship-management-container {
+    padding: 20px;
+    background-color: #f8f9fa;
+    min-height: 100vh;
+}
+
 .stats-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
     gap: 20px;
     margin-bottom: 30px;
 }
 
 .stat-card {
-    background: white;
-    border-radius: 12px;
+    background: linear-gradient(135deg, #fff 0%, #f8fafc 100%);
+    border-radius: 16px;
     padding: 24px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-    border: 1px solid #e5e7eb;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+    border: 1px solid rgba(0,0,0,0.05);
+    position: relative;
+    overflow: hidden;
     display: flex;
     align-items: center;
-    gap: 20px;
-    transition: transform 0.2s, box-shadow 0.2s;
 }
 
-.stat-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+.stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #1560d4, #0d387e);
 }
+
+.stat-card.total-scraped::before { background: linear-gradient(90deg, #667eea, #764ba2); }
+.stat-card.pending-review::before { background: linear-gradient(90deg, #f093fb, #f5576c); }
+.stat-card.approved::before { background: linear-gradient(90deg, #4facfe, #00f2fe); }
+.stat-card.avg-confidence::before { background: linear-gradient(90deg, #43e97b, #38f9d7); }
 
 .stat-icon {
     width: 60px;
@@ -153,139 +569,75 @@
     justify-content: center;
     font-size: 24px;
     color: white;
+    margin-right: 20px;
+    flex-shrink: 0;
 }
 
-.total-scraped .stat-icon { 
-    background: linear-gradient(135deg, #667eea, #764ba2); 
-}
+.stat-card.total-scraped .stat-icon { background: linear-gradient(135deg, #667eea, #764ba2); }
+.stat-card.pending-review .stat-icon { background: linear-gradient(135deg, #f093fb, #f5576c); }
+.stat-card.approved .stat-icon { background: linear-gradient(135deg, #4facfe, #00f2fe); }
+.stat-card.avg-confidence .stat-icon { background: linear-gradient(135deg, #43e97b, #38f9d7); }
 
-.pending-review .stat-icon { 
-    background: linear-gradient(135deg, #f093fb, #f5576c); 
-}
-
-.approved .stat-icon { 
-    background: linear-gradient(135deg, #4facfe, #00f2fe); 
-}
-
-.avg-confidence .stat-icon { 
-    background: linear-gradient(135deg, #43e97b, #38f9d7); 
+.stat-content {
+    flex: 1;
 }
 
 .stat-number {
     font-size: 2.5rem;
     font-weight: 700;
-    color: #1f2937;
-    margin: 0;
+    color: #2d3748;
+    margin: 0 0 4px 0;
     line-height: 1;
 }
 
 .stat-label {
-    color: #6b7280;
+    font-size: 0.95rem;
+    color: #4a5568;
     font-weight: 500;
-    margin: 4px 0 8px 0;
+    margin: 0 0 4px 0;
 }
 
 .stat-trend {
-    font-size: 0.875rem;
-    font-weight: 500;
-    padding: 4px 8px;
-    border-radius: 6px;
-}
-
-.stat-trend.positive { 
-    background: #dcfce7; 
-    color: #166534; 
-}
-
-.stat-trend.neutral { 
-    background: #fef3c7; 
-    color: #92400e; 
-}
-
-.filters-section {
-    background: white;
+    font-size: 0.8rem;
+    padding: 2px 8px;
     border-radius: 12px;
-    padding: 24px;
-    margin-bottom: 30px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-    border: 1px solid #e5e7eb;
+    font-weight: 500;
 }
 
-.filters-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
+.stat-trend.positive {
+    background-color: rgba(72, 187, 120, 0.1);
+    color: #38a169;
 }
 
-.filters-header h3 {
-    margin: 0;
-    color: #1f2937;
-    font-weight: 600;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
-.filters-content {
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-}
-
-.search-box {
-    max-width: 400px;
+.stat-trend.neutral {
+    background-color: rgba(160, 174, 192, 0.1);
+    color: #4a5568;
 }
 
 .filter-row {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     gap: 20px;
+    margin-top: 20px;
 }
 
-.filter-group label {
-    display: block;
-    font-weight: 500;
-    color: #374151;
-    margin-bottom: 8px;
+.filter-group {
+    display: flex;
+    flex-direction: column;
 }
 
 .scholarships-table-section {
     background: white;
-    border-radius: 12px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-    border: 1px solid #e5e7eb;
-    overflow: hidden;
-}
-
-.table-header {
+    border-radius: 16px;
     padding: 24px;
-    border-bottom: 1px solid #e5e7eb;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 15px;
-}
-
-.table-header h3 {
-    margin: 0;
-    color: #1f2937;
-    font-weight: 600;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
-.record-count {
-    color: #6b7280;
-    font-size: 0.875rem;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+    border: 1px solid rgba(0,0,0,0.05);
 }
 
 .table-actions {
     display: flex;
     align-items: center;
-    gap: 15px;
+    gap: 12px;
 }
 
 .view-toggle {
@@ -301,74 +653,85 @@
 }
 
 .scholarship-table {
-    margin: 0;
+    margin-bottom: 0;
+    table-layout: fixed;
+    width: 100%;
 }
 
 .scholarship-table th {
-    background: #f9fafb;
-    border: none;
+    background-color: #f8fafc;
     font-weight: 600;
     color: #374151;
-    padding: 16px;
+    border: none;
+    padding: 12px 8px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .scholarship-table th.sortable {
     cursor: pointer;
     user-select: none;
-    position: relative;
+    transition: background-color 0.2s;
 }
 
 .scholarship-table th.sortable:hover {
-    background: #f3f4f6;
+    background-color: #e5e7eb;
 }
 
 .scholarship-table td {
-    padding: 16px;
-    border-color: #f3f4f6;
+    padding: 12px 8px;
+    border: none;
+    border-bottom: 1px solid #f3f4f6;
     vertical-align: middle;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
-.scholarship-title-cell h6 {
+/* Allow title column to wrap text */
+.scholarship-table td:first-child {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: initial;
+}
+
+.scholarship-title {
     font-weight: 600;
     color: #1f2937;
+    margin-bottom: 2px;
+    line-height: 1.4;
 }
 
-.status-badge {
-    padding: 6px 12px;
-    border-radius: 20px;
-    font-size: 0.8rem;
-    font-weight: 500;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
+/* Row selection styles */
+.selectable-row {
+    cursor: pointer;
+    transition: all 0.2s ease;
 }
 
-.status-scraped { 
-    background: #dbeafe; 
-    color: #1e40af; 
+.selectable-row:hover {
+    background-color: #f8f9fa !important;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-.status-underreview { 
-    background: #fef3c7; 
-    color: #92400e; 
+.selectable-row.selected-row {
+    background-color: #e3f2fd !important;
+    border-left: 4px solid #2196f3;
 }
 
-.status-approved { 
-    background: #dcfce7; 
-    color: #166534; 
+.selectable-row.selected-row:hover {
+    background-color: #d1ecf1 !important;
 }
 
-.status-rejected { 
-    background: #fee2e2; 
-    color: #dc2626; 
+.scholarship-title {
+    font-weight: 600;
+    color: #1f2937;
+    margin-bottom: 2px;
+    line-height: 1.4;
 }
 
-.status-archived { 
-    background: #f3f4f6; 
-    color: #6b7280; 
-}
-
-.confidence-cell {
+.confidence-indicator {
     display: flex;
     align-items: center;
     gap: 8px;
@@ -377,7 +740,7 @@
 .confidence-bar {
     width: 60px;
     height: 8px;
-    background: #e5e7eb;
+    background-color: #e5e7eb;
     border-radius: 4px;
     overflow: hidden;
 }
@@ -385,56 +748,14 @@
 .confidence-fill {
     height: 100%;
     background: linear-gradient(90deg, #ef4444, #f59e0b, #10b981);
-    transition: width 0.3s;
+    transition: width 0.3s ease;
 }
 
 .confidence-text {
+    font-size: 0.8rem;
     font-weight: 600;
     color: #374151;
-    font-size: 0.8rem;
-}
-
-.date-cell {
-    display: flex;
-    flex-direction: column;
-}
-
-.source-badge {
-    background: #f3f4f6;
-    color: #6b7280;
-    padding: 4px 8px;
-    border-radius: 6px;
-    font-size: 0.8rem;
-    font-weight: 500;
-}
-
-.action-buttons {
-    display: flex;
-    gap: 6px;
-}
-
-.action-buttons .btn {
-    width: 32px;
-    height: 32px;
-    padding: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.pagination-section {
-    padding: 20px 24px;
-    border-top: 1px solid #e5e7eb;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 15px;
-}
-
-.pagination-info {
-    color: #6b7280;
-    font-size: 0.875rem;
+    min-width: 35px;
 }
 
 .loading-spinner {
@@ -446,34 +767,1342 @@
 .loading-spinner .spinner-border {
     width: 3rem;
     height: 3rem;
-    margin-bottom: 20px;
+    margin-bottom: 16px;
+}
+
+.pagination-section {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 24px;
+    padding: 12px 20px;
+    border-top: none;
+    background: linear-gradient(135deg, #f8fafc 0%, #eef2f7 100%);
+    border-radius: 0 0 12px 12px;
+    box-shadow: 0 -4px 18px rgba(16,24,40,0.03);
+    gap: 12px;
+}
+
+.pagination-info {
+    color: #6b7280;
+    font-size: 0.95rem;
+    font-weight: 600;
+}
+
+/* Table card footer actions (left side) */
+.table-card-footer-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.table-card-footer-actions .btn {
+    padding: 8px 12px;
+    border-radius: 10px;
+    font-weight: 600;
+    box-shadow: 0 4px 12px rgba(2,6,23,0.06);
+}
+
+/* Make sure actions column doesn't wrap and can show full controls */
+.scholarship-table thead th:last-child,
+.scholarship-table tbody td:last-child {
+    min-width: 220px;
+    white-space: nowrap;
+    overflow: visible;
+}
+
+/* Ensure cell-level overflow is visible so action buttons are not clipped */
+.scholarship-table tbody td {
+    overflow: visible;
+}
+
+.enhanced-row {
+    background-color: rgba(16, 185, 129, 0.05);
+}
+
+.status-scraped { background-color: rgba(59, 130, 246, 0.1); color: #1d4ed8; }
+.status-underreview { background-color: rgba(245, 158, 11, 0.1); color: #d97706; }
+.status-approved { background-color: rgba(16, 185, 129, 0.1); color: #059669; }
+.status-rejected { background-color: rgba(239, 68, 68, 0.1); color: #dc2626; }
+.status-archived { background-color: rgba(107, 114, 128, 0.1); color: #374151; }
+
+.time-ago {
+    font-size: 0.75rem;
+    color: #9ca3af;
+}
+
+.cards-view {
+    padding: 40px 20px;
 }
 
 @media (max-width: 768px) {
-    .header-content {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 20px;
-    }
-
     .stats-grid {
         grid-template-columns: 1fr;
     }
-
+    
     .filter-row {
         grid-template-columns: 1fr;
     }
-
+    
     .table-header {
         flex-direction: column;
         align-items: flex-start;
+        gap: 16px;
     }
-
-    .scholarship-table {
-        font-size: 0.875rem;
+    
+    .table-actions {
+        width: 100%;
+        justify-content: space-between;
     }
+}
+/* Modern modal visual polish */
+.scholarship-modal .modal-content {
+    border-radius: 1rem;
+    overflow: hidden;
+}
 
-    .action-buttons {
+/* Section container styles */
+.detail-section .card-header {
+    font-size: 1rem;
+    padding: 0.75rem 1rem;
+}
+
+/* Gradient category headers */
+.bg-gradient-primary {
+    background: linear-gradient(135deg, #1976d2, #64b5f6);
+}
+.bg-gradient-success {
+    background: linear-gradient(135deg, #2e7d32, #81c784);
+}
+.bg-gradient-warning {
+    background: linear-gradient(135deg, #f9a825, #ffeb3b);
+}
+.bg-gradient-info {
+    background: linear-gradient(135deg, #0288d1, #4fc3f7);
+}
+.bg-gradient-secondary {
+    background: linear-gradient(135deg, #6c757d, #adb5bd);
+}
+.bg-gradient-dark {
+    background: linear-gradient(135deg, #424242, #757575);
+}
+
+/* Grid layout */
+.detail-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem 2rem;
+}
+.detail-item label {
+    font-weight: 600;
+    color: #333;
+    display: block;
+    margin-bottom: 0.25rem;
+}
+.detail-item span {
+    color: #555;
+}
+
+/* Description formatting */
+.detail-description {
+    white-space: pre-wrap;
+    line-height: 1.5;
+    color: #444;
+}
+
+/* Add subtle hover for cards */
+.detail-section .card {
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.detail-section .card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(30, 41, 59, 0.55);
+        z-index: 2147483647;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.scholarship-modal {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+        z-index: 2147483647;
+    box-shadow: 0 8px 32px rgba(30, 41, 59, 0.25);
+    border-radius: 1.5rem;
+    background: #fff;
+    max-width: 800px;
+    width: 100%;
+    min-height: 400px;
+    overflow: auto;
+}
+.scholarship-modal .modal-content {
+    z-index: 2147483647;
+}
+
+/* Modern button styles matching SuperAdminAnnouncements */
+.btn-modern-primary, .btn-modern-secondary, .btn-modern-success, .btn-modern-danger {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    border-radius: 12px;
+    font-weight: 600;
+    font-size: 0.875rem;
+    border: none;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+    text-decoration: none;
+}
+
+.btn-modern-primary {
+    background: linear-gradient(135deg, #1560d4, #0d387e);
+    color: white;
+    box-shadow: 0 4px 12px rgba(21, 96, 212, 0.3);
+}
+
+.btn-modern-primary:hover:not(:disabled) {
+    background: linear-gradient(135deg, #0d387e, #1560d4);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(21, 96, 212, 0.4);
+    color: white;
+}
+
+.btn-modern-secondary {
+    background: linear-gradient(135deg, #fff 0%, #f8fafc 100%);
+    color: #1560d4;
+    border: 2px solid #e2e8f0;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.btn-modern-secondary:hover:not(:disabled) {
+    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+    border-color: #1560d4;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(21, 96, 212, 0.15);
+    color: #0d387e;
+}
+
+.btn-modern-success {
+    background: linear-gradient(135deg, #48bb78, #38a169);
+    color: white;
+    box-shadow: 0 4px 12px rgba(72, 187, 120, 0.3);
+}
+
+.btn-modern-success:hover:not(:disabled) {
+    background: linear-gradient(135deg, #38a169, #2f855a);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(72, 187, 120, 0.4);
+    color: white;
+}
+
+.btn-modern-danger {
+    background: linear-gradient(135deg, #f56565, #c53030);
+    color: white;
+    box-shadow: 0 4px 12px rgba(245, 101, 101, 0.3);
+}
+
+.btn-modern-danger:hover:not(:disabled) {
+    background: linear-gradient(135deg, #c53030, #9c2626);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(245, 101, 101, 0.4);
+    color: white;
+}
+
+.btn-modern-primary:disabled,
+.btn-modern-secondary:disabled,
+.btn-modern-success:disabled,
+.btn-modern-danger:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* Action buttons layout */
+.action-buttons-modern {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+/* Modern spinner */
+.modern-spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid transparent;
+    border-top: 2px solid currentColor;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Modern modal styles */
+.modern-modal {
+    border: none;
+    border-radius: 24px;
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25);
+    overflow: hidden;
+    background: white;
+    backdrop-filter: blur(10px);
+}
+
+.modern-modal-header {
+    background: linear-gradient(135deg, #1560d4, #0d387e);
+    color: white !important;
+    border: none;
+    padding: 2rem;
+    position: relative;
+    text-align: center;
+}
+
+.modern-modal-header .modal-title {
+    font-weight: 700;
+    font-size: 1.5rem;
+    margin: 0;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    color: white !important;
+    display: block;
+    z-index: 10;
+    position: relative;
+}
+
+.modern-btn-close {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    background: rgba(255, 255, 255, 0.15);
+    border: none;
+    border-radius: 50%;
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+    color: white;
+    font-size: 1.2rem;
+    backdrop-filter: blur(10px);
+}
+
+.modern-btn-close:hover {
+    background: rgba(255, 255, 255, 0.25);
+    transform: scale(1.1);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.modern-modal-body {
+    padding: 2.5rem;
+    background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+    max-height: 70vh;
+    overflow-y: auto;
+}
+
+.modern-form-group {
+    margin-bottom: 2rem;
+    position: relative;
+}
+
+.modern-form-label {
+    display: block;
+    font-weight: 700;
+    color: #1a202c;
+    margin-bottom: 0.75rem;
+    font-size: 1rem;
+    letter-spacing: 0.025em;
+}
+
+.modern-modal-footer {
+    display: flex;
+    gap: 1.25rem;
+    justify-content: flex-end;
+    padding: 2rem 2.5rem;
+    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+    border: none;
+}
+
+/* Modern header styling for filters and table sections */
+.filters-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding: 24px;
+    background: linear-gradient(135deg, #1560d4, #0d387e);
+    border-radius: 16px 16px 0 0;
+    color: white;
+    position: relative;
+    overflow: hidden;
+}
+
+.filters-header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="20" cy="20" r="2" fill="rgba(255,255,255,0.1)"/><circle cx="80" cy="80" r="1.5" fill="rgba(255,255,255,0.1)"/><circle cx="40" cy="70" r="1" fill="rgba(255,255,255,0.1)"/></svg>');
+    opacity: 0.3;
+}
+
+.filters-title-section {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    position: relative;
+    z-index: 1;
+}
+
+.filters-icon {
+    width: 56px;
+    height: 56px;
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    color: white;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.filters-title-content {
+    flex: 1;
+}
+
+.filters-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin: 0 0 4px 0;
+    color: white;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.filters-subtitle {
+    font-size: 0.95rem;
+    margin: 0;
+    color: rgba(255, 255, 255, 0.9);
+    font-weight: 400;
+}
+
+.table-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0;
+    padding: 24px 32px;
+    background: linear-gradient(135deg, #059669, #047857);
+    border-radius: 16px 16px 0 0;
+    color: white;
+    position: relative;
+    overflow: hidden;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+    width: 100%; /* Ensure header takes full width of parent container */
+    box-sizing: border-box; /* Include padding in width calculation */
+    min-width: fit-content; /* Allow header to expand based on content */
+}
+
+.table-header::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect x="10" y="30" width="15" height="3" fill="rgba(255,255,255,0.1)"/><rect x="10" y="40" width="12" height="3" fill="rgba(255,255,255,0.1)"/><rect x="10" y="50" width="18" height="3" fill="rgba(255,255,255,0.1)"/></svg>');
+    opacity: 0.3;
+}
+
+.table-title-section {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    position: relative;
+    z-index: 1;
+}
+
+.table-icon {
+    width: 56px;
+    height: 56px;
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    color: white;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.table-title-content {
+    flex: 1;
+}
+
+.table-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin: 0 0 4px 0;
+    color: white;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.record-count {
+    font-size: 0.95rem;
+    margin: 0;
+    color: rgba(255, 255, 255, 0.9);
+    font-weight: 400;
+}
+
+.table-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    position: relative;
+    z-index: 1;
+}
+
+.view-toggle {
+    display: flex;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 8px;
+    overflow: hidden;
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+}
+
+.view-toggle .btn {
+    border: none;
+    border-radius: 0;
+    background: transparent;
+    color: white;
+    font-weight: 500;
+}
+
+.view-toggle .btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.view-toggle .btn.btn-primary {
+    background: rgba(255, 255, 255, 0.25);
+    color: white;
+}
+
+/* Enhanced action buttons */
+.action-buttons-modern {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: nowrap;
+}
+
+.action-buttons-modern .btn {
+    min-width: 32px;
+    height: 32px;
+    padding: 0;
+    font-size: 0.75rem;
+    white-space: nowrap;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Enhanced filter sections */
+.filters-section {
+    background: white;
+    border-radius: 16px;
+    margin-bottom: 30px;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    /* allow action buttons to overflow so they don't get clipped by the card */
+    overflow: visible;
+}
+
+.filters-content {
+    padding: 24px;
+}
+
+.scholarships-table-section {
+    background: transparent; /* Remove card background */
+    border-radius: 0; /* Remove rounded corners */
+    box-shadow: none; /* Remove shadow */
+    border: none; /* Remove border */
+    overflow: visible; /* Allow content to flow naturally */
+    margin-bottom: 20px;
+    max-width: none; /* Remove width constraint to allow full expansion */
+    margin: 0 auto 20px auto; /* Center the table section */
+    padding: 0; /* Remove padding to let header and table align perfectly */
+    width: 100%; /* Take full available width */
+}
+
+/* Table header styling to match green design */
+.table-header {
+    background: linear-gradient(135deg, #059669 0%, #047857 100%);
+    color: white;
+    padding: 20px 30px;
+    border-radius: 16px 16px 0 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0;
+    box-shadow: 0 4px 16px rgba(5, 150, 105, 0.2);
+    width: 100%; /* Ensure header takes full width of parent container */
+    box-sizing: border-box; /* Include padding in width calculation */
+}
+
+.table-title-section {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.table-title-section.centered {
+    justify-content: flex-start;
+    text-align: left;
+}
+
+.table-icon {
+    width: 48px;
+    height: 48px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    color: white;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.table-title-content {
+    flex: 1;
+}
+
+.table-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin: 0 0 4px 0;
+    color: white;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.record-count {
+    font-size: 0.95rem;
+    margin: 0;
+    color: rgba(255, 255, 255, 0.9);
+    font-weight: 400;
+}
+
+.table-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    position: relative;
+    z-index: 1;
+}
+
+/* Select All Button Styling */
+.table-actions .btn-outline-primary {
+    background: white;
+    border: 1px solid #059669;
+    color: #059669;
+    font-size: 14px;
+}
+
+.table-actions .btn-outline-primary:hover {
+    background: #059669;
+    border-color: #059669;
+    color: white;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(5, 150, 105, 0.3);
+}
+
+.table-actions .btn-primary {
+    background: #059669;
+    border: 1px solid #059669;
+    color: white;
+}
+
+/* Export Button Styling */
+.table-actions .btn-success {
+    background: white;
+    border: 1px solid #059669;
+    color: #059669;
+    font-size: 14px;
+}
+
+.table-actions .btn-success:hover {
+    background: #059669;
+    border-color: #059669;
+    color: white;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(5, 150, 105, 0.3);
+}
+
+.view-toggle {
+    display: flex;
+    border: 1px solid #059669;
+    border-radius: 6px;
+    overflow: hidden;
+    background: white;
+}
+
+.view-toggle .btn {
+    border: none;
+    border-radius: 0;
+    background: transparent;
+    color: #059669;
+    font-size: 14px;
+}
+
+.view-toggle .btn:hover {
+    background: #059669;
+    color: white;
+}
+
+.view-toggle .btn.btn-primary {
+    background: #059669;
+    color: white;
+}
+
+/* Direct table styling without card wrapper */
+.table-responsive {
+    border-radius: 0 0 12px 12px; /* Rounded bottom corners only */
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    border-top: none; /* Connect with header */
+    background: white;
+    overflow-x: auto; /* Allow horizontal scrolling for wide tables */
+    overflow-y: visible; /* Allow action buttons to overflow vertically */
+    margin-bottom: 20px;
+    width: 100%; /* Ensure table takes full width of parent container */
+    box-sizing: border-box; /* Include padding in width calculation */
+}
+
+/* Add mobile margins for table components */
+@media (max-width: 768px) {
+    .scholarships-table-section {
+        margin: 0 20px 20px 20px; /* Add mobile margin */
+    }
+}
+
+.scholarship-table {
+    margin-bottom: 0;
+    border-radius: 0; /* Remove rounded corners since header handles this */
+    overflow: hidden;
+}
+
+.scholarship-table tbody td {
+    padding: 16px 12px;
+    border-bottom: 1px solid #f3f4f6;
+    vertical-align: middle;
+    font-size: 0.9rem;
+}
+
+.scholarship-table tbody tr:hover {
+    background: rgba(21, 96, 212, 0.02);
+}
+
+/* Single-line scraped date cell */
+.scraped-date-cell {
+    white-space: nowrap;
+    min-width: 200px;
+    text-align: right;
+    padding-right: 24px !important;
+}
+
+.scraped-date-info {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+}
+
+.date-main {
+    font-weight: 500;
+    color: #2d3748;
+    font-size: 0.9rem;
+}
+
+.time-ago-inline {
+    font-size: 0.8rem;
+    color: #6b7280;
+}
+
+/* Card View Styles */
+.cards-view-centered {
+    padding: 20px;
+    max-width: 1400px; /* Constrain max width for better centering */
+    margin: 0 auto; /* Center the container */
+}
+
+.cards-view-centered .row {
+    justify-content: center; /* Center cards when there are fewer than max columns */
+}
+
+.scholarship-card {
+    background: linear-gradient(135deg, #fff 0%, #f8fafc 100%);
+    border-radius: 16px;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
+    transition: all 0.3s ease;
+    position: relative;
+    /* keep card visuals but allow footer/action elements to slightly overflow when needed */
+    overflow: visible;
+    height: 100%;
+    min-height: 400px; /* Make cards taller to accommodate action buttons */
+    display: flex;
+    flex-direction: column;
+}
+
+.scholarship-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #1560d4, #0d387e);
+}
+
+.scholarship-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15);
+}
+
+.scholarship-card.new-row::before {
+    background: linear-gradient(90deg, #48bb78, #38a169);
+}
+
+.scholarship-card.low-confidence::before {
+    background: linear-gradient(90deg, #fbbf24, #f59e0b);
+}
+
+.scholarship-card.error-row::before {
+    background: linear-gradient(90deg, #ef4444, #dc2626);
+}
+
+.scholarship-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px 0 20px;
+}
+
+.scholarship-checkbox {
+    display: flex;
+    align-items: center;
+}
+
+.scholarship-status {
+    display: flex;
+    align-items: center;
+}
+
+.scholarship-card-body {
+    padding: 0 20px 16px 20px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.scholarship-card-title {
+    font-size: 1.15rem;
+    font-weight: 600;
+    color: #2d3748;
+    margin: 16px 0 8px 0;
+    line-height: 1.4;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.scholarship-card-source {
+    font-size: 0.85rem;
+    color: #6b7280;
+    margin: 0 0 16px 0;
+}
+
+.scholarship-card-meta {
+    margin-top: auto;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    padding-top: 16px;
+    border-top: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.confidence-section label,
+.scraped-date label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #6b7280;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+    display: block;
+}
+
+.date-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.date-info .date {
+    font-weight: 500;
+    color: #2d3748;
+    font-size: 0.9rem;
+}
+
+.date-info .time-ago {
+    font-size: 0.8rem;
+    color: #6b7280;
+    margin-top: 2px;
+}
+
+.scholarship-card-actions {
+    padding: 20px 24px;
+    border-top: 1px solid rgba(0, 0, 0, 0.06);
+    background: linear-gradient(135deg, rgba(248, 250, 252, 0.8) 0%, rgba(241, 245, 249, 0.9) 100%);
+    backdrop-filter: blur(10px);
+    display: flex;
+    /* align actions to the right so they don't cover content and are predictable */
+    justify-content: flex-end;
+    gap: 12px;
+    position: relative;
+    /* Ensure action area has enough space */
+    min-height: 82px;
+    flex-shrink: 0; /* Prevent actions from shrinking */
+}
+
+.scholarship-card-actions::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 40px;
+    height: 3px;
+    background: linear-gradient(90deg, transparent, rgba(0, 0, 0, 0.1), transparent);
+    border-radius: 0 0 2px 2px;
+}
+
+.scholarship-card-actions .btn {
+    width: 40px;
+    height: 42px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 12px;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    background: white;
+    color: #374151;
+    font-size: 0.9rem;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    position: relative;
+    overflow: hidden;
+}
+
+.scholarship-card-actions .btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.6), transparent);
+    transition: left 0.6s ease;
+}
+
+.scholarship-card-actions .btn:hover::before {
+    left: 100%;
+}
+
+.scholarship-card-actions .btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+    border-color: rgba(0, 0, 0, 0.12);
+}
+
+.scholarship-card-actions .btn-modern-primary:hover {
+    background: linear-gradient(135deg, #1560d4, #0d387e);
+    color: white;
+    border-color: #1560d4;
+}
+
+.scholarship-card-actions .btn-modern-secondary:hover {
+    background: linear-gradient(135deg, #6b7280, #4b5563);
+    color: white;
+    border-color: #6b7280;
+}
+
+.scholarship-card-actions .btn-modern-success:hover {
+    background: linear-gradient(135deg, #48bb78, #38a169);
+    color: white;
+    border-color: #48bb78;
+}
+
+.scholarship-card-actions .btn-modern-danger:hover {
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+    color: white;
+    border-color: #ef4444;
+}
+
+/* No results card */
+.no-results-card {
+    text-align: center;
+    padding: 60px 20px;
+    background: linear-gradient(135deg, #fff 0%, #f8fafc 100%);
+    border-radius: 16px;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    margin-top: 20px;
+}
+
+.no-results-icon {
+    width: 80px;
+    height: 80px;
+    background: linear-gradient(135deg, #e2e8f0, #cbd5e0);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 32px;
+    color: #6b7280;
+    margin: 0 auto 20px auto;
+}
+
+.no-results-card h5 {
+    color: #2d3748;
+    font-weight: 600;
+    margin-bottom: 8px;
+}
+
+/* Modern Pagination Styling */
+.modern-pagination-section {
+    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+    border-radius: 16px;
+    padding: 20px 30px;
+    margin-top: 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+    border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.pagination-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.pagination-text {
+    font-weight: 600;
+    color: #374151;
+    font-size: 1rem;
+}
+
+.pagination-count {
+    font-size: 0.85rem;
+    color: #6b7280;
+}
+
+.pagination-nav {
+    display: flex;
+    align-items: center;
+}
+
+.modern-pagination {
+    display: flex;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    gap: 8px;
+    align-items: center;
+}
+
+.modern-pagination .page-item {
+    display: flex;
+}
+
+.modern-pagination .page-link {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border: 2px solid transparent;
+    border-radius: 10px;
+    background: white;
+    color: #374151;
+    font-weight: 500;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    cursor: pointer;
+}
+
+.modern-pagination .page-link:hover:not(:disabled) {
+    background: linear-gradient(135deg, #1560d4, #0d387e);
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(21, 96, 212, 0.3);
+    border-color: #1560d4;
+}
+
+.modern-pagination .page-item.active .page-link {
+    background: linear-gradient(135deg, #1560d4, #0d387e);
+    color: white;
+    border-color: #1560d4;
+    box-shadow: 0 4px 12px rgba(21, 96, 212, 0.4);
+}
+
+.modern-pagination .page-item.disabled .page-link {
+    background: #f3f4f6;
+    color: #9ca3af;
+    cursor: not-allowed;
+    box-shadow: none;
+}
+
+.modern-pagination .page-item.disabled .page-link:hover {
+    transform: none;
+    background: #f3f4f6;
+    color: #9ca3af;
+}
+
+@media (max-width: 768px) {
+    .modern-pagination-section {
         flex-direction: column;
+        gap: 16px;
+        text-align: center;
     }
+    
+    .pagination-info {
+        align-items: center;
+    }
+    
+    .modern-pagination .page-link {
+        width: 36px;
+        height: 36px;
+        font-size: 0.85rem;
+    }
+}
+
+.filters-content {
+    padding: 36px 40px;
+}
+
+/* Two-row layout: Search on first row, filters on second row */
+.filters-content .row {
+    --bs-gutter-x: 2rem;
+    --bs-gutter-y: 2rem;
+}
+
+/* Search row - full width */
+.search-row {
+    margin-bottom: 1.5rem;
+}
+
+/* Filters row - evenly spaced 4 columns */
+.filters-row {
+    gap: 0;
+}
+
+.filters-row .col-md-3 {
+    padding: 0 8px; /* Add consistent spacing between filters */
+}
+
+@media (max-width: 767.98px) {
+    .filters-row .col-sm-6 {
+        width: 50%;
+        margin-bottom: 1rem;
+        padding: 0 8px;
+    }
+    
+    .search-row .col-12 {
+        padding: 0;
+    }
+}
+
+.filters-content .form-label {
+    font-weight: 600;
+    color: #374151;
+    margin-bottom: 10px;
+    font-size: 0.95rem;
+    display: block;
+}
+
+.filters-content .form-control,
+.filters-content .form-select {
+    border: 2px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 14px 18px;
+    font-size: 0.95rem;
+    background: white;
+    transition: all 0.3s ease;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    min-height: 48px;
+}
+
+.filters-content .form-control:focus,
+.filters-content .form-select:focus {
+    border-color: #1560d4;
+    box-shadow: 0 0 0 3px rgba(21, 96, 212, 0.1);
+    outline: none;
+}
+
+.filters-content .input-group {
+    position: relative;
+}
+
+.filters-content .input-group-text {
+    background: #f9fafb;
+    border: 2px solid #e5e7eb;
+    color: #6b7280;
+    border-radius: 10px 0 0 10px;
+}
+
+.filters-content .form-control:focus + .input-group-text,
+.filters-content .input-group:focus-within .input-group-text {
+    border-color: #1560d4;
+    background: rgba(21, 96, 212, 0.05);
+}
+
+/* Table improvements */
+.scholarship-table thead th {
+    background: #f8f9fa;
+    color: #495057;
+    font-weight: 600;
+    border-bottom: 2px solid #e5e7eb;
+    padding: 18px 16px;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    text-align: center;
+    vertical-align: middle;
+    font-size: 0.95rem;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.scholarship-table thead th:hover {
+    background: #e8f5e8;
+    color: #059669;
+}
+
+.scholarship-table thead th:first-child {
+    width: 50px;
+    text-align: center;
+}
+
+.scholarship-table thead th:nth-child(2) {
+    text-align: left;
+    min-width: 250px;
+}
+
+.scholarship-table thead th:nth-child(3) {
+    width: 120px;
+    text-align: center;
+}
+
+.scholarship-table thead th:nth-child(4) {
+    width: 100px;
+    text-align: center;
+}
+
+.scholarship-table thead th:nth-child(5) {
+    width: 180px;
+    text-align: right;
+    padding-right: 24px;
+}
+
+.scholarship-table thead th:last-child {
+    width: 200px;
+    text-align: center;
+}
+
+.scholarship-table tbody tr {
+    transition: all 0.2s ease;
+}
+
+.scholarship-table tbody tr:hover {
+    background: rgba(21, 96, 212, 0.02);
+    transform: translateZ(0);
+}
+
+.scholarship-table tbody td {
+    padding: 18px 16px;
+    border-bottom: 1px solid #f3f4f6;
+    vertical-align: middle;
+    font-size: 0.9rem;
+}
+
+.scholarship-table tbody td:first-child {
+    text-align: center;
+}
+
+.scholarship-table tbody td:nth-child(3) {
+    text-align: center;
+}
+
+.scholarship-table tbody td:nth-child(4) {
+    text-align: center;
+}
+
+.scholarship-table tbody td:last-child {
+    text-align: center;
+}
+
+/* Search Input with Icon Styling */
+.search-input-container {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.search-input-container .form-control {
+    padding-right: 45px;
+    border-radius: 8px;
+    border: 2px solid #e2e8f0;
+    transition: all 0.3s ease;
+}
+
+.search-input-container .form-control:focus {
+    border-color: #1560d4;
+    box-shadow: 0 0 0 3px rgba(21, 96, 212, 0.1);
+    outline: none;
+}
+
+.search-input-icon {
+    position: absolute;
+    right: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #6b7280;
+    font-size: 1rem;
+    pointer-events: none;
+    z-index: 2;
 }
