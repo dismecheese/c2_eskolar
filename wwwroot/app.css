@@ -537,8 +537,9 @@ button.dashboard-profile-absolute:hover svg * {
 }
 
 .dashboard-tab {
-    background: #FFD600;
-    color: #222;
+    background: linear-gradient(135deg, #fff 0%, #f8fafc 100%);
+    color: #4a5568;
+    border: 2px solid #e2e8f0;
     font-weight: 700;
     font-size: 1.1rem;
     border: none;
@@ -555,9 +556,9 @@ button.dashboard-profile-absolute:hover svg * {
 }
 
 .dashboard-tab.active {
-    background: #fff;
-    color: #FFD600;
-    border: 2px solid #FFD600;
+    background: linear-gradient(135deg, #1560d4, #0d387e);
+    color: white;
+    border-color: #0d387e;
     box-shadow: 0 6px 12px rgba(0,0,0,0.13);
     font-weight: 700;
 }
@@ -566,13 +567,13 @@ button.dashboard-profile-absolute:hover svg * {
 .dashboard-tab:focus {
     filter: brightness(0.95);
     color: #fff;
-    background: #ffd600;
+    background: linear-gradient(135deg, #1560d4, #0d387e);
 }
 
 .dashboard-tab.active:hover,
 .dashboard-tab.active:focus {
     color: #fff;
-    background: #ffd600;
+    background: linear-gradient(135deg, #1560d4, #0d387e);
 }
 
 /* Banner */

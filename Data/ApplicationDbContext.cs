@@ -30,6 +30,8 @@ namespace c2_eskolar.Data
     public DbSet<BenefactorAdminProfile> BenefactorAdminProfiles { get; set; }
     public DbSet<Document> Documents { get; set; }
     public DbSet<Photo> Photos { get; set; }
+    // Notifications
+    public DbSet<c2_eskolar.Models.Notification> Notifications { get; set; }
     
     // Bookmark system
     public DbSet<BookmarkedScholarship> BookmarkedScholarships { get; set; }

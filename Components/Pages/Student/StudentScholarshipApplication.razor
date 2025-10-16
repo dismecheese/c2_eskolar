@@ -37,7 +37,6 @@
                         <p class="subtitle"><strong>Description:</strong> @scholarship.Description</p>
                     </div>
                 </div>
-            
             </header>
     }
     
@@ -83,13 +82,13 @@
                     </div>
                 </div>
             </div>
-            <div class="modern-form-container">
+            <div class="modern-form-container minimal-theme">
                 <EditForm Model="application" OnValidSubmit="HandleSubmit">
                     <DataAnnotationsValidator />
                     <ValidationSummary />
                     
                     <!-- Form fields section -->
-                    <div class="mt-4">
+                    <div class="mt-4 application-fields-container">
                         <!-- Application Type Selection -->
                         <div class="mb-4">
                             <div class="form-check form-switch">
@@ -374,7 +373,7 @@
                             }
                         </div>
                     }
-    </div>
+
                                 @if (showSubmittedModal)
                                 {
                                     <div class="modern-modal" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.6); z-index: 1050; display: flex; align-items: center; justify-content: center;">
@@ -414,10 +413,11 @@
                                         <span>@errorMessage</span>
                                     </div>
                                 }
-                        
-                        </EditForm>
                     </div>
-                }
+                        
+                </EditForm>
+            </div>
+        }
 
 @code {
     // --- Component parameters ---

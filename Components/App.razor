@@ -12,7 +12,69 @@
     <link rel="stylesheet" href="@Assets["lib/bootstrap/dist/css/bootstrap.min.css"]" />
     <link rel="stylesheet" href="@Assets["app.css"]" />
     <link rel="stylesheet" href="@Assets["c2_eskolar.styles.css"]" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- FontAwesome 6.7.2 Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" 
+          crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <!-- FontAwesome Icon Fix -->
+    <style>
+        /* Ensure FontAwesome icons are always visible and properly styled */
+        .fas, .far, .fab, .fa {
+            display: inline-block !important;
+            font-family: "Font Awesome 6 Free", "Font Awesome 6 Brands" !important;
+            font-weight: 900;
+            font-style: normal;
+            font-variant: normal;
+            text-rendering: auto;
+            line-height: 1;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        .far { font-weight: 400 !important; }
+        .fab { 
+            font-family: "Font Awesome 6 Brands" !important;
+            font-weight: 400 !important; 
+        }
+        /* Override any global icon hiding rules */
+        i.fas, i.far, i.fab, i.fa {
+            opacity: 1 !important;
+            visibility: visible !important;
+        }
+    </style>
+    
+    <!-- FontAwesome Icon Fix - Ensure icons are visible globally -->
+    <style>
+        /* Ensure FontAwesome icons are always visible unless explicitly hidden */
+        .fas, .far, .fab, .fa {
+            display: inline-block !important;
+            font-family: "Font Awesome 6 Free", "Font Awesome 6 Brands" !important;
+            font-weight: 900;
+            font-style: normal;
+            font-variant: normal;
+            text-rendering: auto;
+            line-height: 1;
+        }
+        
+        .far {
+            font-weight: 400;
+        }
+        
+        .fab {
+            font-family: "Font Awesome 6 Brands" !important;
+            font-weight: 400;
+        }
+        
+        /* Ensure icons in navigation, buttons, and UI elements are visible */
+        .nav .fas, .nav .far, .nav .fab, .nav .fa,
+        .btn .fas, .btn .far, .btn .fab, .btn .fa,
+        .tab-pill .fas, .tab-pill .far, .tab-pill .fab, .tab-pill .fa,
+        .sidebar .fas, .sidebar .far, .sidebar .fab, .sidebar .fa,
+        .card-header .fas, .card-header .far, .card-header .fab, .card-header .fa,
+        .badge .fas, .badge .far, .badge .fab, .badge .fa {
+            display: inline-block !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+        }
+    </style>
     <ImportMap />
     <link rel="icon" type="image/png" href="images/eskolar_logo.png" />
     <script src="js/auth.js"></script>
