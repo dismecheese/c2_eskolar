@@ -110,21 +110,23 @@
                                     
                                     <!-- Clickable Card Content -->
                                     <a href="/dashboard/student/scholarships-info/@scholarship.ScholarshipId" class="text-decoration-none" style="display:block;height:100%;padding:16px;">
-                                        <div class="scholarship-card-img" style="width:70px;height:70px;margin-bottom:12px;background:#e3f2fd;display:flex;align-items:center;justify-content:center;border-radius:8px;">
-                                            @if (!string.IsNullOrEmpty(scholarship.Institution?.Logo))
-                                            {
-                                                <img src="@scholarship.Institution.Logo" alt="Logo" style="width:50px;height:50px;object-fit:cover;border-radius:4px;" />
-                                            }
-                                            else
-                                            {
-                                                <div style="background:#1976d2;color:white;width:50px;height:50px;border-radius:4px;display:flex;align-items:center;justify-content:center;font-weight:bold;">
-                                                    @GetInitials(scholarship.Institution?.InstitutionName ?? "IN")
-                                                </div>
-                                            }
+                                        <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;padding:6px 0;box-sizing:border-box;text-align:center;">
+                                            <div class="scholarship-card-img" style="width:72px;height:72px;background:#e3f2fd;display:flex;align-items:center;justify-content:center;border-radius:50%;flex-shrink:0;">
+                                                @if (!string.IsNullOrEmpty(scholarship.Institution?.Logo))
+                                                {
+                                                    <img src="@scholarship.Institution.Logo" alt="Logo" style="width:64px;height:64px;object-fit:cover;border-radius:50%;" />
+                                                }
+                                                else
+                                                {
+                                                    <div style="background:#1976d2;color:white;width:64px;height:64px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:20px;">
+                                                        @GetInitials(scholarship.Institution?.InstitutionName ?? "I")
+                                                    </div>
+                                                }
+                                            </div>
+                                            <div class="scholarship-card-title" style="font-size:15px;line-height:1.2;font-weight:600;margin-top:10px;">@scholarship.Title</div>
+                                            <div style="font-size:13px;color:#666;margin-top:6px;">@scholarship.Institution?.InstitutionName</div>
+                                            <div style="font-size:13px;color:#666;margin-top:4px;">₱@((scholarship.MonetaryValue ?? 0).ToString("N0"))</div>
                                         </div>
-                                        <div class="scholarship-card-title" style="font-size:14px;line-height:1.3;">@scholarship.Title</div>
-                                        <div style="font-size:12px;color:#666;margin-top:4px;">@scholarship.Institution?.InstitutionName</div>
-                                        <div style="font-size:12px;color:#666;">₱@((scholarship.MonetaryValue ?? 0).ToString("N0"))</div>
                                     </a>
                                 </div>
                             }
@@ -163,27 +165,27 @@
                                     
                                     <!-- Clickable Card Content -->
                                     <a href="/dashboard/student/scholarships-info/@scholarship.ScholarshipId" class="text-decoration-none" style="display:block;height:100%;padding:16px;">
-                                        <div class="scholarship-card-img" style="width:70px;height:70px;margin-bottom:12px;background:@(scholarship.IsInternal ? "#e3f2fd" : "#e8f5e8");display:flex;align-items:center;justify-content:center;border-radius:8px;">
-                                            @if (scholarship.IsInternal && !string.IsNullOrEmpty(scholarship.Institution?.Logo))
-                                            {
-                                                <img src="@scholarship.Institution.Logo" alt="Logo" style="width:50px;height:50px;object-fit:cover;border-radius:4px;" />
-                                            }
-                                            else if (!scholarship.IsInternal && !string.IsNullOrEmpty(scholarship.Benefactor?.Logo))
-                                            {
-                                                <img src="@scholarship.Benefactor.Logo" alt="Logo" style="width:50px;height:50px;object-fit:cover;border-radius:4px;" />
-                                            }
-                                            else
-                                            {
-                                                <div style="background:@(scholarship.IsInternal ? "#1976d2" : "#388e3c");color:white;width:50px;height:50px;border-radius:4px;display:flex;align-items:center;justify-content:center;font-weight:bold;">
-                                                    @GetInitials(scholarship.IsInternal ? (scholarship.Institution?.InstitutionName ?? "IN") : (scholarship.Benefactor?.OrganizationName ?? "BE"))
-                                                </div>
-                                            }
+                                        <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;padding:6px 0;box-sizing:border-box;text-align:center;">
+                                            <div class="scholarship-card-img" style="width:72px;height:72px;background:@(scholarship.IsInternal ? "#e3f2fd" : "#e8f5e8");display:flex;align-items:center;justify-content:center;border-radius:50%;flex-shrink:0;">
+                                                @if (scholarship.IsInternal && !string.IsNullOrEmpty(scholarship.Institution?.Logo))
+                                                {
+                                                    <img src="@scholarship.Institution.Logo" alt="Logo" style="width:64px;height:64px;object-fit:cover;border-radius:50%;" />
+                                                }
+                                                else if (!scholarship.IsInternal && !string.IsNullOrEmpty(scholarship.Benefactor?.Logo))
+                                                {
+                                                    <img src="@scholarship.Benefactor.Logo" alt="Logo" style="width:64px;height:64px;object-fit:cover;border-radius:50%;" />
+                                                }
+                                                else
+                                                {
+                                                    <div style="background:@(scholarship.IsInternal ? "#1976d2" : "#388e3c");color:white;width:64px;height:64px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:20px;">
+                                                        @GetInitials(scholarship.IsInternal ? (scholarship.Institution?.InstitutionName ?? "I") : (scholarship.Benefactor?.OrganizationName ?? "B"))
+                                                    </div>
+                                                }
+                                            </div>
+                                            <div class="scholarship-card-title" style="font-size:15px;line-height:1.2;font-weight:600;margin-top:10px;">@scholarship.Title</div>
+                                            <div style="font-size:13px;color:#666;margin-top:6px;">@(scholarship.IsInternal ? scholarship.Institution?.InstitutionName : scholarship.Benefactor?.OrganizationName)</div>
+                                            <div style="font-size:13px;color:#666;margin-top:4px;">₱@((scholarship.MonetaryValue ?? 0).ToString("N0"))</div>
                                         </div>
-                                        <div class="scholarship-card-title" style="font-size:14px;line-height:1.3;">@scholarship.Title</div>
-                                        <div style="font-size:12px;color:#666;margin-top:4px;">
-                                            @(scholarship.IsInternal ? scholarship.Institution?.InstitutionName : scholarship.Benefactor?.OrganizationName)
-                                        </div>
-                                        <div style="font-size:12px;color:#666;">₱@((scholarship.MonetaryValue ?? 0).ToString("N0"))</div>
                                         @if (scholarship.ApplicationDeadline > DateTime.Now)
                                         {
                                             <div style="font-size:11px;color:#d32f2f;margin-top:2px;">Deadline: @scholarship.ApplicationDeadline.ToString("MMM dd, yyyy")</div>
@@ -227,20 +229,22 @@
                     {
                         @foreach (var scholarship in institutionalScholarships.Take(3))
                         {
-                            <a href="/dashboard/student/scholarships-info/@scholarship.ScholarshipId" class="scholarship-card text-decoration-none">
-                                <div class="scholarship-card-img" style="background:#e3f2fd;display:flex;align-items:center;justify-content:center;">
-                                    @if (!string.IsNullOrEmpty(scholarship.Institution?.Logo))
-                                    {
-                                        <img src="@scholarship.Institution.Logo" alt="Logo" style="width:40px;height:40px;object-fit:cover;border-radius:4px;" />
-                                    }
-                                    else
-                                    {
-                                        <div style="background:#1976d2;color:white;width:40px;height:40px;border-radius:4px;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:14px;">
-                                            @GetInitials(scholarship.Institution?.InstitutionName ?? "IN")
-                                        </div>
-                                    }
+                            <a href="/dashboard/student/scholarships-info/@scholarship.ScholarshipId" class="scholarship-card text-decoration-none" style="text-align:center;">
+                                <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:14px;">
+                                    <div class="scholarship-card-img" style="width:64px;height:64px;background:#e3f2fd;display:flex;align-items:center;justify-content:center;border-radius:50%;flex-shrink:0;margin-bottom:10px;">
+                                        @if (!string.IsNullOrEmpty(scholarship.Institution?.Logo))
+                                        {
+                                            <img src="@scholarship.Institution.Logo" alt="Logo" style="width:56px;height:56px;object-fit:cover;border-radius:50%;" />
+                                        }
+                                        else
+                                        {
+                                            <div style="background:#1976d2;color:white;width:56px;height:56px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:18px;">
+                                                @GetInitials(scholarship.Institution?.InstitutionName ?? "I")
+                                            </div>
+                                        }
+                                    </div>
+                                    <div class="scholarship-card-title" style="font-size:14px;font-weight:600;">@(scholarship.Title.Length > 25 ? scholarship.Title.Substring(0, 22) + "..." : scholarship.Title)</div>
                                 </div>
-                                <div class="scholarship-card-title">@(scholarship.Title.Length > 25 ? scholarship.Title.Substring(0, 22) + "..." : scholarship.Title)</div>
                             </a>
                         }
                     }
@@ -260,20 +264,22 @@
                     {
                         @foreach (var scholarship in openScholarships.Take(3))
                         {
-                            <a href="/dashboard/student/scholarships-info/@scholarship.ScholarshipId" class="scholarship-card text-decoration-none">
-                                <div class="scholarship-card-img" style="background:#e8f5e8;display:flex;align-items:center;justify-content:center;">
-                                    @if (!string.IsNullOrEmpty(scholarship.Benefactor?.Logo))
-                                    {
-                                        <img src="@scholarship.Benefactor.Logo" alt="Logo" style="width:40px;height:40px;object-fit:cover;border-radius:4px;" />
-                                    }
-                                    else
-                                    {
-                                        <div style="background:#388e3c;color:white;width:40px;height:40px;border-radius:4px;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:14px;">
-                                            @GetInitials(scholarship.Benefactor?.OrganizationName ?? "BE")
-                                        </div>
-                                    }
+                            <a href="/dashboard/student/scholarships-info/@scholarship.ScholarshipId" class="scholarship-card text-decoration-none" style="text-align:center;">
+                                <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:14px;">
+                                    <div class="scholarship-card-img" style="width:64px;height:64px;background:#e8f5e8;display:flex;align-items:center;justify-content:center;border-radius:50%;flex-shrink:0;margin-bottom:10px;">
+                                        @if (!string.IsNullOrEmpty(scholarship.Benefactor?.Logo))
+                                        {
+                                            <img src="@scholarship.Benefactor.Logo" alt="Logo" style="width:56px;height:56px;object-fit:cover;border-radius:50%;" />
+                                        }
+                                        else
+                                        {
+                                            <div style="background:#388e3c;color:white;width:56px;height:56px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:18px;">
+                                                @GetInitials(scholarship.Benefactor?.OrganizationName ?? "B")
+                                            </div>
+                                        }
+                                    </div>
+                                    <div class="scholarship-card-title" style="font-size:14px;font-weight:600;">@(scholarship.Title.Length > 25 ? scholarship.Title.Substring(0, 22) + "..." : scholarship.Title)</div>
                                 </div>
-                                <div class="scholarship-card-title">@(scholarship.Title.Length > 25 ? scholarship.Title.Substring(0, 22) + "..." : scholarship.Title)</div>
                             </a>
                         }
                     }
@@ -294,23 +300,25 @@
                         @foreach (var scholarship in recommendedScholarships.Take(3))
                         {
                             <a href="/dashboard/student/scholarships-info/@scholarship.ScholarshipId" class="scholarship-card text-decoration-none">
-                                <div class="scholarship-card-img" style="background:@(scholarship.IsInternal ? "#e3f2fd" : "#e8f5e8");display:flex;align-items:center;justify-content:center;">
-                                    @if (scholarship.IsInternal && !string.IsNullOrEmpty(scholarship.Institution?.Logo))
-                                    {
-                                        <img src="@scholarship.Institution.Logo" alt="Logo" style="width:40px;height:40px;object-fit:cover;border-radius:4px;" />
-                                    }
-                                    else if (!scholarship.IsInternal && !string.IsNullOrEmpty(scholarship.Benefactor?.Logo))
-                                    {
-                                        <img src="@scholarship.Benefactor.Logo" alt="Logo" style="width:40px;height:40px;object-fit:cover;border-radius:4px;" />
-                                    }
-                                    else
-                                    {
-                                        <div style="background:@(scholarship.IsInternal ? "#1976d2" : "#388e3c");color:white;width:40px;height:40px;border-radius:4px;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:14px;">
-                                            @GetInitials(scholarship.IsInternal ? (scholarship.Institution?.InstitutionName ?? "IN") : (scholarship.Benefactor?.OrganizationName ?? "BE"))
-                                        </div>
-                                    }
+                                <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:14px;text-align:center;">
+                                    <div class="scholarship-card-img" style="width:64px;height:64px;background:@(scholarship.IsInternal ? "#e3f2fd" : "#e8f5e8");display:flex;align-items:center;justify-content:center;border-radius:50%;flex-shrink:0;margin-bottom:10px;">
+                                        @if (scholarship.IsInternal && !string.IsNullOrEmpty(scholarship.Institution?.Logo))
+                                        {
+                                            <img src="@scholarship.Institution.Logo" alt="Logo" style="width:56px;height:56px;object-fit:cover;border-radius:50%;" />
+                                        }
+                                        else if (!scholarship.IsInternal && !string.IsNullOrEmpty(scholarship.Benefactor?.Logo))
+                                        {
+                                            <img src="@scholarship.Benefactor.Logo" alt="Logo" style="width:56px;height:56px;object-fit:cover;border-radius:50%;" />
+                                        }
+                                        else
+                                        {
+                                            <div style="background:@(scholarship.IsInternal ? "#1976d2" : "#388e3c");color:white;width:56px;height:56px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:18px;">
+                                                @GetInitials(scholarship.IsInternal ? (scholarship.Institution?.InstitutionName ?? "I") : (scholarship.Benefactor?.OrganizationName ?? "B"))
+                                            </div>
+                                        }
+                                    </div>
+                                    <div class="scholarship-card-title">@(scholarship.Title.Length > 25 ? scholarship.Title.Substring(0, 22) + "..." : scholarship.Title)</div>
                                 </div>
-                                <div class="scholarship-card-title">@(scholarship.Title.Length > 25 ? scholarship.Title.Substring(0, 22) + "..." : scholarship.Title)</div>
                             </a>
                         }
                     }
@@ -339,27 +347,29 @@
                     @foreach (var scholarship in recentlyViewedScholarships)
                     {
                         <a href="/dashboard/student/scholarships-info/@scholarship.ScholarshipId" class="text-decoration-none">
-                            <div class="scholarship-card" style="position:relative;">
-                                <span style="position:absolute;top:10px;right:16px;font-size:18px;color:#bbb;cursor:pointer;" @onclick="() => RemoveRecentlyViewedAsync(scholarship.ScholarshipId)">&times;</span>
-                                <div class="scholarship-card-img" style="display:flex;align-items:center;justify-content:center;">
-                                    @if (scholarship.IsInternal && !string.IsNullOrEmpty(scholarship.Institution?.Logo))
-                                    {
-                                        <img src="@scholarship.Institution.Logo" alt="Logo" style="width:60px;height:60px;object-fit:cover;border-radius:4px;" />
-                                    }
-                                    else if (!scholarship.IsInternal && !string.IsNullOrEmpty(scholarship.Benefactor?.Logo))
-                                    {
-                                        <img src="@scholarship.Benefactor.Logo" alt="Logo" style="width:60px;height:60px;object-fit:cover;border-radius:4px;" />
-                                    }
-                                    else
-                                    {
-                                        <div style="background:@(scholarship.IsInternal ? "#1976d2" : "#388e3c");color:white;width:60px;height:60px;border-radius:4px;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:18px;">
-                                            @GetInitials(scholarship.IsInternal ? (scholarship.Institution?.InstitutionName ?? "IN") : (scholarship.Benefactor?.OrganizationName ?? "BE"))
+                                <div class="scholarship-card" style="position:relative;text-align:center;padding:18px;">
+                                    <span style="position:absolute;top:8px;right:12px;font-size:18px;color:#bbb;cursor:pointer;" @onclick="() => RemoveRecentlyViewedAsync(scholarship.ScholarshipId)">&times;</span>
+                                    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;">
+                                        <div class="scholarship-card-img" style="width:72px;height:72px;border-radius:50%;display:flex;align-items:center;justify-content:center;margin-bottom:10px;">
+                                            @if (scholarship.IsInternal && !string.IsNullOrEmpty(scholarship.Institution?.Logo))
+                                            {
+                                                <img src="@scholarship.Institution.Logo" alt="Logo" style="width:64px;height:64px;object-fit:cover;border-radius:50%;" />
+                                            }
+                                            else if (!scholarship.IsInternal && !string.IsNullOrEmpty(scholarship.Benefactor?.Logo))
+                                            {
+                                                <img src="@scholarship.Benefactor.Logo" alt="Logo" style="width:64px;height:64px;object-fit:cover;border-radius:50%;" />
+                                            }
+                                            else
+                                            {
+                                                <div style="background:@(scholarship.IsInternal ? "#1976d2" : "#388e3c");color:white;width:64px;height:64px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:18px;">
+                                                    @GetInitials(scholarship.IsInternal ? (scholarship.Institution?.InstitutionName ?? "I") : (scholarship.Benefactor?.OrganizationName ?? "B"))
+                                                </div>
+                                            }
                                         </div>
-                                    }
+                                        <div class="scholarship-card-title" style="font-size:14px;font-weight:600;">@scholarship.Title</div>
+                                        <div style="font-size:12px;color:#666;">@((scholarship.IsInternal ? scholarship.Institution?.InstitutionName : scholarship.Benefactor?.OrganizationName) ?? "Provider")</div>
+                                    </div>
                                 </div>
-                                <div class="scholarship-card-title" style="text-align:center;">@scholarship.Title</div>
-                                <div style="font-size:12px;color:#666;text-align:center;">@((scholarship.IsInternal ? scholarship.Institution?.InstitutionName : scholarship.Benefactor?.OrganizationName) ?? "Provider")</div>
-                            </div>
                         </a>
                     }
                 }
@@ -455,28 +465,28 @@
                     @foreach (var scholarship in approvedScholarships)
                     {
                         <a href="/dashboard/student/scholarships-info/@scholarship.ScholarshipId" class="text-decoration-none">
-                            <div class="scholarship-card" style="width: 90%; max-width: 600px; margin: 0 auto; flex-direction: row; align-items: center; height: 80px;">
-                                <div class="scholarship-card-img" style="margin-bottom:0;margin-right:16px;display:flex;align-items:center;justify-content:center;">
-                                    @if (scholarship.IsInternal && !string.IsNullOrEmpty(scholarship.Institution?.Logo))
-                                    {
-                                        <img src="@scholarship.Institution.Logo" alt="Logo" style="width:40px;height:40px;object-fit:cover;border-radius:4px;" />
-                                    }
-                                    else if (!scholarship.IsInternal && !string.IsNullOrEmpty(scholarship.Benefactor?.Logo))
-                                    {
-                                        <img src="@scholarship.Benefactor.Logo" alt="Logo" style="width:40px;height:40px;object-fit:cover;border-radius:4px;" />
-                                    }
-                                    else
-                                    {
-                                        <div style="background:@(scholarship.IsInternal ? "#1976d2" : "#388e3c");color:white;width:40px;height:40px;border-radius:4px;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:14px;">
-                                            @GetInitials(scholarship.IsInternal ? (scholarship.Institution?.InstitutionName ?? "IN") : (scholarship.Benefactor?.OrganizationName ?? "BE"))
+                                <div class="scholarship-card" style="width: 90%; max-width: 600px; margin: 0 auto; flex-direction: column; align-items: center; padding:12px;">
+                                    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;">
+                                        <div class="scholarship-card-img" style="width:56px;height:56px;border-radius:50%;display:flex;align-items:center;justify-content:center;margin-bottom:8px;">
+                                            @if (scholarship.IsInternal && !string.IsNullOrEmpty(scholarship.Institution?.Logo))
+                                            {
+                                                <img src="@scholarship.Institution.Logo" alt="Logo" style="width:48px;height:48px;object-fit:cover;border-radius:50%;" />
+                                            }
+                                            else if (!scholarship.IsInternal && !string.IsNullOrEmpty(scholarship.Benefactor?.Logo))
+                                            {
+                                                <img src="@scholarship.Benefactor.Logo" alt="Logo" style="width:48px;height:48px;object-fit:cover;border-radius:50%;" />
+                                            }
+                                            else
+                                            {
+                                                <div style="background:@(scholarship.IsInternal ? "#1976d2" : "#388e3c");color:white;width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:16px;">
+                                                    @GetInitials(scholarship.IsInternal ? (scholarship.Institution?.InstitutionName ?? "I") : (scholarship.Benefactor?.OrganizationName ?? "B"))
+                                                </div>
+                                            }
                                         </div>
-                                    }
+                                        <div class="scholarship-card-title" style="text-align:center;font-weight:600;">@scholarship.Title</div>
+                                        <div class="scholarship-card-status" style="margin-top:6px;color:#4caf50;">Active</div>
+                                    </div>
                                 </div>
-                                <div class="scholarship-card-title" style="flex:1;text-align:left;">@scholarship.Title</div>
-                                <div class="scholarship-card-status" style="position:static;right:unset;top:unset;">
-                                    Active
-                                </div>
-                            </div>
                         </a>
                     }
                 }
@@ -516,7 +526,7 @@
     private void SkipVerification()
     {
         showVerificationModal = false;
-        Navigation.NavigateTo("/dashboard/unverified");
+        Navigation.NavigateTo("/dashboard//studentunverified");
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -542,7 +552,7 @@
         FilterScholarshipBarResults();
     }
 
-    private async void HideScholarshipDropdownWithDelay()
+    private async Task HideScholarshipDropdownWithDelay()
     {
         // Delay to allow click event to register
         await Task.Delay(150);
@@ -955,11 +965,9 @@
         if (string.IsNullOrWhiteSpace(name))
             return "?";
 
-        var words = name.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-        if (words.Length == 1)
-            return words[0].Substring(0, Math.Min(2, words[0].Length)).ToUpper();
-
-        return $"{words[0][0]}{words[words.Length - 1][0]}".ToUpper();
+        // Return only the first letter of the name as the placeholder initial
+        var trimmed = name.Trim();
+        return trimmed.Substring(0, 1).ToUpper();
     }
 
     private void SetTab(int tab)

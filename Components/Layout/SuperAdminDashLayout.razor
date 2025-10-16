@@ -14,7 +14,7 @@
     <div class="container-fluid p-0">
         <!-- --- SIDEBAR --- -->
         <nav class="sidebar d-flex flex-column justify-content-between"
-             style="position: fixed; top: 0; left: 0; height: 100vh; width: 340px; background: linear-gradient(180deg, #1560d4 0%, #0d387e 100%); padding: 2rem 1.5rem 1rem 1.5rem; z-index: 1000;">
+             style="width: 320px; background: linear-gradient(180deg, #1560d4 0%, #0d387e 100%); padding: 2rem 1.5rem 1rem 1.5rem;">
             
             <div>
                 <!-- Logo Section -->
@@ -75,8 +75,7 @@
         </nav>
 
         <!-- --- PROFILE SIDEBAR (Bootstrap Offcanvas) --- -->
-        <button class="dashboard-profile-absolute mt-3" type="button" data-bs-toggle="offcanvas" data-bs-target="#rightSidebar" aria-controls="rightSidebar"
-                style="position: fixed; top: 20px; right: 40px; background: none; border: none; padding: 0; cursor: pointer; z-index: 1040;">
+        <button class="dashboard-profile-absolute mt-3" type="button" data-bs-toggle="offcanvas" data-bs-target="#rightSidebar" aria-controls="rightSidebar" style="position: fixed; top: 20px; right: 40px; background: none; border: none; padding: 0; cursor: pointer; z-index: 1040;">
             <svg width="32" height="32" fill="none" viewBox="0 0 24 24">
                 <circle cx="12" cy="8" r="4" stroke="#222" stroke-width="2"/>
                 <circle cx="12" cy="12" r="11" stroke="#222" stroke-width="2"/>
@@ -138,7 +137,7 @@
         </div>
 
         <!-- --- MAIN CONTENT AREA --- -->
-        <main class="main-content" style="margin-left: 340px; min-height: 100vh; background: #f5f6fa; padding: 2rem;">
+        <main class="main-content" style="flex:1; min-width:0; background: #f5f6fa;">
             @Body
         </main>
     </div>
