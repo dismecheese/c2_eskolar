@@ -449,6 +449,32 @@ namespace c2_eskolar.Services
         }
 
         /// <summary>
+        /// Converts a blob URL to a SAS URL for a document.
+        /// This is useful when you have a stored blob URL and need to make it accessible.
+        /// </summary>
+        /// <param name="blobUrl">The full blob URL.</param>
+        /// <param name="expiryMinutes">How long the SAS should be valid for (default 60 minutes).</param>
+        /// <returns>SAS URL if successful, original URL if extraction/generation fails.</returns>
+        public string GetDocumentSasUrlFromBlobUrl(string blobUrl, int expiryMinutes = 60)
+        {
+            try
+            {
+                var fileName = ExtractBlobFileName(blobUrl);
+                if (string.IsNullOrWhiteSpace(fileName))
+                {
+                    return blobUrl; // Return original URL if extraction fails
+                }
+
+                return GetDocumentSasUrl(fileName, expiryMinutes);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[BlobStorageService] GetDocumentSasUrlFromBlobUrl error: {ex.Message}");
+                return blobUrl;
+            }
+        }
+
+        /// <summary>
         /// Returns the approximate count of blobs in the specified container.
         /// This performs a listing and counts the blobs; for very large containers consider adding caching.
         /// </summary>
