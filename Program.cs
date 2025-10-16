@@ -285,7 +285,7 @@ builder.Services.AddScoped<CourseNormalizationService>();
         {
             Console.WriteLine($"âŒ Startup error: {ex.Message}\n{ex.StackTrace}");
             throw;
-        }
+        }   
     }
 
     await SeedDataAsync(app);
