@@ -8,7 +8,7 @@
 @using c2_eskolar.Data
 @using c2_eskolar.Models
 @using c2_eskolar.Services
-@inject ApplicationDbContext DbContext  
+ @inject ApplicationDbContext DbContext  
 @inject NavigationManager Navigation
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @inject BenefactorProfileService BenefactorProfileService
@@ -146,6 +146,8 @@
         </div>
     </div>
 </div>
+
+@* Component-scoped CSS will be in BenefactorScholarships.razor.css *@
 
 @code {
     private List<Scholarship>? scholarships;

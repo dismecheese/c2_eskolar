@@ -490,26 +490,25 @@
                 <div class="row g-3 mb-4">
                     <!-- Logo Column (Left Side) -->
                     <div class="col-md-4">
-                        <label for="logoUploadInput" class="form-label fw-semibold">Logo</label>
                         <InputFile id="logoUploadInput" style="display:none" accept="image/png,image/jpeg,image/svg+xml" OnChange="HandleIconUpload" disabled="@(isUploadingIcon || isSubmitted)" />
-                        <label for="logoUploadInput" class="sv-upload-placeholder scholarship-logo-upload" style="cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:180px;padding:1rem;border:2px dashed #e2e8f0;border-radius:16px;background:#f8fafc;transition:all 0.3s;">
+                        <label for="logoUploadInput" class="sv-upload-placeholder scholarship-logo-upload" style="cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;height:195px;padding:1.25rem;border:2px dashed #e2e8f0;border-radius:12px;background:#f8fafc;transition:all 0.3s;">
                             @if (!string.IsNullOrEmpty(iconPreviewUrl))
                             {
-                                <img src="@iconPreviewUrl" alt="Logo Preview" style="max-width:100%;max-height:120px;border-radius:8px;margin-bottom:0.5rem;" />
-                                <small class="text-muted">Click to change</small>
+                                <img src="@iconPreviewUrl" alt="Logo Preview" style="max-width:100%;max-height:110px;border-radius:8px;margin-bottom:0.5rem;object-fit:contain;" />
+                                <small class="text-primary fw-semibold">Click to change</small>
                             }
                             else
                             {
-                                <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="margin-bottom:0.5rem;color:#1560d4;">
+                                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="margin-bottom:0.75rem;color:#1560d4;">
                                     <path d="M12 16L16 12H13V8H11V12H8L12 16Z" fill="currentColor"/>
                                     <path d="M20 6H16L14 4H10L8 6H4C2.9 6 2 6.9 2 8V18C2 19.1 2.9 20 4 20H20C21.1 20 22 19.1 22 18V8C22 6.9 21.1 6 20 6Z" fill="currentColor"/>
                                 </svg>
-                                <span style="font-size:0.9rem;text-align:center;">@(isUploadingIcon ? "Processing..." : "Upload logo")</span>
-                                <small class="d-block text-muted mt-1">PNG, JPG, SVG</small>
+                                <span style="font-size:1rem;text-align:center;font-weight:600;color:#1f2937;margin-bottom:0.5rem;">Upload Logo</span>
+                                <small class="text-muted" style="font-size:0.8rem;">PNG, JPG, SVG - 5 mb</small>
                             }
                             @if (isUploadingIcon)
                             {
-                                <div style="color:orange;font-size:0.85em;margin-top:0.5em;">
+                                <div style="color:#1560d4;font-size:0.85em;margin-top:0.5em;">
                                     <i class="fas fa-spinner fa-spin"></i> Processing...
                                 </div>
                             }
@@ -519,21 +518,23 @@
                     
                     <!-- Title and Deadline Column (Right Side) -->
                     <div class="col-md-8">
+                        <!-- Title Field (Full Width) -->
                         <div class="mb-3">
                             <label for="title" class="form-label fw-semibold">Title <span class="text-danger">*</span></label>
-                            <InputText id="title" class="form-control form-control-lg" @bind-Value="scholarship.Title" aria-required="true" required aria-label="Scholarship Title" placeholder="e.g. Academic Excellence Scholarship" />
+                            <InputText id="title" class="form-control" @bind-Value="scholarship.Title" aria-required="true" required aria-label="Scholarship Title" placeholder="Enter scholarship title" style="height: 45px;" />
                             <ValidationMessage For="@(() => scholarship.Title)" class="text-danger small mt-1" />
                         </div>
                         
-                        <div class="row g-3 mb-3">
-                            <div class="col-md-7">
+                        <!-- Application Deadline and Slots Available (Side by Side) -->
+                        <div class="row g-3">
+                            <div class="col-md-6">
                                 <label for="deadline" class="form-label fw-semibold">Application Deadline <span class="text-danger">*</span></label>
-                                <InputDate id="deadline" class="form-control" @bind-Value="scholarship.ApplicationDeadline" aria-required="true" required aria-label="Application Deadline" />
+                                <InputDate id="deadline" class="form-control" @bind-Value="scholarship.ApplicationDeadline" aria-required="true" required aria-label="Application Deadline" style="height: 45px;" />
                                 <ValidationMessage For="@(() => scholarship.ApplicationDeadline)" class="text-danger small mt-1" />
                             </div>
-                            <div class="col-md-5">
+                            <div class="col-md-6">
                                 <label for="slots" class="form-label fw-semibold">Slots Available</label>
-                                <InputNumber id="slots" class="form-control" @bind-Value="scholarship.SlotsAvailable" aria-label="Slots Available" placeholder="e.g. 10" />
+                                <InputNumber id="slots" class="form-control" @bind-Value="scholarship.SlotsAvailable" aria-label="Slots Available" placeholder="Leave blank if TBD" style="height: 45px;" />
                                 <ValidationMessage For="@(() => scholarship.SlotsAvailable)" class="text-danger small mt-1" />
                             </div>
                         </div>
@@ -543,14 +544,14 @@
                 <!-- Benefits (Full Width Textarea) -->
                 <div class="mb-3">
                     <label for="benefits" class="form-label fw-semibold">Benefits <span class="text-danger">*</span></label>
-                    <InputTextArea id="benefits" class="form-control" rows="4" @bind-Value="scholarship.Benefits" aria-required="true" required aria-label="Benefits" placeholder="Describe the benefits offered by this scholarship (e.g., full tuition coverage, monthly stipend, book allowance, etc.)" />
+                    <InputTextArea id="benefits" class="form-control" rows="4" @bind-Value="scholarship.Benefits" aria-required="true" required aria-label="Benefits" placeholder="Describe the benefits offered by this scholarship" />
                     <ValidationMessage For="@(() => scholarship.Benefits)" class="text-danger small mt-1" />
                 </div>
 
                 <!-- Description (Full Width Textarea) -->
                 <div class="mb-3">
                     <label for="description" class="form-label fw-semibold">Description</label>
-                    <InputTextArea id="description" class="form-control" rows="4" @bind-Value="scholarship.Description" aria-label="Description" placeholder="Describe the scholarship, its purpose, and any special notes..." />
+                    <InputTextArea id="description" class="form-control" rows="4" @bind-Value="scholarship.Description" aria-label="Description" placeholder="Describe the scholarship, its purpose, and any special notes" />
                     <ValidationMessage For="@(() => scholarship.Description)" class="text-danger small mt-1" />
                 </div>
             }
@@ -558,12 +559,11 @@
             {
                 <!-- Step 2: Eligibility & Requirements -->
                 <h4 class="mb-4">📝 Eligibility & Requirements</h4>
-                <p class="text-muted mb-4">Clearly define the eligibility criteria and requirements</p>
 
                 <!-- Required Course (Full Width) -->
                 <div class="mb-4">
                     <label for="course" class="form-label fw-semibold">Required Course</label>
-                    <InputText id="course" class="form-control" @bind-Value="scholarship.RequiredCourse" aria-label="Required Course" placeholder="e.g. BS Computer Science, BS Information Technology" />
+                    <InputText id="course" class="form-control" @bind-Value="scholarship.RequiredCourse" aria-label="Required Course" placeholder="e.g. BS Information Technology" />
                     <ValidationMessage For="@(() => scholarship.RequiredCourse)" class="text-danger small mt-1" />
                     <small class="form-text text-muted">Leave blank if open to all courses. You can list multiple courses separated by commas.</small>
                 </div>
@@ -572,27 +572,24 @@
                 <div class="row g-3">
                     <!-- Eligibility Section (Left) -->
                     <div class="col-md-6">
-                        <label for="eligibility" class="form-label fw-semibold">Eligibility Criteria</label>
-                        <InputTextArea id="eligibility" class="form-control" rows="12" @bind-Value="scholarship.Eligibility" aria-label="Eligibility" placeholder="Define who is eligible to apply for this scholarship. List each criterion on a separate line using bullet points.&#10;&#10;Example format:&#10;• Criterion 1&#10;• Criterion 2&#10;• Criterion 3" />
+                        <label for="eligibility" class="form-label fw-semibold">Eligibility <span class="text-danger">*</span></label>
+                        <InputTextArea id="eligibility" class="form-control" rows="12" @bind-Value="scholarship.Eligibility" aria-label="Eligibility" placeholder="Define who is eligible to apply for this scholarship." />
                         <ValidationMessage For="@(() => scholarship.Eligibility)" class="text-danger small mt-1" />
-                        <small class="form-text text-muted">Define who is eligible to apply</small>
                     </div>
 
                     <!-- Requirements Section (Right) -->
                     <div class="col-md-6">
-                        <label for="requirements" class="form-label fw-semibold">Requirements</label>
-                        <InputTextArea id="requirements" class="form-control" rows="12" @bind-Value="scholarship.Requirements" aria-label="Requirements" placeholder="List what applicants need to provide or fulfill. List each requirement on a separate line using bullet points.&#10;&#10;Example format:&#10;• Requirement 1&#10;• Requirement 2&#10;• Requirement 3" />
+                        <label for="requirements" class="form-label fw-semibold">Requirements <span class="text-danger">*</span></label>
+                        <InputTextArea id="requirements" class="form-control" rows="12" @bind-Value="scholarship.Requirements" aria-label="Requirements" placeholder="List what applicants need to provide or fulfill." />
                         <ValidationMessage For="@(() => scholarship.Requirements)" class="text-danger small mt-1" />
-                        <small class="form-text text-muted">List the requirements</small>
                     </div>
                 </div>
 
                 <!-- External Application URL (Optional) -->
                 <div class="mt-4">
-                    <label for="externalurl" class="form-label fw-semibold">External Application URL (Optional)</label>
-                    <InputText id="externalurl" class="form-control" @bind-Value="scholarship.ExternalApplicationUrl" aria-label="External Application URL" placeholder="e.g. https://apply.example.com" />
+                    <label for="externalurl" class="form-label fw-semibold">External Application URL </label>
+                    <InputText id="externalurl" class="form-control" @bind-Value="scholarship.ExternalApplicationUrl" aria-label="External Application URL" placeholder="https://apply.example.com" />
                     <ValidationMessage For="@(() => scholarship.ExternalApplicationUrl)" class="text-danger small mt-1" />
-                    <small class="form-text text-muted">If you have an external application form or website, provide the URL here</small>
                 </div>
             }
             else if (currentStep == 3)
@@ -797,7 +794,7 @@
     private readonly string[] steps = new[]
     {
         "Visibility",
-        "Basic Info",
+        "Basic Information",
         "Eligibility & Requirements",
         "Review"
     };
